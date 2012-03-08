@@ -2,7 +2,7 @@
   #define __SAL_INSTANCE_HPP__
 
 #include "SALConfig.hpp"
-#include "../variant_config.h"
+#include "config/variant_config.h"
 
 #ifdef BUILD_BOCHS
 

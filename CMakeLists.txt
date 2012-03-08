@@ -24,9 +24,6 @@ include(compilerconfig)
 OPTION( BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
 
-#### Configuration file emitting BUILD_OVP/BOCHS defines ####
-configure_file(${CMAKE_SOURCE_DIR}/core/variant_config.h.cmake ${CMAKE_SOURCE_DIR}/core/variant_config.h)
-
 if(BUILD_OVP)
   message(STATUS "[${PROJECT_NAME}] Building OVP variant...")
   SET(VARIANT ovp)
