@@ -1,0 +1,12 @@
+message Trace {
+  repeated group Event = 1{
+    required uint64 ip = 1;
+    optional uint64 memaddr = 2;
+    optional uint32 width = 3;
+    enum AccessType {
+      READ = 1;
+      WRITE = 2;
+    }
+    optional AccessType accesstype = 4;
+  }
+}

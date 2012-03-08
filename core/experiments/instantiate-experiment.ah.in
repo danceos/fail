@@ -1,0 +1,19 @@
+#ifndef __INSTANTIATE_@EXPERIMENT_TYPE@_AH__
+  #define __INSTANTIATE_@EXPERIMENT_TYPE@_AH__
+
+// FIXME: cmake does not remove these .ah files when the user configures
+// another experiment (or even makes "clean").  Currently, this needs to be
+// worked around by manually removing $BUILDDIR/core/experiments/*/*.ah .
+
+// Make sure your experiment declaration is in experiment.hpp:
+#include "experiments/@EXPERIMENT_NAME@/experiment.hpp"
+#include "SAL/SALInst.hpp"
+
+aspect @EXPERIMENT_TYPE@ExperimentHook {
+	@EXPERIMENT_TYPE@ experiment;
+	advice execution ("void sal::SimulatorController::initExperiments()") : after () {
+		sal::simulator.addFlow(&experiment);
+	}
+};
+
+#endif // __INSTANTIATE_@EXPERIMENT_TYPE@_AH__

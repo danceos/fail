@@ -1,0 +1,180 @@
+FailBochs-Bausteine TODO
+========================
+Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
+
+Bochs:
+ - Determinismus: Wie kann für Mikroexperimente sichergestellt werden, dass
+   externe Ereignisse (Timer, Eingang von Netzwerkpaketen, ...) reproduzierbar
+   zum selben Zeitpunkt eintreffen? (rh)
+   - Interrupts teilweise oder komplett sperren
+   - optional: Interrupts auslösen
+ - gemeinsame Namen fuer RDX/EDX (ab)
+
+Abstraktionen:
+ - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
+   GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
+   Backend-Metainformationen (welche Register gibt es, wie breit ist der
+   Datenbus, welche Traps können ausgelöst werden)
+ - Endianness?
+ - Merkmalmodell von Implementierungsdetails trennen (hsc)
+   -> automatische Konfigurierung anhand Experimentauswahl
+   -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
+ - zum Verpacken in ExperimentData-Nachrichten Register<->String-Konvertierung
+   vereinfachen (ab)
+ - Namespace Confusion: was gehört in fi::, was in sal::?  Brauchen wir noch
+   beides, brauchen wir was Zusätzliches?
+ - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
+   Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
+   -> "Fehlerinjektion" ist das ja nicht immer
+ - (Allgemeine) Testfälle?
+   -> Modifikationen an FAIL* sind damit leichter zu verifizieren
+ - Ausgaben (z.B. im Bochs-Controller, siehe BochsController::save)
+   vereinheitlichen, evtl. zusätzlich via (Non-)Verbose-Mode(s)
+   -> "Ausgabesystem", "Logger"
+
+Events:
+ - sobald mehrere Aspekte an derselben Stelle hooken, muss in einer Schleife
+   nach jeder Kontrollübergabe an den SimulatorController geprüft werden, ob
+   neue Events oder Fehlerinjektionsaufträge vorliegen
+   -> Anwendungsfall z.B. Breakpoint an Adresse X, danach Zustandssicherung;
+   man will natürlich EIP==X in dem gesicherten Zustand haben, nicht X+y (hsc)
+ - MemEvents: Instruction-Fetch und weitere CPU-interne Speicherzugriffe
+   (Interrupt-Kontextsicherung, HW-Tasks, Interrupt-Vektoren, ...) ermöglichen
+   und konfigurierbar machen
+
+Parallelisierung:
+ - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
+   mehr werden, wird das eventuell eng.
+   -> BoundedSynchronizedQueue basteln, Kampagne blockiert dann, wenn die voll ist
+   -> eingehende Resultate nicht in der Kampagne "verarbeiten" (rausschreiben)
+      -- sonst bekommen wir dasselbe Problem mit der Queue der Resultate;
+      stattdessen z.B. die Idee der ExperimentDataStorage weiterverfolgen,
+      Ergebnisse werden asynchron zur Kampagne weggeschrieben
+      (oder: Zweiteilung der Kampagne vornehmen, "Verarbeitung" in eigenem
+      Thread)
+ - coolcampaign fährt momentan ziemlich Achterbahn bei RAM-Benutzung
+   -> Grund analysieren, ggf. beheben (Ressourcenverwaltung? Threadpool?)
+ - warum skalieren die Experimente/s nicht (ganz) linear mit der Anzahl der
+   Cores auf einer Maschine?  Jobserver-Problem, oder lokal Contention auf dem
+   Client (Kernel, Disk-IO)?
+   -> mal Experimente ohne Kommunikation laufenlassen, Durchsatz messen
+   -> mal mit mehreren Maschinen durchmessen
+ - JobServer Statistiken ausgeben lassen, dafür keine Meldung mehr bei jedem Auftrag
+   * Anzahl Hosts
+   * Anzahl Clients (momentan ununterscheidbar ...)
+   * Aufträge pro Sekunde
+   * ETA bis Kampagne komplett
+ - Client/Server-TCP-Verbindungen aufrechterhalten
+ - Client-Timeouts untersuchen, Server-Implementierung tunen?  Retries im Client?
+ - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben
+ - die Möglichkeit schaffen, im Server mehr Informationen über einen Job
+   vorhält (und dann auch loggt), als man an den Client kommuniziert
+   -> bei Fault-Space-Pruning hat man im Server Äquivalenzklassen, aus denen
+      man nur einen einzelnen Parametersatz auswählt und dem Client zum
+      Ausprobieren gibt; die Informationen über die Äquivalenzklasse müss(t)en
+      nicht über die Leitung, werden aber am Schluss zur Auswertung gebraucht
+
+Implementierungsdetails:
+ - EventList, RegisterIterator, ...: nach Möglichkeit keine selbstgebauten
+   Container/Iteratoren etc. benutzen, sondern in der STL bedienen (z.B. von
+   std::list ableiten)
+   * falls doch ein Eigenbau notwendig ist, unbedingt STL-Schnittstellen
+     nachbilden
+ - einheitliche Fehlerbehandlung
+ - einheitliches Logging (Loglevels?)
+
+Effizienz:
+ - zuerst: Bottleneck identifizieren!
+ - getrennte Queues?
+ - Queue-Suche optimieren (z.B. Hash-Idee)?
+ - boolean/Counter für Events (um Durchlaufen der Queue zu verhindern)?
+ - Dynamic AspectC++ ausprobieren
+ - Löschliste in EventList via Hashing implementieren (o.Ä.)?
+
+Buildsystem:
+ - (mittelfristig) in cmake nur wirklich Build-spezifische Dinge konfigurieren
+   (verwendeter Compiler, Installationsverzeichnis, ...), den Rest in einem
+   brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
+   Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
+   * Bochs / OVP sind Alternativen, nicht beide anschaltbar (?)
+ - EXP*-options nur einmal in config/, nicht in drei verschiedenen Dateien
+   (config/CMakelists.txt, config/experiments.hpp.in,
+   experiments/CMakeLists.txt)
+   * Hinzufügen eines neuen Experiments konkreter dokumentieren (howto-build.txt?)
+ - AspectConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - variant_config.h in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+
+Dokumentation:
+ - Änderungen im Klassendiagramm nachziehen (hsc)
+ 
+ ------------------------------------------------
+ Erledigt: 
+ - alle Events mit Zähler versehen, so dass sie erst bei Erreichen der 0 feuern
+   * z.B. erst nach dem 5ten Mal Lesen von Adresse X auslösen
+ - Bereiche von Instruction-Pointern
+ - Wrapper für häufig auftretende Experimentmuster, z.B. einzelnes Event
+   anlegen und dann genau darauf warten
+ - Wildcards für beliebige Instruktions- bzw. Speicheradresse (ANY_ADDR, siehe Event.hpp),
+   inkl. Anpassung des ausgelösten Events
+ - Registerzugriff aus dem Experiment-Controller, RegisterBitflip vorbereitet
+ - Auslösen von Reboot (rh)
+ - Auslesen von Register- und Speicherzustand (Kontext Golden-Run-Vergleiche etc.)
+ - Coroutinen-Bibliothek (oder getcontext/setcontext) statt Threads+Synchronisation?
+ - Bitflips in Register
+ - nach Eintreten eines Events wird das Event- (oder FI-)Objekt mit
+   Detailinformationen befüllt
+   -> insbesondere bei "Wildcards" (ANY_TRAP) will man ja im
+      Experimentablauf wissen, was jetzt eigentlich passiert ist
+ - Event-Aspekt zur Kommunikation mit dem Gastsystem fertig stellen (siehe events/GuestSysCom.ah)
+ - Bochs-Spezifika von Bochs-unabhängigen Codeteilen trennen
+   -> Simulator-Abstraktionsschicht
+   -> Schnittstelle für Informationen über Plattformspezifika, z.B. Register + Bitbreiten
+   -> Bochs-spezifische Aspekte leiten nur noch Kontrollfluss um,
+      Implementierung von Ereignissen separat
+ - (sofern möglich) Ereignisse von FI trennen
+ - Scattering-Graphik (ab)
+ - ohne GUI bzw. gesetztem $DISPLAY lauffähig? (rh)
+ - Save (rh):
+   - Zielverzeichnis anlegen, falls nicht existent
+   - Fehlermeldung, falls Zielverzeichnis nicht schreibbar
+ - FI-Jobs gibt's nicht mehr, überall rauswerfen (ab)
+ - Traps und Interrupts (alle, oder Match auf beliebige Teilmenge) 
+   (Aspekte existieren bereits. Matchen auf beliebige Teilmenge der Traps ist noch nicht moeglich)
+   (rh)
+ - die schlimmsten Speicherlecks in Bochs eliminieren (rh)
+ - Event-IDs als Identifikationsmittel für Events auf den zweiten Platz verweisen
+   -> IDs gibt's weiterhin (getId()), aber z.B. waitAny() liefert einen Pointer
+ - Brauchen wir eigentlich IDs als Handles für Events, oder genügt es nicht
+   eigentlich, die Event-Objektadresse zu verwenden?
+ - Event-Match-Schleife von Event-Feuer-Schleife trennen (ab):
+   - erst alle Events, die aktuell matchen, sammeln (Code ggf. spezifisch für die Ereignisart)
+   - dann sequentiell feuern (Code zentral in SimulatorController)
+   -> keine Probleme mit nachträglich hinzukommenden Events
+   - dann leider immer noch Probleme mit nachträglich entfernten Events
+   -> siehe fail/experiments/coolchecksum/experiment.cc FIXME am Ende
+   -> Lösung: Löschliste
+   - ggf. zusammen mit Datenstruktur-Implementierungsdetails-TODO (s.u.) angehen
+
+==================================
+Theorie TODO
+==================================
+Problem Fork von FI Tools -> Merging eklig.
+-> Liste mit konkreten Beispielen 
+
+
+
+========================
+FailOVP-Bausteine TODO
+========================
+ - save/restore implementieren -> Speicher-, Register-, Timer-, ??- Zustaende 
+ - Sections aus ELF Datei extrahieren, entsprechende Speicherbereiche (generisch) anlegen (rz)
+ - Symbole aus ELF extrahieren -> Adressen von globalen Objekten/Funktionen in Experimenten angeben (rz)
+ - Prozessormodell per cmake cleanen und neu bauen (mh)
+ - CiAO ELF in OVP ausfuehren
+
+ERLEDIGT
+========================
+
+

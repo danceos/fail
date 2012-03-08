@@ -1,0 +1,32 @@
+#ifndef __SAVE_AH__
+  #define __SAVE_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if CONFIG_SR_SAVE == 1
+
+#include "bochs.h"
+#include "../SALInst.hpp"
+
+aspect save {
+	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
+
+	// make sure the "save" aspect comes *after* the breakpoint stuff: In
+	// an "after" advice this means it must get a *higher* precedence,
+	// therefore it's first in the order list.
+	advice execution (cpuLoop()) : order ("save", "CPULoop");
+
+	advice execution (cpuLoop()) : after () {
+		if (!sal::save_bochs_request) {
+			return;
+		}
+		assert(sal::sr_path.size() > 0 && "[FAIL] tried to save state without valid path");
+		SIM->save_state(sal::sr_path.c_str());
+		std::cout << "[FAIL] Save finished" << std::endl;
+		sal::simulator.saveDone();
+	}
+};
+
+#endif // CONFIG_SR_SAVE
+
+#endif // _SAVE_AH__

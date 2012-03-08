@@ -1,0 +1,13 @@
+#ifndef __OVPINIT_AH__
+  #define __OVPINIT_AH__
+
+#include "../SALInst.hpp"
+
+aspect OVPInit {
+	advice call("% ...::startSimulation(...)") : before () {
+		cout << "OVP init aspect!" << endl;
+		sal::simulator.startup();
+	}
+};
+
+#endif // __OVPINIT_AH__

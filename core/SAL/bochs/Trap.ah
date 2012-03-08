@@ -1,0 +1,27 @@
+#ifndef __TRAP_AH__
+  #define __TRAP_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if CONFIG_EVENT_TRAP == 1
+
+#include "../../../bochs/bochs.h"
+#include "../../../bochs/cpu/cpu.h"
+
+#include "../SALInst.hpp"
+
+aspect Trap
+{
+	pointcut exception_method() = "void bx_cpu_c::exception(...)";
+
+	advice execution (exception_method()) : before ()
+	{
+		sal::simulator.onTrapEvent(*(tjp->arg<0>()));
+		// TODO: There are some different types of exceptions at cpu.h (line 265-281)
+		//       Which kind of a trap are these types?
+	}
+};
+
+#endif // CONFIG_EVENT_TRAP
+
+#endif /* __TRAP_AH__ */

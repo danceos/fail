@@ -1,0 +1,27 @@
+#ifndef __REBOOT_AH__
+  #define __REBOOT_AH__
+
+#include "../../AspectConfig.hpp"
+#include "../SALInst.hpp"
+
+#if CONFIG_SR_REBOOT == 1
+
+#include "bochs.h"
+
+aspect reboot {
+	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
+
+	advice execution (cpuLoop()) : after () {
+		if (!sal::reboot_bochs_request) {
+			return;
+		}
+		
+		bx_gui_c::reset_handler();
+		std::cout << "[FAIL] Reboot finished" << std::endl;
+		sal::simulator.rebootDone();
+	}
+};
+
+#endif // CONFIG_SR_REBOOT
+
+#endif // __REBOOT_AH__

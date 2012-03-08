@@ -1,0 +1,33 @@
+#ifndef __JUMP_TO_PREVIOUS_CTX_AH__
+  #define __JUMP_TO_PREVIOUS_CTX_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if 0
+// #if CONFIG_SR_RESTORE == 1 || CONFIG_SR_REBOOT == 1
+
+#include "bochs.h"
+#include "../SALInst.hpp"
+
+aspect jumpToPreviousCtx
+{
+	pointcut end_reset_handler()  = "void bx_gui_c::reset_handler(...)";
+									//|| "int bxmain()";
+
+
+	advice execution (end_reset_handler()) : after ()
+	{
+		
+		if (sal::restore_bochs_request || sal::reboot_bochs_request )
+		{
+			sal::restore_bochs_request = false;
+			sal::reboot_bochs_request = false;
+			sal::simulator.toPreviousCtx();
+		}
+
+	}
+};
+
+#endif // CONFIG_SR_RESTORE == 1 || CONFIG_SR_REBOOT
+
+#endif // __JUMP_TO_PREVIOUS_CTX_AH__

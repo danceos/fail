@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SOURCE_DIR=@CMAKE_SOURCE_DIR@
+BINARY_DIR=@CMAKE_BINARY_DIR@
+PREFIX_DIR=@BOCHS_PREFIX_DIR@
+
+if [ ! -d "$SOURCE_DIR" ]; then
+	echo Source directory does not exists! $SOURCE_DIR
+	exit 2
+fi
+
+if [ ! -d "$PREFIX_DIR" ]; then
+	echo Prefix directory does not exists! $BINARY_DIR 
+	exit 2
+fi
+
+
+./configure CXX="ag++ -p $SOURCE_DIR -I$SOURCE_DIR/core -I"$BINARY_DIR"/core --real-instances --Xcompiler" LIBTOOL="/bin/sh ./libtool --tag=CXX" --prefix=$PREFIX_DIR --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,repeat-speedups,trace-cache,fast-function-calls,host-specific-asms,disasm,all-optimizations,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --with-all-libs
+

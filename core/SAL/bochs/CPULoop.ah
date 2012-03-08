@@ -1,0 +1,35 @@
+#ifndef __CPU_LOOP_AH__
+  #define __CPU_LOOP_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if CONFIG_EVENT_CPULOOP == 1
+
+#include "../../../bochs/bochs.h" // for "BX_CPU_C"
+#include "../../../bochs/cpu/cpu.h" // for "bxInstruction_c"
+#include "../SALInst.hpp"
+
+aspect CPULoop
+{
+	pointcut cpuLoop() = "void defineCPULoopJoinPoint(...)";
+
+	//
+	// Event source: "instruction pointer"
+	//
+	advice execution (cpuLoop()) : after ()
+	{
+		// Points to the cpu class: "this" if BX_USE_CPU_SMF == 0,
+		// BX_CPU(0) otherwise
+		BX_CPU_C* pThis = *(tjp->arg<0>());
+		// Points to the *current* bxInstruction-object
+		bxInstruction_c* pInstr = *(tjp->arg<1>());
+
+		// report this event to the Bochs controller:
+		sal::simulator.onInstrPtrChanged(pThis->get_instruction_pointer());
+		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.
+	}
+};
+
+#endif // CONFIG_EVENT_CPULOOP
+
+#endif /* __CPU_LOOP_AH__ */

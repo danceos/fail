@@ -1,0 +1,100 @@
+#ifndef __MEM_ACCESS_BIT_FLIP_AH__
+  #define __MEM_ACCESS_BIT_FLIP_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if CONFIG_FI_MEM_ACCESS_BITFLIP == 1
+
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include "bochs.h"
+
+#include "../../controller/EventList.hpp"
+#include "../../controller/Event.hpp"
+
+using namespace std;
+
+// FIXME this code doesn't make any sense for the read_virtual_% functions
+// (the fault would need to be injected into their *return* value)
+
+aspect MemAccessBitFlip
+{
+	pointcut injection_methods() 
+									 = "% ...::bx_cpu_c::read_virtual_%(...)" || 		// -> access32/64.cc
+/*
+										"% ...::bx_cpu_c::read_RMW_virtual_%(...)" ||	// -> access32.cc
+										"% ...::bx_cpu_c::system_read_%(...)" ||			// -> access.cc
+										"% ...::bx_cpu_c::v2h_read_byte(...)" ||			// -> access.cc
+*/
+										"% ...::bx_cpu_c::write_virtual_%(...)"; 			// -> access32/64.cc
+/*
+										"% ...::bx_cpu_c::write_RMW_virtual_%(...)" ||	// -> access32.cc
+										"% ...::bx_cpu_c::write_new_stack_%(...)" ||		// -> access32/64.cc
+										"% ...::bx_cpu_c::system_write_%(...)" ||			// -> access.cc
+										"% ...::bx_cpu_c::v2h_write_byte(...)";			// -> access.cc
+*/
+
+
+	//
+	// Injects a bitflip each time the guest system requests to write/read
+	// data to/from RAM at the (hardcoded) addresses defined above:
+	//
+	// Event source: "memory write/read access"
+	//
+	advice execution (injection_methods()) : before ()
+	{
+		for(size_t i = 0; i < fi::evbuf.getEventCount(); i++) // check for active events
+		{
+			fi::SimpleBitFlip* pEv = dynamic_cast<fi::SimpleBitFlip*>(fi::evbuf.getEvent(i)); // FIXME: Performance verbessern
+			if(pEv && *(tjp->arg<1>())/*typed!*/ == pEv->getAddress())
+			{
+				cout << " " << tjp->signature() << endl;
+
+				// Get a pointer to the data that should be written to RAM
+				// *before* it is actually written:
+				Bit32u* pData = (Bit32u*)(tjp->arg(JoinPoint::ARGS-1));
+
+				// Flip bit at position pEv->getBitPos():
+				char* ptr = (char*)pData; // For simplification we're just looking at the
+						                    // first byte of the data
+				ptr[0] = (ptr[0]) ^ (pEv->getMask() << pEv->getBitPos());
+
+				cout << "  >>> Bit flipped at index " << pEv->getBitPos()
+					  << " at address 0x" << hex << (*(tjp->arg<1>())) << "!" << endl;
+				fi::evbuf.fireEvent(pEv);
+				// Continue... (maybe more events to process)
+			}
+		}
+	}
+/*
+		//
+		// Shows the mapping of a virtual address (within eCos) to a *host* address:
+		//
+		if(g_fEnableInjection) // event fired?
+		{
+			g_fEnableInjection = false;
+			const unsigned SEGMENT_SELECTOR_IDX = 2; // always the code segment (seg-base-addr should be zero)
+			const bx_address logicalAddr = MEM_ADDR_TO_INJECT; // offset within the segment ("local eCos address")
+
+			// Get the linear address:
+			Bit32u linearAddr = pThis->get_laddr32(SEGMENT_SELECTOR_IDX/ *seg* /, logicalAddr/ *offset* /);
+			// Map the linear address to the physical address:
+	  		bx_phy_address physicalAddr;
+	  		bx_bool fValid = pThis->dbg_xlate_linear2phy(linearAddr, (bx_phy_address*)&physicalAddr);
+			// Determine the *host* address of the physical address:
+			Bit8u* hostAddr = BX_MEM(0)->getHostMemAddr(pThis, physicalAddr, BX_READ);
+			// Now, hostAddr contains the "final" address where we are allowed to inject errors:
+			*(unsigned*)hostAddr = BAD_VALUE; // inject error
+	  		if(!fValid)
+				printf("[Error]: Could not map logical address to host address.\n");
+			else
+				printf("[Info]: Error injected at logical addr %p (host addr %p).\n", logicalAddr, hostAddr);
+		}
+*/
+};
+
+#endif // CONFIG_FI_MEM_ACCESS_BITFLIP
+
+#endif // __MEM_ACCESS_BIT_FLIP_AH__
+

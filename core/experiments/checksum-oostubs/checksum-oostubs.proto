@@ -1,0 +1,29 @@
+message OOStuBSProtoMsg {
+	// parameters
+	required int32 instr_offset = 1;
+	required int32 mem_addr = 2;
+	required int32 bit_offset = 3;
+
+	// results
+	// make these optional to reduce overhead for server->client communication
+	enum ResultType {
+		CALCDONE = 1;
+		TIMEOUT = 2;
+		TRAP = 3;
+		UNKNOWN = 4;
+	}
+	// instruction pointer where injection was done
+	optional uint32 injection_ip = 4;
+	// result type, see above
+	optional ResultType resulttype = 5;
+	// result data, depending on resulttype:
+	// CALCDONE: resultdata = calculated value
+	// TIMEOUT: resultdata = latest EIP
+	// TRAP: resultdata = latest EIP
+	// UNKNOWN: resultdata = latest EIP
+	optional uint32 resultdata = 6;
+	// did ECC correct the fault?
+	optional int32 error_corrected = 7;
+	// optional textual description of what happened
+	optional string details = 8;
+}

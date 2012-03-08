@@ -1,0 +1,54 @@
+#ifndef __NONVERBOSE_AH__
+  #define __NONVERBOSE_AH__
+
+#include "../../AspectConfig.hpp"
+
+#if CONFIG_STFU == 1
+
+#include "bochs.h"
+
+// Doesn't work because AspectC++ doesn't deal properly with variadic parameter
+// lists:
+/*
+aspect nonverbose {
+	// needed to suppress Bochs output *before* a state restore finished
+	// FIXME ac++ segfaults if we use call() instead of execution()
+	advice execution("% logfunctions::debug(...)")
+	    || execution("% logfunctions::info(...)")
+	    || execution("% logfunctions::pass(...)")
+	    || execution("% logfunctions::error(...)")
+	     : around () {
+	}
+};
+*/
+
+aspect nonverbose {
+	// needed to suppress Bochs output *before* a state restore finished
+	advice call("int logfunctions::get_default_action(int)")
+	     : around () {
+		int action;
+		switch (*(tjp->arg<0>())) {
+		case LOGLEV_DEBUG:
+		case LOGLEV_PASS:
+		case LOGLEV_INFO:
+			action = ACT_IGNORE;
+			break;
+		case LOGLEV_ERROR:
+			action = ACT_REPORT;
+			break;
+		case LOGLEV_PANIC:
+		default:
+			action = ACT_FATAL;
+		}
+		*(tjp->result()) = action;
+	}
+
+	// no credits header
+	advice call("void bx_print_header()")
+	     : around () {
+	}
+};
+
+#endif
+
+#endif

@@ -1,0 +1,12 @@
+#ifndef __BXINIT_AH__
+  #define __BXINIT_AH__
+
+#include "../SALInst.hpp"
+
+aspect BochsInit {
+	advice call("int bxmain()") : before () {
+		sal::simulator.startup();
+	}
+};
+
+#endif // __BXINIT_AH__

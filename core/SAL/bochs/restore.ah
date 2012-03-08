@@ -1,0 +1,23 @@
+#ifndef __RESTORE_AH__
+  #define __RESTORE_AH__
+
+#include <iostream>
+#include "../../AspectConfig.hpp"
+#include "../SALInst.hpp"
+
+#if CONFIG_SR_RESTORE == 1
+
+#include "bochs.h"
+
+aspect restore {
+	pointcut restoreState()  = "void bx_sr_after_restore_state()";
+
+	advice execution (restoreState()) : after () {
+		std::cout << "[FAIL] Restore finished" << std::endl;
+		sal::simulator.restoreDone();
+	}
+};
+
+#endif // CONFIG_SR_RESTORE
+
+#endif // __RESTORE_AH__
