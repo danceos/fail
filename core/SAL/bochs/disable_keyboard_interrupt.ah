@@ -1,9 +1,9 @@
 #ifndef __DISABLE_KEYBOARD_INTERRUPT_AH__
   #define __DISABLE_KEYBOARD_INTERRUPT_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_DISABLE_KEYB_INTERRUPTS
+#ifdef CONFIG_DISABLE_KEYB_INTERRUPTS
 
 #include "../../../bochs/iodev/keyboard.h"
 

@@ -1,10 +1,10 @@
 #ifndef __REBOOT_AH__
   #define __REBOOT_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 #include "../SALInst.hpp"
 
-#if CONFIG_SR_REBOOT == 1
+#ifdef CONFIG_SR_REBOOT
 
 #include "bochs.h"
 

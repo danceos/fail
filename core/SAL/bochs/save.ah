@@ -1,9 +1,9 @@
 #ifndef __SAVE_AH__
   #define __SAVE_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_SR_SAVE == 1
+#ifdef CONFIG_SR_SAVE
 
 #include "bochs.h"
 #include "../SALInst.hpp"

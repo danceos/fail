@@ -8,10 +8,10 @@
 
 #include "../controller/ExperimentFlow.hpp"
 #include "../SAL/SALInst.hpp"
-#include "../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
 // Check aspect dependencies:
-#if CONFIG_EVENT_CPULOOP != 1 || CONFIG_EVENT_MEMACCESS != 1 || CONFIG_SR_SAVE != 1 || CONFIG_FI_MEM_ACCESS_BITFLIP != 1
+#if !defined(CONFIG_EVENT_CPULOOP) || !defined(CONFIG_EVENT_MEMACCESS) || !defined(CONFIG_SR_SAVE) || !defined(CONFIG_FI_MEM_ACCESS_BITFLIP)
   #error Event dependecies not satisfied! Enabled needed aspects in AspectConfig.hpp!
 #endif
 

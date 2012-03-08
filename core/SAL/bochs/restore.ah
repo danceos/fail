@@ -2,10 +2,10 @@
   #define __RESTORE_AH__
 
 #include <iostream>
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 #include "../SALInst.hpp"
 
-#if CONFIG_SR_RESTORE == 1
+#ifdef CONFIG_SR_RESTORE
 
 #include "bochs.h"
 

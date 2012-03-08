@@ -1,9 +1,9 @@
 #ifndef __JUMP_AH__
   #define __JUMP_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_EVENT_JUMP == 1
+#ifdef CONFIG_EVENT_JUMP
 
 #include <iostream>
 #include <cstdlib>

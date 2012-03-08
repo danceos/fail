@@ -2,9 +2,9 @@
   #define __MEM_EVENTS_AH__
 
 #include <iostream>
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_EVENT_MEMREAD == 1 || CONFIG_EVENT_MEMWRITE == 1
+#if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
 
 #include "../../../bochs/bochs.h"
 #include "../../../bochs/cpu/cpu.h"
@@ -57,7 +57,7 @@ aspect MemEvents
 	//
 	// Event source: "memory write access"
 	//
-#if CONFIG_EVENT_MEMWRITE == 1
+#ifdef CONFIG_EVENT_MEMWRITE
 	advice execution (write_methods()) : after () {
 		sal::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<2>())), true,
@@ -103,7 +103,7 @@ aspect MemEvents
 	//
 	// Event source: "memory read access"
 	//
-#if CONFIG_EVENT_MEMREAD == 1
+#ifdef CONFIG_EVENT_MEMREAD
 	advice execution (read_methods()) : before () {
 		sal::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
@@ -119,14 +119,14 @@ aspect MemEvents
 
 	advice execution (read_methods_RMW()) : before () {
 		rmw_address = *(tjp->arg<1>());
-#if CONFIG_EVENT_MEMREAD == 1
+#ifdef CONFIG_EVENT_MEMREAD
 		sal::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 #endif
 	}
 
-#if CONFIG_EVENT_MEMREAD == 1
+#ifdef CONFIG_EVENT_MEMREAD
 	advice execution (read_methods_system()) : before () {
 		// We don't do anything here for now: This type of memory
 		// access is used when the hardware itself needs to access

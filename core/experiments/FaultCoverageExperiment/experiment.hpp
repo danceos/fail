@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 #include "controller/ExperimentFlow.hpp"
 
 #define INST_ADDR_FUNC_START  0x4ae6		
@@ -12,8 +12,8 @@
 
 /*
 // Check if aspect dependencies are satisfied:
-#if CONFIG_EVENT_CPULOOP != 1 || CONFIG_EVENT_TRAP != 1 || \
-    CONFIG_SR_RESTORE != 1 || CONFIG_SR_SAVE != 1
+#if !defined(CONFIG_EVENT_CPULOOP) || !defined(CONFIG_EVENT_TRAP) || \
+    !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SR_SAVE)
   #error At least one of the following aspect-dependencies are not satisfied: \
          cpu loop, traps, save/restore. Enable aspects first (see AspectConfig.hpp)!
 #endif

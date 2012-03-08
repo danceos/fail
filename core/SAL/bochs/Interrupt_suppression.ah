@@ -1,9 +1,9 @@
 #ifndef __INTERRUPT_SUPPRESSION_AH__
   #define __INTERRUPT_SUPPRESSION_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_SUPPRESS_INTERRUPTS == 1
+#ifdef CONFIG_SUPPRESS_INTERRUPTS
 
 #include "../../../bochs/bochs.h"
 #include "../../../bochs/cpu/cpu.h"

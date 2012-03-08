@@ -9,10 +9,10 @@
 #include "../controller/ExperimentFlow.hpp"
 #include "../SAL/SALInst.hpp"
 #include "../SAL/bochs/BochsRegister.hpp"
-#include "../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
 // Check if aspect dependencies are satisfied:
-#if CONFIG_EVENT_CPULOOP != 1 || CONFIG_EVENT_JUMP != 1
+#if !defined(CONFIG_EVENT_CPULOOP) || !defined(CONFIG_EVENT_JUMP)
   #error Breakpoint- and jump-events needed! Enable aspects first (see AspectConfig.hpp)!
 #endif
 

@@ -1,10 +1,10 @@
 #ifndef __JUMP_TO_PREVIOUS_CTX_AH__
   #define __JUMP_TO_PREVIOUS_CTX_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
 #if 0
-// #if CONFIG_SR_RESTORE == 1 || CONFIG_SR_REBOOT == 1
+// #if defined(CONFIG_SR_RESTORE) || defined(CONFIG_SR_REBOOT)
 
 #include "bochs.h"
 #include "../SALInst.hpp"
@@ -28,6 +28,6 @@ aspect jumpToPreviousCtx
 	}
 };
 
-#endif // CONFIG_SR_RESTORE == 1 || CONFIG_SR_REBOOT
+#endif // CONFIG_SR_RESTORE || CONFIG_SR_REBOOT
 
 #endif // __JUMP_TO_PREVIOUS_CTX_AH__

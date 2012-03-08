@@ -1,0 +1,30 @@
+#ifndef __ASPECT_CONFIG_HPP__
+  #define __ASPECT_CONFIG_HPP__
+
+// #define / #undef the following configuration macros to enable/disable the
+// various event sources, fault injection sinks, and miscellaneous other
+// features.
+
+// Event sources
+#cmakedefine CONFIG_EVENT_CPULOOP
+#cmakedefine CONFIG_EVENT_MEMREAD
+#cmakedefine CONFIG_EVENT_MEMWRITE
+#cmakedefine CONFIG_EVENT_GUESTSYS
+#cmakedefine CONFIG_EVENT_INTERRUPT
+#cmakedefine CONFIG_EVENT_TRAP
+#cmakedefine CONFIG_EVENT_JUMP
+
+// Save/restore functionality
+#cmakedefine CONFIG_SR_RESTORE
+#cmakedefine CONFIG_SR_SAVE
+#cmakedefine CONFIG_SR_REBOOT
+
+// Miscellaneous
+#cmakedefine CONFIG_STFU
+#cmakedefine CONFIG_SUPPRESS_INTERRUPTS
+#cmakedefine CONFIG_DISABLE_KEYB_INTERRUPTS
+
+// Fault injection
+#cmakedefine CONFIG_FI_MEM_ACCESS_BITFLIP
+
+#endif /* __ASPECT_CONFIG_HPP__ */

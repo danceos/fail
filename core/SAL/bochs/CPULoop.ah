@@ -1,9 +1,9 @@
 #ifndef __CPU_LOOP_AH__
   #define __CPU_LOOP_AH__
 
-#include "../../AspectConfig.hpp"
+#include "config/AspectConfig.hpp"
 
-#if CONFIG_EVENT_CPULOOP == 1
+#ifdef CONFIG_EVENT_CPULOOP
 
 #include "../../../bochs/bochs.h" // for "BX_CPU_C"
 #include "../../../bochs/cpu/cpu.h" // for "bxInstruction_c"

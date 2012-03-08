@@ -97,14 +97,7 @@ Buildsystem:
    brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
    Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
    * Bochs / OVP sind Alternativen, nicht beide anschaltbar (?)
- - EXP*-options nur einmal in config/, nicht in drei verschiedenen Dateien
-   (config/CMakelists.txt, config/experiments.hpp.in,
-   experiments/CMakeLists.txt)
-   * Hinzufügen eines neuen Experiments konkreter dokumentieren (howto-build.txt?)
- - AspectConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
-   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
- - variant_config.h in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
-   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - Hinzufügen eines neuen Experiments konkreter dokumentieren (howto-build.txt?)
 
 Dokumentation:
  - Änderungen im Klassendiagramm nachziehen (hsc)
@@ -156,6 +149,13 @@ Dokumentation:
    -> siehe fail/experiments/coolchecksum/experiment.cc FIXME am Ende
    -> Lösung: Löschliste
    - ggf. zusammen mit Datenstruktur-Implementierungsdetails-TODO (s.u.) angehen
+ - AspectConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - variant_config.h in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - EXP*-options nur einmal in config/, nicht in drei verschiedenen Dateien
+   (config/CMakelists.txt, config/experiments.hpp.in,
+   experiments/CMakeLists.txt)
 
 ==================================
 Theorie TODO
