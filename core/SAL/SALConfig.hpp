@@ -4,7 +4,7 @@
 
 
 #include <stdint.h>
-#include "config/variant_config.h"
+#include "config/variant_config.hpp"
 
 #if defined BUILD_BOCHS
 

@@ -1,6 +1,6 @@
 #### Configuration file emitting BUILD_OVP/BOCHS defines ####
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/variant_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/variant_config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/variant_config.hpp.in
+               ${CMAKE_CURRENT_BINARY_DIR}/variant_config.hpp)
 
 OPTION(CONFIG_EVENT_CPULOOP             "Event source: Breakpoints" OFF)
 OPTION(CONFIG_EVENT_MEMREAD             "Event source: Memory reads" OFF)
