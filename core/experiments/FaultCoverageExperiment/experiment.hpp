@@ -10,16 +10,13 @@
 #define INST_ADDR_FUNC_START  0x4ae6		
 #define INST_ADDR_FUNC_END    0x4be6
 
-/*
-// Check if aspect dependencies are satisfied:
+// Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_TRAP) || \
     !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SR_SAVE)
-  #error At least one of the following aspect-dependencies are not satisfied: \
-         cpu loop, traps, save/restore. Enable aspects first (see AspectConfig.hpp)!
+  #error At least one of the following configuration dependencies are not satisfied: \
+         breakpoints, traps, save/restore. Enable these in the configuration.
 #endif
-//   This is disabled because the AspectConfig.hpp-header disables
-//   all aspects on default.
-*/
+
 using namespace fi;
 
 class FaultCoverageExperiment : public ExperimentFlow
