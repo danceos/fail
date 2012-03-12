@@ -298,4 +298,18 @@ make dwarf
 ===============
 Parallelization
 ===============
-FIXME
+FIXME more details
+
+Shell scripts supporting experiment distribution/parallelization
+----------------------------------------------------------------
+These can be found in fail/scripts/ (for now have a look at the script files
+themselves, they contain some documentation):
+ -  fail-env.sh -- Environment variables for distribution/parallelization host
+    lists etc.; don't modify in-place but edit your own copy!
+ -  distribute-experiment.sh -- Distribute necessary FailBochs ingredients to
+    experiment hosts
+ -  runcampaign.sh -- Locally run a campaign server, and a large amount of
+    clients on the experiment hosts
+ -  multiple-clients.sh -- Is run on an experiment host by runcampaign.sh,
+    starts several instances of client.sh in a tmux session
+ -  client.sh -- (Repeatedly) runs a single FailBochs instance
