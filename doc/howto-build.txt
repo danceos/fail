@@ -11,8 +11,9 @@ Additional libraries/packages/tools needed for Fail*:
 	cmake-curses-gui
 
 	AspectC++ (ag++, ac++) SVN
-	  (2012-01-25 or newer is known to work and can be obtained from
-          http://akut.aspectc.org/)
+	  (AspectC++ 1.1 or newer is known to work and can be obtained from
+	   http://www.aspectc.org ; nightlies can be downloaded from
+           http://akut.aspectc.org)
 
 For distribution/parallelization:
 	rsync
@@ -49,6 +50,8 @@ cmake ..
 > Select BUILD_BOCHS or BUILD_OVP
 > Select an experiment to enable by naming its experiments/ subdirectory under
 >   EXPERIMENTS_ACTIVATED
+> Configure Fail* features you need for this experiment by enabling CONFIG_*
+> options.
 > Press 'c', 'g' to regenerate the build system
 > (alternatively use "cmake-gui ." for a Qt GUI)
 ccmake .
@@ -57,12 +60,21 @@ ccmake .
 
 After changes to Fail* code
 ---------------------------
+> Prerequisite, if you're building with Bochs: configure Bochs (see below).
+>
 > Compile (optionally add -jN for parallel building)
 make
 
-> cmake will build all fail* libraries, merge them into 
-> a libfail.a and put it into failbochs/fail.
-> (as the current Bochs Makefile expects it there..)
+> cmake will build all Fail* libraries, merge them into a libfail.a and put it
+> into failbochs/fail.  (as the current Bochs Makefile expects it there..)
+
+> You may use scripts/rebuild-bochs.sh to speed up repetitive tasks regarding
+> Fail/Bochs builds.  This script contains a concise documentation on itself.
+
+Doxygen documentation
+---------------------
+make doc
+firefox core/doc/html/index.html
 
 Debug build
 -----------
@@ -71,8 +83,8 @@ ccmake .
 
 Add new (fail*) sources to build chain
 --------------------------------------
-To add new files to the build, see CMakeLists.txt in
-failbochs/fail, which is hopefully self explanatory. :)
+To add new files to the build, see CMakeLists.txt in fail/core, and probably
+consultate the CMake docs: http://cmake.org/cmake/help/documentation.html
 
 Add new user-defined experiment/campaign
 ----------------------------------------
@@ -218,13 +230,54 @@ hscsimple
 ---------
 A simple standalone experiment (without a separate campaign).
 
+1. Add "hscsimple" to ccmake's EXPERIMENTS_ACTIVATED.
+2. Enable CONFIG_EVENT_BREAKPOINTS, CONFIG_SR_RESTORE and CONFIG_SR_SAVE.
+3. Build Fail* and Bochs as described.
+4. Enter experiment_targets/hscsimple/, bunzip2 -k hello.img.bz2
+5. Run "bochs -q".  After successfully booting the eCos/hello world example,
+   the console shows "[HSC] breakpoint reached, saving", and a hello.state/
+   subdirectory appears.
+   - You probably need to adjust the bochsrc's paths to romimage/vgaromimage.
+     These by default point to the locations installed by the Debian packages
+     "bochsbios" and "vgabios"; for example, you alternatively may use the
+   BIOSes supplied in fail/bochs/bios/.
+6. Compile the experiment's second step: edit
+   fail/core/experiments/hscsimple/experiment.cc, and change the first "#if 1"
+   into "#if 0".  Make an incremental build, e.g., by running
+   "fail/scripts/rebuild-bochs.sh -".
+7. Back to experiment_targets/hscsimple/, run "bochs -q".  After restoring the
+   state, the hello world program's calculation should yield a different
+   result.
+
+coolchecksum
+------------
+An example for separate campaign/experiment implementations.
+
+1. Run step #1 (and if you're curious how COOL_ECC_NUMINSTR in
+   experimentInfo.hpp was figured out, then step #2) of the experiment
+   (analogous to what needed to be done in case of the hscsimple experiment,
+   see above).  The experiment's target guest system can be found under
+   experiment_targets/coolchecksum/.
+   (If you want to enable COOL_FAULTSPACE_PRUNING, step #2 is mandatory because
+   it generates the instruction/memory access trace needed for pruning.)
+2. Build the campaign server: make coolchecksum-server
+3. Run the campaign server: bin/coolchecksum-server
+4. In another terminal, run step #3 of the experiment ("bochs -q").
+
+Step #3 of the experiment currently runs 2000 experiment iterations and then
+terminates, because Bochs has some memory leak issues.  You need to re-run
+Bochs for the next 2k experiments.
+
+The experiments can be significantly sped up by a) parallelization (run more
+FailBochs clients; TODO document fail/scripts/* stuff) and b) a headless (and
+more optimized) FailBochs configuration (see above).
+
 MHTestCampaign
 --------------
 An example for separate campaign/experiment implementations.
 
 1. execute Campaign (job server):
- <your_build_dir>/core/experiments/MHTestCampaign/mhcampaign
-
+ <your_build_dir>/bin/MHTestCampaign-server
 2. run the FailBochs instance, in properly defined environment:
  bochs
 
@@ -241,3 +294,8 @@ cmake {path to fail dir}
 
 make dwarf
 ./tests/dwarf main.elf
+
+===============
+Parallelization
+===============
+FIXME
