@@ -51,8 +51,9 @@ class BochsController : public SimulatorController
 		 * Standard Event Handler API (SEH-API):
 		 * ********************************************************************/
 		/**
-		 * Instruction pointer modification handler. This method is called (from
-		 * the CPULoop aspect) every time when the Bochs-internal IP changes.
+		 * Instruction pointer modification handler. This method is called
+		 * (from the Breakpoints aspect) every time when the Bochs-internal IP
+		 * changes.
 		 * @param instrPtr
 		 */
 		void onInstrPtrChanged(address_t instrPtr);

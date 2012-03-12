@@ -1,15 +1,15 @@
-#ifndef __CPU_LOOP_AH__
-  #define __CPU_LOOP_AH__
+#ifndef __BREAKPOINTS_AH__
+  #define __BREAKPOINTS_AH__
 
 #include "config/AspectConfig.hpp"
 
-#ifdef CONFIG_EVENT_CPULOOP
+#ifdef CONFIG_EVENT_BREAKPOINTS
 
 #include "../../../bochs/bochs.h" // for "BX_CPU_C"
 #include "../../../bochs/cpu/cpu.h" // for "bxInstruction_c"
 #include "../SALInst.hpp"
 
-aspect CPULoop
+aspect Breakpoints
 {
 	pointcut cpuLoop() = "void defineCPULoopJoinPoint(...)";
 
@@ -30,6 +30,6 @@ aspect CPULoop
 	}
 };
 
-#endif // CONFIG_EVENT_CPULOOP
+#endif
 
-#endif /* __CPU_LOOP_AH__ */
+#endif

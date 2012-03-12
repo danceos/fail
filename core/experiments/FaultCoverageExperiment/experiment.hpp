@@ -12,7 +12,7 @@
 
 /*
 // Check if aspect dependencies are satisfied:
-#if !defined(CONFIG_EVENT_CPULOOP) || !defined(CONFIG_EVENT_TRAP) || \
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_TRAP) || \
     !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SR_SAVE)
   #error At least one of the following aspect-dependencies are not satisfied: \
          cpu loop, traps, save/restore. Enable aspects first (see AspectConfig.hpp)!

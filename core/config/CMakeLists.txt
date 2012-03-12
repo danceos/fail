@@ -2,7 +2,7 @@
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/variant_config.hpp.in
                ${CMAKE_CURRENT_BINARY_DIR}/variant_config.hpp)
 
-OPTION(CONFIG_EVENT_CPULOOP             "Event source: Breakpoints" OFF)
+OPTION(CONFIG_EVENT_BREAKPOINTS         "Event source: Breakpoints" OFF)
 OPTION(CONFIG_EVENT_MEMREAD             "Event source: Memory reads" OFF)
 OPTION(CONFIG_EVENT_MEMWRITE            "Event source: Memory writes" OFF)
 OPTION(CONFIG_EVENT_GUESTSYS            "Event source: Outbound guest-system communication" OFF)

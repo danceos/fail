@@ -6,7 +6,7 @@
 // features.
 
 // Event sources
-#cmakedefine CONFIG_EVENT_CPULOOP
+#cmakedefine CONFIG_EVENT_BREAKPOINTS
 #cmakedefine CONFIG_EVENT_MEMREAD
 #cmakedefine CONFIG_EVENT_MEMWRITE
 #cmakedefine CONFIG_EVENT_GUESTSYS
