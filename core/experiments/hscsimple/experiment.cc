@@ -34,7 +34,7 @@ bool hscsimpleExperiment::run()
 #else
 	int reg = sal::RID_EAX;
 #endif
-	sal::simulator.getRegisterManager().getSetOfType(sal::RT_GP).getRegister(reg)->setData(666);
+	sal::simulator.getRegisterManager().getRegister(reg)->setData(666);
 	cout << "[HSC] waiting for last main() instruction" << endl;
 	breakpoint.setWatchInstructionPointer(0x3c92);
 	sal::simulator.addEventAndWait(&breakpoint);

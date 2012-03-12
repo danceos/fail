@@ -123,7 +123,7 @@ bool CoolChecksumExperiment::run()
 
 	fi::BaseEvent* ev = sal::simulator.waitAny();
 	if (ev == &ev_done) {
-		int32_t data = sal::simulator.getRegisterManager().getSetOfType(sal::RT_GP).getRegister(targetreg)->getData();
+		int32_t data = sal::simulator.getRegisterManager().getRegister(targetreg)->getData();
 		log << std::dec << "Result EDX = " << data << endl;
 		param.msg.set_resulttype(CoolChecksumProtoMsg_ResultType_CALCDONE);
 		param.msg.set_resultdata(data);
