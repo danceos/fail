@@ -42,11 +42,11 @@ class CampaignManager
     }
     
     /**
-     * Returns a const reference for acquiring constant simlator specific information.
+     * Returns a const reference for acquiring constant simulator specific information.
      * e.g., Registernames, to ease experiment data construction.
      * The campaign description is not allowed to change the simulator
      * state, as the actual simulation runs within another process (Minion) 
-     * @return c constant reference to the current simulator backend.
+     * @return constant reference to the current simulator backend.
      */
     sal::SimulatorController const& getSimulator() const { return sal::simulator; };
 
@@ -57,12 +57,13 @@ class CampaignManager
      * A Parameter set includes space for results.
      * @param exp A pointer to a ExperimentData set.
      */
-    void addParam(ExperimentData* exp){ m_jobserver.addParam(exp); };
+    void addParam(ExperimentData* exp) { m_jobserver.addParam(exp); };
     
     /**
      * A user campaign can request a single result (blocking) from the queue.
      * 
-     * @return Pointer to a parameter object with filled result data @see addParam. 
+     * @return Pointer to a parameter object with filled result data
+     * @see addParam. 
      */
     ExperimentData* getDone() { return m_jobserver.getDone(); };
     
@@ -77,7 +78,7 @@ class CampaignManager
    // void waitForCompletion();
   
      /**
-     * User campaign has finished..
+     * User campaign has finished.
      */
     void done() { m_jobserver.done(); };
    

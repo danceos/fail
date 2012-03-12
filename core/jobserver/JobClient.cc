@@ -39,11 +39,11 @@ bool JobClient::connectToServer(){
 }
 
 bool JobClient::getParam(ExperimentData& exp){
-		while(1) { //!< Here we try to acquire a parameter set
+		while(1) { // Here we try to acquire a parameter set
 			switch(tryToGetExperimentData(exp)){
-			  //!< Jobserver will sent workload, params are set in \c exp
+			  // Jobserver will sent workload, params are set in \c exp
 			case FailControlMessage_Command_WORK_FOLLOWS: return true;
-			  //!< Nothing to do right now, but maybe later
+			  // Nothing to do right now, but maybe later
 			case FailControlMessage_Command_COME_AGAIN:
 				sleep(1);
 				continue;
@@ -54,7 +54,7 @@ bool JobClient::getParam(ExperimentData& exp){
 }
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
-    //!< Connection failed, minion can die
+    // Connection failed, minion can die
     if( !connectToServer() ) return FailControlMessage_Command_DIE;
     
     // Retrieve ExperimentData

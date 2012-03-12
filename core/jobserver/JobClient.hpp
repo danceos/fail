@@ -39,17 +39,17 @@ namespace fi {
   * allocating his ExperimentData object.
   * 
   * @param exp Reference to a ExperimentData object allocated by the caller!
-  * @result \c true if parameter have been received and put into \c exp, \c false else.
+  * @return \c true if parameter have been received and put into \c exp, \c false else.
   */
     bool getParam(ExperimentData& exp);
 
  /**
-  * Send back experiment result to the  (remote) JobServer
+  * Send back experiment result to the (remote) JobServer
   * The caller (experiment developer) is responsible for
   * destroying his ExperimentData object afterwards.
   * 
-  * @param exp Reference to the ExperimentData holding result values
-  * @return \c true Result successfully sent, \c else. 
+  * @param result Reference to the ExperimentData holding result values
+  * @return \c true Result successfully sent, \c false else. 
   */
     bool sendResult(ExperimentData& result);
 
