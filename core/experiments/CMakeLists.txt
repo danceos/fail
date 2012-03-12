@@ -1,5 +1,5 @@
 # Note that we're allowing *multiple* experiments to be enabled at once.
-set(EXPERIMENTS_ACTIVATED coolchecksum CACHE STRING "Activated experiments (a semicolon-separated list of fail/experiments/ subdirectories)")
+set(EXPERIMENTS_ACTIVATED "" CACHE STRING "Activated experiments (a semicolon-separated list of fail/experiments/ subdirectories)")
 
 foreach(experiment_name ${EXPERIMENTS_ACTIVATED})
     add_subdirectory(${experiment_name})
