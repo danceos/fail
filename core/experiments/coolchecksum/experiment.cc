@@ -11,6 +11,7 @@
 #include "SAL/Memory.hpp"
 #include "SAL/bochs/BochsRegister.hpp"
 #include "controller/Event.hpp"
+#include "config/AspectConfig.hpp"
 
 #if COOL_FAULTSPACE_PRUNING
 #include "plugins/tracing/TracingPlugin.hpp"
@@ -19,6 +20,13 @@
 #include "coolchecksum.pb.h"
 
 using std::endl;
+
+// Check if configuration dependencies are satisfied:
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
+    !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) || \
+    !defined(CONFIG_EVENT_TRAP)
+  #error This experiment needs: breakpoints, suppressed-interrupts, traps, save, and restore. Enable these in the configuration.
+#endif
 
 bool CoolChecksumExperiment::run()
 {
