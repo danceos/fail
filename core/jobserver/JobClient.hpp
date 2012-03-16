@@ -8,8 +8,12 @@
 #ifndef __JOB_CLIENT_H__
 #define __JOB_CLIENT_H__
 
-#include "SocketComm.hpp"
 #include <string>
+#include <ctime>
+#include <stdlib.h>
+#include <unistd.h>
+#include <iostream>
+#include "SocketComm.hpp"
 #include "controller/ExperimentData.hpp"
 #include "jobserver/messagedefs/FailControlMessage.pb.h"
 

@@ -1,40 +1,56 @@
 #include "JobClient.hpp"
+
+
 namespace fi {
 
 JobClient::JobClient(std::string server, int port)
 {
-    m_server_port = port;
-    m_server = server;
-    m_server_ent = gethostbyname(m_server.c_str());
-    if(m_server_ent == NULL){
-	  perror("Cannot resolve host.");
-	  exit(1);
-    }
+	m_server_port = port;
+	m_server = server;
+	m_server_ent = gethostbyname(m_server.c_str());
+	if(m_server_ent == NULL) {
+		perror("[Client@gethostbyname()]");
+		exit(1);
+	}
+	srand(time(NULL));
 }
 
-bool JobClient::connectToServer(){
-    // Connect to server
-    struct sockaddr_in serv_addr;
-    m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(m_sockfd < 0){
-	  perror("socket");
-	  exit(0);
-    }
+bool JobClient::connectToServer()
+{
+	// Connect to server
+	struct sockaddr_in serv_addr;
+	m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(m_sockfd < 0) {
+		perror("[Client@socket()]");
+		exit(0);
+	}
+
 	/* Enable address reuse */
 	int on = 1;
 	setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
-    serv_addr.sin_port = htons(m_server_port);
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
+	serv_addr.sin_port = htons(m_server_port);
 	
-    if (connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-		perror("connect()");
-		return false;
-    }
+    int retries = 3;
+    while(true) {
+		if(connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+			perror("[Client@connect()]");
+			if(retries > 0) {
+				int delay = rand() % 5 + 3;
+				cout << "[Client] Retrying to connect to server in " << delay << "s..." << endl;
+				sleep(delay);
+				--retries;
+				continue;
+			}
+			return false; // finally: unable to connect, give it up :-(
+		}
+		break; // connected! :-)
+	}
+	cout << "[Client] Connected established!" << endl;
 
-     
     return true;
 }
 
@@ -89,7 +105,7 @@ bool JobClient::sendResult(ExperimentData& result)
     ctrlmsg.set_command(FailControlMessage_Command_RESULT_FOLLOWS);
     ctrlmsg.set_build_id(42);
     ctrlmsg.set_workloadid(result.getWorkloadID());	
-    cout << "Sending back result [" << std::dec << result.getWorkloadID() << "]"  << endl;
+    cout << "[Client] Sending back result [" << std::dec << result.getWorkloadID() << "]..."  << endl;
     SocketComm::send_msg(m_sockfd, ctrlmsg);
     SocketComm::send_msg(m_sockfd, result.getMessage());
     // close connection.
