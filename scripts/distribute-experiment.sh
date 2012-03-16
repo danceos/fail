@@ -27,8 +27,10 @@ if [ -n "$1" ]; then cd "$1"; fi
 [ ! -e multiple-clients.sh ] && cp -v $SCRIPTDIR/multiple-clients.sh .
 
 # add bochs binary if it doesn't exist
-if [ ! -e bochs ]
+if [ -e bochs ]
 then
+	echo 'Info: Using local "bochs" binary.' >&2
+else
 	cp -v $(which bochs) .
 	strip bochs
 fi
