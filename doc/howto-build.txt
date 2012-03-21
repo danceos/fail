@@ -233,7 +233,7 @@ A simple standalone experiment (without a separate campaign).
 1. Add "hscsimple" to ccmake's EXPERIMENTS_ACTIVATED.
 2. Enable CONFIG_EVENT_BREAKPOINTS, CONFIG_SR_RESTORE and CONFIG_SR_SAVE.
 3. Build Fail* and Bochs as described.
-4. Enter experiment_targets/hscsimple/, bunzip2 -k hello.img.bz2
+4. Enter experiment_targets/hscsimple/, bunzip2 -k *.bz2
 5. Run "bochs -q".  After successfully booting the eCos/hello world example,
    the console shows "[HSC] breakpoint reached, saving", and a hello.state/
    subdirectory appears.
