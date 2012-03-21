@@ -23,9 +23,7 @@ elseif(${COMPILER} STREQUAL "ag++")
   add_definitions("-p ${CMAKE_SOURCE_DIR} --real-instances --Xcompiler" )
 
 else(${COMPILER} STREQUAL "clang")
-  set(CMAKE_C_COMPILER "gcc")
-  set(CMAKE_CXX_COMPILER "g++")
-
+  message(FATAL_ERROR "COMPILER must be exactly one of clang/gcc/ag++.  If unsure, use 'ag++'.")
 endif(${COMPILER} STREQUAL "clang")
 
 message(STATUS "[${PROJECT_NAME}] Compiler: ${CMAKE_C_COMPILER}/${CMAKE_CXX_COMPILER}" )
