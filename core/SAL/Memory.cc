@@ -8,5 +8,5 @@
 
 namespace sal
 {
-	const guest_address_t ADDR_INV = NULL;
+	const guest_address_t ADDR_INV = 0;
 }
