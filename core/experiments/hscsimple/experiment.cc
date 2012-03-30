@@ -24,33 +24,27 @@ bool hscsimpleExperiment::run()
 	// do funny things here...
 #if 1
     // STEP 1
-	fi::BPEvent mainbp(0x00003c34);
-	sal::simulator.addEventAndWait(&mainbp);
-	log << "breakpoint reached, saving" << endl;
-	sal::simulator.save("hello.state");
+    //sal::simulator.dbgEnableInstrPtrOutput(500);
+    while(1){
+		int j = 0;
+		for(j=0 ; j<=50 ; j++){
+			cout << "durch" << endl;
+			fi::BPEvent mainbp(0x1045f5);
+			//fi::BPEvent mainbp(0x105bfa);
+			sal::simulator.addEventAndWait(&mainbp);
+		}
+	
+		int i;
+		for(i=0 ; i<= 0 ; i++){
+			cout << "Interrupt wird ausgeloest" << endl;
+			//sleep(1);
+			sal::simulator.fireInterrupt(9);
+		}
+	}
 #elif 1
     // STEP 2
-	log << "restoring ..." << endl;
-	sal::simulator.restore("hello.state");
-	log << "restored!" << endl;
+	sal::simulator.dbgEnableInstrPtrOutput(500);
 
-	log << "waiting for last square() instruction" << endl;
-	fi::BPEvent breakpoint(0x3c9e); // square(x) ret instruction
-	sal::simulator.addEventAndWait(&breakpoint);
-	log << "injecting hellish fault" << endl;
-#if BX_SUPPORT_X86_64
-	int reg = sal::RID_RAX;
-#else
-	int reg = sal::RID_EAX;
-#endif
-	sal::simulator.getRegisterManager().getRegister(reg)->setData(666);
-	log << "waiting for last main() instruction" << endl;
-	breakpoint.setWatchInstructionPointer(0x3c92);
-	sal::simulator.addEventAndWait(&breakpoint);
-
-	log << "reached" << endl;
-
-	sal::simulator.addEventAndWait(&breakpoint);
 #endif
 	
 	return true;
