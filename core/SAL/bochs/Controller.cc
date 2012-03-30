@@ -9,6 +9,8 @@ namespace sal
 bx_bool restore_bochs_request = false;
 bx_bool save_bochs_request = false;
 bx_bool reboot_bochs_request = false;
+bx_bool interrupt_injection_request = false;
+unsigned interrupt_to_fire = 0;
 std::string  sr_path = "";
 
 BochsController::BochsController()
@@ -174,6 +176,20 @@ void BochsController::terminate(int exCode)
 	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
 	// TODO: (Non-)Verbose-Mode?
 	exit(exCode);
+}
+
+void BochsController::fireInterrupt(unsigned irq)
+{
+	interrupt_injection_request = true;
+	interrupt_to_fire = irq;
+	m_CurrFlow = m_Flows.getCurrent();
+	m_Flows.resume();
+}
+
+void BochsController::fireInterruptDone()
+{
+	interrupt_injection_request = false;
+	m_Flows.toggle(m_CurrFlow);
 }
 
 } // end-of-namespace: sal

@@ -14,6 +14,7 @@ OPTION(CONFIG_SR_SAVE                   "Target backend: State saving" OFF)
 OPTION(CONFIG_SR_REBOOT                 "Target backend: Reboot" OFF)
 OPTION(CONFIG_STFU                      "Misc: Reduced verbosity" OFF)
 OPTION(CONFIG_SUPPRESS_INTERRUPTS       "Target backend: Suppress interrupts" OFF)
+OPTION(CONFIG_FIRE_INTERRUPTS           "Target backend: Fire interrupts" OFF)
 OPTION(CONFIG_DISABLE_KEYB_INTERRUPTS   "Target backend: Suppress keyboard interrupts" OFF)
 OPTION(CONFIG_FI_MEM_ACCESS_BITFLIP     "deprecated something" OFF)
 

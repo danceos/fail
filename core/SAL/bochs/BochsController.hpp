@@ -18,6 +18,7 @@
 #include "../../../bochs/bochs.h"
 #include "../../../bochs/cpu/cpu.h"
 #include "../../../bochs/config.h"
+#include "../../../bochs/iodev/iodev.h"
 
 using namespace std;
 
@@ -91,6 +92,15 @@ class BochsController : public SimulatorController
 		 * @param exCode Individual exit code
 		 */
 		void terminate(int exCode = EXIT_SUCCESS);
+		/**
+		 * Fire an interrupt.
+		 * @param irq Interrupt to be fired
+		 */
+		void fireInterrupt(unsigned irq);
+		/**
+		 * Fire done: Callback from Simulator 
+		 */
+		void fireInterruptDone();
 	  #ifdef DEBUG
 		/**
 		 * Enables instruction pointer debugging output.

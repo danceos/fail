@@ -22,6 +22,7 @@
 // Miscellaneous
 #cmakedefine CONFIG_STFU
 #cmakedefine CONFIG_SUPPRESS_INTERRUPTS
+#cmakedefine CONFIG_FIRE_INTERRUPTS
 #cmakedefine CONFIG_DISABLE_KEYB_INTERRUPTS
 
 // Fault injection
