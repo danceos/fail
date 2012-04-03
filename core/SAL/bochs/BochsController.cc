@@ -170,14 +170,6 @@ void BochsController::rebootDone()
 	m_Flows.toggle(m_CurrFlow);
 }
 
-void BochsController::terminate(int exCode)
-{
-	// Attention: This could cause Problems, e.g. because of non-closed sockets
-	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
-	// TODO: (Non-)Verbose-Mode?
-	exit(exCode);
-}
-
 void BochsController::fireInterrupt(unsigned irq)
 {
 	interrupt_injection_request = true;

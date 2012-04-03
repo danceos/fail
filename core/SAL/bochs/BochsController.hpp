@@ -8,7 +8,6 @@
 #include <iostream>
 #include <iomanip>
 #include <string.h>
-#include <stdlib.h>
 
 #include "failbochs.hpp"
 
@@ -87,11 +86,6 @@ class BochsController : public SimulatorController
 		 * Reboot finished: Callback from Simulator
 		 */
 		void rebootDone();
-		/**
-		 * Terminate simulator
-		 * @param exCode Individual exit code
-		 */
-		void terminate(int exCode = EXIT_SUCCESS);
 		/**
 		 * Fire an interrupt.
 		 * @param irq Interrupt to be fired

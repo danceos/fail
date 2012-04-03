@@ -282,4 +282,12 @@ T* SimulatorController::getExperimentData()
 	return (concreteExpDat);
 }
 
+void SimulatorController::terminate(int exCode)
+{
+	// Attention: This could cause problems, e.g., because of non-closed sockets
+	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
+	// TODO: (Non-)Verbose-Mode?
+	exit(exCode);
+}
+
 } // end-of-namespace: sal

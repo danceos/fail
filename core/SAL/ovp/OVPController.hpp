@@ -66,11 +66,6 @@ class OVPController : public SimulatorController
 		 * @return the current eip
 		 */
 
-		/**
-		 * Terminate simulator
-		 */
-		 virtual void terminate(int exCode = EXIT_SUCCESS);
-
 		 virtual void fireTimer(uint32_t);		 
 
 		 void makeGPRegister(int, void*, const string&);

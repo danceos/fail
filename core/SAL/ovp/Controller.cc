@@ -127,10 +127,6 @@ void OVPController::toPreviousCtx()
 	// TODO
 }
 
-void OVPController::terminate(int exCode){
-
-}
-
 
 void OVPController::fireTimer(uint32_t){
 

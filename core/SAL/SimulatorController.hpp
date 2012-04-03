@@ -139,7 +139,7 @@ class SimulatorController
 		 * Terminate simulator
 		 * @param exCode Individual exit code
 		 */
-		virtual void terminate(int exCode = EXIT_SUCCESS) = 0;
+		virtual void terminate(int exCode = EXIT_SUCCESS);
 		/**
 		 * Check whether the interrupt should be suppressed.
 		 * @param interruptNum the interrupt-type id
