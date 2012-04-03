@@ -96,18 +96,6 @@ BaseEvent* EventList::getEventFromId(EventId id)
 	return (NULL); // Nothing found.
 }
 
-void EventList::makeActive(BaseEvent* ev)
-{
-	assert(ev && "FATAL ERROR: Event object pointer cannot be NULL!");
-	ev->decreaseCounter();
-	if (ev->getCounter() > 0) {
-		return;
-	}
-	ev->resetCounter();
-	if(remove(ev)) // remove event from buffer-list
-		m_FireList.push_back(ev);
-}
-
 EventList::iterator EventList::makeActive(iterator it)
 {
 	assert(it != m_BufferList.end() &&

@@ -163,16 +163,9 @@ class EventList
 		 */
 		ExperimentFlow* getExperimentOf(BaseEvent* pEv);
 		/**
-		 * Moves the events from the (internal) buffer-list to the fire-list. To
-		 * actually fire the events activated by calling makeActive(), call
-		 * fireActiveEvents().
-		 * @param ev the event to trigger
-		 * TODO: besserer Name statt "makeActive"?
-		 */
-		void makeActive(BaseEvent* ev);
-		/**
-		 * Behaves like makeActive(BaseEvent) and additionally returns an
-		 * updated iterator which points to the next BaseEvent-element.
+		 * Moves the events from the (internal) buffer-list to the fire-list.
+		 * To actually fire the events, call fireActiveEvents().
+		 * Returns an updated iterator which points to the next element.
 		 * @param ev the event to trigger
 		 * @return returns the updated iteration, pointing to the next element
 		 *         after makeActive returns, "it" is invalid, so the returned
