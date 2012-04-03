@@ -175,8 +175,6 @@ void SimulatorController::onTrapEvent(unsigned trapNum)
 
 void SimulatorController::onGuestSystemEvent(char data, unsigned port)
 {
-	// TODO: Eher ein Entwurf...
-
 	fi::EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
