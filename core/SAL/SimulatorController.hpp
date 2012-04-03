@@ -214,10 +214,10 @@ class SimulatorController
 		 */
 		void removeEvent(fi::BaseEvent* ev) { m_EvList.remove(ev); }
 		/**
-		 * Removes all previously added events for all experiments. This is
-		 * equal to removeEvent(NULL);
+		 * Removes all previously added events for all experiments.  To
+		 * restrict this to a specific experiment flow, pass a pointer to it.
 		 */
-		void clearEvents() { removeEvent(NULL); }
+		void clearEvents(fi::ExperimentFlow *flow = 0) { m_EvList.remove(flow); }
 		/**
 		 * Waits on any events which have been added to the event management. If
 		 * one of those events occour, waitAny() will return the id of that
@@ -233,12 +233,6 @@ class SimulatorController
 		 *         this pointer will be equal to ev)
 		 */
 		fi::BaseEvent* addEventAndWait(fi::BaseEvent* ev);
-		/**
-		 * Removes all residual events associated with the specified experiment
-		 * flow \a pExp.
-		 * @param pExp the experiment whose events should be removed
-		 */
-		void cleanup(fi::ExperimentFlow* pExp);
 		/**
 		 * Fetches data for the experiments from the Job-Server. 
 		 * @return the Experiment-Data from the Job-Server.

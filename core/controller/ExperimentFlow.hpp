@@ -32,7 +32,7 @@ class ExperimentFlow
 		void coroutine_entry()
 		{
 			run();
-			sal::simulator.cleanup(this); // remove residual events
+			sal::simulator.clearEvents(this); // remove residual events
 		}
 };
 

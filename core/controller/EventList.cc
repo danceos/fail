@@ -51,14 +51,34 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 	return (m_BufferList.erase(it));
 }
 
-void EventList::getEventsOf(ExperimentFlow* pWhat,
-							std::vector<BaseEvent*>& dest) const
+void EventList::remove(ExperimentFlow* flow)
 {
-	assert(pWhat && "FATAL ERROR: The context cannot be NULL!");
-	for(bufferlist_t::const_iterator it = m_BufferList.begin();
-	    it != m_BufferList.end(); it++)
-		if((*it)->getParent() == pWhat)
-			dest.push_back(*it);
+	// all events?
+	if (flow == 0) {
+		m_BufferList.clear();
+	} else {
+		for (bufferlist_t::iterator it = m_BufferList.begin();
+		     it != m_BufferList.end(); ) {
+			if ((*it)->getParent() == flow) {
+				it = m_BufferList.erase(it);
+			} else {
+				++it;
+			}
+		}
+	}
+	// events that just fired / are about to fire ...
+	for (firelist_t::const_iterator it = m_FireList.begin();
+		 it != m_FireList.end(); it++) {
+		if (std::find(m_DeleteList.begin(), m_DeleteList.end(), *it)
+		    != m_DeleteList.end()) {
+			continue;
+		}
+		// ... need to be pushed into m_DeleteList, as we're currently
+		// iterating over m_FireList in fireActiveEvents() and cannot modify it
+		if (flow == 0 || (*it)->getParent() == flow) {
+			m_DeleteList.push_back(*it);
+		}
+	}
 }
 
 EventList::~EventList()

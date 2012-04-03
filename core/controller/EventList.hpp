@@ -130,15 +130,10 @@ class EventList
 		 */
 		BaseEvent* getEventFromId(EventId id);
 		/**
-		 * Retrieves all events for the specified experiment.
-		 * @param pWhat pointer to experiment context (this pointer is expected
-		 *        to be valid!)
-		 * @param dest a reference to a vector-object to be used as the
-		 *        destination buffer for the machting event objects. This
-		 *        objects may remains unchanged if no matching event objects
-		 *        were found.
+		 * Removes all events for the specified experiment.
+		 * @param flow pointer to experiment context (0 = all experiments)
 		 */
-		void getEventsOf(ExperimentFlow* pWhat, std::vector<BaseEvent*>& dest) const;
+		void remove(ExperimentFlow* flow);
 		/**
 		 * Retrieves the number of experiments which currently have active
 		 * events. This number is trivially equal to the (current) total

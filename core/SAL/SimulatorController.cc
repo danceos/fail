@@ -210,15 +210,6 @@ void SimulatorController::onJumpEvent(bool flagTriggered, unsigned opcode)
 	m_EvList.fireActiveEvents();
 }
 
-void SimulatorController::cleanup(fi::ExperimentFlow* pExp)
-{
-	// remove related events:
-	std::vector<fi::BaseEvent*> evlist;
-	m_EvList.getEventsOf(pExp, evlist);
-	for(size_t i = 0; i < evlist.size(); i++)
-		m_EvList.remove(evlist[i]);
-}
-
 void SimulatorController::addFlow(fi::ExperimentFlow* flow)
 {
 	// Store the (flow,corohandle)-tuple internally and create its coroutine:
@@ -230,7 +221,7 @@ void SimulatorController::addFlow(fi::ExperimentFlow* flow)
 void SimulatorController::removeFlow(fi::ExperimentFlow* flow)
 {
 	// remove all remaining events of this flow
-	cleanup(flow);
+	clearEvents(flow);
 	// remove coroutine
 	m_Flows.remove(flow);
 }
