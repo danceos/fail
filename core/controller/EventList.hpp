@@ -82,10 +82,8 @@ class EventList
 		 * @param ev the pointer of the event to be removed; if ev is set to
 		 *        \c NULL, all events (for \a all experiments) will be
 		 *        removed
-		 * @return \c true if the object has been removed or \c false if the
-		 *         pointer could not be found
 		 */
-		bool remove(BaseEvent* ev);
+		void remove(BaseEvent* ev);
 		/**
 		 * Behaves like remove(BaseEvent) and additionally updates the provided
 		 * iteration.

@@ -16,27 +16,28 @@ EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 	return (ev->getId());
 }
 
-bool EventList::remove(BaseEvent* ev)
+void EventList::remove(BaseEvent* ev)
 {
-	if(ev != NULL)
-	{
-		iterator it = std::find(m_BufferList.begin(), m_BufferList.end(), ev);
-		if(it != end())
-		{
-			m_BufferList.erase(it);
+	// possible cases:
+	// - ev == 0 -> remove all events
+	//   * clear m_BufferList
+	//   * copy m_FireList to m_DeleteList
+	if (ev == 0) {
+		m_BufferList.clear();
+		// all remaining active events must not fire anymore
+		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
+
+	// - ev != 0 -> remove single event
+	//   * find/remove ev in m_BufferList
+	//   * if ev in m_FireList, copy to m_DeleteList
+	} else {
+		m_BufferList.remove(ev);
+		firelist_t::const_iterator it =
+			std::find(m_FireList.begin(), m_FireList.end(), ev);
+		if (it != m_FireList.end()) {
 			m_DeleteList.push_back(ev);
-			return (true);
 		}
 	}
-	else
-	{
-		for(iterator it = m_BufferList.begin(); it != m_BufferList.end();
-			it++)
-			m_DeleteList.push_back(*it);
-		m_BufferList.clear();
-		return (true);
-	}
-	return (false);
 }
 
 EventList::iterator EventList::remove(iterator it)
