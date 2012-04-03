@@ -62,26 +62,27 @@ class SimulatorController
 			: m_Regs(regs), m_Mem(mem) { }
 		virtual ~SimulatorController() { }
 		/**
-		 * @brief Global startup function each implementation needs to call
-		 *        on startup
-		 * This static function needs to be invoked once the simulator starts,
-		 * and allows the SimulatorController's member startup() to instantiate
-		 * all needed experiment components.
+		 * @brief Initialization function each implementation needs to call on
+		 *        startup
+		 *
+		 * This function needs to be invoked once the simulator starts, and
+		 * allows the SimulatorController to instantiate all needed experiment
+		 * components.
 		 */
-		virtual void startup();
+		void startup();
 		/**
 		 * Experiments need to hook here.
 		 */
-		static void initExperiments();
+		void initExperiments();
 		/* ********************************************************************
-		 * Standard Event Handler API (SEH-API):
+		 * Standard Event Handler API
 		 * ********************************************************************/
 		/**
 		 * Breakpoint event handler. This routine needs to be called in the
 		 * simulator specific backend each time a breakpoint event occurs.
 		 * @param instrPtr the instruction pointer of the breakpoint event
 		 */
-		virtual void onBreakpointEvent(address_t instrPtr);
+		void onBreakpointEvent(address_t instrPtr);
 		/**
 		 * Memory access event handler (read/write).
 		 * @param addr the accessed memory address
@@ -92,32 +93,32 @@ class SimulatorController
 		 * 
 		 * FIXME: should instrPtr be part of this interface?
 		 */
-		virtual void onMemoryAccessEvent(address_t addr, size_t len,
-										 bool is_write, address_t instrPtr);
+		void onMemoryAccessEvent(address_t addr, size_t len,
+								 bool is_write, address_t instrPtr);
 		/**
 		 * Interrupt event handler.
 		 * @param interruptNum the interrupt-type id
 		 * @param nmi nmi-value from guest-system
 		 */
-		virtual void onInterruptEvent(unsigned interruptNum, bool nmi);
+		void onInterruptEvent(unsigned interruptNum, bool nmi);
 		/**
 		 * Trap event handler.
 		 * @param trapNum the trap-type id
 		 */
-		virtual void onTrapEvent(unsigned trapNum);
+		void onTrapEvent(unsigned trapNum);
 		/**
 		 * Guest system communication handler.
 		 * @param data the "message" from the guest system
 		 * @param port the port of the event
 		 */
-		virtual void onGuestSystemEvent(char data, unsigned port);
+		void onGuestSystemEvent(char data, unsigned port);
 		/**
 		 * (Conditional) Jump-instruction handler.
 		 * @param flagTriggered \c true if the jump was triggered due to a
 		 *        specific FLAG (zero/carry/sign/overflow/parity flag)
 		 * @param opcode the opcode of the conrecete jump instruction
 		 */
-		virtual void onJumpEvent(bool flagTriggered, unsigned opcode);
+		void onJumpEvent(bool flagTriggered, unsigned opcode);
 		/* ********************************************************************
 		 * Simulator Controller & Access API (SCA-API):
 		 * ********************************************************************/
@@ -139,27 +140,27 @@ class SimulatorController
 		 * Terminate simulator
 		 * @param exCode Individual exit code
 		 */
-		virtual void terminate(int exCode = EXIT_SUCCESS);
+		void terminate(int exCode = EXIT_SUCCESS);
 		/**
 		 * Check whether the interrupt should be suppressed.
 		 * @param interruptNum the interrupt-type id
 		 * @return \c true if the interrupt is suppressed, \c false oterwise
 		 */
-		virtual bool isSuppressedInterrupt(unsigned interruptNum);
+		bool isSuppressedInterrupt(unsigned interruptNum);
 		/**
 		 * Add a Interrupt to the list of suppressed.
 		 * @param interruptNum the interrupt-type id
 		 * @return \c true if sucessfully added, \c false otherwise (already
 		 *         existing)
 		 */
-		virtual bool addSuppressedInterrupt(unsigned interruptNum);
+		bool addSuppressedInterrupt(unsigned interruptNum);
 		/**
 		 * Remove a Interrupt from the list of suppressed.
 		 * @param interruptNum the interrupt-type id
 		 * @return \c true if sucessfully removed, \c false otherwise (not
 		 *         found)
 		 */
-		virtual bool removeSuppressedInterrupt(unsigned interruptNum);
+		bool removeSuppressedInterrupt(unsigned interruptNum);
 		/**
 		 * Returns the (constant) initialized register manager.
 		 * @return a reference to the register manager
