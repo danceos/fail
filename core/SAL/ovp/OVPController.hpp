@@ -57,16 +57,9 @@ class OVPController : public SimulatorController
 		 */
 		virtual void reboot();
 		/**
-		 * Handles the control back to the previous coroutine which
-		 * triggered the reboot. Need not to be called explicitly.
-		 */
-		void toPreviousCtx();
-		/**
 		 * Returns the current instruction pointer.
 		 * @return the current eip
 		 */
-
-		 virtual void fireTimer(uint32_t);		 
 
 		 void makeGPRegister(int, void*, const string&);
 		 void makeSTRegister(Register *, const string&);

@@ -122,14 +122,4 @@ void OVPController::reboot()
 	//bx_gui_c::reset_handler();//TODO: leider protected, so geht das also nicht...
 }
 
-void OVPController::toPreviousCtx()
-{
-	// TODO
-}
-
-
-void OVPController::fireTimer(uint32_t){
-
-};
-
 };
