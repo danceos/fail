@@ -12,23 +12,23 @@
 #include "SAL/bochs/BochsRegister.hpp"
 #include "controller/Event.hpp"
 
+// you need to have the tracing plugin enabled for this
+#include "plugins/tracing/TracingPlugin.hpp"
+
 #include "checksum-oostubs.pb.h"
+#include "ecc_region.hpp"
 
 using std::endl;
 
 bool CoolChecksumExperiment::run()
 {
-#if BX_SUPPORT_X86_64
-	int targetreg = sal::RID_RDX;
-#else
-	int targetreg = sal::RID_EDX;
-#endif
 	Logger log("Checksum-OOStuBS", false);
 	fi::BPEvent bp;
 	
 	log << "startup" << endl;
 
 #if 1
+	// STEP 0: record memory map with addresses of "interesting" objects
 	fi::GuestEvent g;
 	while (true) {
 		sal::simulator.addEventAndWait(&g);
@@ -43,30 +43,51 @@ bool CoolChecksumExperiment::run()
 	log << "error_corrected = " << std::dec << ((int)sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
 	sal::simulator.save("checksum-oostubs.state");
 #elif 1
-	// STEP 2: determine # instructions from start to end
+	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
 	sal::simulator.restore("checksum-oostubs.state");
 	log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
 
-	// make sure the timer interrupt doesn't disturb us
-	//sal::simulator.deactivateTimer(0); // leave it on, explicitly
+	log << "enabling tracing" << endl;
+	TracingPlugin tp;
 
-	unsigned count;
+	// restrict memory access logging to injection target
+	MemoryMap mm;
+	for (unsigned i = 0; i < sizeof(memoryMap)/sizeof(*memoryMap); ++i) {
+		mm.add(memoryMap[i][0], memoryMap[i][1]);
+	}
+	tp.restrictMemoryAddresses(&mm);
+
+	// record trace
+	Trace trace;
+	tp.setTraceMessage(&trace);
+
+	// this must be done *after* configuring the plugin:
+	sal::simulator.addFlow(&tp);
+
 	bp.setWatchInstructionPointer(fi::ANY_ADDR);
-	for (count = 0; bp.getTriggerInstructionPointer() != OOSTUBS_FUNC_DONE; ++count) {
-	//for (count = 0; count < OOSTUBS_NUMINSTR; ++count) { //TODO?
-		sal::simulator.addEventAndWait(&bp);
-		//log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
-	}
-	log << "experiment finished after " << count << " instructions" << endl;
+	bp.setCounter(OOSTUBS_NUMINSTR);
+	sal::simulator.addEventAndWait(&bp);
+	log << "experiment finished after " << std::dec << OOSTUBS_NUMINSTR << " instructions" << endl;
 	
-	unsigned char results[OOSTUBS_RESULTS_BYTES];	
-	for(int i=0; i<OOSTUBS_RESULTS_BYTES; ++i){
-	  results[i] = (unsigned)sal::simulator.getMemoryManager().getByte(OOSTUBS_RESULTS_ADDR + i);
+	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
+	sal::simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
+	for (unsigned i = 0; i < sizeof(results) / sizeof(*results); ++i) {
+		log << "results[" << i << "]: " << std::dec << results[i] << endl;
 	}
-	for(int i=0; i<OOSTUBS_RESULTS_BYTES/4; ++i){
-	  log << "results[" << i << "]: " << std::hex <<  *(((unsigned*)results)+i) << endl;
+
+	sal::simulator.removeFlow(&tp);
+
+	// serialize trace to file
+	char const *tracefile = "trace.pb";
+	std::ofstream of(tracefile);
+	if (of.fail()) {
+		log << "failed to write " << tracefile << endl;
+		return false;
 	}
+	trace.SerializeToOstream(&of);
+	of.close();
+	log << "failed to write" << tracefile << endl;
 	
 #elif 1
 	// FIXME consider moving experiment repetition into Fail* or even the
@@ -150,31 +171,6 @@ bool CoolChecksumExperiment::run()
 
 	}
 #endif
-	// FIXME We currently need to explicitly terminate.  See below.
+	// Explicitly terminate, or the simulator will continue to run.
 	sal::simulator.terminate();
-
-	// FIXME Simply returning currently fails, because afterwards
-	// a) the ExperimentFlow base class cleans up this experiment's
-	//    remaining events,
-	// b) the CoroutineManager deletes this coroutine and frees the
-	//    associated stack (and in particular the memory the event that
-	//    most recently activated us lies in),
-	// c) BochsController tries to dynamic_cast<fi::BPRangeEvent*>(pBase)
-	//    this very event (bochs/Controller.cc:112).
-	// This could be partially fixed by adding a "continue;" to the first
-	// if() in this loop in BochsController, but it would still fail if
-	// there were more events waiting to be fired.  The general problem is
-	// that we're removing events while we're in BochsController's (or
-	// whose ever) event handling loop.
-	//
-	// Outline for a proper fix: Split all event handling loops into two
-	// parts,
-	// 1. collect all events to be fired in some kind of list data
-	//    structure,
-	// 2. fire all collected events in a centralized SimulatorController
-	//    function.
-	// The data structure and the centralized function should be chosen in
-	// a way that this construct *can* deal with events being removed while
-	// iterating over them.
-	return true;
 }
