@@ -98,8 +98,8 @@ Build Bochs
 For the first time
 ------------------
 cd ../bochs
-> Sufficient (and required for running e.g. L4/Fiasco):
-./configure --prefix=<...> --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,trace-cache,host-specific-asms,disasm,readline,clgd54xx,fpu,vmx=2,cdrom,sb16=linux,gdb-stub}
+> Sufficient:
+./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,trace-cache,host-specific-asms,disasm,readline,clgd54xx,fpu,vmx=2,cdrom,sb16=linux,gdb-stub}
 > More optimised:
 ./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,repeat-speedups,trace-cache,fast-function-calls,host-specific-asms,disasm,all-optimizations,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --disable-docbook --with-all-libs
 > Instead of --with-all-libs, you could use --with-nogui for "headless"
