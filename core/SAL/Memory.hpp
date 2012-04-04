@@ -41,14 +41,14 @@ class MemoryManager
 		 */
 		virtual byte_t getByte(guest_address_t addr) = 0;
 		/**
-		 * Retrieves \a cnt bytes at address \a addr in the memory.
+		 * Retrieves \a cnt bytes at address \a addr from the memory.
 		 * @param addr The guest address where the bytes are located.
 		 *        The address is expected to be valid.
-		 * @param cnt the number of bytes to be retrieved. \a addr + \a cnt
+		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
 		 *        is expected to not exceed the memory limit.
-		 * @param dest the destination buffer to write the bytes to
+		 * @param dest Pointer to destination buffer to copy the data to.
 		 */
-		virtual void getBytes(guest_address_t addr, size_t cnt, std::vector<byte_t>& dest) = 0;
+		virtual void getBytes(guest_address_t addr, size_t cnt, void *dest) = 0;
 		/**
 		 * Writes the byte \a data to memory.
 		 * @param addr The guest address to write.
@@ -57,13 +57,14 @@ class MemoryManager
 		 */
 		virtual void setByte(guest_address_t addr, byte_t data) = 0;
 		/**
-		 * Writes the bytes \a data to memory. Consequently data.size() bytes
-		 * will be written.
+		 * Copies data to memory.
 		 * @param addr The guest address to write.
 		 *        The address is expected to be valid.
-		 * @param data The new bytes to write
+		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
+		 *        is expected to not exceed the memory limit.
+		 * @param src Pointer to data to be copied.
 		 */
-		virtual void setBytes(guest_address_t addr, const std::vector<byte_t>& data) = 0;
+		virtual void setBytes(guest_address_t addr, size_t cnt, void const *src) = 0;
 		/**
 		 * Transforms the guest address \a addr to a host address.
 		 * @param addr The guest address to be transformed

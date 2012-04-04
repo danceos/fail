@@ -49,17 +49,19 @@ class BochsMemoryManager : public MemoryManager
 			return (static_cast<byte_t>(*reinterpret_cast<Bit8u*>(haddr)));
 		}
 		/**
-		 * Retrieves \a cnt bytes at address \a addr in the memory.
+		 * Retrieves \a cnt bytes at address \a addr from the memory.
 		 * @param addr The guest address where the bytes are located.
 		 *        The address is expected to be valid.
 		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
 		 *        is expected to not exceed the memory limit.
-		 * @param dest The destination buffer to write the bytes to
+		 * @param dest Pointer to destination buffer to copy the data to.
 		 */
-		void getBytes(guest_address_t addr, size_t cnt, std::vector<byte_t>& dest)
+		void getBytes(guest_address_t addr, size_t cnt, void *dest)
 		{
-			for(size_t i = 0; i < cnt; i++)
-				dest.push_back(getByte(addr+i));
+			char *d = static_cast<char *>(dest);
+			for (size_t i = 0; i < cnt; ++i) {
+				d[i] = getByte(addr + i);
+			}
 		}
 		/**
 		 * Writes the byte \a data to memory.
@@ -75,16 +77,19 @@ class BochsMemoryManager : public MemoryManager
 			*reinterpret_cast<Bit8u*>(haddr) = data;
 		}
 		/**
-		 * Writes the bytes \a data to memory. Consequently \c data.size()
-		 * bytes will be written.
+		 * Copies data to memory.
 		 * @param addr The guest address to write.
 		 *        The address is expected to be valid.
-		 * @param data The new bytes to write
+		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
+		 *        is expected to not exceed the memory limit.
+		 * @param src Pointer to data to be copied.
 		 */
-		void setBytes(guest_address_t addr, const std::vector<byte_t>& data)
+		void setBytes(guest_address_t addr, size_t cnt, void const *src)
 		{
-			for(size_t i = 0; i < data.size(); i++)
-				setByte(addr+i, data[i]);
+			char const *s = static_cast<char const *>(src);
+			for (size_t i = 0; i < cnt; ++i) {
+				setByte(addr + i, s[i]);
+			}
 		}
 		/**
 		 * Transforms the guest address \a addr to a host address.

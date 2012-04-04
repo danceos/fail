@@ -50,11 +50,11 @@ class OVPMemoryManager : public MemoryManager
 		 * Retrieves \a cnt bytes at address \a addr in the memory.
 		 * @param addr The guest address where the bytes are located.
 		 *        The address is expected to be valid.
-		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
+		 * @param cnt the number of bytes to be retrieved. \a addr + \a cnt
 		 *        is expected to not exceed the memory limit.
-		 * @param dest The destination buffer to write the bytes to
+		 * @param dest Pointer to destination buffer to copy the data to.
 		 */
-		void getBytes(guest_address_t addr, size_t cnt, std::vector<byte_t>& dest)
+		void getBytes(guest_address_t addr, size_t cnt, void *dest)
 		{
 		}
 		/**
@@ -67,13 +67,14 @@ class OVPMemoryManager : public MemoryManager
 		{
 		}
 		/**
-		 * Writes the bytes \a data to memory. Consequently \c data.size()
-		 * bytes will be written.
+		 * Copies data to memory.
 		 * @param addr The guest address to write.
 		 *        The address is expected to be valid.
-		 * @param data The new bytes to write
+		 * @param cnt The number of bytes to be retrieved. \a addr + \a cnt
+		 *        is expected to not exceed the memory limit.
+		 * @param src Pointer to data to be copied.
 		 */
-		void setBytes(guest_address_t addr, const std::vector<byte_t>& data)
+		void setBytes(guest_address_t addr, size_t cnt, void const *src)
 		{
 		}
 		/**
