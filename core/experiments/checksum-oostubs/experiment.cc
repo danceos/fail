@@ -87,7 +87,7 @@ bool CoolChecksumExperiment::run()
 	}
 	trace.SerializeToOstream(&of);
 	of.close();
-	log << "failed to write" << tracefile << endl;
+	log << "trace written to " << tracefile << endl;
 	
 #elif 1
 	// FIXME consider moving experiment repetition into Fail* or even the
