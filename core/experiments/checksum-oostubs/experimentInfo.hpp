@@ -10,7 +10,7 @@
 #define OOSTUBS_FUNC_ENTRY		0x00103f2c 
 // empty function that is called explicitly when the experiment finished
 // nm -C ecc.elf|fgrep "finished()"
-#define OOSTUBS_FUNC_DONE		0x001093f0
+#define OOSTUBS_FUNC_FINISH		0x001093f0
 // number of instructions the target executes under non-error conditions from ENTRY to DONE:
 // (result of experiment's step #2)
 #define OOSTUBS_NUMINSTR		0x4a3401

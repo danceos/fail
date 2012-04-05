@@ -22,6 +22,7 @@ using std::endl;
 
 bool CoolChecksumExperiment::run()
 {
+	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
 	fi::BPEvent bp;
 	
@@ -41,11 +42,11 @@ bool CoolChecksumExperiment::run()
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << std::hex << bp.getTriggerInstructionPointer() << " or " << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
 	log << "error_corrected = " << std::dec << ((int)sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
-	sal::simulator.save("checksum-oostubs.state");
+	sal::simulator.save(statename);
 #elif 1
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
-	sal::simulator.restore("checksum-oostubs.state");
+	sal::simulator.restore(statename);
 	log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
 
 	log << "enabling tracing" << endl;
@@ -67,7 +68,15 @@ bool CoolChecksumExperiment::run()
 
 	bp.setWatchInstructionPointer(fi::ANY_ADDR);
 	bp.setCounter(OOSTUBS_NUMINSTR);
-	sal::simulator.addEventAndWait(&bp);
+	sal::simulator.addEvent(&bp);
+	fi::BPEvent func_finish(OOSTUBS_FUNC_FINISH);
+	sal::simulator.addEvent(&func_finish);
+
+	if (sal::simulator.waitAny() == &func_finish) {
+		log << "experiment reached finish()" << endl;
+		// FIXME add instruction counter to SimulatorController
+		sal::simulator.waitAny();
+	}
 	log << "experiment finished after " << std::dec << OOSTUBS_NUMINSTR << " instructions" << endl;
 	
 	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
@@ -93,83 +102,124 @@ bool CoolChecksumExperiment::run()
 	// FIXME consider moving experiment repetition into Fail* or even the
 	// SAL -- whether and how this is possible with the chosen backend is
 	// backend specific
-	for (int i = 0; i < 20; ++i) {
+	//for (int i = 0; i < 2000; ++i) {
 
 	// STEP 3: The actual experiment.
 	log << "restoring state" << endl;
-	sal::simulator.restore("coolecc.state");
+	sal::simulator.restore(statename);
 
+	// get an experiment parameter set
 	log << "asking job server for experiment parameters" << endl;
 	CoolChecksumExperimentData param;
+/*
 	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
 		// communicate that we were told to die
 		sal::simulator.terminate(1);
 	}
+*/
+	param.msg.set_instr_offset(1);
+	param.msg.set_mem_addr(1024*1024*8);
+	param.msg.set_bit_offset(0);
+	
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
+	int mem_addr = param.msg.mem_addr();
 	int bit_offset = param.msg.bit_offset();
-	log << "job " << id << " instr " << instr_offset << " bit " << bit_offset << endl;
+	log << "job " << id << " instr " << instr_offset << " mem " << mem_addr << "+" << bit_offset << endl;
 
-	// FIXME could be improved (especially for backends supporting
-	// breakpoints natively) by utilizing a previously recorded instruction
-	// trace
+	// reaching finish() could happen before OR after FI
+	fi::BPEvent func_finish(OOSTUBS_FUNC_FINISH);
+	sal::simulator.addEvent(&func_finish);
+	bool finish_reached = false;
+
+	// XXX test this with coolchecksum first (or reassure with sanity checks)
+	// XXX could be improved with intermediate states (reducing runtime until injection)
 	bp.setWatchInstructionPointer(fi::ANY_ADDR);
-	for (int count = 0; count < instr_offset; ++count) {
-		sal::simulator.addEventAndWait(&bp);
+	bp.setCounter(instr_offset);
+	sal::simulator.addEvent(&bp);
+
+	// finish() before FI?
+	if (sal::simulator.waitAny() == &func_finish) {
+		finish_reached = true;
+		log << "experiment reached finish() before FI" << endl;
+
+		// wait for bp
+		sal::simulator.waitAny();
 	}
 
-	// inject
-	sal::guest_address_t inject_addr = COOL_ECC_OBJUNDERTEST + bit_offset / 8;
+	// --- fault injection ---
 	sal::MemoryManager& mm = sal::simulator.getMemoryManager();
-	sal::byte_t data = mm.getByte(inject_addr);
-	sal::byte_t newdata = data ^ (1 << (bit_offset % 8));
-	mm.setByte(inject_addr, newdata);
+	sal::byte_t data = mm.getByte(mem_addr);
+	sal::byte_t newdata = data ^ (1 << bit_offset);
+	mm.setByte(mem_addr, newdata);
 	// note at what IP we did it
 	int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
 	param.msg.set_injection_ip(injection_ip);
-	log << "inject @ ip " << injection_ip
-	    << " offset " << std::dec << (bit_offset / 8)
-	    << " (bit " << (bit_offset % 8) << ") 0x"
-	    << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
+	log << "fault injected @ ip " << injection_ip
+	    << " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
+	// XXX sanity check
 
-	// aftermath
-	fi::BPEvent ev_done(COOL_ECC_CALCDONE);
-	sal::simulator.addEvent(&ev_done);
-	fi::BPEvent ev_timeout(fi::ANY_ADDR);
-	ev_timeout.setCounter(COOL_ECC_NUMINSTR + 3000);
-	sal::simulator.addEvent(&ev_timeout);
+	// --- aftermath ---
+	// four possible outcomes:
+	// - guest causes a trap, "crashes"
+	// - guest runs OOSTUBS_NUMINSTR+OOSTUBS_RECOVERYINSTR instructions but
+	//   never reaches finish()
+	// - guest reaches finish() within OOSTUBS_NUMINSTR+OOSTUBS_RECOVERYINSTR
+	//   instructions with
+	//   * a wrong result[0-2]
+	//   * a correct result[0-2]
+
+	// catch traps as "extraordinary" ending
 	fi::TrapEvent ev_trap(fi::ANY_TRAP);
 	sal::simulator.addEvent(&ev_trap);
+	// remaining instructions until "normal" ending
+	fi::BPEvent ev_done(fi::ANY_ADDR);
+	ev_done.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
+	sal::simulator.addEvent(&ev_done);
 
 	fi::BaseEvent* ev = sal::simulator.waitAny();
+
+	// Do we reach finish() while waiting for ev_trap/ev_done?
+	if (ev == &func_finish) {
+		finish_reached = true;
+		log << "experiment reached finish()" << endl;
+
+		// wait for ev_trap/ev_done
+		ev = sal::simulator.waitAny();
+	}
+
+	// record resultdata, finish_reached and error_corrected regardless of result
+	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
+	sal::simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
+	for (unsigned i = 0; i < sizeof(results) / sizeof(*results); ++i) {
+		log << "results[" << i << "]: " << std::dec << results[i] << endl;
+		param.msg.add_resultdata(results[i]);
+	}
+	param.msg.set_finish_reached(finish_reached);
+	int32_t error_corrected = sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED);
+	param.msg.set_error_corrected(error_corrected);
+	param.msg.set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
+
 	if (ev == &ev_done) {
-		int32_t data = sal::simulator.getRegisterManager().getRegister(targetreg)->getData();
-		log << std::dec << "Result EDX = " << data << endl;
-		param.msg.set_resulttype(CoolChecksumProtoMsg_ResultType_CALCDONE);
-		param.msg.set_resultdata(data);
-	} else if (ev == &ev_timeout) {
-		log << std::dec << "Result TIMEOUT" << endl;
-		param.msg.set_resulttype(CoolChecksumProtoMsg_ResultType_TIMEOUT);
-		param.msg.set_resultdata(sal::simulator.getRegisterManager().getInstructionPointer());
+		log << std::dec << "Result FINISHED" << endl;
+		param.msg.set_resulttype(param.msg.FINISHED);
 	} else if (ev == &ev_trap) {
 		log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
-		param.msg.set_resulttype(CoolChecksumProtoMsg_ResultType_TRAP);
-		param.msg.set_resultdata(sal::simulator.getRegisterManager().getInstructionPointer());
+		param.msg.set_resulttype(param.msg.TRAP);
 	} else {
 		log << std::dec << "Result WTF?" << endl;
-		param.msg.set_resulttype(CoolChecksumProtoMsg_ResultType_UNKNOWN);
-		param.msg.set_resultdata(sal::simulator.getRegisterManager().getInstructionPointer());
+		param.msg.set_resulttype(param.msg.UNKNOWN);
 
 		std::stringstream ss;
-		ss << "eventid " << ev << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
+		ss << "eventid " << ev->getId() << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_details(ss.str());
 	}
-	int32_t error_corrected = sal::simulator.getMemoryManager().getByte(COOL_ECC_ERROR_CORRECTED);
-	param.msg.set_error_corrected(error_corrected);
+/*
 	m_jc.sendResult(param);
+*/
 
-	}
+	//}
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
 	sal::simulator.terminate();

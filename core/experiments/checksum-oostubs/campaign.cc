@@ -88,9 +88,11 @@ bool CoolChecksumCampaign::run()
 		for (int bit_offset = 0; bit_offset < (memoryMap[member][1])*8; ++bit_offset) {
 			for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
 				CoolChecksumExperimentData *d = new CoolChecksumExperimentData;
+				/*
 				d->msg.set_instr_offset(instr_offset);
 				d->msg.set_mem_addr(memoryMap[member][0]);
 				d->msg.set_bit_offset(bit_offset);
+				*/
 	  
 				fi::campaignmanager.addParam(d);
 				++count;
@@ -122,6 +124,7 @@ bool CoolChecksumCampaign::run()
 	while ((res = static_cast<CoolChecksumExperimentData *>(fi::campaignmanager.getDone()))) {
 		rescount++;
 
+		/*
 		results
 		 << res->msg.injection_ip() << "\t"
 		 << res->msg.instr_offset() << "\t"
@@ -131,6 +134,7 @@ bool CoolChecksumCampaign::run()
 		 << res->msg.resultdata() << "\t"
 		 << res->msg.error_corrected() << "\t"
 		 << res->msg.details() << "\n";
+		*/
 		delete res;
 	}
 	log << "done.  sent " << count << " received " << rescount << endl;

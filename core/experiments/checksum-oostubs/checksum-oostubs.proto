@@ -1,29 +1,41 @@
 message OOStuBSProtoMsg {
-	// parameters
+	// Input: experiment parameters
 	required int32 instr_offset = 1;
-	required int32 mem_addr = 2;
-	required int32 bit_offset = 3;
+	optional int32 instr_address = 2; // for sanity checks
+	required int32 mem_addr = 3;
+	required int32 bit_offset = 4;
 
-	// results
-	// make these optional to reduce overhead for server->client communication
-	enum ResultType {
-		CALCDONE = 1;
-		TIMEOUT = 2;
-		TRAP = 3;
-		UNKNOWN = 4;
-	}
+	// ----------------------------------------------------
+
+	// Output: experiment results
+	// (make these optional to reduce overhead for server->client communication)
+
 	// instruction pointer where injection was done
-	optional uint32 injection_ip = 4;
-	// result type, see above
-	optional ResultType resulttype = 5;
-	// result data, depending on resulttype:
-	// CALCDONE: resultdata = calculated value
-	// TIMEOUT: resultdata = latest EIP
-	// TRAP: resultdata = latest EIP
-	// UNKNOWN: resultdata = latest EIP
-	optional uint32 resultdata = 6;
+	optional uint32 injection_ip = 5;
+
+	// result type:
+	// FINISHED = planned number of instructions were executed
+	// TRAP = premature guest "crash"
+	enum ResultType {
+		FINISHED = 1;
+		TRAP = 2;
+		UNKNOWN = 3;
+	}
+	optional ResultType resulttype = 6;
+
+	// result details:
+	// resultdata = result[0-2]
+	repeated uint32 resultdata = 7 [packed=true];
+
+	// was finish() ever reached?
+	optional bool finish_reached = 8;
+
+	// especially interesting for TRAP/ UNKNOWN: latest IP
+	optional uint32 latest_ip = 9;
+
 	// did ECC correct the fault?
-	optional int32 error_corrected = 7;
+	optional int32 error_corrected = 10;
+
 	// optional textual description of what happened
-	optional string details = 8;
+	optional string details = 11;
 }
