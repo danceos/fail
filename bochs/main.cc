@@ -27,8 +27,6 @@
 #endif
 #include "cpu/cpu.h"
 #include "iodev/iodev.h"
-//DanceOS Richard Hellwig
-//#include "failbochs.h"
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
@@ -257,7 +255,7 @@ void print_tree(bx_param_c *node, int level)
 
 int bxmain (void) {
 
-	//DanceOS Sprungmarke
+	//DanceOS
 #ifdef DANCEOS_RESTORE
 marke:
 #endif
@@ -304,7 +302,7 @@ marke:
     ci_param->set_enabled(0);
     int status = SIM->configuration_interface(ci_name, CI_START);
 
-    //DanceOS Richard Hellwig
+    //DanceOS
 #ifdef DANCEOS_RESTORE
     if(sal::restore_bochs_request){
 
@@ -656,8 +654,8 @@ int bx_init_main(int argc, char *argv[])
     }
     arg++;
   }
-#ifdef DANCEOS_RESTORE
-  //DanceOS Richard Hellwig
+//DanceOS
+#ifdef DANCEOS_RESTORE  
   if(sal::restore_bochs_request){
       SIM->get_param_bool(BXPN_RESTORE_FLAG)->set(1);
       SIM->get_param_enum(BXPN_BOCHS_START)->set(BX_QUICK_START);
@@ -980,9 +978,10 @@ int bx_begin_simulation (int argc, char *argv[])
         if (bx_pc_system.kill_bochs_request){
           break;
         }
+//DanceOS
 #ifdef DANCEOS_RESTORE
         if(sal::restore_bochs_request){
-          //DanceOS Richard Hellwig
+          
        	  return 1;
         }
 #endif
@@ -1003,9 +1002,10 @@ int bx_begin_simulation (int argc, char *argv[])
         if (bx_pc_system.kill_bochs_request){
           break;
         }
+        //DanceOS
 #ifdef DANCEOS_RESTORE
         if(sal::restore_bochs_request){
-            //DanceOS Richard Hellwig
+            
          	  return 1;
         }
 #endif

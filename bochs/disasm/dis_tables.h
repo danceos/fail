@@ -193,6 +193,7 @@ const struct BxDisasmOpcodeInfo_t
 
 #undef XX
 
+//DanceOS
 // workaround for include file clash with cpu/instr.h in conjunction with AspectC++
 #undef Id
 #undef Iq

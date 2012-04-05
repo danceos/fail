@@ -161,7 +161,7 @@ protected:
   static void copy_handler(void);
   static void paste_handler(void);
   static void snapshot_handler(void);
-  //DanceOS Richard Hellwig
+  //DanceOS
 #ifdef DANCEOS_RESTORE
   static void restore_handler(void);
 #endif
@@ -183,7 +183,7 @@ protected:
   unsigned copy_bmap_id, copy_hbar_id;
   unsigned paste_bmap_id, paste_hbar_id;
   unsigned snapshot_bmap_id, snapshot_hbar_id;
-  //DanceOS Richard Hellwig
+  //DanceOS
 #ifdef DANCEOS_RESTORE
   unsigned restore_bmap_id, restore_hbar_id;
 #endif

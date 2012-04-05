@@ -79,7 +79,7 @@ public:
   BX_MEM_C();
  ~BX_MEM_C();
 
- //DanceOS Richard Hellwig
+ //DanceOS
 #ifdef DANCEOS_RESTORE
   BX_MEM_SMF void  	 new_init(void);
 #endif

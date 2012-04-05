@@ -93,7 +93,7 @@ public:
   bx_bool unregisterTimer(unsigned timerID);
   void   start_timers(void);
 
-  //DanceOS Richard Hellwig
+  //DanceOS
 #ifdef DANCEOS_RESTORE
   void	 delete_timers(void);
 #endif

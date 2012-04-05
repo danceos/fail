@@ -123,6 +123,7 @@
 
 //////////////////////////////////////////////////////
 
+//DanceOS
 #ifndef BX_SIMINTERFACE_H
 #  define BX_SIMINTERFACE_H 1
 
@@ -746,4 +747,5 @@ BOCHSAPI extern bx_startup_flags_t bx_startup_flags;
 BOCHSAPI extern bx_bool bx_user_quit;
 BOCHSAPI extern Bit8u bx_cpu_count;
 
+//DanceOS
 #endif /* BX_SIMINTERFACE_H */

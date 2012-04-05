@@ -27,8 +27,8 @@
 #include "iodev/iodev.h"
 
 /****************************************************************
- * BOCHS-MODIFIED
- *   Author: Adrian Böckenkamp
+ * DanceOS - BOCHS-MODIFIED
+ *
  */
 
 // Just a dummy function to define a join-point. This function is
@@ -131,7 +131,7 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
         // If request to return to caller ASAP.
         return;
       }
-    }else if(sal::restore_bochs_request){
+    }else if(sal::restore_bochs_request){  //DanceOS
 	return;
     }
 
@@ -152,8 +152,8 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
       }
 #endif
 /****************************************************************
- * BOCHS-MODIFIED
- *   Author: Adrian Böckenkamp
+ * DanceOS - BOCHS-MODIFIED
+ * 
  */
 
       defineCPULoopJoinPoint(BX_CPU_THIS, i);
@@ -501,8 +501,9 @@ unsigned BX_CPU_C::handleAsyncEvent(void)
     // setting kill_bochs_request causes the cpu loop to return ASAP.
     return 1; // Return to caller of cpu_loop.
   }
+  //DanceOS
 #ifdef DANCEOS_RESTORE
-  else if (sal::restore_bochs_request) {			//DanceOS Richard Hellwig
+  else if (sal::restore_bochs_request) {			
 	return 1;
   }
 #endif

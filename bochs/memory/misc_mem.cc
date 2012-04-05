@@ -47,7 +47,7 @@ BX_MEM_C::BX_MEM_C()
   memory_handlers = NULL;
 }
 
-//DanceOS Richard Hellwig
+//DanceOS
 #ifdef DANCEOS_RESTORE
 void BX_MEM_C::new_init(){
 

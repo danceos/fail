@@ -156,7 +156,7 @@ void bx_gui_c::init(int argc, char **argv, unsigned tilewidth, unsigned tileheig
   BX_GUI_THIS power_bmap_id = create_bitmap(bx_power_bmap, BX_POWER_BMAP_X, BX_POWER_BMAP_Y);
   BX_GUI_THIS reset_bmap_id = create_bitmap(bx_reset_bmap, BX_RESET_BMAP_X, BX_RESET_BMAP_Y);
   BX_GUI_THIS snapshot_bmap_id = create_bitmap(bx_snapshot_bmap, BX_SNAPSHOT_BMAP_X, BX_SNAPSHOT_BMAP_Y);
-  //DanceOS Richard Hellwig
+  //DanceOS
 #ifdef DANCEOS_RESTORE
   BX_GUI_THIS restore_bmap_id = create_bitmap(bx_floppya_bmap, BX_FLOPPYA_BMAP_X, BX_FLOPPYA_BMAP_Y);
 #endif
@@ -225,7 +225,7 @@ void bx_gui_c::init(int argc, char **argv, unsigned tilewidth, unsigned tileheig
   BX_GUI_THIS config_hbar_id = headerbar_bitmap(BX_GUI_THIS config_bmap_id,
                           BX_GRAVITY_RIGHT, config_handler);
   BX_GUI_THIS set_tooltip(BX_GUI_THIS config_hbar_id, "Runtime config dialog");
-  //DanceOS Richard Hellwig
+  //DanceOS
   // Fake-Restore button
 #ifdef DANCEOS_RESTORE
   BX_GUI_THIS restore_hbar_id = headerbar_bitmap(BX_GUI_THIS restore_bmap_id,
@@ -653,7 +653,7 @@ void bx_gui_c::save_restore_handler(void)
 
 
 
-//DanceOS Richard Hellwig
+//DanceOS
 #ifdef DANCEOS_RESTORE
 void bx_gui_c::restore_handler(void)
 {

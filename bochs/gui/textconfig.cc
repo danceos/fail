@@ -31,6 +31,7 @@
 // isn't even defined in this context.
 //
 
+//DanceOS
 // workaround for include file ordering problem in conjunction with AspectC++
 #include "bochs.h"
 
@@ -59,7 +60,7 @@ extern "C" {
 
 #define CI_PATH_LENGTH 512
 
-//DanceOS Richard Hellwig
+//DanceOS
 #ifdef DANCEOS_RESTORE
 bool raus = false;
 #endif
@@ -424,7 +425,7 @@ int bx_config_interface(int menu)
         return 0;
       case BX_CI_START_SIMULATION:
         // we don't expect it to return, but if it does, quit
-        //DanceOS Richard Hellwig
+        //DanceOS
 #ifdef DANCEOS_RESTORE
         if(SIM->begin_simulation(bx_startup_flags.argc, bx_startup_flags.argv)){
         	raus = true;
@@ -562,7 +563,7 @@ int bx_config_interface(int menu)
         fprintf(stderr, "Unknown config interface menu type.\n");
         assert(menu >=0 && menu < BX_CI_N_MENUS);
     }
-    //DanceOS Richard Hellwig
+    //DanceOS
 #ifdef DANCEOS_RESTORE
     if(raus){
         return 1;

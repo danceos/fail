@@ -1817,7 +1817,7 @@ void bx_x_gui_c::exit(void)
   if (bx_x_display)
     XCloseDisplay (bx_x_display);
 
-  //DanceOS Richard Hellwig 
+  //DanceOS
 #ifdef DANCEOS_RESTORE
 
   bx_bitmap_left_xorigin = 0;

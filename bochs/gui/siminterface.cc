@@ -68,7 +68,7 @@ class bx_real_sim_c : public bx_simulator_interface_c {
   bx_bool wx_debug_gui;
 public:
   bx_real_sim_c();
-  //DanceOS Richard Hellwig
+  //DanceOS
 #ifdef DANCEOS_RESTORE
   virtual ~bx_real_sim_c() {root_param = NULL;}
 #else
