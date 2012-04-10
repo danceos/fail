@@ -1,18 +1,17 @@
-#ifndef __COOLCAMPAIGN_HPP__
-#define __COOLCAMPAIGN_HPP__
+#ifndef __CHECKSUM_OOSTUBS_CAMPAIGN_HPP__
+#define __CHECKSUM_OOSTUBS_CAMPAIGN_HPP__
 
 #include "controller/Campaign.hpp"
 #include "controller/ExperimentData.hpp"
 #include "checksum-oostubs.pb.h"
 
-class CoolChecksumExperimentData : public fi::ExperimentData {
+class ChecksumOOStuBSExperimentData : public fi::ExperimentData {
 public:
 	OOStuBSProtoMsg msg;
-	CoolChecksumExperimentData() : fi::ExperimentData(&msg) {}
+	ChecksumOOStuBSExperimentData() : fi::ExperimentData(&msg) {}
 };
 
-
-class CoolChecksumCampaign : public fi::Campaign {
+class ChecksumOOStuBSCampaign : public fi::Campaign {
 public:
 	virtual bool run();
 };

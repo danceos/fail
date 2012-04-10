@@ -65,9 +65,9 @@ const unsigned memoryMap[49][2] = {
 
 
 
-bool CoolChecksumCampaign::run()
+bool ChecksumOOStuBSCampaign::run()
 {
-	Logger log("CoolChecksumCampaign");
+	Logger log("ChecksumOOStuBS Campaign");
 
 	ifstream test(results_csv);
 	if (test.is_open()) {

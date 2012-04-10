@@ -1,5 +1,5 @@
 set(EXPERIMENT_NAME checksum-oostubs)
-set(EXPERIMENT_TYPE CoolChecksumExperiment) # FIXME naming conflict
+set(EXPERIMENT_TYPE ChecksumOOStuBSExperiment)
 configure_file(../instantiate-experiment.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )

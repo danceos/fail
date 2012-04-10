@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-	CoolChecksumCampaign c;
+	ChecksumOOStuBSCampaign c;
 	if (fi::campaignmanager.runCampaign(&c)) {
 		return 0;
 	} else {

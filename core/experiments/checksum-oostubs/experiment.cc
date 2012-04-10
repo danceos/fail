@@ -15,12 +15,11 @@
 // you need to have the tracing plugin enabled for this
 #include "plugins/tracing/TracingPlugin.hpp"
 
-#include "checksum-oostubs.pb.h"
 #include "ecc_region.hpp"
 
 using std::endl;
 
-bool CoolChecksumExperiment::run()
+bool ChecksumOOStuBSExperiment::run()
 {
 	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
@@ -113,7 +112,7 @@ bool CoolChecksumExperiment::run()
 
 	// get an experiment parameter set
 	log << "asking job server for experiment parameters" << endl;
-	CoolChecksumExperimentData param;
+	ChecksumOOStuBSExperimentData param;
 /*
 	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
