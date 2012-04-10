@@ -104,7 +104,7 @@ bool ChecksumOOStuBSExperiment::run()
 	// FIXME consider moving experiment repetition into Fail* or even the
 	// SAL -- whether and how this is possible with the chosen backend is
 	// backend specific
-	//for (int i = 0; i < 2000; ++i) {
+	while (true) {
 
 	// STEP 3: The actual experiment.
 	log << "restoring state" << endl;
@@ -113,17 +113,17 @@ bool ChecksumOOStuBSExperiment::run()
 	// get an experiment parameter set
 	log << "asking job server for experiment parameters" << endl;
 	ChecksumOOStuBSExperimentData param;
-/*
 	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
 		// communicate that we were told to die
 		sal::simulator.terminate(1);
 	}
-*/
+/*	// debug input:
 	param.msg.set_instr_offset(0);
 	param.msg.set_instr_address(OOSTUBS_FUNC_ENTRY);
 	param.msg.set_mem_addr(1024*1024*8);
 	param.msg.set_bit_offset(0);
+*/
 	
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
@@ -176,8 +176,8 @@ bool ChecksumOOStuBSExperiment::run()
 		param.msg.set_details(ss.str());
 
 		sal::simulator.clearEvents();
-		//m_jc.sendResult(param);
-		//continue;
+		m_jc.sendResult(param);
+		continue;
 	}
 
 	// --- aftermath ---
@@ -235,11 +235,9 @@ bool ChecksumOOStuBSExperiment::run()
 		ss << "eventid " << ev->getId() << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_details(ss.str());
 	}
-/*
 	m_jc.sendResult(param);
-*/
 
-	//}
+	}
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
 	sal::simulator.terminate();
