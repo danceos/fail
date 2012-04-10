@@ -29,13 +29,25 @@ public:
 	std::set<sal::address_t> as;
 public:
 	MemoryMap() {}
+	/**
+	 * Clears the map.
+	 */
 	void clear() { as.clear(); }
+
+	/**
+	 * Adds one or a sequence of addresses to the map.
+	 */
 	void add(sal::address_t addr, int size = 1)
 	{
 		for (int i = 0; i < size; ++i) {
 			as.insert(addr + i);
 		}
 	}
+
+	/**
+	 * Determines whether a given memory access at address \a addr with width
+	 * \a size hits the map.  
+	 */
 	bool isMatching(sal::address_t addr, int size = 1)
 	{
 		for (int i = 0; i < size; ++i) {
@@ -45,6 +57,24 @@ public:
 		}
 		return false;
 	}
+
+	/**
+	 * The (STL-style) iterator of this class used to iterate over all
+	 * addresses in this map.
+	 */
+	typedef std::set<sal::address_t>::iterator iterator;
+
+	/**
+	 * Returns an (STL-style) iterator to the beginning of the internal data
+	 * structure.
+	 */
+	iterator begin() { return as.begin(); }
+
+	/**
+	 * Returns an (STL-style) iterator to the end of the interal data
+	 * structure.
+	 */
+	iterator end() { return as.end(); }
 };
 
 #endif
