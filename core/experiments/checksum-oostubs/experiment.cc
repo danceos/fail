@@ -121,7 +121,7 @@ bool CoolChecksumExperiment::run()
 		sal::simulator.terminate(1);
 	}
 */
-	param.msg.set_instr_offset(1);
+	param.msg.set_instr_offset(0);
 	param.msg.set_mem_addr(1024*1024*8);
 	param.msg.set_bit_offset(0);
 	
@@ -136,19 +136,22 @@ bool CoolChecksumExperiment::run()
 	sal::simulator.addEvent(&func_finish);
 	bool finish_reached = false;
 
-	// XXX test this with coolchecksum first (or reassure with sanity checks)
-	// XXX could be improved with intermediate states (reducing runtime until injection)
-	bp.setWatchInstructionPointer(fi::ANY_ADDR);
-	bp.setCounter(instr_offset);
-	sal::simulator.addEvent(&bp);
+	// no need to wait if offset is 0
+	if (instr_offset > 0) {
+		// XXX test this with coolchecksum first (or reassure with sanity checks)
+		// XXX could be improved with intermediate states (reducing runtime until injection)
+		bp.setWatchInstructionPointer(fi::ANY_ADDR);
+		bp.setCounter(instr_offset);
+		sal::simulator.addEvent(&bp);
 
-	// finish() before FI?
-	if (sal::simulator.waitAny() == &func_finish) {
-		finish_reached = true;
-		log << "experiment reached finish() before FI" << endl;
+		// finish() before FI?
+		if (sal::simulator.waitAny() == &func_finish) {
+			finish_reached = true;
+			log << "experiment reached finish() before FI" << endl;
 
-		// wait for bp
-		sal::simulator.waitAny();
+			// wait for bp
+			sal::simulator.waitAny();
+		}
 	}
 
 	// --- fault injection ---
