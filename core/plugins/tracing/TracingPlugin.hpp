@@ -23,6 +23,8 @@
  * FIXME: more explicit startup/shutdown; listener-based event interface needed?
  *        -> should simulator.removeFlow make sure all remaining active events
  *           are delivered?
+ * FIXME: trace a sequence of pb messages, not a giant single one (pb weren't
+ *        made for huge messages)
  */
 class TracingPlugin : public fi::ExperimentFlow
 {

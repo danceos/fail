@@ -231,6 +231,7 @@ class SimulatorController
 		 * @param ev the event pointer to be added
 		 * @return the pointer of the occurred event (it is not guaranteed that
 		 *         this pointer will be equal to ev)
+		 * FIXME rename to make clear this returns when *any* event occurs
 		 */
 		fi::BaseEvent* addEventAndWait(fi::BaseEvent* ev);
 		/**

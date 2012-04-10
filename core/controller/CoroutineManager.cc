@@ -13,6 +13,7 @@ void CoroutineManager::m_invoke(void* pData)
 {
 	//std::cerr << "CORO m_invoke " << co_current() << std::endl;
 	reinterpret_cast<ExperimentFlow*>(pData)->coroutine_entry();
+	//m_togglerstack.pop(); // FIXME need to pop our caller
 	co_exit(); // deletes the associated coroutine memory as well
 
 	// we really shouldn't get here
