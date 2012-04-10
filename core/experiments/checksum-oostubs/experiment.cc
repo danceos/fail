@@ -40,14 +40,17 @@ bool CoolChecksumExperiment::run()
 	bp.setWatchInstructionPointer(OOSTUBS_FUNC_ENTRY);
 	sal::simulator.addEventAndWait(&bp);
 	log << "test function entry reached, saving state" << endl;
-	log << "EIP = " << std::hex << bp.getTriggerInstructionPointer() << " or " << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
+	log << "EIP = " << std::hex << bp.getTriggerInstructionPointer() << endl;
 	log << "error_corrected = " << std::dec << ((int)sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
 	sal::simulator.save(statename);
+	assert(bp.getTriggerInstructionPointer() == OOSTUBS_FUNC_ENTRY);
+	assert(sal::simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 #elif 1
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
 	sal::simulator.restore(statename);
 	log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
+	assert(sal::simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
