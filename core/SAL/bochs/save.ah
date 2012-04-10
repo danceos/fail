@@ -14,7 +14,7 @@ aspect save {
 	// make sure the "save" aspect comes *after* the breakpoint stuff: In
 	// an "after" advice this means it must get a *higher* precedence,
 	// therefore it's first in the order list.
-	advice execution (cpuLoop()) : order ("save", "CPULoop");
+	advice execution (cpuLoop()) : order ("save", "Breakpoints");
 
 	advice execution (cpuLoop()) : after () {
 		if (!sal::save_bochs_request) {
