@@ -122,6 +122,7 @@ bool CoolChecksumExperiment::run()
 	}
 */
 	param.msg.set_instr_offset(0);
+	param.msg.set_instr_address(OOSTUBS_FUNC_ENTRY);
 	param.msg.set_mem_addr(1024*1024*8);
 	param.msg.set_bit_offset(0);
 	
@@ -164,7 +165,21 @@ bool CoolChecksumExperiment::run()
 	param.msg.set_injection_ip(injection_ip);
 	log << "fault injected @ ip " << injection_ip
 	    << " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
-	// XXX sanity check
+	// sanity check
+	if (param.msg.has_instr_address() &&
+	    injection_ip != param.msg.instr_address()) {
+		std::stringstream ss;
+		ss << "SANITY CHECK FAILED: " << injection_ip
+		   << " != " << param.msg.instr_address() << endl;
+		log << ss.str();
+		param.msg.set_resulttype(param.msg.UNKNOWN);
+		param.msg.set_latest_ip(injection_ip);
+		param.msg.set_details(ss.str());
+
+		sal::simulator.clearEvents();
+		//m_jc.sendResult(param);
+		//continue;
+	}
 
 	// --- aftermath ---
 	// four possible outcomes:
