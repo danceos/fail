@@ -93,7 +93,6 @@ bool CoolChecksumCampaign::run()
 	// they'd be identical to the golden run
 	std::vector<equivalence_class> ecs_no_effect;
 
-	Trace_Event end_event; // pseudo event
 	equivalence_class current_ec;
 
 	// for every injection address ...
