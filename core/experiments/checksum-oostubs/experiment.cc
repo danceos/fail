@@ -1,5 +1,9 @@
 #include <iostream>
 
+// getpid
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "util/Logger.hpp"
 
 #include "experiment.hpp"
@@ -130,6 +134,13 @@ bool ChecksumOOStuBSExperiment::run()
 	int mem_addr = param.msg.mem_addr();
 	int bit_offset = param.msg.bit_offset();
 	log << "job " << id << " instr " << instr_offset << " mem " << mem_addr << "+" << bit_offset << endl;
+
+	// XXX debug
+	std::stringstream fname;
+	fname << "job." << ::getpid();
+	std::ofstream job(fname.str().c_str());
+	job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
+	job.close();
 
 	// reaching finish() could happen before OR after FI
 	fi::BPEvent func_finish(OOSTUBS_FUNC_FINISH);
