@@ -14,6 +14,10 @@
 # - all of the previous options finally install Bochs
 #
 set -e
+# determine absolute path of this script
+SCRIPTDIR=$(readlink -f $(dirname $0))
+# env variable defaults
+source $SCRIPTDIR/fail-env.sh
 
 if [ "$1" = fail -o -z "$1" ]
 then
@@ -27,5 +31,5 @@ fi
 #export PATH=/fs/staff/hsc/bin/ccache:$PATH
 
 # even if we only rebuilt fail, we need to link and install bochs again
-nice make -j10 bochs 2>&1 | $(dirname $0)/colorize.pl 2>&1
+nice make -j$FAIL_BUILD_PARALLEL bochs 2>&1 | $(dirname $0)/colorize.pl 2>&1
 make bochsinstall
