@@ -122,11 +122,12 @@ bool ChecksumOOStuBSExperiment::run()
 		// communicate that we were told to die
 		sal::simulator.terminate(1);
 	}
-/*	// debug input:
-	param.msg.set_instr_offset(0);
-	param.msg.set_instr_address(OOSTUBS_FUNC_ENTRY);
-	param.msg.set_mem_addr(1024*1024*8);
-	param.msg.set_bit_offset(0);
+/*
+	// XXX debug
+	param.msg.set_instr_offset(2576034);
+	param.msg.set_instr_address(1066640);
+	param.msg.set_mem_addr(1099428);
+	param.msg.set_bit_offset(4);
 */
 	
 	int id = param.getWorkloadID();
@@ -180,8 +181,8 @@ bool ChecksumOOStuBSExperiment::run()
 	    injection_ip != param.msg.instr_address()) {
 		std::stringstream ss;
 		ss << "SANITY CHECK FAILED: " << injection_ip
-		   << " != " << param.msg.instr_address() << endl;
-		log << ss.str();
+		   << " != " << param.msg.instr_address();
+		log << ss.str() << endl;
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 		param.msg.set_latest_ip(injection_ip);
 		param.msg.set_details(ss.str());
@@ -208,6 +209,16 @@ bool ChecksumOOStuBSExperiment::run()
 	fi::BPEvent ev_done(fi::ANY_ADDR);
 	ev_done.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
 	sal::simulator.addEvent(&ev_done);
+
+/*
+	// XXX debug
+	log << "enabling tracing" << endl;
+	TracingPlugin tp;
+	tp.setLogIPOnly(true);
+	tp.setOstream(&std::cout);
+	// this must be done *after* configuring the plugin:
+	sal::simulator.addFlow(&tp);
+*/
 
 	fi::BaseEvent* ev = sal::simulator.waitAny();
 
