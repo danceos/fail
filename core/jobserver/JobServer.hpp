@@ -60,7 +60,7 @@ class JobServer
 	friend class CommThread; //!< CommThread is allowed access the job queues.
 	
 public:	
-	JobServer(int port = 1111) : m_port(port), m_finish(false), m_noMoreExps(false), m_maxThreads(32), m_threadtimeout(500) { 
+	JobServer(int port = 1111) : m_port(port), m_finish(false), m_noMoreExps(false), m_maxThreads(128), m_threadtimeout(0) { 
 #ifndef __puma
 	  m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread. 
 #endif
