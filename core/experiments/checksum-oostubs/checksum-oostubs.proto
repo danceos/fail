@@ -19,7 +19,8 @@ message OOStuBSProtoMsg {
 	enum ResultType {
 		FINISHED = 1;
 		TRAP = 2;
-		UNKNOWN = 3;
+		HALT = 3;
+		UNKNOWN = 4;
 	}
 	optional ResultType resulttype = 6;
 

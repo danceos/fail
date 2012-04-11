@@ -195,6 +195,7 @@ bool ChecksumOOStuBSExperiment::run()
 	// --- aftermath ---
 	// four possible outcomes:
 	// - guest causes a trap, "crashes"
+	// - guest reaches a "weird" state, stops with CLI+HLT ("panic")
 	// - guest runs OOSTUBS_NUMINSTR+OOSTUBS_RECOVERYINSTR instructions but
 	//   never reaches finish()
 	// - guest reaches finish() within OOSTUBS_NUMINSTR+OOSTUBS_RECOVERYINSTR
@@ -205,6 +206,9 @@ bool ChecksumOOStuBSExperiment::run()
 	// catch traps as "extraordinary" ending
 	fi::TrapEvent ev_trap(fi::ANY_TRAP);
 	sal::simulator.addEvent(&ev_trap);
+	// OOStuBS' way to terminally halt (CLI+HLT)
+	fi::BPEvent ev_halt(OOSTUBS_FUNC_CPU_HALT);
+	sal::simulator.addEvent(&ev_halt);
 	// remaining instructions until "normal" ending
 	fi::BPEvent ev_done(fi::ANY_ADDR);
 	ev_done.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
@@ -246,6 +250,9 @@ bool ChecksumOOStuBSExperiment::run()
 	if (ev == &ev_done) {
 		log << std::dec << "Result FINISHED" << endl;
 		param.msg.set_resulttype(param.msg.FINISHED);
+	} else if (ev == &ev_halt) {
+		log << std::dec << "Result HALT #" << endl;
+		param.msg.set_resulttype(param.msg.HALT);
 	} else if (ev == &ev_trap) {
 		log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 		param.msg.set_resulttype(param.msg.TRAP);

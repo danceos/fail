@@ -11,6 +11,9 @@
 // empty function that is called explicitly when the experiment finished
 // nm -C ecc.elf|fgrep "finished()"
 #define OOSTUBS_FUNC_FINISH		0x001093f0
+// function executing HLT with no chance for further progress (after panic())
+// nm -C ecc.elf|fgrep cpu_halt
+#define OOSTUBS_FUNC_CPU_HALT	0x00100987
 // number of instructions the target executes under non-error conditions from ENTRY to DONE:
 // (result of experiment's step #2)
 #define OOSTUBS_NUMINSTR		0x4a3401
