@@ -14,6 +14,7 @@
 #
 
 set -e
+umask 0077
 LIBDIR=~/bochslibs
 
 # cleanup earlier failures
