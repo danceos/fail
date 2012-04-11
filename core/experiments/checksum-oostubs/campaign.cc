@@ -77,6 +77,7 @@ bool ChecksumOOStuBSCampaign::run()
 	// experiment count
 	int count = 0;
 
+	// XXX do it the other way around: iterate over trace, search addresses
 	// for every injection address ...
 	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
 		std::cerr << ".";
@@ -196,60 +197,65 @@ bool ChecksumOOStuBSCampaign::run()
 	log << "pruning: reduced " << num_dumb_experiments * 8 <<
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
-/*
 	// CSV header
-	results << "injection_ip\tinstr_offset\tinjection_bit\tresulttype\tresultdata\terror_corrected\tdetails" << endl;
+	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tresult0\tresult1\tresult2\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
 
 	// store no-effect "experiment" results
-	// (for comparison reasons; we'll store that more compactly later)
 	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
 	     it != ecs_no_effect.end(); ++it) {
-		for (int bitnr = 0; bitnr < 8; ++bitnr) {
-			for (int instr = (*it).instr1; instr <= (*it).instr2; ++instr) {
-				results
-				 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
-				 << instr << "\t"
-				 << ((*it).byte_offset * 8 + bitnr) << "\t"
-				 << "1" << "\t"
-				 << "45" << "\t"
-				 << "0" << "\t"
-				 << "" << "\n";
-			}
-		}
+		results
+		 << (*it).instr1 << "\t"
+		 << (*it).instr2 << "\t"
+		 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
+		 << (*it).data_address << "\t"
+		 << "99\t" // dummy value: we didn't do any real experiments
+		 << "1\t"
+		 << "99\t99\t99\t"
+		 << "1\t"
+		 << "99\t"
+		 << "0\t\n";
 	}
 
 	// collect results
-	CoolChecksumExperimentData *res;
+	ChecksumOOStuBSExperimentData *res;
 	int rescount = 0;
-	while ((res = static_cast<CoolChecksumExperimentData *>(fi::campaignmanager.getDone()))) {
+	while ((res = static_cast<ChecksumOOStuBSExperimentData *>(fi::campaignmanager.getDone()))) {
 		rescount++;
 
-		equivalence_class *ec = experiment_ecs[res];
-
-		// sanity check
-		if (ec->instr2 != res->msg.instr_offset()) {
-			results << "WTF" << endl;
-			log << "WTF" << endl;
-			delete res;
+		std::map<ChecksumOOStuBSExperimentData *, unsigned>::iterator it =
+			experiment_ecs.find(res);
+		if (it == experiment_ecs.end()) {
+			results << "WTF, didn't find res!" << endl;
+			log << "WTF, didn't find res!" << endl;
 			continue;
 		}
+		equivalence_class &ec = ecs_need_experiment[it->second];
 
-		// explode equivalence class to single "experiments"
-		// (for comparison reasons; we'll store that more compactly later)
-		for (int instr = ec->instr1; instr <= ec->instr2; ++instr) {
-				results
-				 << res->msg.injection_ip() << "\t" // incorrect in all but one case!
-				 << instr << "\t"
-				 << res->msg.bit_offset() << "\t"
-				 << res->msg.resulttype() << "\t"
-				 << res->msg.resultdata() << "\t"
-				 << res->msg.error_corrected() << "\t"
-				 << res->msg.details() << "\n";
+		// sanity check
+		if (ec.instr2 != res->msg.instr_offset()) {
+			results << "WTF" << endl;
+			log << "WTF" << endl;
+			//delete res;	// currently racy if jobs are reassigned
 		}
-		delete res;
+
+		results
+		 << ec.instr1 << "\t"
+		 << ec.instr2 << "\t"
+		 << ec.instr2_absolute << "\t" // incorrect in all but one case!
+		 << ec.data_address << "\t"
+		 << res->msg.bit_offset() << "\t"
+		 << res->msg.resulttype() << "\t"
+		 << res->msg.resultdata(0) << "\t"
+		 << res->msg.resultdata(1) << "\t"
+		 << res->msg.resultdata(2) << "\t"
+		 << res->msg.finish_reached() << "\t"
+		 << res->msg.latest_ip() << "\t"
+		 << res->msg.error_corrected() << "\t"
+		 << res->msg.details() << "\n";
+		//delete res;	// currently racy if jobs are reassigned
 	}
 	log << "done.  sent " << count << " received " << rescount << endl;
 	results.close();
-*/
+
 	return true;
 }
