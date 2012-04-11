@@ -73,7 +73,7 @@ bool ChecksumOOStuBSCampaign::run()
 	equivalence_class current_ec;
 
 	// map for efficient access when results come in
-	std::map<ChecksumOOStuBSExperimentData *, equivalence_class *> experiment_ecs;
+	std::map<ChecksumOOStuBSExperimentData *, unsigned> experiment_ecs;
 	// experiment count
 	int count = 0;
 
@@ -136,7 +136,8 @@ bool ChecksumOOStuBSCampaign::run()
 					d->msg.set_mem_addr(current_ec.data_address);
 					d->msg.set_bit_offset(bitnr);
 
-					experiment_ecs[d] = &ecs_need_experiment.back();
+					// store index into ecs_need_experiment
+					experiment_ecs[d] = ecs_need_experiment.size() - 1;
 
 					fi::campaignmanager.addParam(d);
 					++count;
