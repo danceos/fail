@@ -1,4 +1,3 @@
-
 FailBochs-Bausteine TODO
 ========================
 Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
