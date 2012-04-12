@@ -15,9 +15,9 @@ aspect Interrupt_FI
 
 	advice execution (interrupt_method()) : around ()
 	{	
-		unsigned type = *(tjp->arg<1>());
+		unsigned vector = *(tjp->arg<0>());
 		
-		if(!sal::simulator.isSuppressedInterrupt(type)){
+		if(!sal::simulator.isSuppressedInterrupt(vector)){
 			tjp->proceed();
 		}
 	}
