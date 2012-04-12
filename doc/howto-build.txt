@@ -317,10 +317,16 @@ themselves, they contain some documentation):
     starts several instances of client.sh in a tmux session
  -  client.sh -- (Repeatedly) runs a single FailBochs instance
 
-
-TODO:
-- bochs-distribution problematik
-- Ausgabenproblematik
-- in wiedeholten verteilten experimenten (nicht lokal) sollte man daran denken
-  dass der server nicht läuft bzw. funktioniert, wenn es noch eine existierende
-  coolcampaign.csv gibt
+Some useful things to note:
+---------------------------
+ -  Using the distribute-experiment.sh script causes the local bochs binary to
+    be copied to the hosts. If the binary is not present in the current directory
+    the default bochs binary (-> which bochs) will be used. If you have modified
+    some of your experiment code (id est, your bochs binary will change), don't
+    forget to delete the local bochs binary in order to distribute the *new* binary.
+ -  The runcampaign.sh script prints some status information about the clients
+    recently started. In addition, there will be a few error messages concerning
+    ssh, tmux and so on. They can be ignored for now.
+ -  The runcampaign.sh script starts the coolchecksum-server. Note that the server
+    instance will terminate immediatly (without notice), if there is still an
+    existing coolcampaign.csv file.
