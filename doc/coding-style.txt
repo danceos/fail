@@ -1,0 +1,80 @@
+ - Sprache (Kommentare, SVN-Commits, Frickeleien): ausnahmslos Englisch
+
+ - Einrückung: 1 Tab (entspricht 4 Spaces), bei Statements die bündig besser zu
+   lesen sind, ist eine Aufweichung möglich, Beispiele:
+       cout << "The counter value is: "
+            << value;
+       if (first_looong_condition &&
+           second_looong_condition) { // oder für while/for/...
+           ...
+
+ - Namenskonventionen:
+    * Code-Dateien: .cc (Source), .hpp (Header), .ah (Aspect-Header), MixedCase
+    * Namespaces klein
+    * Klassen fangen mit Großbuchstaben an, dann MixedCase
+    * Public-Members beginnen mit Kleinbuchstaben, dann MixedCase
+    * Private & Protected-Member beginnen mit "m_", globale Variablen mit "g_"
+    * Präprozessor-Direktiven immer groß; Include-Guards für Datei MyFooBar.hpp
+      gemäß __MY_FOO_BAR_HPP__
+    * Konstante Variablen ebenfalls immer groß
+    * Keine Konvention für lokale Variablen
+    * typedef's-Bzeichner gemäß
+          typedef std::whatever<type> good_name_t
+
+ - Kommentare
+    * Doxygen-Kommentaren:
+       ~ Detailiert für alle Public-Member (bzw. Funktionen), also Parameter,
+         Return-Wert, Seiteneffekte, ...
+       ~ In Kurzform für Private/Protected-Member
+       ~ An jedem Beginn einer (Aspekt-)Header-Datei: @brief
+       ~ Alle structs/classes/enums (und deren Elemente!)
+    * bei kompliziertem Kram (z.B.: drei verschiedene Datenstrukturen, zwischen
+      denen Events innerhalb von EventList hin- und herwandern können) gibt es
+      Kommentare nicht nur zum "was passiert hier", sondern auch zum "warum
+      machen wir das so"
+    * Innerhalb von Methoden/Funktionen "normale" C/C++ Kommentare (//, /**/)
+
+ - Formatierung
+    * Direktiven für bedingte Kompilierung beginnen ganz vorne, außer bei
+      eingerückten Anweisungen:
+      private:                           |      ...
+          int m_Bar;                     |      #ifndef __puma
+        #ifndef __puma                   |      extern int g_Foo;
+          boost::thread* m_pThread;      |      #endif
+        #endif                           |      ...
+          ...
+      Zur Verdeutlichung kann ein #endif mit "// !puma" beendet werden (bei
+      großem vertikalem Abstand)
+    * Einrückungsbreite: 100 Zeichen
+    * public/private/protected werden 1-mal eingerückt, Methoden/Var. ebenfalls
+          class pferd {
+              public:
+                  void eier();
+          }
+      Bei switch/case/namespaces:
+          switch (foo) {
+          case 1:
+              ...
+          }
+    * Blöcke: '{' in derselben Zeile mit einem Space davor (namespace, class,
+      if, while, for, ...)
+          namespace pferd {
+          ...
+          }
+    * Bei Funktionsdefinitionen folgt die '{' in einer neuen Zeile, außerdem
+      keine Spaces.
+      Definition:                   |  Deklaration:
+          void myFunction(int i)    |      void myFunction(int i);
+          {                         |
+              ...                   |
+          }                         |
+    * Space zwischen Kontrollstruktur und Klammer zur Unterscheidung von
+      Funktionsaufrufen (für die Bedingungen keine weiteren Spaces):
+          if (...) {
+              ...
+          } else if (...) {
+              ...
+          } else {
+              ...
+          }
+    * return ohne Klammerung

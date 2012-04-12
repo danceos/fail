@@ -316,3 +316,11 @@ themselves, they contain some documentation):
  -  multiple-clients.sh -- Is run on an experiment host by runcampaign.sh,
     starts several instances of client.sh in a tmux session
  -  client.sh -- (Repeatedly) runs a single FailBochs instance
+
+
+TODO:
+- bochs-distribution problematik
+- Ausgabenproblematik
+- in wiedeholten verteilten experimenten (nicht lokal) sollte man daran denken
+  dass der server nicht läuft bzw. funktioniert, wenn es noch eine existierende
+  coolcampaign.csv gibt
