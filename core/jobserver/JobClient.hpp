@@ -17,6 +17,11 @@
 #include "controller/ExperimentData.hpp"
 #include "jobserver/messagedefs/FailControlMessage.pb.h"
 
+// FIXME This should be part of a "client config" (?).
+#define RAND_BACKOFF_TSTART  3
+#define RAND_BACKOFF_TEND    8
+#define RETRY_COUNT          3
+
 namespace fi {
 
   /**

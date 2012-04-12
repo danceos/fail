@@ -12,7 +12,7 @@ JobClient::JobClient(std::string server, int port)
 		perror("[Client@gethostbyname()]");
 		exit(1);
 	}
-	srand(time(NULL));
+	srand(time(NULL)); // needed for random backoff (see connectToServer)
 }
 
 bool JobClient::connectToServer()
@@ -34,22 +34,25 @@ bool JobClient::connectToServer()
 	memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
 	serv_addr.sin_port = htons(m_server_port);
 	
-    int retries = 3;
+    int retries = RETRY_COUNT;
     while(true) {
 		if(connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 			perror("[Client@connect()]");
 			if(retries > 0) {
-				int delay = rand() % 5 + 3;
+				// Wait RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
+				int delay = rand() % (RAND_BACKOFF_TEND-RAND_BACKOFF_TSTART) + RAND_BACKOFF_TSTART;
 				cout << "[Client] Retrying to connect to server in " << delay << "s..." << endl;
 				sleep(delay);
 				--retries;
 				continue;
 			}
+			cout << "|Client] Unable to reconnect (tried " << RETRY_COUNT << " times); "
+			     << "I'll give it up!" << endl;
 			return false; // finally: unable to connect, give it up :-(
 		}
 		break; // connected! :-)
 	}
-	cout << "[Client] Connected established!" << endl;
+	cout << "[Client] Connection established!" << endl;
 
     return true;
 }

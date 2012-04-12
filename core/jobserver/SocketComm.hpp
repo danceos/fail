@@ -32,7 +32,7 @@ public:
   
 	/**
 	 * Receive Protobuf-generated message
-	 * @param sockfd open socket descriptor to write to
+	 * @param sockfd open socket descriptor to read from
 	 * @param Msg Reference to Protobuf generated message type
 	 * \return false if message reception failed
 	 */
