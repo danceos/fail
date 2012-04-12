@@ -1,7 +1,8 @@
 /**
- * \brief The JobServer supplies the Minions with ExperimentData's and receives the result data.
+ * \brief The JobServer supplies the Minions with ExperimentData's
+ * and receives the result data.
  *
- * \author Martin Hoffmann, Richard Hellwig
+ * \author Martin Hoffmann, Richard Hellwig, Adrian Böckenkamp
  */
 
 
@@ -65,7 +66,13 @@ public:
 	  m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread. 
 #endif
 	};
-	~JobServer() {}
+	~JobServer()
+	{
+#ifndef __puma
+		// Cleanup of m_serverThread, etc.
+		delete m_serverThread;
+#endif // __puma
+	};
 
 	private:  
 		
@@ -75,7 +82,7 @@ public:
 	 * and listen for connections.
 	 */
 	void run();
-	
+
 	void sendWork(int sockfd);
 
 public:
@@ -126,32 +133,32 @@ public:
 class CommThread {
 	int m_sock; //! Socket descriptor of the connection
 	JobServer& m_js; //! Calling jobserver
+#ifndef __puma
+	static boost::mutex m_CommMutex; //! to synchronise the communication
+#endif // __puma
 public:
 	CommThread(int sockfd, JobServer& p) : m_sock(sockfd), m_js(p) {};
 	/**
-	 * The thread's entry point
+	 * The thread's entry point.
 	 */
 	void operator() ();
 private:
-  /// FIXME concerns are not really separated yet ;)
+	/// FIXME concerns are not really separated yet ;)
 	/**
 	 * Called after minion calls for work.
 	 * Tries to deque a parameter set non blocking, and
 	 * sends it back to the requesting minion.
 	 * @param minion The minion asking for input
-	 * @return FIXME return value not evaluated yet.
 	 */
-	bool sendPendingExperimentData(Minion& minion);
-
+	void sendPendingExperimentData(Minion& minion);
 	/**
 	 * Called after minion offers a result message.
 	 * Evaluates the Workload ID and puts the corresponding
 	 * job result into the result queue. 
 	 * @param minion The minion offering results
 	 * @param workloadID The workload id of the result message
-	 * @return \c true if Worload ID could be mapped, \c false if not
 	 */	
-	bool receiveExperimentResults(Minion& minion, uint32_t workloadID);
+	void receiveExperimentResults(Minion& minion, uint32_t workloadID);
 };
 
 };

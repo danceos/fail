@@ -28,6 +28,20 @@ private:
 			return m_map.size();
 		}
 	/**
+	 * Retrieves the first element in the map.
+	 * @return a pointer to the first element, or \c NULL if empty
+	 */
+	Tvalue first()
+	{
+	  #ifndef __puma
+		boost::unique_lock<boost::mutex> lock(m_mutex);
+	  #endif
+		if(m_map.size() > 0)
+			return m_map.begin()->second;
+		else
+			return NULL;
+	} // Lock is automatically released here
+	/**
 	 * Add data to the map, return false if already present
 	 * @param key Map key
 	 * @param value value according to key
