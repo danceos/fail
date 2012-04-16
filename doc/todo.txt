@@ -1,3 +1,16 @@
+Verrückte Ideen
+===============
+ - aufeinander aufbauende Events (Backend-spezifisch <- generisch, oder mehrere
+   Einzelevents gebündelt in ein einzelnes abstraktes ["Crash", HLT mit
+   abgeschalteten Interrupts])
+   * lösbar als Callback-"Experimente", die selbst Events auslösen?
+   * Synthese komplexerer Events
+ - Events fuer besondere Instruktionen (HLT?)
+ - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
+   GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
+   Backend-Metainformationen (welche Register gibt es, wie breit ist der
+   Datenbus, welche Traps können ausgelöst werden)
+
 FailBochs-Bausteine TODO
 ========================
 Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
@@ -11,18 +24,17 @@ Bochs:
  - gemeinsame Namen fuer RDX/EDX (ab)
 
 Abstraktionen:
- - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
-   GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
-   Backend-Metainformationen (welche Register gibt es, wie breit ist der
-   Datenbus, welche Traps können ausgelöst werden)
+ ! Timer (Bochs: basierend auf bx_pc_system.register_timer()) für "echte"
+   Timeouts (die auch dann greifen, wenn die CPU z.B. in einem CLI/HLT steht)
+ - Traces: geeignet kapseln, in einer Sequenz von protobuf-Nachrichten statt
+   einer großen rausschreiben/laden (rh)
  - Endianness?
  - Merkmalmodell von Implementierungsdetails trennen (hsc)
    -> automatische Konfigurierung anhand Experimentauswahl
    -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
  - zum Verpacken in ExperimentData-Nachrichten Register<->String-Konvertierung
    vereinfachen (ab)
- - Namespace Confusion: was gehört in fi::, was in sal::?  Brauchen wir noch
-   beides, brauchen wir was Zusätzliches?
+ - Namespace Confusion: aufräumen (ab)
  - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
    Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
    -> "Fehlerinjektion" ist das ja nicht immer
@@ -33,14 +45,8 @@ Abstraktionen:
    -> "Ausgabesystem", "Logger"
 
 Events:
- - sobald mehrere Aspekte an derselben Stelle hooken, muss in einer Schleife
-   nach jeder Kontrollübergabe an den SimulatorController geprüft werden, ob
-   neue Events oder Fehlerinjektionsaufträge vorliegen
-   -> Anwendungsfall z.B. Breakpoint an Adresse X, danach Zustandssicherung;
-   man will natürlich EIP==X in dem gesicherten Zustand haben, nicht X+y (hsc)
- - MemEvents: Instruction-Fetch und weitere CPU-interne Speicherzugriffe
-   (Interrupt-Kontextsicherung, HW-Tasks, Interrupt-Vektoren, ...) ermöglichen
-   und konfigurierbar machen
+ - Speicherzugriffe: bei Instruction Fetch?  INC $Adresse?  CALL?  PUSH?
+   PUSHF?  Interrupt? (ab)
 
 Parallelisierung:
  - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
@@ -75,16 +81,10 @@ Parallelisierung:
       nicht über die Leitung, werden aber am Schluss zur Auswertung gebraucht
 
 Implementierungsdetails:
- - EventList, RegisterIterator, ...: nach Möglichkeit keine selbstgebauten
-   Container/Iteratoren etc. benutzen, sondern in der STL bedienen (z.B. von
-   std::list ableiten)
-   * falls doch ein Eigenbau notwendig ist, unbedingt STL-Schnittstellen
-     nachbilden
  - einheitliche Fehlerbehandlung
  - einheitliches Logging (Loglevels?)
 
 Effizienz:
- - zuerst: Bottleneck identifizieren!
  - getrennte Queues?
  - Queue-Suche optimieren (z.B. Hash-Idee)?
  - boolean/Counter für Events (um Durchlaufen der Queue zu verhindern)?
