@@ -18,7 +18,7 @@ export FAIL_EXPERIMENT_HOSTS=${FAIL_EXPERIMENT_HOSTS:="bigbox.informatik.uni-erl
 
 # A homedir-relative directory on the distribution hosts where all necessary
 # Fail* ingredients reside (see multiple-clients.sh).
-export FAIL_EXPERIMENT_TARGETDIR=.fail-experiment
+export FAIL_EXPERIMENT_TARGETDIR=${FAIL_EXPERIMENT_TARGETDIR:=.fail-experiment}
 
 # Number of parallel build processes.  If unset, #CPUs+1.
 if [ -z "$FAIL_BUILD_PARALLEL" ]; then
