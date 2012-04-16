@@ -251,11 +251,15 @@ bool ChecksumOOStuBSExperiment::run()
 		log << std::dec << "Result FINISHED" << endl;
 		param.msg.set_resulttype(param.msg.FINISHED);
 	} else if (ev == &ev_halt) {
-		log << std::dec << "Result HALT #" << endl;
+		log << std::dec << "Result HALT" << endl;
 		param.msg.set_resulttype(param.msg.HALT);
 	} else if (ev == &ev_trap) {
 		log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 		param.msg.set_resulttype(param.msg.TRAP);
+
+		std::stringstream ss;
+		ss << ev_trap.getTriggerNumber();
+		param.msg.set_details(ss.str());
 	} else {
 		log << std::dec << "Result WTF?" << endl;
 		param.msg.set_resulttype(param.msg.UNKNOWN);
