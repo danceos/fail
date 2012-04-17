@@ -51,7 +51,54 @@ bool WeathermonitorExperiment::run()
 	assert(sal::simulator.getRegisterManager().getInstructionPointer() == WEATHER_FUNC_MAIN);
 #elif 0
 	// STEP 2: record trace for fault-space pruning
-	// XXX
+	log << "restoring state" << endl;
+	sal::simulator.restore(statename);
+	log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
+	assert(sal::simulator.getRegisterManager().getInstructionPointer() == WEATHER_FUNC_MAIN);
+
+	log << "enabling tracing" << endl;
+	TracingPlugin tp;
+
+	// restrict memory access logging to injection target
+	MemoryMap mm;
+	mm.add(WEATHER_DATA_START, WEATHER_DATA_END - WEATHER_DATA_START);
+	tp.restrictMemoryAddresses(&mm);
+	//tp.setLogIPOnly(true);
+
+	// record trace
+	Trace trace;
+	tp.setTraceMessage(&trace);
+
+	// this must be done *after* configuring the plugin:
+	sal::simulator.addFlow(&tp);
+
+	bp.setWatchInstructionPointer(fi::ANY_ADDR);
+	bp.setCounter(WEATHER_NUMINSTR);
+	sal::simulator.addEvent(&bp);
+	fi::BPEvent func_temp_measure(WEATHER_FUNC_TEMP_MEASURE);
+	sal::simulator.addEvent(&func_temp_measure);
+
+	int count_temp_measure;
+	for (count_temp_measure = 0; sal::simulator.waitAny() == &func_temp_measure;
+	     ++count_temp_measure) {
+		log << "experiment reached Temperature::measure()" << endl;
+		sal::simulator.addEvent(&func_temp_measure);
+	}
+	log << "experiment finished after " << std::dec << WEATHER_NUMINSTR << " instructions" << endl;
+	log << "Temperature::measure() was called " << count_temp_measure << " times" << endl;
+
+	sal::simulator.removeFlow(&tp);
+
+	// serialize trace to file
+	char const *tracefile = "trace.pb";
+	std::ofstream of(tracefile);
+	if (of.fail()) {
+		log << "failed to write " << tracefile << endl;
+		return false;
+	}
+	trace.SerializeToOstream(&of);
+	of.close();
+	log << "trace written to " << tracefile << endl;
 
 #elif 0
 	// STEP 3: The actual experiment.
