@@ -9,10 +9,10 @@
 
 // main() address:
 // nm -C vanilla.elf|fgrep main
-#define WEATHER_FUNC_MAIN			0x001010f0 
+#define WEATHER_FUNC_MAIN			0x001010b0
 // Temperature::measure() address:
 // nm -C vanilla.elf|fgrep 'Temperature::measure()'
-#define WEATHER_FUNC_TEMP_MEASURE	0x001010f0 
+#define WEATHER_FUNC_TEMP_MEASURE	0x00100f10
 // number of instructions we want to observe
 #define WEATHER_NUMINSTR			10000
 // data/BSS begin:
