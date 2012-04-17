@@ -109,7 +109,7 @@ void BochsController::onInstrPtrChanged(address_t instrPtr)
 		fi::BPRangeEvent* pEvRange = dynamic_cast<fi::BPRangeEvent*>(*it);
 		if(pEvRange && pEvRange->isMatching(instrPtr))
 		{
-			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
+			pEvRange->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
 			continue; // dito.
 		}
