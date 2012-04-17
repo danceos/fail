@@ -19,24 +19,15 @@ message WeathermonitorProtoMsg {
 	enum ResultType {
 		FINISHED = 1;
 		TRAP = 2;
-		HALT = 3;
-		UNKNOWN = 4;
+		OUTSIDE = 3;
+		HALT = 4;
+		UNKNOWN = 5;
 	}
 	optional ResultType resulttype = 6;
 
-	// result details:
-	// resultdata = result[0-2]
-	repeated uint32 resultdata = 7 [packed=true];
-
-	// was finish() ever reached?
-	optional bool finish_reached = 8;
-
-	// especially interesting for TRAP/ UNKNOWN: latest IP
-	optional uint32 latest_ip = 9;
-
-	// did ECC correct the fault?
-	optional int32 error_corrected = 10;
+	// especially interesting for TRAP/UNKNOWN: latest IP
+	optional uint32 latest_ip = 7;
 
 	// optional textual description of what happened
-	optional string details = 11;
+	optional string details = 8;
 }
