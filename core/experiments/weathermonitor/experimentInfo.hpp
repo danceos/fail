@@ -9,35 +9,35 @@
 
 // main() address:
 // nm -C vanilla.elf|fgrep main
-#define WEATHER_FUNC_MAIN			0x00100f80
+#define WEATHER_FUNC_MAIN			0x00100f70
 // wait_begin address
-#define WEATHER_FUNC_WAIT_BEGIN		0x00100f60
+#define WEATHER_FUNC_WAIT_BEGIN		0x00100f50
 // wait_end address
-#define WEATHER_FUNC_WAIT_END		0x00100f70
+#define WEATHER_FUNC_WAIT_END		0x00100f60
 // number of main loop iterations to trace
 // (determines trace length and therefore fault-space width)
 #define WEATHER_NUMITER_TRACING		4
 // number of instructions needed for these iterations in golden run (taken from
 // experiment step #2)
-#define WEATHER_NUMINSTR_TRACING	21437
+#define WEATHER_NUMINSTR_TRACING	20549
 // number of additional loop iterations for FI experiments (to see whether
 // everything continues working fine)
 #define WEATHER_NUMITER_AFTER		2
 // number of instructions needed for these iterations in golden run (taken from
 // experiment step #2)
-#define WEATHER_NUMINSTR_AFTER		10676
+#define WEATHER_NUMINSTR_AFTER		10232
 // data/BSS begin:
 // nm -C vanilla.elf|fgrep ___DATA_START__
-#define WEATHER_DATA_START			0x001018c0
+#define WEATHER_DATA_START			0x00101820
 // data/BSS end:
 // nm -C vanilla.elf|fgrep ___BSS_END__
-#define WEATHER_DATA_END			0x001031a8
+#define WEATHER_DATA_END			0x00103108
 // text begin:
 // nm -C vanilla.elf|fgrep ___TEXT_START__
 #define WEATHER_TEXT_START			0x00100000
 // text end:
 // nm -C vanilla.elf|fgrep ___TEXT_END__
-#define WEATHER_TEXT_END			0x001016fb
+#define WEATHER_TEXT_END			0x0010165b
 
 #else // with guards
 

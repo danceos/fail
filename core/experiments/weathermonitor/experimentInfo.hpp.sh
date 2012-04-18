@@ -27,13 +27,13 @@ cat >experimentInfo.hpp <<EOF
 #define WEATHER_NUMITER_TRACING		4
 // number of instructions needed for these iterations in golden run (taken from
 // experiment step #2)
-#define WEATHER_NUMINSTR_TRACING	21437
+#define WEATHER_NUMINSTR_TRACING	20549
 // number of additional loop iterations for FI experiments (to see whether
 // everything continues working fine)
 #define WEATHER_NUMITER_AFTER		2
 // number of instructions needed for these iterations in golden run (taken from
 // experiment step #2)
-#define WEATHER_NUMINSTR_AFTER		10676
+#define WEATHER_NUMINSTR_AFTER		10232
 // data/BSS begin:
 // nm -C vanilla.elf|fgrep ___DATA_START__
 #define WEATHER_DATA_START			0x`addrof $1 ___DATA_START__`
