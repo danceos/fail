@@ -126,9 +126,6 @@ bool WeathermonitorExperiment::run()
 	for (int i = 0; i < 500; ++i) {
 #endif
 
-	log << "restoring state" << endl;
-	sal::simulator.restore(statename);
-
 	// get an experiment parameter set
 	log << "asking job server for experiment parameters" << endl;
 	WeathermonitorExperimentData param;
@@ -156,6 +153,9 @@ bool WeathermonitorExperiment::run()
 		result->set_bit_offset(bit_offset);
 		log << std::dec << "job " << id << " instr " << instr_offset
 		    << " mem " << mem_addr << "+" << bit_offset << endl;
+
+		log << "restoring state" << endl;
+		sal::simulator.restore(statename);
 
 		// XXX debug
 /*
