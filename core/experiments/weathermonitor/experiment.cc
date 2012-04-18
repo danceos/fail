@@ -59,6 +59,8 @@ bool WeathermonitorExperiment::run()
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
 
+	// TODO: record max(ESP)
+
 	// restrict memory access logging to injection target
 	MemoryMap mm;
 	mm.add(WEATHER_DATA_START, WEATHER_DATA_END - WEATHER_DATA_START);
@@ -123,125 +125,131 @@ bool WeathermonitorExperiment::run()
 	param.msg.set_instr_offset(1000);
 	//param.msg.set_instr_address(12345);
 	param.msg.set_mem_addr(0x00103bdc);
-	param.msg.set_bit_offset(5);
 #endif
 
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
 	int mem_addr = param.msg.mem_addr();
-	int bit_offset = param.msg.bit_offset();
-	log << "job " << id << " instr " << instr_offset << " mem " << mem_addr << "+" << bit_offset << endl;
 
-	// XXX debug
+	// for each job we're actually doing *8* experiments (one for each bit)
+	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
+		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
+		result->set_bit_offset(bit_offset);
+		log << std::dec << "job " << id << " instr " << instr_offset
+		    << " mem " << mem_addr << "+" << bit_offset << endl;
+
+		// XXX debug
 /*
-	std::stringstream fname;
-	fname << "job." << ::getpid();
-	std::ofstream job(fname.str().c_str());
-	job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
-	job.close();
+		std::stringstream fname;
+		fname << "job." << ::getpid();
+		std::ofstream job(fname.str().c_str());
+		job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
+		job.close();
 */
 
-	// this marks THE END
-	fi::BPEvent ev_end(fi::ANY_ADDR);
-	ev_end.setCounter(WEATHER_NUMINSTR);
-	sal::simulator.addEvent(&ev_end);
+		// this marks THE END
+		fi::BPEvent ev_end(fi::ANY_ADDR);
+		ev_end.setCounter(WEATHER_NUMINSTR);
+		sal::simulator.addEvent(&ev_end);
 
-	// no need to wait if offset is 0
-	if (instr_offset > 0) {
-		// XXX could be improved with intermediate states (reducing runtime until injection)
-		bp.setWatchInstructionPointer(fi::ANY_ADDR);
-		bp.setCounter(instr_offset);
-		sal::simulator.addEventAndWait(&bp);
-	}
+		// no need to wait if offset is 0
+		if (instr_offset > 0) {
+			// XXX could be improved with intermediate states (reducing runtime until injection)
+			bp.setWatchInstructionPointer(fi::ANY_ADDR);
+			bp.setCounter(instr_offset);
+			sal::simulator.addEventAndWait(&bp);
+		}
 
-	// --- fault injection ---
-	sal::MemoryManager& mm = sal::simulator.getMemoryManager();
-	sal::byte_t data = mm.getByte(mem_addr);
-	sal::byte_t newdata = data ^ (1 << bit_offset);
-	mm.setByte(mem_addr, newdata);
-	// note at what IP we did it
-	int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
-	param.msg.set_injection_ip(injection_ip);
-	log << "fault injected @ ip " << injection_ip
-	    << " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
-	// sanity check
-	if (param.msg.has_instr_address() &&
-	    injection_ip != param.msg.instr_address()) {
-		std::stringstream ss;
-		ss << "SANITY CHECK FAILED: " << injection_ip
-		   << " != " << param.msg.instr_address();
-		log << ss.str() << endl;
-		param.msg.set_resulttype(param.msg.UNKNOWN);
-		param.msg.set_latest_ip(injection_ip);
-		param.msg.set_details(ss.str());
+		// --- fault injection ---
+		sal::MemoryManager& mm = sal::simulator.getMemoryManager();
+		sal::byte_t data = mm.getByte(mem_addr);
+		sal::byte_t newdata = data ^ (1 << bit_offset);
+		mm.setByte(mem_addr, newdata);
+		// note at what IP we did it
+		int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
+		param.msg.set_injection_ip(injection_ip);
+		log << "fault injected @ ip " << injection_ip
+			<< " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
+		// sanity check
+		if (param.msg.has_instr_address() &&
+			injection_ip != param.msg.instr_address()) {
+			std::stringstream ss;
+			ss << "SANITY CHECK FAILED: " << injection_ip
+			   << " != " << param.msg.instr_address();
+			log << ss.str() << endl;
+			result->set_resulttype(result->UNKNOWN);
+			result->set_latest_ip(injection_ip);
+			result->set_details(ss.str());
+			result->set_num_iterations(666); // FIXME
 
-		sal::simulator.clearEvents();
-#if !LOCAL
-		m_jc.sendResult(param);
-		continue;
-#endif
-	}
+			sal::simulator.clearEvents();
+			continue;
+		}
 
-	// --- aftermath ---
-	// four possible outcomes:
-	// - trap, "crash"
-	// - jump outside text segment
-	// - (XXX unaligned jump inside text segment)
-	// - (XXX weird instructions?)
-	// - (XXX results displayed?)
-	// - reaches THE END
+		// --- aftermath ---
+		// possible outcomes:
+		// - trap, "crash"
+		// - jump outside text segment
+		// - (XXX unaligned jump inside text segment)
+		// - (XXX weird instructions?)
+		// - (XXX results displayed?)
+		// - reaches THE END
+		// additional info:
+		// - (XXX #loop iterations?)
+		// - (XXX "sane" display?)
 
-	// catch traps as "extraordinary" ending
-	fi::TrapEvent ev_trap(fi::ANY_TRAP);
-	sal::simulator.addEvent(&ev_trap);
-	// jump outside text segment
-	fi::BPRangeEvent ev_below_text(fi::ANY_ADDR, WEATHER_TEXT_START - 1);
-	fi::BPRangeEvent ev_beyond_text(WEATHER_TEXT_END + 1, fi::ANY_ADDR);
-	sal::simulator.addEvent(&ev_below_text);
-	sal::simulator.addEvent(&ev_beyond_text);
+		// catch traps as "extraordinary" ending
+		fi::TrapEvent ev_trap(fi::ANY_TRAP);
+		sal::simulator.addEvent(&ev_trap);
+		// jump outside text segment
+		fi::BPRangeEvent ev_below_text(fi::ANY_ADDR, WEATHER_TEXT_START - 1);
+		fi::BPRangeEvent ev_beyond_text(WEATHER_TEXT_END + 1, fi::ANY_ADDR);
+		sal::simulator.addEvent(&ev_below_text);
+		sal::simulator.addEvent(&ev_beyond_text);
 
 #if LOCAL && 0
-	// XXX debug
-	log << "enabling tracing" << endl;
-	TracingPlugin tp;
-	tp.setLogIPOnly(true);
-	tp.setOstream(&std::cout);
-	// this must be done *after* configuring the plugin:
-	sal::simulator.addFlow(&tp);
+		// XXX debug
+		log << "enabling tracing" << endl;
+		TracingPlugin tp;
+		tp.setLogIPOnly(true);
+		tp.setOstream(&std::cout);
+		// this must be done *after* configuring the plugin:
+		sal::simulator.addFlow(&tp);
 #endif
 
-	fi::BaseEvent* ev = sal::simulator.waitAny();
+		fi::BaseEvent* ev = sal::simulator.waitAny();
 
-	// record latest IP regardless of result
-	param.msg.set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
+		// record latest IP regardless of result
+		result->set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
 
-	if (ev == &ev_end) {
-		log << "Result FINISHED" << endl;
-		param.msg.set_resulttype(param.msg.FINISHED);
-	} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
-		log << "Result OUTSIDE" << endl;
-		param.msg.set_resulttype(param.msg.OUTSIDE);
-	} else if (ev == &ev_trap) {
-		log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
-		param.msg.set_resulttype(param.msg.TRAP);
+		if (ev == &ev_end) {
+			log << "Result FINISHED" << endl;
+			result->set_resulttype(result->FINISHED);
+		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
+			log << "Result OUTSIDE" << endl;
+			result->set_resulttype(result->OUTSIDE);
+		} else if (ev == &ev_trap) {
+			log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
+			result->set_resulttype(result->TRAP);
 
-		std::stringstream ss;
-		ss << ev_trap.getTriggerNumber();
-		param.msg.set_details(ss.str());
-	} else {
-		log << "Result WTF?" << endl;
-		param.msg.set_resulttype(param.msg.UNKNOWN);
+			std::stringstream ss;
+			ss << ev_trap.getTriggerNumber();
+			result->set_details(ss.str());
+		} else {
+			log << "Result WTF?" << endl;
+			result->set_resulttype(result->UNKNOWN);
 
-		std::stringstream ss;
-		ss << "eventid " << ev->getId() << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
-		param.msg.set_details(ss.str());
+			std::stringstream ss;
+			ss << "eventid " << ev->getId() << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
+			result->set_details(ss.str());
+		}
 	}
+	// FIXME do we have exactly 8 results? if (param.msg.
 #if !LOCAL
 	m_jc.sendResult(param);
 
 	}
 #endif
-	// XXX
 
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
