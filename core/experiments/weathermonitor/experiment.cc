@@ -176,7 +176,7 @@ bool WeathermonitorExperiment::run()
 		//       be done "in parallel"
 		fi::BPEvent ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
 		sal::simulator.addEvent(&ev_wait_begin);
-		int count_loop_iter = 0;
+		int count_loop_iter_before = 0;
 
 		// no need to wait if offset is 0
 		if (instr_offset > 0) {
@@ -187,7 +187,7 @@ bool WeathermonitorExperiment::run()
 
 			// count loop iterations until FI
 			while (sal::simulator.waitAny() == &ev_wait_begin) {
-				++count_loop_iter;
+				++count_loop_iter_before;
 				sal::simulator.addEvent(&ev_wait_begin);
 			}
 		}
@@ -200,7 +200,7 @@ bool WeathermonitorExperiment::run()
 		// note at what IP we did it
 		int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
-		result->set_iter_before_fi(count_loop_iter);
+		result->set_iter_before_fi(count_loop_iter_before);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
@@ -252,18 +252,19 @@ bool WeathermonitorExperiment::run()
 		fi::BaseEvent* ev;
 
 		// count loop iterations
-		count_loop_iter = 0;
+		int count_loop_iter_after = 0;
 		while ((ev = sal::simulator.waitAny()) == &ev_wait_begin) {
-			++count_loop_iter;
+			++count_loop_iter_after;
 			sal::simulator.addEvent(&ev_wait_begin);
 		}
-		result->set_iter_after_fi(count_loop_iter);
+		result->set_iter_after_fi(count_loop_iter_after);
 
 		// record latest IP regardless of result
 		result->set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
 
 		if (ev == &ev_end) {
-			log << "Result FINISHED" << endl;
+			log << "Result FINISHED (" << std::dec
+			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
 			result->set_resulttype(result->FINISHED);
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
