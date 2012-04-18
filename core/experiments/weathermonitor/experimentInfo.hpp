@@ -9,25 +9,25 @@
 
 // main() address:
 // nm -C vanilla.elf|fgrep main
-#define WEATHER_FUNC_MAIN			0x00100f50
+#define WEATHER_FUNC_MAIN			0x00100f80
 // Temperature::measure() address:
 // nm -C vanilla.elf|fgrep 'Temperature::measure()'
-#define WEATHER_FUNC_TEMP_MEASURE	0x001010f0
+#define WEATHER_FUNC_TEMP_MEASURE	0x00100dc0
 // number of instructions we want to observe
 // 20k suffices for 4 measure() calls; we can do more later (without really learning more?)
 #define WEATHER_NUMINSTR			20000
 // data/BSS begin:
 // nm -C vanilla.elf|fgrep ___DATA_START__
-#define WEATHER_DATA_START			0x00102304
+#define WEATHER_DATA_START			0x001018c0
 // data/BSS end:
 // nm -C vanilla.elf|fgrep ___BSS_END__
-#define WEATHER_DATA_END			0x00103bf4
+#define WEATHER_DATA_END			0x001031a8
 // text begin:
 // nm -C vanilla.elf|fgrep ___TEXT_START__
 #define WEATHER_TEXT_START			0x00100000
 // text end:
 // nm -C vanilla.elf|fgrep ___TEXT_END__
-#define WEATHER_TEXT_END			0x0010212b
+#define WEATHER_TEXT_END			0x001016fb
 
 #else // with guards
 
