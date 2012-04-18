@@ -10,14 +10,13 @@
 
 using std::endl;
 
-void Logger::add(const std::string& what, const std::string& descr)
+void Logger::timestamp()
 {
-	(*m_pDest) << "[" << descr;
-	if(m_showTime)
-	{
+	(*m_pDest) << "[" << m_description;
+	if (m_showTime) {
 		time_t rawtime;
 		struct tm* timeinfo;
-		char buffer [80];
+		char buffer[80];
 
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
@@ -25,5 +24,5 @@ void Logger::add(const std::string& what, const std::string& descr)
 		strftime(buffer, 80, "%H:%M:%S", timeinfo);
 		(*m_pDest) << " " << buffer;
 	}
-	(*m_pDest) << "] " << what;
+	(*m_pDest) << "] ";
 }

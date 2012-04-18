@@ -17,6 +17,8 @@ class Logger
 		std::ostream* m_pDest;
 		std::string m_description;
 		bool m_showTime;
+		void timestamp();
+
 	public:
 		/**
 		 * Constructor.
@@ -38,29 +40,15 @@ class Logger
 			m_description = descr;
 		}
 		/**
-		 * Add a new log entry.
-		 * @param what Message for log entry.
-		 * @param descr Description shown alongside this log entry in square
-		 *        brackets [ ].
-		 */
-		void add(const std::string& what, const std::string& descr);
-		/**
-		 * Add a new log entry.
-		 * @param what Message for log entry.  The default description is
-		 *        being used in square brackets [ ].
-		 */
-		void add(const std::string& what) { add(what, m_description); }
-		/**
-		 * Simplifies the logging.
+		 * Add a new log entry.  Returns a std::ostream reference to continue
+		 * streaming a longer log entry.
 		 * @param v data to log
 		 */
 		template<class T>
 		inline std::ostream& operator <<(const T& v)
 		{
-			std::stringstream ss;
-			ss << v;
-			add(ss.str());
-			return (*m_pDest);
+			timestamp();
+			return (*m_pDest) << v;
 		}
 };
 
