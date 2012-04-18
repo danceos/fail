@@ -10,7 +10,7 @@ bx_bool restore_bochs_request = false;
 bx_bool save_bochs_request = false;
 bx_bool reboot_bochs_request = false;
 bx_bool interrupt_injection_request = false;
-unsigned interrupt_to_fire = 0;
+int interrupt_to_fire = -1;
 std::string  sr_path = "";
 
 BochsController::BochsController()

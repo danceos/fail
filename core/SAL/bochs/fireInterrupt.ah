@@ -7,6 +7,7 @@
 
 #include "../../../bochs/bochs.h"
 #include "../../../bochs/cpu/cpu.h"
+#include "../../../bochs/iodev/iodev.h"
 #include "../SALInst.hpp"
 
 aspect fireInterrupt
@@ -36,7 +37,6 @@ aspect InterruptDone
 		}else{
 			if(*(tjp->arg<0>()) == 32 + sal::interrupt_to_fire){
 				DEV_pic_lower_irq(sal::interrupt_to_fire);
-				
 				sal::simulator.fireInterruptDone();
 			}
 		}
