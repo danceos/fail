@@ -151,6 +151,7 @@ bool WeathermonitorExperiment::run()
 
 	// for each job we're actually doing *8* experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
+		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
 		log << std::dec << "job " << id << " instr " << instr_offset
@@ -167,15 +168,28 @@ bool WeathermonitorExperiment::run()
 
 		// this marks THE END
 		fi::BPEvent ev_end(fi::ANY_ADDR);
-		ev_end.setCounter(WEATHER_NUMINSTR);
+		ev_end.setCounter(WEATHER_NUMINSTR_TRACING + WEATHER_NUMINSTR_AFTER);
 		sal::simulator.addEvent(&ev_end);
+
+		// count loop iterations by counting wait_begin() calls
+		// FIXME would be nice to have a callback API for this as this needs to
+		//       be done "in parallel"
+		fi::BPEvent ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
+		sal::simulator.addEvent(&ev_wait_begin);
+		int count_loop_iter = 0;
 
 		// no need to wait if offset is 0
 		if (instr_offset > 0) {
 			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(fi::ANY_ADDR);
 			bp.setCounter(instr_offset);
-			sal::simulator.addEventAndWait(&bp);
+			sal::simulator.addEvent(&bp);
+
+			// count loop iterations until FI
+			while (sal::simulator.waitAny() == &ev_wait_begin) {
+				++count_loop_iter;
+				sal::simulator.addEvent(&ev_wait_begin);
+			}
 		}
 
 		// --- fault injection ---
@@ -186,6 +200,7 @@ bool WeathermonitorExperiment::run()
 		// note at what IP we did it
 		int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
+		result->set_iter_before_fi(count_loop_iter);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
@@ -198,7 +213,6 @@ bool WeathermonitorExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
-			result->set_num_iterations(666); // FIXME
 
 			sal::simulator.clearEvents();
 			continue;
@@ -213,7 +227,7 @@ bool WeathermonitorExperiment::run()
 		// - (XXX results displayed?)
 		// - reaches THE END
 		// additional info:
-		// - (XXX #loop iterations?)
+		// - #loop iterations before/after FI
 		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
@@ -235,7 +249,15 @@ bool WeathermonitorExperiment::run()
 		sal::simulator.addFlow(&tp);
 #endif
 
-		fi::BaseEvent* ev = sal::simulator.waitAny();
+		fi::BaseEvent* ev;
+
+		// count loop iterations
+		count_loop_iter = 0;
+		while ((ev = sal::simulator.waitAny()) == &ev_wait_begin) {
+			++count_loop_iter;
+			sal::simulator.addEvent(&ev_wait_begin);
+		}
+		result->set_iter_after_fi(count_loop_iter);
 
 		// record latest IP regardless of result
 		result->set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
@@ -262,7 +284,10 @@ bool WeathermonitorExperiment::run()
 			result->set_details(ss.str());
 		}
 	}
-	// FIXME do we have exactly 8 results? if (param.msg.
+	// sanity check: do we have exactly 8 results?
+	if (param.msg.result_size() != 8) {
+		log << "WTF? param.msg.result_size() != 8" << endl;
+	}
 #if !LOCAL
 	m_jc.sendResult(param);
 

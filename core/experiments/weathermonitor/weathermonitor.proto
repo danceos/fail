@@ -37,10 +37,12 @@ message WeathermonitorProtoMsg {
 		// especially interesting for TRAP/UNKNOWN: latest IP
 		required uint32 latest_ip = 3;
 
-		// total number of wmoo measuring/displaying iterations seen
-		required uint32 num_iterations = 4;
+		// number of wmoo measuring/displaying iterations before FI
+		required uint32 iter_before_fi = 4;
+		// number of wmoo measuring/displaying iterations after FI
+		required uint32 iter_after_fi = 5;
 
 		// optional textual description of what happened
-		optional string details = 5;
+		optional string details = 6;
 	}
 }
