@@ -74,21 +74,23 @@ bool WeathermonitorExperiment::run()
 	// this must be done *after* configuring the plugin:
 	sal::simulator.addFlow(&tp);
 
-	bp.setWatchInstructionPointer(fi::ANY_ADDR);
-	bp.setCounter(WEATHER_NUMINSTR);
+	// trace WEATHER_NUMITER_TRACING measurement loop iterations
+	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
+	bp.setCounter(WEATHER_NUMITER_TRACING);
 	sal::simulator.addEvent(&bp);
-	fi::BPEvent func_temp_measure(WEATHER_FUNC_TEMP_MEASURE);
-	sal::simulator.addEvent(&func_temp_measure);
+	fi::BPEvent ev_count(fi::ANY_ADDR);
+	sal::simulator.addEvent(&ev_count);
 
-	int count_temp_measure;
-	for (count_temp_measure = 0; sal::simulator.waitAny() == &func_temp_measure;
-	     ++count_temp_measure) {
-		log << "experiment reached Temperature::measure()" << endl;
-		sal::simulator.addEvent(&func_temp_measure);
+	// count instructions
+	// FIXME add SAL functionality for this?
+	int instr_counter = 0;
+	while (sal::simulator.waitAny() == &ev_count) {
+		++instr_counter;
+		sal::simulator.addEvent(&ev_count);
 	}
-	log << "experiment finished after " << std::dec << WEATHER_NUMINSTR << " instructions" << endl;
-	log << "Temperature::measure() was called " << count_temp_measure << " times" << endl;
 
+	log << std::dec << "tracing finished after " << instr_counter
+	    << " instructions, seeing wait_end " << WEATHER_NUMITER_TRACING << " times" << endl;
 	sal::simulator.removeFlow(&tp);
 
 	// serialize trace to file
@@ -101,6 +103,22 @@ bool WeathermonitorExperiment::run()
 	trace.SerializeToOstream(&of);
 	of.close();
 	log << "trace written to " << tracefile << endl;
+
+	// wait another WEATHER_NUMITER_AFTER measurement loop iterations
+	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
+	bp.setCounter(WEATHER_NUMITER_AFTER);
+	sal::simulator.addEvent(&bp);
+
+	// count instructions
+	// FIXME add SAL functionality for this?
+	instr_counter = 0;
+	while (sal::simulator.waitAny() == &ev_count) {
+		++instr_counter;
+		sal::simulator.addEvent(&ev_count);
+	}
+
+	log << std::dec << "experiment finished after " << instr_counter
+	    << " instructions, seeing wait_end " << WEATHER_NUMITER_AFTER << " times" << endl;
 
 #elif 0
 	// STEP 3: The actual experiment.

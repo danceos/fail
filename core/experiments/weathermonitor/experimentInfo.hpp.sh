@@ -18,12 +18,22 @@ cat >experimentInfo.hpp <<EOF
 // main() address:
 // nm -C vanilla.elf|fgrep main
 #define WEATHER_FUNC_MAIN			0x`addrof $1 main`
-// Temperature::measure() address:
-// nm -C vanilla.elf|fgrep 'Temperature::measure()'
-#define WEATHER_FUNC_TEMP_MEASURE	0x`addrof $1 'Temperature::measure()'`
-// number of instructions we want to observe
-// 20k suffices for 4 measure() calls; we can do more later (without really learning more?)
-#define WEATHER_NUMINSTR			20000
+// wait_begin address
+#define WEATHER_FUNC_WAIT_BEGIN		0x`addrof $1 wait_begin`
+// wait_end address
+#define WEATHER_FUNC_WAIT_END		0x`addrof $1 wait_end`
+// number of main loop iterations to trace
+// (determines trace length and therefore fault-space width)
+#define WEATHER_NUMITER_TRACING		4
+// number of instructions needed for these iterations in golden run (taken from
+// experiment step #2)
+#define WEATHER_NUMINSTR_TRACING	21437
+// number of additional loop iterations for FI experiments (to see whether
+// everything continues working fine)
+#define WEATHER_NUMITER_AFTER		2
+// number of instructions needed for these iterations in golden run (taken from
+// experiment step #2)
+#define WEATHER_NUMINSTR_AFTER		10676
 // data/BSS begin:
 // nm -C vanilla.elf|fgrep ___DATA_START__
 #define WEATHER_DATA_START			0x`addrof $1 ___DATA_START__`
