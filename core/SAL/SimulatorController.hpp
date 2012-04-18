@@ -128,7 +128,8 @@ class SimulatorController
 		 */
 		virtual void save(const string& path) = 0;
 		/**
-		 * Restore simulator state.
+		 * Restore simulator state.  Implicitly discards all previously
+		 * registered events.
 		 * @param path Location to previously saved state information
 		 */
 		virtual void restore(const string& path) = 0;
