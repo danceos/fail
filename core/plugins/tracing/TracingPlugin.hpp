@@ -25,6 +25,7 @@
  *           are delivered?
  * FIXME: trace a sequence of pb messages, not a giant single one (pb weren't
  *        made for huge messages)
+ * FIXME: destructor -> removeFlow?
  */
 class TracingPlugin : public fi::ExperimentFlow
 {
