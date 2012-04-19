@@ -32,12 +32,9 @@ bool WeathermonitorCampaign::run()
 {
 	Logger log("Weathermonitor Campaign");
 
-	ifstream test(results_filename);
-	if (test.is_open()) {
-		log << results_filename << " already exists" << endl;
-		return false;
-	}
-	ofstream results(results_filename);
+	// non-destructive: due to the CSV header we can always manually recover
+	// from an accident (append mode)
+	ofstream results(results_filename, ios::out | ios::app);
 	if (!results.is_open()) {
 		log << "failed to open " << results_filename << endl;
 		return false;
