@@ -192,7 +192,7 @@ bool WeathermonitorCampaign::run()
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
 	// CSV header
-	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tlatest_ip\titer1\titer2\tdetails" << endl;
+	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tlatest_ip\titer1\titer2\tdetails" << endl;
 
 	// store no-effect "experiment" results
 	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
@@ -202,7 +202,8 @@ bool WeathermonitorCampaign::run()
 		 << (*it).instr2 << "\t"
 		 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
 		 << (*it).data_address << "\t"
-		 << "99\t" // dummy value: we didn't do any real experiments
+		 << "0\t" // this entry starts at bit 0 ...
+		 << "8\t" // ... and is 8 bits wide
 		 << "1\t"
 		 << "99\t" // dummy value: we didn't do any real experiments
 		 << "0\t"
@@ -242,6 +243,7 @@ bool WeathermonitorCampaign::run()
 			 << ec.data_address << "\t"
 			// individual results:
 			 << res->msg.result(idx).bit_offset() << "\t"
+			 << "1\t" // 1 bit wide
 			 << res->msg.result(idx).resulttype() << "\t"
 			 << res->msg.result(idx).latest_ip() << "\t"
 			 << res->msg.result(idx).iter_before_fi() << "\t"
