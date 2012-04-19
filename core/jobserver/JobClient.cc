@@ -41,12 +41,13 @@ bool JobClient::connectToServer()
 			if(retries > 0) {
 				// Wait RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
 				int delay = rand() % (RAND_BACKOFF_TEND-RAND_BACKOFF_TSTART) + RAND_BACKOFF_TSTART;
-				cout << "[Client] Retrying to connect to server in " << delay << "s..." << endl;
+				cout << "[Client] Retrying to connect to server in ~" << delay << "s..." << endl;
 				sleep(delay);
+				usleep(rand() % 1000000);
 				--retries;
 				continue;
 			}
-			cout << "|Client] Unable to reconnect (tried " << RETRY_COUNT << " times); "
+			cout << "[Client] Unable to reconnect (tried " << RETRY_COUNT << " times); "
 			     << "I'll give it up!" << endl;
 			return false; // finally: unable to connect, give it up :-(
 		}
