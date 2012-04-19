@@ -22,7 +22,7 @@ aspect Breakpoints
 		// BX_CPU(0) otherwise
 		BX_CPU_C* pThis = *(tjp->arg<0>());
 		// Points to the *current* bxInstruction-object
-		bxInstruction_c* pInstr = *(tjp->arg<1>());
+		//bxInstruction_c* pInstr = *(tjp->arg<1>());
 
 		// report this event to the Bochs controller:
 		sal::simulator.onInstrPtrChanged(pThis->get_instruction_pointer());

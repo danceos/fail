@@ -33,7 +33,7 @@
 
 // Just a dummy function to define a join-point. This function is
 // *just* called once within bx_cpu_c::cpu_loop(...).
-static inline void defineCPULoopJoinPoint(BX_CPU_C* pThis, bxInstruction_c* pInstr)
+static inline void defineCPULoopJoinPoint(BX_CPU_C* pThis)
 {
     /* nothing to do here */
 }
@@ -156,7 +156,7 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
  * 
  */
 
-      defineCPULoopJoinPoint(BX_CPU_THIS, i);
+      defineCPULoopJoinPoint(BX_CPU_THIS);
 
 /****************************************************************/
       // instruction decoding completed -> continue with execution
@@ -447,6 +447,13 @@ unsigned BX_CPU_C::handleAsyncEvent(void)
   //
   // This area is where we process special conditions and events.
   //
+
+  //DanceOS
+#ifdef DANCEOS_RESTORE
+  if (sal::restore_bochs_request) {
+	return 1;
+  }
+#endif
   if (BX_CPU_THIS_PTR activity_state) {
     // For one processor, pass the time as quickly as possible until
     // an interrupt wakes up the CPU.
@@ -501,12 +508,6 @@ unsigned BX_CPU_C::handleAsyncEvent(void)
     // setting kill_bochs_request causes the cpu loop to return ASAP.
     return 1; // Return to caller of cpu_loop.
   }
-  //DanceOS
-#ifdef DANCEOS_RESTORE
-  else if (sal::restore_bochs_request) {			
-	return 1;
-  }
-#endif
 
   // VMLAUNCH/VMRESUME cannot be executed with interrupts inhibited.
   // Save inhibit interrupts state into shadow bits after clearing
