@@ -21,7 +21,7 @@
 
 #include "vptr_map.hpp"
 
-#define LOCAL 1
+#define LOCAL 0
 
 using std::endl;
 

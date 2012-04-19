@@ -191,6 +191,67 @@ bool WeathermonitorCampaign::run()
 	log << "pruning: reduced " << num_dumb_experiments * 8 <<
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
+	// CSV header
+	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tlatest_ip\titer1\titer2\tdetails" << endl;
+
+	// store no-effect "experiment" results
+	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
+	     it != ecs_no_effect.end(); ++it) {
+		results
+		 << (*it).instr1 << "\t"
+		 << (*it).instr2 << "\t"
+		 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
+		 << (*it).data_address << "\t"
+		 << "99\t" // dummy value: we didn't do any real experiments
+		 << "1\t"
+		 << "99\t" // dummy value: we didn't do any real experiments
+		 << "0\t"
+		 << (WEATHER_NUMITER_TRACING + WEATHER_NUMITER_AFTER) << "\t\n";
+	}
+
+	// collect results
+	WeathermonitorExperimentData *res;
+	int rescount = 0;
+	while ((res = static_cast<WeathermonitorExperimentData *>(fi::campaignmanager.getDone()))) {
+		rescount++;
+
+		std::map<WeathermonitorExperimentData *, unsigned>::iterator it =
+			experiment_ecs.find(res);
+		if (it == experiment_ecs.end()) {
+			results << "WTF, didn't find res!" << endl;
+			log << "WTF, didn't find res!" << endl;
+			continue;
+		}
+		equivalence_class &ec = ecs_need_experiment[it->second];
+
+		// sanity check
+		if (ec.instr2 != res->msg.instr_offset()) {
+			results << "WTF" << endl;
+			log << "WTF" << endl;
+			//delete res;	// currently racy if jobs are reassigned
+		}
+
+		// one job contains 8 experiments
+		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
+			//results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tlatest_ip\titer1\titer2\tdetails" << endl;
+			results
+			// repeated for all single experiments:
+			 << ec.instr1 << "\t"
+			 << ec.instr2 << "\t"
+			 << ec.instr2_absolute << "\t"
+			 << ec.data_address << "\t"
+			// individual results:
+			 << res->msg.result(idx).bit_offset() << "\t"
+			 << res->msg.result(idx).resulttype() << "\t"
+			 << res->msg.result(idx).latest_ip() << "\t"
+			 << res->msg.result(idx).iter_before_fi() << "\t"
+			 << res->msg.result(idx).iter_after_fi() << "\t"
+			 << res->msg.result(idx).details() << "\n";
+		}
+		//delete res;	// currently racy if jobs are reassigned
+	}
+	log << "done.  sent " << count << " received " << rescount << endl;
+	results.close();
 
 	return true;
 }
