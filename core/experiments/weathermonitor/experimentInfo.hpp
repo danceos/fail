@@ -43,7 +43,39 @@
 
 #else // with guards
 
-// XXX
+// main() address:
+// nm -C guarded.elf|fgrep main
+#define WEATHER_FUNC_MAIN			0x00100fa0
+// wait_begin address
+#define WEATHER_FUNC_WAIT_BEGIN		0x00100f80
+// wait_end address
+#define WEATHER_FUNC_WAIT_END		0x00100f90
+// vptr_panic address (only exists in guarded variant)
+#define WEATHER_FUNC_VPTR_PANIC		0x001013a0
+// number of main loop iterations to trace
+// (determines trace length and therefore fault-space width)
+#define WEATHER_NUMITER_TRACING		4
+// number of instructions needed for these iterations in golden run (taken from
+// experiment step #2)
+#define WEATHER_NUMINSTR_TRACING	20549
+// number of additional loop iterations for FI experiments (to see whether
+// everything continues working fine)
+#define WEATHER_NUMITER_AFTER		2
+// number of instructions needed for these iterations in golden run (taken from
+// experiment step #2)
+#define WEATHER_NUMINSTR_AFTER		10232
+// data/BSS begin:
+// nm -C guarded.elf|fgrep ___DATA_START__
+#define WEATHER_DATA_START			0x00101a80
+// data/BSS end:
+// nm -C guarded.elf|fgrep ___BSS_END__
+#define WEATHER_DATA_END			0x00103398
+// text begin:
+// nm -C guarded.elf|fgrep ___TEXT_START__
+#define WEATHER_TEXT_START			0x00100000
+// text end:
+// nm -C guarded.elf|fgrep ___TEXT_END__
+#define WEATHER_TEXT_END			0x001018bb
 
 #endif
 

@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
+TARGET=experimentInfo.hpp
 
 [ ! -e "$1" -o ! -e "$2" ] && echo "usage: $0 vanilla.elf guarded.elf" && exit 1
 
 function addrof() { nm -C $1 | (fgrep "$2" || echo 99999999) | awk '{print $1}'; }
 
-cat >experimentInfo.hpp <<EOF
+cat >$TARGET <<EOF
 #ifndef __WEATHERMONITOR_EXPERIMENT_INFO_HPP__
 #define __WEATHERMONITOR_EXPERIMENT_INFO_HPP__
 
@@ -15,8 +16,12 @@ cat >experimentInfo.hpp <<EOF
 
 #if !GUARDED_WEATHERMONITOR // without vptr guards
 
+EOF
+
+function alldefs() {
+cat <<EOF
 // main() address:
-// nm -C vanilla.elf|fgrep main
+// nm -C $(basename $1)|fgrep main
 #define WEATHER_FUNC_MAIN			0x`addrof $1 main`
 // wait_begin address
 #define WEATHER_FUNC_WAIT_BEGIN		0x`addrof $1 wait_begin`
@@ -37,21 +42,31 @@ cat >experimentInfo.hpp <<EOF
 // experiment step #2)
 #define WEATHER_NUMINSTR_AFTER		10232
 // data/BSS begin:
-// nm -C vanilla.elf|fgrep ___DATA_START__
+// nm -C $(basename $1)|fgrep ___DATA_START__
 #define WEATHER_DATA_START			0x`addrof $1 ___DATA_START__`
 // data/BSS end:
-// nm -C vanilla.elf|fgrep ___BSS_END__
+// nm -C $(basename $1)|fgrep ___BSS_END__
 #define WEATHER_DATA_END			0x`addrof $1 ___BSS_END__`
 // text begin:
-// nm -C vanilla.elf|fgrep ___TEXT_START__
+// nm -C $(basename $1)|fgrep ___TEXT_START__
 #define WEATHER_TEXT_START			0x`addrof $1 ___TEXT_START__`
 // text end:
-// nm -C vanilla.elf|fgrep ___TEXT_END__
+// nm -C $(basename $1)|fgrep ___TEXT_END__
 #define WEATHER_TEXT_END			0x`addrof $1 ___TEXT_END__`
+EOF
+}
+
+alldefs $1 >>$TARGET
+
+cat >>$TARGET <<EOF
 
 #else // with guards
 
-// XXX
+EOF
+
+alldefs $2 >>$TARGET
+
+cat >>$TARGET <<EOF
 
 #endif
 
