@@ -14,6 +14,8 @@
 #define WEATHER_FUNC_WAIT_BEGIN		0x00100f50
 // wait_end address
 #define WEATHER_FUNC_WAIT_END		0x00100f60
+// vptr_panic address (only exists in guarded variant)
+#define WEATHER_FUNC_VPTR_PANIC		0x99999999
 // number of main loop iterations to trace
 // (determines trace length and therefore fault-space width)
 #define WEATHER_NUMITER_TRACING		4

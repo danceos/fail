@@ -226,6 +226,7 @@ bool WeathermonitorExperiment::run()
 		// - (XXX weird instructions?)
 		// - (XXX results displayed?)
 		// - reaches THE END
+		// - error detected, stop
 		// additional info:
 		// - #loop iterations before/after FI
 		// - (XXX "sane" display?)
@@ -238,6 +239,9 @@ bool WeathermonitorExperiment::run()
 		fi::BPRangeEvent ev_beyond_text(WEATHER_TEXT_END + 1, fi::ANY_ADDR);
 		sal::simulator.addEvent(&ev_below_text);
 		sal::simulator.addEvent(&ev_beyond_text);
+		// error detected
+		fi::BPEvent ev_detected(WEATHER_FUNC_VPTR_PANIC);
+		sal::simulator.addEvent(&ev_detected);
 
 #if LOCAL && 0
 		// XXX debug
@@ -276,6 +280,9 @@ bool WeathermonitorExperiment::run()
 			std::stringstream ss;
 			ss << ev_trap.getTriggerNumber();
 			result->set_details(ss.str());
+		} else if (ev == &ev_detected) {
+			log << std::dec << "Result DETECTED" << endl;
+			result->set_resulttype(result->DETECTED);
 		} else {
 			log << "Result WTF?" << endl;
 			result->set_resulttype(result->UNKNOWN);

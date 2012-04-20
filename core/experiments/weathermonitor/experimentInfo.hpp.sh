@@ -3,7 +3,7 @@ set -e
 
 [ ! -e "$1" -o ! -e "$2" ] && echo "usage: $0 vanilla.elf guarded.elf" && exit 1
 
-function addrof() { nm -C $1 | fgrep "$2" | awk '{print $1}'; }
+function addrof() { nm -C $1 | (fgrep "$2" || echo 99999999) | awk '{print $1}'; }
 
 cat >experimentInfo.hpp <<EOF
 #ifndef __WEATHERMONITOR_EXPERIMENT_INFO_HPP__
@@ -22,6 +22,8 @@ cat >experimentInfo.hpp <<EOF
 #define WEATHER_FUNC_WAIT_BEGIN		0x`addrof $1 wait_begin`
 // wait_end address
 #define WEATHER_FUNC_WAIT_END		0x`addrof $1 wait_end`
+// vptr_panic address (only exists in guarded variant)
+#define WEATHER_FUNC_VPTR_PANIC		0x`addrof $1 vptr_panic`
 // number of main loop iterations to trace
 // (determines trace length and therefore fault-space width)
 #define WEATHER_NUMITER_TRACING		4

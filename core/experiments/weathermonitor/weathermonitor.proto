@@ -29,7 +29,7 @@ message WeathermonitorProtoMsg {
 			FINISHED = 1;
 			TRAP = 2;
 			OUTSIDE = 3;
-			HALT = 4;
+			DETECTED = 4;
 			UNKNOWN = 5;
 		}
 		required ResultType resulttype = 2;
