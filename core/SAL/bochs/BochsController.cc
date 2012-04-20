@@ -52,7 +52,7 @@ BochsController::BochsController()
 	pPCReg->setName("RIP");
   #else
     BxPCReg* pPCReg = new BxPCReg(RID_PC, 32, &(BX_CPU(0)->gen_reg[BX_32BIT_REG_EIP].dword.erx));
-	pFlagReg->setName("EIP");
+	pPCReg->setName("EIP");
   #endif // BX_SUPPORT_X86_64
     // -------------------------------------
 	// Add the Status register (x86 cpu FLAGS):
