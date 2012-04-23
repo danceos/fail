@@ -19,9 +19,8 @@ set(HOST_LDFLAGS "-Wl,--version-script=$ENV{IMPERAS_HOME}/ImperasLib/source/buil
 ## This is needed by a platform executable
 set(SIM_LDFLAGS $ENV{IMPERAS_HOME}/bin/$ENV{IMPERAS_ARCH}/libRuntimeLoader.so)
 
-
-
 message(STATUS "Fail* base dir included: ${FAIL_BASE}")
+message(STATUS "Library output path: ${LIBRARY_OUTPUT_PATH}")
 include_directories(${FAIL_BASE})
 include_directories($ENV{IMPERAS_HOME}/ImpPublic/include/host)
 
@@ -86,12 +85,13 @@ set(SRCS
 	armVFP.h
 	armVM.h
 )
-add_definitions("-m32")
+add_definitions("-m32 ${IMPERAS_VMIINC}")
 message(STATUS "armmModel ld flags: ${HOST_LDFLAGS}")
 add_library(armmModel SHARED ${SRCS})
 
+
 #add_dependencies(armmModel SAL)
-set_target_properties(armmModel PROPERTIES LINK_FLAGS "${HOST_LDFLAGS} -m32")
+set_target_properties(armmModel PROPERTIES LINK_FLAGS "${HOST_LDFLAGS} -m32")# -L${CMAKE_BINARY_DIR}/lib -lSAL")
 
 #target_link_libraries(armmModel ${IMPERAS_VMISTUBS}  ${LIBRARY_OUTPUT_PATH}/libSAL.a)
 target_link_libraries(armmModel ${IMPERAS_VMISTUBS})

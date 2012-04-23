@@ -53,6 +53,8 @@ class CortexM3StatusRegister : public OVPStatusRegister {
 				// OR with 0x00010000 (e.g.)
 				val = val | bit;
 			}
+
+			icmWriteRegInfoValue(cpuP, cpsr, (void *)&val);
 		}
 
 		bool getSignFlag() const {

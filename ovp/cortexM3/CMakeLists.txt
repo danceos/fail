@@ -12,4 +12,4 @@ add_dependencies(ovp_cortexM3 protomessages )
 
 target_link_libraries(ovp_cortexM3 ${SIM_LDFLAGS} SAL controller jobserver util )
 ## OVP links all needed shared libraries via a runtimeloader
-set_target_properties(ovp_cortexM3 PROPERTIES LINK_FLAGS "-L${CMAKE_BINARY_DIR}/lib -lfail -lpcl -m32 ")
+set_target_properties(ovp_cortexM3 PROPERTIES LINK_FLAGS "-L${CMAKE_BINARY_DIR}/lib -lpcl -m32 ")

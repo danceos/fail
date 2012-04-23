@@ -1,12 +1,12 @@
 #include <iostream>
-#include "SAL/SimulatorController.hpp"
+//#include "SAL/SimulatorController.hpp"
 
 using namespace std;
 
 
 void hello(unsigned int p){
 	cout << "&sal::simulator: " << hex << p << endl;
-	sal::SimulatorController * salp = reinterpret_cast<sal::SimulatorController * >(p);
+//	sal::SimulatorController * salp = reinterpret_cast<sal::SimulatorController * >(p);
 	
 }
 

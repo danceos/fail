@@ -13,7 +13,7 @@ class OVPStatusRegister : public sal::OVPRegister {
 	
 	public:
 		OVPStatusRegister(uint32_t width, void *link) 
-			: sal::OVPRegister(width, link, sal::RT_ST) { }
+			: sal::OVPRegister(width, 32, link, sal::RT_ST) { }
 		~OVPStatusRegister() {}
 
 		virtual bool getSignFlag() const = 0;

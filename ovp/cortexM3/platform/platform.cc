@@ -356,7 +356,7 @@ int main(int argc, char **argv) {
 	arm.makeSTRegister();
 	arm.makePCRegister();
 
-	sal::simulator.finishedRegisterCreation();
+//	sal::simulator.finishedRegisterCreation();
 
 	arm.startSimulation(argv[1]);
 }

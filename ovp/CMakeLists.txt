@@ -35,8 +35,10 @@ set(HOST_LDFLAGS "-Wl,--version-script=$ENV{IMPERAS_HOME}/ImperasLib/source/buil
 set(SIM_LDFLAGS $ENV{IMPERAS_HOME}/bin/$ENV{IMPERAS_ARCH}/libRuntimeLoader.so)
 
 
-include_directories(${CMAKE_SOURCE_DIR}/fail)
-include_directories(${CMAKE_BINARY_DIR}/fail)
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/core)
+include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/core)
 include_directories($ENV{IMPERAS_HOME}/ImpPublic/include/host)
 
 #add_subdirectory(ovpworld.org/mmc/flakyMemory/1.0/model)
@@ -48,6 +50,6 @@ ExternalProject_Add(
 	OVParmmModel
 	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/armmModel
 	INSTALL_COMMAND ""
-	CMAKE_ARGS -DFAIL_BASE=${CMAKE_SOURCE_DIR}/fail -DLIBRARY_OUTPUT_PATH=${LIBRARY_OUTPUT_PATH}
+	CMAKE_ARGS -DFAIL_BASE=${CMAKE_SOURCE_DIR} -DLIBRARY_OUTPUT_PATH=${LIBRARY_OUTPUT_PATH}
 )
 
