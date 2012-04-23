@@ -99,7 +99,7 @@ For the first time
 ------------------
 cd ../bochs
 > Sufficient:
-./configure --prefix=$(echo ~/localroot/usr) --enable-{x86-64,cpu-level=6,ne2000,trace-cache,vmx=2,gdb-stub} --disable-docbook
+./configure --prefix=$(echo ~/localroot/usr) --enable-{cpu-level=6,ne2000,trace-cache,gdb-stub} --disable-docbook
 > More optimised:
 ./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,repeat-speedups,trace-cache,fast-function-calls,host-specific-asms,disasm,all-optimizations,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --disable-docbook --with-all-libs
 > Instead of --with-all-libs, you could use --with-nogui for "headless"
