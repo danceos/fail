@@ -213,6 +213,7 @@ bool WeathermonitorExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
+			result->set_iter_after_fi(0);
 
 			sal::simulator.clearEvents();
 			continue;
