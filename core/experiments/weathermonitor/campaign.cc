@@ -161,14 +161,32 @@ bool WeathermonitorCampaign::run()
 		// result comparable to the non-pruned campaign.
 		// XXX still true for weathermonitor?
 		current_ec.instr2 = instr - 1;
-		current_ec.instr2_absolute = 0; // won't be used
+		current_ec.instr2_absolute = 0; // unknown
 		current_ec.data_address = data_address;
 		// zero-sized?  skip.
 		if (current_ec.instr1 > current_ec.instr2) {
 			continue;
 		}
-		// as the experiment ends, this byte is a "don't care":
-		ecs_no_effect.push_back(current_ec);
+		// the run continues after the FI window, so do this experiment
+		// XXX this creates at least one experiment for *every* bit!
+		//     fix: full trace, limited FI window
+		//ecs_no_effect.push_back(current_ec);
+		ecs_need_experiment.push_back(current_ec);
+
+		// FIXME copy/paste, encapsulate this:
+		// instantly enqueue job: that way the job clients can already
+		// start working in parallel
+		WeathermonitorExperimentData *d = new WeathermonitorExperimentData;
+		// we pick the rightmost instruction in that interval
+		d->msg.set_instr_offset(current_ec.instr2);
+		//d->msg.set_instr_address(current_ec.instr2_absolute); // unknown!
+		d->msg.set_mem_addr(current_ec.data_address);
+
+		// store index into ecs_need_experiment
+		experiment_ecs[d] = ecs_need_experiment.size() - 1;
+
+		fi::campaignmanager.addParam(d);
+		++count;
 	}
 
 	fi::campaignmanager.noMoreParameters();
