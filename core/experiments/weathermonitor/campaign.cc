@@ -227,9 +227,12 @@ bool WeathermonitorCampaign::run()
 
 		// sanity check
 		if (ec.instr2 != res->msg.instr_offset()) {
-			results << "WTF" << endl;
-			log << "WTF" << endl;
-			//delete res;	// currently racy if jobs are reassigned
+			results << "ec.instr2 != instr_offset" << endl;
+			log << "ec.instr2 != instr_offset" << endl;
+		}
+		if (res->msg.result_size() != 8) {
+			results << "result_size " << res->msg.result_size() << endl;
+			log << "result_size " << res->msg.result_size() << endl;
 		}
 
 		// one job contains 8 experiments
