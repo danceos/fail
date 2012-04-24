@@ -49,7 +49,7 @@ bool WeathermonitorExperiment::run()
 	sal::simulator.save(statename);
 	assert(bp.getTriggerInstructionPointer() == WEATHER_FUNC_MAIN);
 	assert(sal::simulator.getRegisterManager().getInstructionPointer() == WEATHER_FUNC_MAIN);
-#elif 0
+
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
 	sal::simulator.restore(statename);
