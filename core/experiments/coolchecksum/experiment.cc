@@ -75,7 +75,7 @@ bool CoolChecksumExperiment::run()
 #endif
 
 	// make sure the timer interrupt doesn't disturb us
-	sal::simulator.addSuppressedInterrupt(32);
+	sal::simulator.addSuppressedInterrupt(0);
 
 	int count;
 	bp.setWatchInstructionPointer(fi::ANY_ADDR);
