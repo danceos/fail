@@ -46,13 +46,13 @@
 
 // main() address:
 // nm -C guarded.elf|fgrep main
-#define WEATHER_FUNC_MAIN			0x00100e30
+#define WEATHER_FUNC_MAIN			0x00100fc0
 // wait_begin address
-#define WEATHER_FUNC_WAIT_BEGIN		0x00100e10
+#define WEATHER_FUNC_WAIT_BEGIN		0x00100fa0
 // wait_end address
-#define WEATHER_FUNC_WAIT_END		0x00100e20
+#define WEATHER_FUNC_WAIT_END		0x00100fb0
 // vptr_panic address (only exists in guarded variant)
-#define WEATHER_FUNC_VPTR_PANIC		0x00101170
+#define WEATHER_FUNC_VPTR_PANIC		0x00101460
 // number of main loop iterations to trace
 // (determines trace length and therefore fault-space width)
 #define WEATHER_NUMITER_TRACING		4
@@ -67,10 +67,10 @@
 #define WEATHER_NUMINSTR_AFTER		10232
 // data/BSS begin:
 // nm -C guarded.elf|fgrep ___DATA_START__
-#define WEATHER_DATA_START			0x00101b98
+#define WEATHER_DATA_START			0x00101b94
 // data/BSS end:
 // nm -C guarded.elf|fgrep ___BSS_END__
-#define WEATHER_DATA_END			0x001034cc
+#define WEATHER_DATA_END			0x001034b8
 // text begin:
 // nm -C guarded.elf|fgrep ___TEXT_START__
 #define WEATHER_TEXT_START			0x00100000
@@ -82,13 +82,13 @@
 
 // main() address:
 // nm -C plausibility.elf|fgrep main
-#define WEATHER_FUNC_MAIN			0x00100e60
+#define WEATHER_FUNC_MAIN			0x00100fd0
 // wait_begin address
-#define WEATHER_FUNC_WAIT_BEGIN		0x00100e40
+#define WEATHER_FUNC_WAIT_BEGIN		0x00100fb0
 // wait_end address
-#define WEATHER_FUNC_WAIT_END		0x00100e50
+#define WEATHER_FUNC_WAIT_END		0x00100fc0
 // vptr_panic address (only exists in guarded variant)
-#define WEATHER_FUNC_VPTR_PANIC		0x001012d0
+#define WEATHER_FUNC_VPTR_PANIC		0x00101500
 // number of main loop iterations to trace
 // (determines trace length and therefore fault-space width)
 #define WEATHER_NUMITER_TRACING		4
@@ -103,16 +103,16 @@
 #define WEATHER_NUMINSTR_AFTER		10232
 // data/BSS begin:
 // nm -C plausibility.elf|fgrep ___DATA_START__
-#define WEATHER_DATA_START			0x00101dd8
+#define WEATHER_DATA_START			0x00101c94
 // data/BSS end:
 // nm -C plausibility.elf|fgrep ___BSS_END__
-#define WEATHER_DATA_END			0x0010370c
+#define WEATHER_DATA_END			0x001035b8
 // text begin:
 // nm -C plausibility.elf|fgrep ___TEXT_START__
 #define WEATHER_TEXT_START			0x00100000
 // text end:
 // nm -C plausibility.elf|fgrep ___TEXT_END__
-#define WEATHER_TEXT_END			0x00101c1b
+#define WEATHER_TEXT_END			0x00101adb
 
 #else
 #error Unknown WEATHERMONITOR_VARIANT
