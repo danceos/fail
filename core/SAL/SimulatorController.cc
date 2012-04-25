@@ -128,8 +128,8 @@ bool SimulatorController::isSuppressedInterrupt(unsigned interruptNum)
 {
 	for(size_t i = 0; i < m_SuppressedInterrupts.size(); i++)
 		if((m_SuppressedInterrupts[i] == interruptNum ||
-		   m_SuppressedInterrupts[i] == fi::ANY_INTERRUPT) && interruptNum != interrupt_to_fire+32  ){
-				if(interruptNum == interrupt_to_fire+32){
+		   m_SuppressedInterrupts[i] == fi::ANY_INTERRUPT) && interruptNum != (unsigned) interrupt_to_fire+32  ){
+				if((int)interruptNum == interrupt_to_fire+32){
 					interrupt_to_fire = -1;
 					return(true);
 				}
