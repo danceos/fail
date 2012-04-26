@@ -19,7 +19,10 @@ LIBDIR=~/bochslibs
 
 # cleanup earlier failures
 # (FIXME: you probably don't want this on your local machine!)
+killall -q client.sh || true
 killall -q bochs || true
+sleep .5
+killall -q -9 bochs || true
 
 # On many machines, ~ is mounted via NFS.  To avoid the (severe) performance
 # penalty, copy all experiment-related stuff to /tmp.
