@@ -79,6 +79,13 @@ Parallelisierung:
       man nur einen einzelnen Parametersatz auswählt und dem Client zum
       Ausprobieren gibt; die Informationen über die Äquivalenzklasse müss(t)en
       nicht über die Leitung, werden aber am Schluss zur Auswertung gebraucht
+ - Build-ID in control message tatsächlich generieren und verwenden!
+   - einfacher, aber nicht in allen Fällen wirksam: Server generiert zur
+     Laufzeit "Session-ID"; falls bei Client-/Server-Kommunikation diese nicht
+     mit der vorherigen übereinstimmt, terminiert der Client automatisch
+     * Problem 1: hilft nicht, wenn der Client gerade neu gestartet wurde
+     * Problem 2: wenn das viele Clients tun, landen sehr viele unbearbeitete
+       Jobs in der Aktiv-Queue auf dem Server
 
 Implementierungsdetails:
  - einheitliche Fehlerbehandlung
