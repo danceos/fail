@@ -3,6 +3,7 @@
 
 
 #include "../../OVPCpu.hpp"
+#include "ovp/statusmsg/OVPStatusMessage.pb.h"
 
 using namespace icmCpuManager;
 
@@ -26,6 +27,9 @@ class ARM_Cortex_M3 : public OVPCpu {
 		void makePCRegister();
 
 		void makeCallbackMemory(size_t, size_t, size_t, size_t);
+
+		void save(const string&);
+		void restore(const string&);
 };
 
 

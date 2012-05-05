@@ -87,9 +87,21 @@ class OVPCpu {
 		virtual void makeCallbackMemory(size_t sizeText, size_t offText, size_t sizeMem, size_t offMem) = 0;
 
 		/**
+		 * Saves cpu status in file at given path
+		 * @param path path to store file
+		 */
+		virtual void save(const string& path) = 0;
+
+		/**
+		 * Restore cpu status from file at given path
+		 * @param path path to store file
+		 */
+		virtual void restore(const string& path) = 0;
+		/**
 		 * Returns the private icmProcessorObject pointer needed for some OVP action
 		 * @return icmProcessorObject
 		 */
+
 		icmProcessorObject *getProcessor() {
 			return cpu;
 		}

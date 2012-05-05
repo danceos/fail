@@ -43,6 +43,7 @@ include_directories($ENV{IMPERAS_HOME}/ImpPublic/include/host)
 
 #add_subdirectory(ovpworld.org/mmc/flakyMemory/1.0/model)
 add_subdirectory(cortexM3)
+add_subdirectory(statusmsg)
 
 include(ExternalProject)
 #### Put resulting (model) library file in <your_build_dir>/lib ####

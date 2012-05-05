@@ -48,6 +48,16 @@ public:
 	 */
 	uint32_t getSP();
 
+	/**
+	 * Save cpu status
+	 */
+	void save(const string&);
+
+	/**
+	 * Restore cpu status
+	 */
+	void restore(const string&);
+
 };
 
 #endif

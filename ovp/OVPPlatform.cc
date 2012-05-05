@@ -47,3 +47,11 @@ uint32_t OVPPlatform::getSP() {
 	return res;
 
 }
+
+void OVPPlatform::save(const string& path) {
+	platform->save(path);
+}
+
+void OVPPlatform::restore(const string& path) {
+	platform->restore(path);
+}

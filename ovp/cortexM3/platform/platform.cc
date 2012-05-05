@@ -332,6 +332,61 @@ void ARM_Cortex_M3::makeCallbackMemory(size_t sizeText, size_t offText, size_t s
 	textMemSize = sizeText;
 }
 
+void ARM_Cortex_M3::save(const string& path) {
+	OVPStatusMessage ovpstat;
+
+	// save registers
+	// FIXME: what about reg with id 16? should be status register
+	for(unsigned int i = 0; i < 16; ++i) {
+		uint32_t tmp = 0;
+		icmRegInfoP reg = icmGetRegByIndex(processorP, i);
+		icmReadRegInfoValue(processorP, reg, (void *)&tmp);
+		OVPStatusMessage::Register *msgReg = ovpstat.add_reg();
+
+		switch(i) {
+			case 13:	msgReg->set_name("sp");
+					break;
+			case 14:	msgReg->set_name("lr");
+					break;
+			case 15:	msgReg->set_name("pc");
+					break;
+			case 16:	msgReg->set_name("sr");
+					break;
+			default:	char num[3];
+					sprintf(num, "r%d", i);
+					msgReg->set_name(num);
+		}
+					
+		msgReg->set_value(tmp);
+// std::cerr << "save " <<  i << ": " << tmp << std::endl;
+	}
+
+
+	string stmp;
+	ovpstat.SerializeToString(&stmp);
+	ofstream file;
+	file.open(path.c_str(), ios::out);
+	file << stmp;
+	file.close();
+/*	ofstream file(path.c_str(), ios::out | ios::trunc);
+	if(!ovpstat.SerializeToOstream(&file)) {
+		std::cerr << "Error writing to file " << path << "!" << std::endl;
+	}*/
+}
+
+void ARM_Cortex_M3::restore(const string& path) {
+	fstream input(path.c_str(), ios::in);
+	OVPStatusMessage ovpstat;
+	ovpstat.ParseFromIstream(&input);
+
+	for(int i = 0; i < ovpstat.reg_size(); ++i) {
+		const OVPStatusMessage::Register& ovpreg = ovpstat.reg(i); 
+		uint32_t val = ovpreg.value();
+//		std::cerr << "restore "<<ovpreg.name()<<": " << val << std::endl;
+		icmRegInfoP reg = icmGetRegByIndex(processorP, i);
+		icmWriteRegInfoValue(processorP, reg, (void *)&val);
+	}
+}
 
 int main(int argc, char **argv) {
 	if(argc != 2) {
@@ -355,8 +410,6 @@ int main(int argc, char **argv) {
 	arm.makeGPRegister();
 	arm.makeSTRegister();
 	arm.makePCRegister();
-
-//	sal::simulator.finishedRegisterCreation();
 
 	arm.startSimulation(argv[1]);
 }
