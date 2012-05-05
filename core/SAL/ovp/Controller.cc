@@ -68,8 +68,14 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 	OVPStatusRegister *rid_st = (OVPStatusRegister *) m_Regs->getSetOfType(RT_GP)->first();
 //	cerr << "Addr: " << rid_st << endl;
 	unsigned int st = rid_st->getData();
+
+	//save("/srv/scratch/sirozipp/test.txt");
+
+	//ovpplatform.setPC(0x123);
+
+	//restore("/srv/scratch/sirozipp/test.txt");
 //	cerr << "instrPtr: 0x" << hex << instrPtr << " SP: 0x" << hex << m_Regs->getStackPointer() \
-		<< " R0: 0x" << hex << r0 << " ST: 0x" << hex << st  << endl;
+//		<< " R0: 0x" << hex << r0 << " ST: 0x" << hex << st  << endl;
 
 	// Check for active breakpoint-events:
 	fi::EventList::iterator it = m_EvList.begin();
@@ -104,6 +110,7 @@ void OVPController::save(const string& path)
 	//TODO
 	//SIM->save_state(path.c_str());
 	//bx_gui_c::power_handler();
+	ovpplatform.save(path);
 }
 
 void OVPController::restore(const string& path)
@@ -113,6 +120,7 @@ void OVPController::restore(const string& path)
 	assert(path.length() > 0 &&
 		"FATAL ERROR: Tried to restore state without valid path!");
 	//strncpy(bx_pc_system.sr_path, path.c_str(), 512 /*CI_PATH_LENGTH, @see gui/textconfig.cc*/);
+	ovpplatform.restore(path);
 }
 
 void OVPController::reboot()
