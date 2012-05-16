@@ -885,7 +885,7 @@ typedef
 #define BX_FLOPPY1_NAME "Floppy Disk 1"
 #endif
 
-//DANCEOS Richard Hellwig
+// DanceOS
 #define DANCEOS_RESTORE
 
 #endif  // _BX_CONFIG_H

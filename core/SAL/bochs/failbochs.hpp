@@ -1,22 +1,24 @@
-#ifndef FAILBOCHS_H
-#define FAILBOCHS_H
+#ifndef __FAILBOCHS_HPP__
+#define __FAILBOCHS_HPP__
 
 #include <string>
 #include <string.h>
 
 #include "config.h" 
 
-namespace sal{
+namespace sal
+{
 
 #ifdef DANCEOS_RESTORE
   extern bx_bool restore_bochs_request;
   extern bx_bool save_bochs_request;
-  extern bx_bool reboot_bochs_request;
-  extern bx_bool interrupt_injection_request;
-  extern int interrupt_to_fire;
   extern std::string sr_path;
 #endif
 
+extern bx_bool reboot_bochs_request;
+extern bx_bool interrupt_injection_request;
+extern int interrupt_to_fire;
+
 }
 
-#endif //FAILBOCHS_H
+#endif /* __FAILBOCHS_HPP__ */

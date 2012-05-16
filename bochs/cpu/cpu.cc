@@ -131,9 +131,13 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
         // If request to return to caller ASAP.
         return;
       }
-    }else if(sal::restore_bochs_request){  //DanceOS
-	return;
     }
+// DanceOS
+#ifdef DANCEOS_RESTORE
+    else if(sal::restore_bochs_request) {
+	  return;
+    }
+#endif
 
     bxICacheEntry_c *entry = getICacheEntry();
 

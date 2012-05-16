@@ -213,7 +213,12 @@ void BX_MEM_C::cleanup_memory()
 {
   unsigned idx;
 
+// DanceOS
+#ifdef DANCEOS_RESTORE
   if (BX_MEM_THIS vector != NULL || sal::restore_bochs_request) {
+#else
+  if (BX_MEM_THIS vector != NULL) {
+#endif
     delete [] BX_MEM_THIS actual_vector;
     BX_MEM_THIS actual_vector = NULL;
     BX_MEM_THIS vector = NULL;

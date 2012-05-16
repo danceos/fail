@@ -453,10 +453,11 @@ Bit64u bx_pc_system_c::time_usec()
 
 void bx_pc_system_c::start_timers(void) { }
 
-//DanceOS
+// DanceOS
 #ifdef DANCEOS_RESTORE
-void bx_pc_system_c::delete_timers(void){
-	  numTimers = 1 + BX_SUPPORT_APIC;
+void bx_pc_system_c::delete_timers(void)
+{
+  numTimers = 1 + BX_SUPPORT_APIC;
 }
 #endif
 
