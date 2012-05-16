@@ -1,9 +1,6 @@
 #ifndef __LOGGER_HPP__
   #define __LOGGER_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   21.11.2011
-
 #include <iostream>
 #include <sstream>
 
@@ -38,6 +35,15 @@ class Logger
 		void setDescription(const std::string& descr)
 		{
 			m_description = descr;
+		}
+		/**
+		 * Change the default option of show_time which shows a timestamp
+		 * each log entry.
+		 * @param choice The choice for show_time
+		 */
+		void showTime(bool choice)
+		{
+			m_showTime = choice;
 		}
 		/**
 		 * Add a new log entry.  Returns a std::ostream reference to continue

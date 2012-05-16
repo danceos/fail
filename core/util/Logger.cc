@@ -1,6 +1,3 @@
-// Author: Adrian Böckenkamp
-// Date:   21.11.2011
-
 #include <sstream>
 #include <fstream>
 #include <cassert>
