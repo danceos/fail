@@ -39,7 +39,8 @@ class SingleSteppingExperiment : public fi::ExperimentFlow
 			{
 				cerr << "[SingleSteppingExperiment] Now, we are completely lost!"
 				     << " It's time to cry! :-(" << endl;
-				return (false);
+				simulator.clearEvents(this);
+				return false;
 			}
 			cout << "[SingleSteppingExperiment] Entry of main function reached!"
 			     << " Beginning single-stepping..." << endl;
@@ -57,7 +58,9 @@ class SingleSteppingExperiment : public fi::ExperimentFlow
 				if(action != 'y')
 					break;
 			}
-			return (true);
+
+			simulator.clearEvents(this);
+			return true;
 		}
 };
 

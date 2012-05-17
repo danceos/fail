@@ -136,5 +136,7 @@ bool FaultCoverageExperiment::run()
 			}
 		}
 	}
-	return (true);
+
+	simulator.clearEvents(this);
+	return true;
 }

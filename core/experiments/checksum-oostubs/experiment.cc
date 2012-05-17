@@ -98,6 +98,7 @@ bool ChecksumOOStuBSExperiment::run()
 	std::ofstream of(tracefile);
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
+		sal::simulator.clearEvents(this);
 		return false;
 	}
 	trace.SerializeToOstream(&of);

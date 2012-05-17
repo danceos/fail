@@ -73,6 +73,7 @@ bool TracingTest::run()
 */
 #endif
 	cout << "[TracingTest] Finished." << endl;
+	simulator.clearEvents(this);
 	simulator.terminate();
 
 	return true;

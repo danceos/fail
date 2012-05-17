@@ -52,6 +52,7 @@ bool hscsimpleExperiment::run()
 
 	sal::simulator.addEventAndWait(&breakpoint);
 #endif
-	
+
+	sal::simulator.clearEvents(this);
 	return true;
 }

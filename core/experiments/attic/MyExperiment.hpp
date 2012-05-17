@@ -57,7 +57,9 @@ class MyExperiment : public fi::ExperimentFlow
 				 << " next 400 instructions..."; cout.flush();
 			simulator.addEventAndWait(&foobar);
 			cout << "cought! Exiting now." << endl;
-			return (true);
+
+			simulator.clearEvents(this);
+			return true;
 		}
 };
 

@@ -42,5 +42,6 @@ bool fireinterruptExperiment::run()
 	
 #endif
 	
+	sal::simulator.clearEvents(this);
 	return true;
 }

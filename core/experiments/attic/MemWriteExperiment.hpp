@@ -68,7 +68,8 @@ class MemWriteExperiment : public ExperimentFlow
 			// 4. Continue simulation (waitAny) and inject bitflip:
 			// ...
 
-			return (true);
+			simulator.clearEvents(this);
+			return true;
 		}
 };
 

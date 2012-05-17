@@ -37,7 +37,8 @@ class JumpAndRunExperiment : public fi::ExperimentFlow
 			{
 				cerr << "[JumpAndRunExperiment] Now, we are completely lost! "
 				     << "It's time to cry! :-(" << endl;
-				return (false);
+				simulator.clearEvents(this);
+				return false;
 			}
 			else
 				cout << "[JumpAndRunExperiment] Entry of main function reached! "
@@ -58,7 +59,8 @@ class JumpAndRunExperiment : public fi::ExperimentFlow
 				{
 					cerr << "[JumpAndRunExperiment] Damn! Something went "
 					     << "terribly wrong! Who added that event?! :-(" << endl;
-					return (false);
+					simulator.clearEvents(this);
+					return false;
 				}
 				else
 					cout << "[JumpAndRunExperiment] Jump detected. Instruction: "
@@ -73,7 +75,9 @@ class JumpAndRunExperiment : public fi::ExperimentFlow
 			cout << "[JumpAndRunExperiment] " << dec << counter
 				 << " jump(s) detected -- enough for today...exiting! :-)"
 				 << endl;
-			return (true);
+
+			simulator.clearEvents(this);
+			return true;
 		}
 };
 

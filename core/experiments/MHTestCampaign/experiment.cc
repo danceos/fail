@@ -36,6 +36,7 @@ bool MHTestExperiment::run()
 		cout << "No data for me? :(" << endl;
 	}
 #endif
+	sal::simulator.clearEvents(this);
 	sal::simulator.terminate();
 	return true;
 }

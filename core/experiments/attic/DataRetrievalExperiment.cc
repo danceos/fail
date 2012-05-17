@@ -31,6 +31,7 @@ bool DataRetrievalExperiment::run()
 	cout << "m_instrptr1: " <<  hex << test->m_instrptr1() << endl;
 	// m_instrptr2 augeben
 	cout << "m_instrptr2: " << hex << test->m_instrptr2() << endl;
-	
-	return (true); // experiment successful
+
+	sal::simulator.clearEvents(this);
+	return true; // experiment successful
 }

@@ -98,6 +98,7 @@ bool WeathermonitorExperiment::run()
 	std::ofstream of(tracefile);
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
+		sal::simulator.clearEvents(this); // cleanup
 		return false;
 	}
 	trace.SerializeToOstream(&of);

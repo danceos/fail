@@ -93,6 +93,7 @@ bool CoolChecksumExperiment::run()
 	std::ofstream of("trace.pb");
 	if (of.fail()) {
 		log << "failed to write trace.pb" << endl;
+		sal::simulator.clearEvents(this);
 		return false;
 	}
 	trace.SerializeToOstream(&of);
@@ -114,7 +115,7 @@ bool CoolChecksumExperiment::run()
 	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
 		// communicate that we were told to die
-		sal::simulator.terminate(1); // "return (false);" ?
+		sal::simulator.terminate(1);
 	}
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
@@ -201,5 +202,6 @@ bool CoolChecksumExperiment::run()
 	sal::simulator.terminate();
 #endif
 	// simulator continues to run
+	sal::simulator.clearEvents(this);
 	return true;
 }
