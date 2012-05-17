@@ -156,7 +156,7 @@ Dokumentation:
    -> siehe fail/experiments/coolchecksum/experiment.cc FIXME am Ende
    -> Lösung: Löschliste
    - ggf. zusammen mit Datenstruktur-Implementierungsdetails-TODO (s.u.) angehen
- - AspectConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+ - FailConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
    -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
  - variant_config.h in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
    -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt

@@ -1,7 +1,7 @@
 #ifndef __JUMP_AH__
   #define __JUMP_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_EVENT_JUMP
 

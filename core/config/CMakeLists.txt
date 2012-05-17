@@ -18,5 +18,5 @@ OPTION(CONFIG_FIRE_INTERRUPTS           "Target backend: Fire interrupts" OFF)
 OPTION(CONFIG_DISABLE_KEYB_INTERRUPTS   "Target backend: Suppress keyboard interrupts" OFF)
 OPTION(CONFIG_FI_MEM_ACCESS_BITFLIP     "deprecated something" OFF)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/AspectConfig.hpp.in
-               ${CMAKE_CURRENT_BINARY_DIR}/AspectConfig.hpp)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FailConfig.hpp.in
+               ${CMAKE_CURRENT_BINARY_DIR}/FailConfig.hpp)

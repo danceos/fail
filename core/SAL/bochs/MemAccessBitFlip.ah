@@ -1,7 +1,7 @@
 #ifndef __MEM_ACCESS_BIT_FLIP_AH__
   #define __MEM_ACCESS_BIT_FLIP_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_FI_MEM_ACCESS_BITFLIP
 

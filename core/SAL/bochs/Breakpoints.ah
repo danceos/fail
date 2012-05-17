@@ -1,7 +1,7 @@
 #ifndef __BREAKPOINTS_AH__
   #define __BREAKPOINTS_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_EVENT_BREAKPOINTS
 

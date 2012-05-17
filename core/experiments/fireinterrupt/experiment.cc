@@ -6,7 +6,7 @@
 #include "SAL/bochs/BochsRegister.hpp"
 #include "controller/Event.hpp"
 #include "util/Logger.hpp"
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_DISABLE_KEYB_INTERRUPTS) || !defined(CONFIG_FIRE_INTERRUPTS)

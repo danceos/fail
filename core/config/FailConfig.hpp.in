@@ -1,5 +1,5 @@
-#ifndef __ASPECT_CONFIG_HPP__
-  #define __ASPECT_CONFIG_HPP__
+#ifndef __FAIL_CONFIG_HPP__
+  #define __FAIL_CONFIG_HPP__
 
 // #define / #undef the following configuration macros to enable/disable the
 // various event sources, fault injection sinks, and miscellaneous other
@@ -28,4 +28,4 @@
 // Fault injection
 #cmakedefine CONFIG_FI_MEM_ACCESS_BITFLIP
 
-#endif /* __ASPECT_CONFIG_HPP__ */
+#endif /* __FAIL_CONFIG_HPP__ */

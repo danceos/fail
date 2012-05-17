@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 #include "controller/ExperimentFlow.hpp"
 
 #define INST_ADDR_FUNC_START  0x4ae6		

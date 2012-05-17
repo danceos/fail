@@ -32,6 +32,8 @@ void JobServer::addParam(ExperimentData* exp){
 #endif
 }
 
+volatile unsigned JobServer::m_DoneCount = 0;
+
 ExperimentData *JobServer::getDone()
 {
 	// FIXME race condition, need to synchronize with
@@ -52,6 +54,34 @@ ExperimentData *JobServer::getDone()
 	return m_doneJobs.Dequeue();
 #endif
 }
+
+#ifdef SERVER_PERFORMANCE_MEASURE
+void JobServer::measure()
+{
+	cout << "\n[Server] Logging throughput in \"" << PERFORMANCE_LOG_PATH << "\"..." << endl;
+	ofstream m_file(PERFORMANCE_LOG_PATH, std::ios::trunc); // overwrite existing perf-logs
+	if(!m_file.is_open()) {
+		cerr << "[Server] Perf-logging has been enabled"
+		     << "but I was not able to write the log-file \""
+		     << PERFORMANCE_LOG_PATH << "\"." << endl;
+		exit(1);
+	}
+	unsigned counter = 0;
+
+	m_file << "time\tthroughput" << endl;
+	unsigned diff = 0;
+	while(!m_finish) {
+		// Format: 1st column (seconds)[TAB]2nd column (throughput)
+		m_file << counter << "\t" << (m_DoneCount - diff) << endl;
+		counter += PERFORMANCE_STEPPING_SEC;
+		diff = m_DoneCount;
+		sleep(PERFORMANCE_STEPPING_SEC);
+	}
+	// NOTE: Summing up the values written in the 2nd column does not
+	// necessarily yield the number of completed experiments/jobs
+	// (due to thread-scheduling behaviour -> not sync'd!)
+}
+#endif // SERVER_PERFORMANCE_MEASURE
 
 #ifndef __puma
 /**
@@ -260,6 +290,9 @@ void CommThread::receiveExperimentResults(Minion& minion, uint32_t workloadID)
 	if(m_js.m_runningJobs.remove(workloadID, exp)) { // ExperimentData* found
 		SocketComm::rcv_msg(minion.getSocketDescriptor(), exp->getMessage() ); // deserialize results.
 		m_js.m_doneJobs.Enqueue(exp); // Put results in done queue..
+	  #ifdef SERVER_PERFORMANCE_MEASURE
+		++JobServer::m_DoneCount;
+	  #endif
 	} else {
 		// We can receive several results for the same workload id because
 		// we (may) distribute the (running) jobs to a *few* experiment-clients.

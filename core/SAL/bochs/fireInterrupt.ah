@@ -1,7 +1,7 @@
 #ifndef __FIREINTERRUPT_AH__
   #define __FIREINTERRUPT_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_FIRE_INTERRUPTS
 

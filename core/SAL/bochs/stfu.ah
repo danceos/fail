@@ -1,7 +1,7 @@
 #ifndef __NONVERBOSE_AH__
   #define __NONVERBOSE_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_STFU
 

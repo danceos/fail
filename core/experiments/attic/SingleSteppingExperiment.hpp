@@ -8,12 +8,12 @@
 
 #include "../controller/ExperimentFlow.hpp"
 #include "../SAL/SALInst.hpp"
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 #include "../SAL/bochs/BochsRegister.hpp"
 
 // Check if aspect dependency is satisfied:
 #ifndef CONFIG_EVENT_CPULOOP
-  #error Breakpoint-events needed! Enable aspect first (see AspectConfig.hpp)!
+  #error Breakpoint-events needed! Enable aspect first (see FailConfig.hpp)!
 #endif
 
 using namespace fi;

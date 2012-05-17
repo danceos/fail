@@ -2,7 +2,7 @@
   #define __MEM_EVENTS_AH__
 
 #include <iostream>
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
 

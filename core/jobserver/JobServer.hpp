@@ -19,6 +19,11 @@
 #include <boost/thread.hpp>
 #endif
 
+// TODO: This should be part of a "server-config".
+#define SERVER_PERFORMANCE_MEASURE
+#define PERFORMANCE_LOG_PATH   			"perf.dat"
+#define PERFORMANCE_STEPPING_SEC    	1
+
 namespace fi {
 
 class CommThread;
@@ -49,7 +54,14 @@ class JobServer
 	
 	boost::thread* m_serverThread;
 #endif // puma
-	
+
+#ifdef SERVER_PERFORMANCE_MEASURE
+	static volatile unsigned m_DoneCount; //! the number of finished jobs
+#ifndef __puma
+	boost::thread* m_measureThread; //! the performance measurement thread
+#endif
+#endif
+
 	//! Atomic counter for Workload IDs.
 	SynchronizedCounter m_counter;
 	//! Map of running jobs (referenced by Workload ID
@@ -59,11 +71,14 @@ class JobServer
 	//! List of finished experiment results.
 	SynchronizedQueue<ExperimentData*> m_doneJobs;
 	friend class CommThread; //!< CommThread is allowed access the job queues.
-	
 public:	
-	JobServer(int port = 1111) : m_port(port), m_finish(false), m_noMoreExps(false), m_maxThreads(128), m_threadtimeout(0) { 
+	JobServer(int port = 1111) : m_port(port), m_finish(false), m_noMoreExps(false),
+		m_maxThreads(128), m_threadtimeout(0) { 
 #ifndef __puma
 	  m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread. 
+#ifdef SERVER_PERFORMANCE_MEASURE
+	  m_measureThread = new boost::thread(&JobServer::measure, this);
+#endif
 #endif
 	};
 	~JobServer()
@@ -71,6 +86,9 @@ public:
 #ifndef __puma
 		// Cleanup of m_serverThread, etc.
 		delete m_serverThread;
+#ifdef SERVER_PERFORMANCE_MEASURE
+		delete m_measureThread;
+#endif
 #endif // __puma
 	};
 
@@ -82,6 +100,9 @@ public:
 	 * and listen for connections.
 	 */
 	void run();
+#ifdef SERVER_PERFORMANCE_MEASURE
+	void measure();
+#endif
 
 	void sendWork(int sockfd);
 

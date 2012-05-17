@@ -1,7 +1,7 @@
 #ifndef __TRAP_AH__
   #define __TRAP_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #ifdef CONFIG_EVENT_TRAP
 

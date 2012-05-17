@@ -8,11 +8,11 @@
 
 #include "../controller/ExperimentFlow.hpp"
 #include "../SAL/SALInst.hpp"
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 // Check aspect dependencies:
 #if !defined(CONFIG_EVENT_CPULOOP) || !defined(CONFIG_EVENT_MEMACCESS) || !defined(CONFIG_SR_SAVE) || !defined(CONFIG_FI_MEM_ACCESS_BITFLIP)
-  #error Event dependecies not satisfied! Enabled needed aspects in AspectConfig.hpp!
+  #error Event dependecies not satisfied! Enabled needed aspects in FailConfig.hpp!
 #endif
 
 using namespace fi;

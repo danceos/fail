@@ -1,7 +1,7 @@
 #ifndef __REBOOT_AH__
   #define __REBOOT_AH__
 
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 #include "../SALInst.hpp"
 
 #ifdef CONFIG_SR_REBOOT

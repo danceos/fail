@@ -11,7 +11,7 @@
 #include "SAL/Memory.hpp"
 #include "SAL/bochs/BochsRegister.hpp"
 #include "controller/Event.hpp"
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #if COOL_FAULTSPACE_PRUNING
 #include "plugins/tracing/TracingPlugin.hpp"
