@@ -34,20 +34,20 @@ bool JobClient::connectToServer()
 	memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
 	serv_addr.sin_port = htons(m_server_port);
 	
-    int retries = RETRY_COUNT;
+    int retries = CLIENT_RETRY_COUNT;
     while(true) {
 		if(connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 			perror("[Client@connect()]");
 			if(retries > 0) {
-				// Wait RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
-				int delay = rand() % (RAND_BACKOFF_TEND-RAND_BACKOFF_TSTART) + RAND_BACKOFF_TSTART;
+				// Wait CLIENT_RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
+				int delay = rand() % (CLIENT_RAND_BACKOFF_TEND-CLIENT_RAND_BACKOFF_TSTART) + CLIENT_RAND_BACKOFF_TSTART;
 				cout << "[Client] Retrying to connect to server in ~" << delay << "s..." << endl;
 				sleep(delay);
 				usleep(rand() % 1000000);
 				--retries;
 				continue;
 			}
-			cout << "[Client] Unable to reconnect (tried " << RETRY_COUNT << " times); "
+			cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT << " times); "
 			     << "I'll give it up!" << endl;
 			return false; // finally: unable to connect, give it up :-(
 		}

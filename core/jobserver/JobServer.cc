@@ -1,6 +1,3 @@
-// Author: 	Martin Hoffmann, Richard Hellwig, Adrian Böckenkamp
-// Date:   	07.10.11
-
 // <iostream> needs to be included before *.pb.h, otherwise ac++/Puma chokes on the latter
 #include <iostream>
 
@@ -17,6 +14,7 @@
 #include "jobserver/messagedefs/FailControlMessage.pb.h"
 #include "SocketComm.hpp"
 #include "controller/Minion.hpp"
+
 #ifndef __puma
 #include <boost/thread.hpp>
 #include <boost/date_time.hpp>
@@ -32,7 +30,9 @@ void JobServer::addParam(ExperimentData* exp){
 #endif
 }
 
+#ifdef SERVER_PERFORMANCE_MEASURE
 volatile unsigned JobServer::m_DoneCount = 0;
+#endif
 
 ExperimentData *JobServer::getDone()
 {
@@ -58,12 +58,12 @@ ExperimentData *JobServer::getDone()
 #ifdef SERVER_PERFORMANCE_MEASURE
 void JobServer::measure()
 {
-	cout << "\n[Server] Logging throughput in \"" << PERFORMANCE_LOG_PATH << "\"..." << endl;
-	ofstream m_file(PERFORMANCE_LOG_PATH, std::ios::trunc); // overwrite existing perf-logs
+	cout << "\n[Server] Logging throughput in \"" << SERVER_PERF_LOG_PATH << "\"..." << endl;
+	ofstream m_file(SERVER_PERF_LOG_PATH, std::ios::trunc); // overwrite existing perf-logs
 	if(!m_file.is_open()) {
 		cerr << "[Server] Perf-logging has been enabled"
 		     << "but I was not able to write the log-file \""
-		     << PERFORMANCE_LOG_PATH << "\"." << endl;
+		     << SERVER_PERF_LOG_PATH << "\"." << endl;
 		exit(1);
 	}
 	unsigned counter = 0;
@@ -73,9 +73,9 @@ void JobServer::measure()
 	while(!m_finish) {
 		// Format: 1st column (seconds)[TAB]2nd column (throughput)
 		m_file << counter << "\t" << (m_DoneCount - diff) << endl;
-		counter += PERFORMANCE_STEPPING_SEC;
+		counter += SERVER_PERF_STEPPING_SEC;
 		diff = m_DoneCount;
-		sleep(PERFORMANCE_STEPPING_SEC);
+		sleep(SERVER_PERF_STEPPING_SEC);
 	}
 	// NOTE: Summing up the values written in the 2nd column does not
 	// necessarily yield the number of completed experiments/jobs

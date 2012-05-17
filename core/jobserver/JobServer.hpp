@@ -1,28 +1,16 @@
-/**
- * \brief The JobServer supplies the Minions with ExperimentData's
- * and receives the result data.
- *
- * \author Martin Hoffmann, Richard Hellwig, Adrian Böckenkamp
- */
-
-
 #ifndef __JOB_SERVER_H__
-#define __JOB_SERVER_H__
+  #define __JOB_SERVER_H__
 
 #include "controller/Minion.hpp"
 #include "util/SynchronizedQueue.hpp"
 #include "util/SynchronizedCounter.hpp"
 #include "util/SynchronizedMap.hpp"
+#include "config/FailConfig.hpp"
 
 #include <list>
 #ifndef __puma
 #include <boost/thread.hpp>
 #endif
-
-// TODO: This should be part of a "server-config".
-#define SERVER_PERFORMANCE_MEASURE
-#define PERFORMANCE_LOG_PATH   			"perf.dat"
-#define PERFORMANCE_STEPPING_SEC    	1
 
 namespace fi {
 
@@ -30,10 +18,11 @@ class CommThread;
   
 /**
  * \class JobServer
- * Manages the campaigns parameter distributions. 
- * The Campaign Controller can add experiment parameter sets,
- * which the Jobserver will distribute to requesting clients.
- * The campaign controller can wait for all results, or a timeout.
+ * The server supplies the Minions with ExperimentData's and receives the result data.
+ * 
+ * Manages the campaigns parameter distributions. The Campaign Controller can add
+ * experiment parameter sets, which the Jobserver will distribute to requesting
+ * clients. The campaign controller can wait for all results, or a timeout.
  */
 class JobServer 
 {

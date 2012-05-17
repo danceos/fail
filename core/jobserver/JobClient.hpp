@@ -1,26 +1,16 @@
-/**
- * \brief The Minion's JobClient requests ExperimentData and returns results.
- *
- * \author Martin Hoffmann
- */
-
-
 #ifndef __JOB_CLIENT_H__
-#define __JOB_CLIENT_H__
+  #define __JOB_CLIENT_H__
 
 #include <string>
 #include <ctime>
 #include <stdlib.h>
 #include <unistd.h>
 #include <iostream>
+
 #include "SocketComm.hpp"
 #include "controller/ExperimentData.hpp"
 #include "jobserver/messagedefs/FailControlMessage.pb.h"
-
-// FIXME This should be part of a "client config" (?).
-#define RAND_BACKOFF_TSTART  3
-#define RAND_BACKOFF_TEND    8
-#define RETRY_COUNT          3
+#include "config/FailConfig.hpp"
 
 namespace fi {
 
@@ -28,6 +18,7 @@ namespace fi {
    * \class JobClient
    * 
    * \brief Manages communication with JobServer
+   * The Minion's JobClient requests ExperimentData and returns results.
    * 
    */
   class JobClient {
@@ -63,10 +54,6 @@ namespace fi {
     bool sendResult(ExperimentData& result);
 
   };
-
-
-  
 }
 
-
-#endif
+#endif // __JOB_CLIENT_H__
