@@ -76,6 +76,7 @@ enum GPRegisterId
  #else // 32 bit register id's:
 	RID_EAX = 0, RID_ECX, RID_EDX, RID_EBX, RID_ESP, RID_EBP, RID_ESI, RID_EDI,
  #endif
+    RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI,
     RID_LAST_GP_ID
 };
 
