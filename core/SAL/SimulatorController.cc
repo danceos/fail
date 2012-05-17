@@ -1,7 +1,3 @@
-
-// Author: Adrian Böckenkamp
-// Date:   23.01.2012
-
 #include "SimulatorController.hpp"
 #include "SALInst.hpp"
 #include "../controller/Event.hpp"
@@ -14,7 +10,14 @@ ConcreteSimulatorController simulator;
 
 fi::EventId SimulatorController::addEvent(fi::BaseEvent* ev)
 {
-	return (m_EvList.add(ev, m_Flows.getCurrent()));
+	assert(ev != NULL && "FATAL ERROR: ev pointer cannot be NULL!");
+	fi::EventId ret = m_EvList.add(ev, m_Flows.getCurrent());
+	// Call the common postprocessing function:
+	if (!onEventAddition(ev)) { // If the return value signals "false"...,
+		m_EvList.remove(ev); // ...skip the addition
+		ret = -1;
+	}
+	return ret;
 }
 
 fi::BaseEvent* SimulatorController::waitAny(void)
@@ -30,9 +33,6 @@ void SimulatorController::startup()
 	// Some greetings to the user:
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
 	
-	// TODO: Retrieve ExperimentData from the job-server (*before* each
-	//       experiment-routine gets started)...!
-	
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
 }
@@ -47,11 +47,11 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr)
 	assert(false &&
 	"FIXME: SimulatorController::onBreakpointEvent() has not been tested before");
 	
-	// FIXME: Performanz verbessern
+	// FIXME: Improve performance
 
 	// Loop through all events of type BP*Event:
 	fi::EventList::iterator it = m_EvList.begin();
-	while(it != m_EvList.end())
+	while (it != m_EvList.end())
 	{
 		fi::BaseEvent* pev = *it;
 		fi::BPEvent* pbp; fi::BPRangeEvent* pbpr;
@@ -78,8 +78,7 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr)
 void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
                                               bool is_write, address_t instrPtr)
 {
-	// FIXME: Performanz verbessern (falls Iteratorlogik bleibt, wäre
-	//        ein "hasMoreOf(typeid(MemEvents))" denkbar...
+	// FIXME: Improve performance
 
 	fi::MemAccessEvent::accessType_t accesstype =
 		is_write ? fi::MemAccessEvent::MEM_WRITE

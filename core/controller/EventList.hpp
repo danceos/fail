@@ -1,9 +1,6 @@
 #ifndef __EVENT_LIST_HPP__
   #define __EVENT_LIST_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   04.02.2012
-
 #include <cassert>
 #include <list>
 #include <vector>
@@ -140,10 +137,11 @@ class EventList
 		 */
 		size_t getContextCount() const;
 		/**
-		 * Retrieves the total number of events.
+		 * Retrieves the total number of buffered events. This doesn't include
+		 * the events in the fire- or delete-list.
 		 * @return the total event count (for all flows)
 		 */
-		size_t getEventCount() const { return (m_BufferList.size()); }
+		size_t getEventCount() const { return m_BufferList.size(); }
 		/**
 		 * Retrieves the recently triggered event object. To map this object to
 		 * it's context (id est, the related ExerimentFlow), use
@@ -168,7 +166,8 @@ class EventList
 		 * @return returns the updated iteration, pointing to the next element
 		 *         after makeActive returns, "it" is invalid, so the returned
 		 *         iterator should be used to continue the iteration
-		 * TODO: besserer Name statt "makeActive"?
+		 *
+		 * TODO: Improve naming (instead of "makeActive")?
 		 */
 		iterator makeActive(iterator it);
 		/**
@@ -177,7 +176,8 @@ class EventList
 		 * makeActive() for more details. The recently triggered event can be
 		 * retrieved by calling \a getLastFired(). After all events have been
 		 * triggered, the (internal) fire- and delete-list will be cleared.
-		 * TODO: besserer Name statt "fireActiveEvents"?
+		 *
+		 * TODO: Improve naming (instead of "fireActiveEvents")?
 		 */
 		void fireActiveEvents();
 };

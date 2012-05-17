@@ -1,8 +1,5 @@
-
-// Author: Adrian Böckenkamp
-// Date:   08.06.2011
-
 #include "Event.hpp"
+#include "../SAL/SALInst.hpp"
 
 namespace fi
 {

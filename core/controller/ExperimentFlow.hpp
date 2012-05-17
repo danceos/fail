@@ -1,9 +1,6 @@
 #ifndef __EXPERIMENT_FLOW_HPP__
   #define __EXPERIMENT_FLOW_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   09.09.2011
-
 #include "../SAL/SALInst.hpp"
 
 namespace fi
@@ -11,9 +8,8 @@ namespace fi
 
 /**
  * \class ExperimentFlow
- * Basic interface for user-defined experiments. To create a new
- * experiment, derive your own class from ExperimentFlow and
- * define the run method.
+ * Basic interface for user-defined experiments. To create a new experiment,
+ * derive your own class from ExperimentFlow and define the run method.
  */
 class ExperimentFlow
 {
@@ -33,6 +29,9 @@ class ExperimentFlow
 		{
 			run();
 			sal::simulator.clearEvents(this); // remove residual events
+			// FIXME: Consider removing this call (see EventList.cc, void remove(ExperimentFlow* flow)) 
+			//        a) with the advantage that we will potentially prevent serious segfaults but
+			//        b) with the drawback that we cannot enforce any cleanups.
 		}
 };
 

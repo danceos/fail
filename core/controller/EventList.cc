@@ -23,6 +23,10 @@ void EventList::remove(BaseEvent* ev)
 	//   * clear m_BufferList
 	//   * copy m_FireList to m_DeleteList
 	if (ev == 0) {
+		for (bufferlist_t::iterator it = m_BufferList.begin(); it != m_BufferList.end(); it++)
+			sal::simulator.onEventDeletion(*it);
+		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++)
+			sal::simulator.onEventDeletion(*it);
 		m_BufferList.clear();
 		// all remaining active events must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
@@ -31,6 +35,7 @@ void EventList::remove(BaseEvent* ev)
 	//   * find/remove ev in m_BufferList
 	//   * if ev in m_FireList, copy to m_DeleteList
 	} else {
+		sal::simulator.onEventDeletion(ev);
 		m_BufferList.remove(ev);
 		firelist_t::const_iterator it =
 			std::find(m_FireList.begin(), m_FireList.end(), ev);
@@ -47,20 +52,40 @@ EventList::iterator EventList::remove(iterator it)
 
 EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 {
-	if(!skip_deletelist)
+	if (!skip_deletelist) {
+		// If skip_deletelist = true, m_remove was called from makeActive. Accordingly, we
+		// are not going to delete an event, instead we are "moving" an event object (= *it)
+		// from the buffer list to the fire-list. Therefor we only need to call the simulator's
+		// event handler (m_onEventDeletion), if m_remove is called with the primary intention
+		// to *delete* (not "move") an event.
+		sal::simulator.onEventDeletion(*it);
 		m_DeleteList.push_back(*it);
+	}
 	return (m_BufferList.erase(it));
 }
 
 void EventList::remove(ExperimentFlow* flow)
 {
+	// WARNING: (*it) (= all elements in the lists) can be an invalid ptr because
+	// clearEvents will be called automatically when the allocating experiment (i.e.
+	// run()) has already ended. Accordingly, we cannot call
+	//        sal::simulator.onEventDeletion(*it)
+	// because a dynamic-cast of *it would cause a SEGFAULT. Therefor we require the
+	// experiment flow to remove all residual events by calling clearEvents() (with-
+	// in run()). As a consequence, we are now allowed to call the event-handler here.
+	// See ExperimentFlow.hpp for more details.
+
 	// all events?
 	if (flow == 0) {
+		for (bufferlist_t::iterator it = m_BufferList.begin();
+		     it != m_BufferList.end(); it++)
+			sal::simulator.onEventDeletion(*it); // invoke event handler
 		m_BufferList.clear();
-	} else {
+	} else { // remove all events corresponding to a specific experiment ("flow"):
 		for (bufferlist_t::iterator it = m_BufferList.begin();
 		     it != m_BufferList.end(); ) {
 			if ((*it)->getParent() == flow) {
+				sal::simulator.onEventDeletion(*it);
 				it = m_BufferList.erase(it);
 			} else {
 				++it;
@@ -72,11 +97,12 @@ void EventList::remove(ExperimentFlow* flow)
 		 it != m_FireList.end(); it++) {
 		if (std::find(m_DeleteList.begin(), m_DeleteList.end(), *it)
 		    != m_DeleteList.end()) {
-			continue;
+			continue;  // (already in the delete-list? -> skip!)
 		}
 		// ... need to be pushed into m_DeleteList, as we're currently
 		// iterating over m_FireList in fireActiveEvents() and cannot modify it
 		if (flow == 0 || (*it)->getParent() == flow) {
+			sal::simulator.onEventDeletion(*it);
 			m_DeleteList.push_back(*it);
 		}
 	}
@@ -117,13 +143,14 @@ EventList::iterator EventList::makeActive(iterator it)
 
 void EventList::fireActiveEvents()
 {
-	for(firelist_t::iterator it = m_FireList.begin();
-		it != m_FireList.end(); it++)
-	{
-		if(std::find(m_DeleteList.begin(), m_DeleteList.end(), *it)
-		   == m_DeleteList.end()) // not found in delete-list?
-		{
+	for (firelist_t::iterator it = m_FireList.begin();
+		 it != m_FireList.end(); it++) {
+		if (std::find(m_DeleteList.begin(), m_DeleteList.end(), *it)
+		   == m_DeleteList.end()) { // not found in delete-list?
 			m_pFired = *it;
+			// Inform (call) the simulator's (internal) event handler that we are about
+			// to trigger an event (*before* we actually toggle the experiment flow):
+			sal::simulator.onEventTrigger(m_pFired);
 			ExperimentFlow* pFlow = m_pFired->getParent();
 			assert(pFlow && "FATAL ERROR: The event has no parent experiment (owner)!");
 			sal::simulator.m_Flows.toggle(pFlow);
@@ -131,6 +158,7 @@ void EventList::fireActiveEvents()
 	}
 	m_FireList.clear();
 	m_DeleteList.clear();
+	// Note: Do NOT call any event handlers here!
 }
 
 size_t EventList::getContextCount() const

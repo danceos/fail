@@ -440,7 +440,7 @@ class GuestEvent : virtual public BaseEvent
 
 /**
  * \class JumpEvent
- * JumpEvents are used to observe condition jumps (if...else if...else).
+ * JumpEvents are used to observe conditional jumps (if...else if...else).
  */
 class JumpEvent : virtual public BaseEvent
 {
@@ -479,6 +479,50 @@ class JumpEvent : virtual public BaseEvent
 		 */
 		void setFlagTriggered(bool flagTriggered)
 		{ m_FlagTriggered = flagTriggered; }
+};
+
+/**
+ * \class TimerEvent
+ * This event type is used to create timeouts/timers within in an experiment.
+ */
+class TimerEvent : public BaseEvent
+{
+	private:
+		unsigned m_Timeout; //!< timeout interval in milliseconds
+		sal::timer_id_t m_Id; //!< internal timer id (sim-specific)
+		bool m_Once; //!< true, if the timer should be triggered only once
+	public:
+		/**
+		 * Creates a new timer event. This can be used to implement a timeout-
+		 * mechanism in the experiment-flow. The timer starts automatically when
+		 * added to the simulator backend (@see SimulatorController::addEvent)
+		 * @param timeout the time intervall in milliseconds (ms)
+		 * @param once \c true, if the TimerEvent should be triggered once,
+		 *        \c false if it should occur regularly
+		 */
+		TimerEvent(unsigned timeout, bool once)
+			: m_Timeout(timeout), m_Id(-1), m_Once(once) { }
+		~TimerEvent() { }
+		/**
+		 * Retrieves the internal timer id. Maybe useful for debug output.
+		 * @return the timer id
+		 */
+		sal::timer_id_t getId() const { return m_Id; }
+		/**
+		 * Sets the internal timer id. This should not be used by the experiment.
+		 * @param id the new timer id, given by the underlying simulator-backend
+		 */
+		void setId(sal::timer_id_t id) { m_Id = id; }
+		/**
+		 * Retrieves the timer's timeout value.
+		 * @return the timout in milliseconds
+		 */
+		unsigned getTimeout() const { return m_Timeout; }
+		/**
+		 * Checks whether the timer occurs once or repetitive.
+		 * @return \c true if timer triggers once, \c false if repetitive
+		 */
+		bool getOnceFlag() const { return m_Once; }
 };
 
 } // end-of-namespace: fi
