@@ -33,6 +33,7 @@
       Kommentare nicht nur zum "was passiert hier", sondern auch zum "warum
       machen wir das so"
     * Innerhalb von Methoden/Funktionen "normale" C/C++ Kommentare (//, /**/)
+    * Keine Autorennamen oder Datum, etc. in den Code-Dateien vermerken
 
  - Formatierung
     * Direktiven für bedingte Kompilierung beginnen ganz vorne, außer bei
