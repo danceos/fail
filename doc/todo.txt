@@ -21,7 +21,6 @@ Bochs:
    zum selben Zeitpunkt eintreffen? (rh)
    - Interrupts teilweise oder komplett sperren
    - optional: Interrupts auslösen
- - gemeinsame Namen fuer RDX/EDX (ab)
 
 Abstraktionen:
  ! Timer (Bochs: basierend auf bx_pc_system.register_timer()) für "echte"
