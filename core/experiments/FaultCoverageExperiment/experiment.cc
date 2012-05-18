@@ -43,7 +43,7 @@ bool FaultCoverageExperiment::run()
 	simulator.addEvent(&ev_func_start);
 
 	cout << "[FaultCoverageExperiment] Waiting for function start address..." << endl;
-	while(simulator.waitAny() != &ev_func_start)
+	while (simulator.waitAny() != &ev_func_start)
 		;
 
 	// store current state
@@ -57,15 +57,12 @@ bool FaultCoverageExperiment::run()
 
 	RegisterManager& regMan = simulator.getRegisterManager();
 	// iterate over all registers
-	for(RegisterManager::iterator it = regMan.begin(); it != regMan.end(); it++)
-	{
+	for (RegisterManager::iterator it = regMan.begin(); it != regMan.end(); it++) {
 		Register* pReg = *it; // get a ptr to the current register-object
 		// loop over the 32 bits within this register
-		for(regwidth_t bitnr = 0; bitnr < pReg->getWidth(); ++bitnr)
-		{
+		for (regwidth_t bitnr = 0; bitnr < pReg->getWidth(); ++bitnr) {
 			// loop over all instruction addresses of observed function
-			for(int instr = 0; ; ++instr)
-			{
+			for (int instr = 0; ; ++instr) {
 				// clear event queues
 				simulator.clearEvents();
 
@@ -105,28 +102,25 @@ bool FaultCoverageExperiment::run()
 
 				// wait for function exit, trap or timeout
 				BaseEvent* ev = simulator.waitAny();
-				if(ev == &ev_func_end)
-				{
+				if (ev == &ev_func_end) {
 					// log result
 				  #if BX_SUPPORT_X86_64
-					const GPRegisterId targetreg = sal::RID_RAX;
 					const size_t expected_size = sizeof(uint32_t)*8;
 				  #else
-					const GPRegisterId targetreg = sal::RID_EAX;
 					const size_t expected_size = sizeof(uint64_t)*8;
 				  #endif
-					Register* pEAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(targetreg);
-					assert(expected_size == pEAX->getWidth()); // we assume to get 32(64) bits...
-					regdata_t result = pEAX->getData();
-					res << "[FaultCoverageExperiment] Reg: " << pReg->getName()
+					Register* pCAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(sal::RID_CAX);
+					assert(expected_size == pCAX->getWidth()); // we assume to get 32(64) bits...
+					regdata_t result = pCAX->getData();
+					res << "[FaultCoverageExperiment] Reg: " << pCAX->getName()
 					    << ", #Bit: " << bitnr << ", Instr-Idx: " << instr
 					    << ", Data: " << result;
 				}
-				else if(ev == &ev_trap)
+				else if (ev == &ev_trap)
 					res << "[FaultCoverageExperiment] Reg: " << pReg->getName()
 						<< ", #Bit: " << bitnr << ", Instr-Idx: " << instr
 						<< ", Trap#: " << ev_trap.getTriggerNumber() << " (Trap)";
-				else if(ev == &ev_timeout)
+				else if (ev == &ev_timeout)
 					res << "[FaultCoverageExperiment] Reg: " << pReg->getName()
 						<< ", #Bit: " << bitnr << ", Instr-Idx: " << instr
 						<< " (Timeout)";

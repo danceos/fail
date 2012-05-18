@@ -28,7 +28,7 @@ bool hscsimpleExperiment::run()
 	sal::simulator.addEventAndWait(&mainbp);
 	log << "breakpoint reached, saving" << endl;
 	sal::simulator.save("hello.state");
-#elif 1
+#elif 0
     // STEP 2
 	log << "restoring ..." << endl;
 	sal::simulator.restore("hello.state");
@@ -38,12 +38,8 @@ bool hscsimpleExperiment::run()
 	fi::BPEvent breakpoint(0x3c9e); // square(x) ret instruction
 	sal::simulator.addEventAndWait(&breakpoint);
 	log << "injecting hellish fault" << endl;
-#if BX_SUPPORT_X86_64
-	int reg = sal::RID_RAX;
-#else
-	int reg = sal::RID_EAX;
-#endif
-	sal::simulator.getRegisterManager().getRegister(reg)->setData(666);
+	// RID_CAX is the RAX register in 64 bit mode and EAX in 32 bit mode:
+	sal::simulator.getRegisterManager().getRegister(sal::RID_CAX)->setData(666);
 	log << "waiting for last main() instruction" << endl;
 	breakpoint.setWatchInstructionPointer(0x3c92);
 	sal::simulator.addEventAndWait(&breakpoint);

@@ -83,7 +83,7 @@ class Register
 		void setName(const std::string& name) { m_Name = name; }
 		/**
 		 * Retrieves the register name.
-		 * @return the name
+		 * @return the textual register description
 		 */
 		const std::string& getName() const { return (m_Name); }
 		/**

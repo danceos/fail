@@ -30,11 +30,6 @@ using std::endl;
 
 bool CoolChecksumExperiment::run()
 {
-#if BX_SUPPORT_X86_64
-	int targetreg = sal::RID_RDX;
-#else
-	int targetreg = sal::RID_EDX;
-#endif
 	Logger log("CoolChecksum", false);
 	fi::BPEvent bp;
 	
@@ -84,7 +79,8 @@ bool CoolChecksumExperiment::run()
 		// log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
 	}
 	log << "test function calculation position reached after " << std::dec << count << " instructions" << endl;
-	log << std::dec << "EDX = " << sal::simulator.getRegisterManager().getRegister(targetreg)->getData() << endl;
+	sal::Register* reg = sal::simulator.getRegisterManager().getRegister(sal::RID_CDX);
+	log << std::dec << reg->getName() << " = " << reg->getData() << endl;
 
 #if COOL_FAULTSPACE_PRUNING
 	sal::simulator.removeFlow(&tp);
@@ -170,8 +166,9 @@ bool CoolChecksumExperiment::run()
 
 	fi::BaseEvent* ev = sal::simulator.waitAny();
 	if (ev == &ev_done) {
-		int32_t data = sal::simulator.getRegisterManager().getRegister(targetreg)->getData();
-		log << std::dec << "Result EDX = " << data << endl;
+		sal::Register* pRegRes = sal::simulator.getRegisterManager().getRegister(sal::RID_CDX);
+		int32_t data = pRegRes->getData();
+		log << std::dec << "Result " << pRegRes->getName() << " = " << data << endl;
 		param.msg.set_resulttype(param.msg.CALCDONE);
 		param.msg.set_resultdata(data);
 	} else if (ev == &ev_timeout) {
