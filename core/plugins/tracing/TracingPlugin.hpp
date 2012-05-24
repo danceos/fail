@@ -4,8 +4,14 @@
 #include <ostream>
 #include "controller/ExperimentFlow.hpp"
 #include "util/MemoryMap.hpp"
+#include "config/FailConfig.hpp"
 
 #include "plugins/tracing/trace.pb.h"
+
+// Check if configuration dependencies are satisfied:
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_MEMREAD) || !defined(CONFIG_EVENT_MEMWRITE)
+  #error This experiment needs: breakpoints & read/write memory access. Enable these in the cmake-configuration tool.
+#endif
 
 /**
  * \class TracingPlugin
