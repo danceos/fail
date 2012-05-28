@@ -31,7 +31,7 @@ using std::endl;
 bool CoolChecksumExperiment::run()
 {
 	Logger log("CoolChecksum", false);
-	fi::BPEvent bp;
+	fi::BPSingleEvent bp;
 	
 	log << "startup" << endl;
 
@@ -156,9 +156,9 @@ bool CoolChecksumExperiment::run()
 	}
 
 	// aftermath
-	fi::BPEvent ev_done(COOL_ECC_CALCDONE);
+	fi::BPSingleEvent ev_done(COOL_ECC_CALCDONE);
 	sal::simulator.addEvent(&ev_done);
-	fi::BPEvent ev_timeout(fi::ANY_ADDR);
+	fi::BPSingleEvent ev_timeout(fi::ANY_ADDR);
 	ev_timeout.setCounter(COOL_ECC_NUMINSTR + 3000);
 	sal::simulator.addEvent(&ev_timeout);
 	fi::TrapEvent ev_trap(fi::ANY_TRAP);

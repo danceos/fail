@@ -21,7 +21,7 @@ bool TracingTest::run()
 
 #if 1
 	// STEP 1: run until interesting function starts, and save state
-	BPEvent breakpoint(0x00101658);
+	BPSingleEvent breakpoint(0x00101658);
 	simulator.addEventAndWait(&breakpoint);
 	cout << "[TracingTest] main() reached, saving" << endl;
 
@@ -40,7 +40,7 @@ bool TracingTest::run()
 	simulator.addFlow(&tp);
 
 	cout << "[TracingTest] tracing 1000000 instructions" << endl;
-	BPEvent timeout(fi::ANY_ADDR);
+	BPSingleEvent timeout(fi::ANY_ADDR);
 	timeout.setCounter(1000000);
 	simulator.addEvent(&timeout);
 

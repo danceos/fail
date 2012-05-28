@@ -16,7 +16,7 @@ bool DataRetrievalExperiment::run()
 	cout << "[getExperimentDataExperiment] Experiment start." << endl;
 
 	// Breakpoint address for Memtest86:
-	fi::BPEvent mainbp(MEMTEST86_BREAKPOINT);
+	fi::BPSingleEvent mainbp(MEMTEST86_BREAKPOINT);
 	sal::simulator.addEventAndWait(&mainbp);
 	cout << "[getExperimentDataExperiment] Breakpoint reached." << endl;
 	

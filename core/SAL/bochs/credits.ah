@@ -2,6 +2,7 @@
   #define __CREDITS_AH__
 
 #include <string.h>
+#include <stdio.h>
 
 aspect credits {
 	bool first;

@@ -25,7 +25,7 @@ aspect Breakpoints
 		//bxInstruction_c* pInstr = *(tjp->arg<1>());
 
 		// report this event to the Bochs controller:
-		sal::simulator.onInstrPtrChanged(pThis->get_instruction_pointer());
+		sal::simulator.onInstrPtrChanged(pThis->get_instruction_pointer(), pThis->cr3);
 		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.
 	}
 };

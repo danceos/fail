@@ -87,7 +87,7 @@ void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream*
 }
 #endif // DEBUG
 
-void BochsController::onInstrPtrChanged(address_t instrPtr)
+void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space)
 {
   #ifdef DEBUG
 	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
@@ -99,21 +99,13 @@ void BochsController::onInstrPtrChanged(address_t instrPtr)
 	{
 		// FIXME: Maybe we need to improve the performance of this check.
 		fi::BPEvent* pEvBreakpt = dynamic_cast<fi::BPEvent*>(*it);
-		if(pEvBreakpt && (instrPtr == pEvBreakpt->getWatchInstructionPointer() ||
-		   pEvBreakpt->getWatchInstructionPointer() == fi::ANY_ADDR))
+		if(pEvBreakpt && pEvBreakpt->isMatching(instrPtr, address_space))
 		{
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
-		}
-		fi::BPRangeEvent* pEvRange = dynamic_cast<fi::BPRangeEvent*>(*it);
-		if(pEvRange && pEvRange->isMatching(instrPtr))
-		{
-			pEvRange->setTriggerInstructionPointer(instrPtr);
-			it = m_EvList.makeActive(it);
-			continue; // dito.
 		}
 		it++;
 	}

@@ -24,7 +24,7 @@ bool hscsimpleExperiment::run()
 	// do funny things here...
 #if 1
     // STEP 1
-	fi::BPEvent mainbp(0x00003c34);
+	fi::BPSingleEvent mainbp(0x00003c34);
 	sal::simulator.addEventAndWait(&mainbp);
 	log << "breakpoint reached, saving" << endl;
 	sal::simulator.save("hello.state");
@@ -35,7 +35,7 @@ bool hscsimpleExperiment::run()
 	log << "restored!" << endl;
 
 	log << "waiting for last square() instruction" << endl;
-	fi::BPEvent breakpoint(0x3c9e); // square(x) ret instruction
+	fi::BPSingleEvent breakpoint(0x3c9e); // square(x) ret instruction
 	sal::simulator.addEventAndWait(&breakpoint);
 	log << "injecting hellish fault" << endl;
 	// RID_CAX is the RAX register in 64 bit mode and EAX in 32 bit mode:

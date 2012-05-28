@@ -39,7 +39,7 @@ bool FaultCoverageExperiment::run()
 	// set breakpoint at start address of the function to be analyzed ("observed");
 	// wait until instruction pointer reaches that address
 	cout << "[FaultCoverageExperiment] Setting up experiment. Allowing to start now." << endl;
-	BPEvent ev_func_start(INST_ADDR_FUNC_START);
+	BPSingleEvent ev_func_start(INST_ADDR_FUNC_START);
 	simulator.addEvent(&ev_func_start);
 
 	cout << "[FaultCoverageExperiment] Waiting for function start address..." << endl;
@@ -72,14 +72,14 @@ bool FaultCoverageExperiment::run()
 				cout << "done!" << endl;
 
 				// breakpoint at function exit
-				BPEvent ev_func_end(INST_ADDR_FUNC_END);
+				BPSingleEvent ev_func_end(INST_ADDR_FUNC_END);
 				simulator.addEvent(&ev_func_end);
 
 				// no need to continue simulation if we want to
 				// inject *now*
 				if (instr > 0) {
 					// breakpoint $instr instructions in the future
-					BPEvent ev_instr_reached(ANY_ADDR);
+					BPSingleEvent ev_instr_reached(ANY_ADDR);
 					ev_instr_reached.setCounter(instr);
 					simulator.addEvent(&ev_instr_reached);
 
@@ -96,7 +96,7 @@ bool FaultCoverageExperiment::run()
 				// catch traps and timeout
 				TrapEvent ev_trap; // any traps
 				simulator.addEvent(&ev_trap);
-				BPEvent ev_timeout(ANY_ADDR);
+				BPSingleEvent ev_timeout(ANY_ADDR);
 				ev_timeout.setCounter(1000);
 				simulator.addEvent(&ev_timeout);
 

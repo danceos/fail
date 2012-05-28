@@ -29,7 +29,7 @@ bool WeathermonitorExperiment::run()
 {
 	char const *statename = "bochs.state";
 	Logger log("Weathermonitor", false);
-	fi::BPEvent bp;
+	fi::BPSingleEvent bp;
 	
 	log << "startup" << endl;
 
@@ -78,7 +78,7 @@ bool WeathermonitorExperiment::run()
 	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
 	bp.setCounter(WEATHER_NUMITER_TRACING);
 	sal::simulator.addEvent(&bp);
-	fi::BPEvent ev_count(fi::ANY_ADDR);
+	fi::BPSingleEvent ev_count(fi::ANY_ADDR);
 	sal::simulator.addEvent(&ev_count);
 
 	// count instructions
@@ -168,14 +168,14 @@ bool WeathermonitorExperiment::run()
 */
 
 		// this marks THE END
-		fi::BPEvent ev_end(fi::ANY_ADDR);
+		fi::BPSingleEvent ev_end(fi::ANY_ADDR);
 		ev_end.setCounter(WEATHER_NUMINSTR_TRACING + WEATHER_NUMINSTR_AFTER);
 		sal::simulator.addEvent(&ev_end);
 
 		// count loop iterations by counting wait_begin() calls
 		// FIXME would be nice to have a callback API for this as this needs to
 		//       be done "in parallel"
-		fi::BPEvent ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
+		fi::BPSingleEvent ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
 		sal::simulator.addEvent(&ev_wait_begin);
 		int count_loop_iter_before = 0;
 
@@ -242,7 +242,7 @@ bool WeathermonitorExperiment::run()
 		sal::simulator.addEvent(&ev_below_text);
 		sal::simulator.addEvent(&ev_beyond_text);
 		// error detected
-		fi::BPEvent ev_detected(WEATHER_FUNC_VPTR_PANIC);
+		fi::BPSingleEvent ev_detected(WEATHER_FUNC_VPTR_PANIC);
 		sal::simulator.addEvent(&ev_detected);
 
 #if LOCAL && 0

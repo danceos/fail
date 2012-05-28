@@ -11,7 +11,7 @@ bool MHTestExperiment::run()
 	
 	cout << "[MHTestExperiment] Let's go" << endl;
 #if 0
-	fi::BPEvent mainbp(0x00003c34);
+	fi::BPSingleEvent mainbp(0x00003c34);
 	sal::simulator.addEventAndWait(&mainbp);
 	cout << "[MHTestExperiment] breakpoint reached, saving" << endl;
 	sal::simulator.save("hello.main");
@@ -22,7 +22,7 @@ bool MHTestExperiment::run()
 		int num = par.msg.input();
 		cout << "[MHExperiment] stepping " << num << " instructions" << endl;
 		if (num > 0) {
-			fi::BPEvent nextbp(fi::ANY_ADDR);
+			fi::BPSingleEvent nextbp(fi::ANY_ADDR);
 			nextbp.setCounter(num);
 			sal::simulator.addEventAndWait(&nextbp);
 		}

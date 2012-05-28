@@ -81,8 +81,9 @@ class SimulatorController
 		 * Breakpoint event handler. This routine needs to be called in the
 		 * simulator specific backend each time a breakpoint event occurs.
 		 * @param instrPtr the instruction pointer of the breakpoint event
+		 * @param address_space the address space it should occur in
 		 */
-		void onBreakpointEvent(address_t instrPtr);
+		void onBreakpointEvent(address_t instrPtr, address_t address_space);
 		/**
 		 * Memory access event handler (read/write).
 		 * @param addr the accessed memory address

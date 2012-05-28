@@ -31,7 +31,7 @@ bool fireinterruptExperiment::run()
     while(1){
 		int j = 0;
 		for(j=0 ; j<=100 ; j++){
-			fi::BPEvent mainbp(0x1045f5);
+			fi::BPSingleEvent mainbp(0x1045f5);
 			sal::simulator.addEventAndWait(&mainbp);
 		}
 		sal::simulator.fireInterrupt(1);

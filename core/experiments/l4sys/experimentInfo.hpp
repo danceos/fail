@@ -1,0 +1,11 @@
+#ifndef __EXPERIMENT_INFO_HPP__
+#define __EXPERIMENT_INFO_HPP__
+
+// FIXME autogenerate this
+
+#define COOL_ECC_FUNC_ENTRY		0x1007cd0
+#define COOL_ECC_CALCDONE		0x1007d3a
+#define COOL_ECC_NUMINSTR		3166
+#define HEADLESS_EXPERIMENT
+
+#endif

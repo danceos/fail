@@ -27,7 +27,7 @@ bool ChecksumOOStuBSExperiment::run()
 {
 	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
-	fi::BPEvent bp;
+	fi::BPSingleEvent bp;
 	
 	log << "startup" << endl;
 
@@ -75,7 +75,7 @@ bool ChecksumOOStuBSExperiment::run()
 	bp.setWatchInstructionPointer(fi::ANY_ADDR);
 	bp.setCounter(OOSTUBS_NUMINSTR);
 	sal::simulator.addEvent(&bp);
-	fi::BPEvent func_finish(OOSTUBS_FUNC_FINISH);
+	fi::BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
 	sal::simulator.addEvent(&func_finish);
 
 	if (sal::simulator.waitAny() == &func_finish) {
@@ -145,7 +145,7 @@ bool ChecksumOOStuBSExperiment::run()
 	job.close();
 
 	// reaching finish() could happen before OR after FI
-	fi::BPEvent func_finish(OOSTUBS_FUNC_FINISH);
+	fi::BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
 	sal::simulator.addEvent(&func_finish);
 	bool finish_reached = false;
 
@@ -208,10 +208,10 @@ bool ChecksumOOStuBSExperiment::run()
 	fi::TrapEvent ev_trap(fi::ANY_TRAP);
 	sal::simulator.addEvent(&ev_trap);
 	// OOStuBS' way to terminally halt (CLI+HLT)
-	fi::BPEvent ev_halt(OOSTUBS_FUNC_CPU_HALT);
+	fi::BPSingleEvent ev_halt(OOSTUBS_FUNC_CPU_HALT);
 	sal::simulator.addEvent(&ev_halt);
 	// remaining instructions until "normal" ending
-	fi::BPEvent ev_done(fi::ANY_ADDR);
+	fi::BPSingleEvent ev_done(fi::ANY_ADDR);
 	ev_done.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
 	sal::simulator.addEvent(&ev_done);
 

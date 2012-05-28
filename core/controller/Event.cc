@@ -52,25 +52,37 @@ bool MemAccessEvent::isMatching(sal::address_t addr, accessType_t accesstype) co
 	return (true);
 }
 
+bool BPEvent::aspaceIsMatching(sal::address_t aspace) const
+{
+	if (m_CR3 == ANY_ADDR || m_CR3 == aspace)
+		return true;
+	return false;
+}
+
 void BPRangeEvent::setWatchInstructionPointerRange(sal::address_t start, sal::address_t end)
 {
 	m_WatchStartAddr = start;
 	m_WatchEndAddr = end;
 }
 
-bool BPRangeEvent::isMatching(sal::address_t addr) const
+bool BPRangeEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
 {
+	if (!aspaceIsMatching(aspace))
+		return false;
 	if ((m_WatchStartAddr != ANY_ADDR && addr < m_WatchStartAddr) ||
 		(m_WatchEndAddr != ANY_ADDR && addr > m_WatchEndAddr))
 		return false;
 	return true;
 }
 
-bool BPEvent::isMatching(sal::address_t addr) const
+bool BPSingleEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
 {
-	if(m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr)
-		return (true);
-	return (false);
+	if (aspaceIsMatching(aspace)) {
+		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr) {
+			return true;
+		}
+	}
+	return false;
 }
 
 } // end-of-namespace: fi

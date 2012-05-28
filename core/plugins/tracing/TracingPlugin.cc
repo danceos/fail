@@ -13,7 +13,7 @@ using namespace sal;
 bool TracingPlugin::run()
 {
 	MemAccessEvent ev_mem(ANY_ADDR);
-	BPEvent ev_step(ANY_ADDR);
+	BPSingleEvent ev_step(ANY_ADDR);
 	BaseEvent *ev;
 
 	if (m_iponly || !m_memonly) {

@@ -83,7 +83,7 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 	{
 		// FIXME: Performance verbessern (dazu muss entsprechend auch die Speicherung
 		// in EventList(.cc|.hpp) angepasst bzw. verbessert werden).
-		fi::BPEvent* pEvBreakpt = dynamic_cast<fi::BPEvent*>(*it);
+		fi::BPSingleEvent* pEvBreakpt = dynamic_cast<fi::BPSingleEvent*>(*it);
 		if(pEvBreakpt && (instrPtr == pEvBreakpt->getWatchInstructionPointer() ||
 		   pEvBreakpt->getWatchInstructionPointer() == fi::ANY_ADDR))
 		{

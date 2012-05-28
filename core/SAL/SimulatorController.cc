@@ -42,7 +42,7 @@ void SimulatorController::initExperiments()
 	/* empty. */
 }
 
-void SimulatorController::onBreakpointEvent(address_t instrPtr)
+void SimulatorController::onBreakpointEvent(address_t instrPtr, address_t address_space)
 {
 	assert(false &&
 	"FIXME: SimulatorController::onBreakpointEvent() has not been tested before");
@@ -54,8 +54,8 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr)
 	while (it != m_EvList.end())
 	{
 		fi::BaseEvent* pev = *it;
-		fi::BPEvent* pbp; fi::BPRangeEvent* pbpr;
-		if((pbp = dynamic_cast<fi::BPEvent*>(pev)) && pbp->isMatching(instrPtr))
+		fi::BPSingleEvent* pbp; fi::BPRangeEvent* pbpr;
+		if((pbp = dynamic_cast<fi::BPSingleEvent*>(pev)) && pbp->isMatching(instrPtr, address_space))
 		{
 			pbp->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
@@ -64,7 +64,7 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr)
 			continue; // -> skip iterator increment
 		}
 		else if((pbpr = dynamic_cast<fi::BPRangeEvent*>(pev)) &&
-		        pbpr->isMatching(instrPtr))
+		        pbpr->isMatching(instrPtr, address_space))
 		{
 			pbpr->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);

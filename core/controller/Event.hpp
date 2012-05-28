@@ -5,9 +5,10 @@
 #include <string>
 #include <cassert>
 #include <vector>
+#include <utility>
 
 #include "../SAL/SALConfig.hpp"
-
+#include <iostream>
 namespace fi
 {
 class ExperimentFlow;
@@ -100,39 +101,45 @@ class BaseEvent
 //
 
 /**
- * \class BPEvent
- * A Breakpoint event to observe specific instruction pointers.
- * FIXME consider renaming to BPSingleEvent, introducing common BPEvent base class
+ * \class BEvent
+ * A Breakpoint event to observe instruction changes within a given address space.
  */
 class BPEvent : virtual public BaseEvent
 {
 	private:
-		sal::address_t m_WatchInstrPtr;
+		sal::address_t m_CR3;
 		sal::address_t m_TriggerInstrPtr;
 	public:
 		/**
-		 * Creates a new breakpoint event.
-		 * @param ip the instruction pointer of the breakpoint. If the control
-		 *        flow reaches this address and its counter value is zero, the
-		 *        event will be triggered. \a eip can be set to the ANY_ADDR
-		 *        wildcard to allow arbitrary addresses.
+		 * Creates a new breakpoint event. The range information is specific to
+		 * the subclasses.
+		 * @param address_space the address space to be oberserved, given as the
+		 *        content of a CR3 register. The event will not be triggered unless
+		 *        \a ip is part of the given address space.
+		 *        ANY_ADDR can be used as a placeholder to allow debugging
+		 *        in a random address space.
 		 */
-		BPEvent(sal::address_t ip = 0)
-			: m_WatchInstrPtr(ip), m_TriggerInstrPtr(ANY_ADDR) { }
+		BPEvent(sal::address_t address_space = ANY_ADDR)
+			: m_CR3(address_space), m_TriggerInstrPtr(ANY_ADDR)
+			  {}
 		/**
-		 * Returns the instruction pointer this event waits for.
+		 * Returns the address space register of this event.
 		 */
-		sal::address_t getWatchInstructionPointer() const
-		{ return m_WatchInstrPtr; }
+		sal::address_t getCR3() const
+		{ return m_CR3; }
 		/**
-		 * Sets the instruction pointer this event waits for.
+		 * Sets the address space register for this event.
 		 */
-		void setWatchInstructionPointer(sal::address_t iptr)
-		{ m_WatchInstrPtr = iptr; }
+		void setCR3(sal::address_t iptr)
+		{ m_CR3 = iptr; }
+		/**
+		 * Checks whether a given address space is matching.
+		 */
+		bool aspaceIsMatching(sal::address_t address_space = ANY_ADDR) const;
 		/**
 		 * Checks whether a given address is matching.
 		 */
-		bool isMatching(sal::address_t addr) const;
+		virtual bool isMatching(sal::address_t addr = 0, sal::address_t address_space = ANY_ADDR) const = 0;
 		/**
 		 * Returns the instruction pointer that triggered this event.
 		 */
@@ -147,10 +154,49 @@ class BPEvent : virtual public BaseEvent
 };
 
 /**
+ * \class BPSingleEvent
+ * A Breakpoint event to observe specific instruction pointers.
+ */
+class BPSingleEvent : virtual public BPEvent
+{
+	private:
+		sal::address_t m_WatchInstrPtr;
+	public:
+		/**
+		 * Creates a new breakpoint event.
+		 * @param ip the instruction pointer of the breakpoint. If the control
+		 *        flow reaches this address and its counter value is zero, the
+		 *        event will be triggered. \a eip can be set to the ANY_ADDR
+		 *        wildcard to allow arbitrary addresses.
+		 * @param address_space the address space to be oberserved, given as the
+		 *        content of a CR3 register. The event will not be triggered unless
+		 *        \a ip is part of the given address space.
+		 *        Here, too, ANY_ADDR is a placeholder to allow debugging
+		 *        in a random address space.
+		 */
+		BPSingleEvent(sal::address_t ip = 0, sal::address_t address_space = ANY_ADDR)
+			: BPEvent(address_space), m_WatchInstrPtr(ip) { }
+		/**
+		 * Returns the instruction pointer this event waits for.
+		 */
+		sal::address_t getWatchInstructionPointer() const
+		{ return m_WatchInstrPtr; }
+		/**
+		 * Sets the instruction pointer this event waits for.
+		 */
+		void setWatchInstructionPointer(sal::address_t iptr)
+		{ m_WatchInstrPtr = iptr; }
+		/**
+		 * Checks whether a given address is matching.
+		 */
+		bool isMatching(sal::address_t addr, sal::address_t address_space) const;
+};
+
+/**
  * \class BPRangeEvent
  * A event type to observe ranges of instruction pointers.
  */
-class BPRangeEvent : virtual public BaseEvent
+class BPRangeEvent : virtual public BPEvent
 {
 	private:
 		sal::address_t m_WatchStartAddr;
@@ -163,9 +209,14 @@ class BPRangeEvent : virtual public BaseEvent
 		 * ANY_ADDR denotes the lower respectively the upper end of the address
 		 * space.
 		 */
-		BPRangeEvent(sal::address_t start = 0, sal::address_t end = 0)
-			: m_WatchStartAddr(start), m_WatchEndAddr(end),
-			  m_TriggerInstrPtr(ANY_ADDR) { }
+		BPRangeEvent(sal::address_t start = 0, sal::address_t end = 0, sal::address_t address_space = ANY_ADDR)
+			: BPEvent(address_space), m_WatchStartAddr(start), m_WatchEndAddr(end)
+			  { }
+		/**
+		 * Returns the instruction pointer watch range of this event.
+		 */
+		std::pair<sal::address_t, sal::address_t> getWatchInstructionPointerRange() const
+		{ return std::make_pair(m_WatchStartAddr, m_WatchEndAddr); }
 		/**
 		 * Sets the instruction pointer watch range.  Both ends of the range
 		 * may be ANY_ADDR (cf. constructor).
@@ -175,18 +226,7 @@ class BPRangeEvent : virtual public BaseEvent
 		/**
 		 * Checks whether a given address is within the range.
 		 */
-		bool isMatching(sal::address_t addr) const;
-		/**
-		 * Returns the instruction pointer that triggered this event.
-		 */
-		sal::address_t getTriggerInstructionPointer() const
-		{ return m_TriggerInstrPtr; }
-		/**
-		 * Sets the instruction pointer that triggered this event.  Should not
-		 * be used by experiment code.
-		 */
-		void setTriggerInstructionPointer(sal::address_t iptr)
-		{ m_TriggerInstrPtr = iptr; }
+		bool isMatching(sal::address_t addr, sal::address_t address_space) const;
 };
 
 /**
@@ -431,7 +471,7 @@ class GuestEvent : virtual public BaseEvent
 		/**
 		 * Returns the data length, transmitted by the guest system.
 		 */
-		unsigned getPort() const { return (m_Data); }
+		unsigned getPort() const { return (m_Port); }
 		/**
 		 * Sets the data length which had been transmitted by the guest system.
 		 */

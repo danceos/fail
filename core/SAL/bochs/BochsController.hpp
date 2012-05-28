@@ -86,8 +86,9 @@ class BochsController : public SimulatorController
 		 * Instruction pointer modification handler. This method is called (from
 		 * the Breakpoints aspect) every time when the Bochs-internal IP changes.
 		 * @param instrPtr the new instruction pointer
+		 * @param address_space
 		 */
-		void onInstrPtrChanged(address_t instrPtr);
+		void onInstrPtrChanged(address_t instrPtr, address_t address_space);
 		/**
 		 * This method is called when an experiment flow adds a new event by
 		 * calling \c simulator.addEvent(pev) or \c simulator.addEventAndWait(pev).
