@@ -1,5 +1,6 @@
+==========================================================================================
 Verrückte Ideen
-===============
+==========================================================================================
  - aufeinander aufbauende Events (Backend-spezifisch <- generisch, oder mehrere
    Einzelevents gebündelt in ein einzelnes abstraktes ["Crash", HLT mit
    abgeschalteten Interrupts])
@@ -11,8 +12,10 @@ Verrückte Ideen
    Backend-Metainformationen (welche Register gibt es, wie breit ist der
    Datenbus, welche Traps können ausgelöst werden)
 
+
+==========================================================================================
 FailBochs-Bausteine TODO
-========================
+==========================================================================================
 Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
 
 Bochs:
@@ -108,8 +111,7 @@ Buildsystem:
 Dokumentation:
  - Änderungen im Klassendiagramm nachziehen (hsc)
  
- ------------------------------------------------
- Erledigt: 
+Erledigt:
  - alle Events mit Zähler versehen, so dass sie erst bei Erreichen der 0 feuern
    * z.B. erst nach dem 5ten Mal Lesen von Adresse X auslösen
  - Bereiche von Instruction-Pointern
@@ -163,24 +165,24 @@ Dokumentation:
    (config/CMakelists.txt, config/experiments.hpp.in,
    experiments/CMakeLists.txt)
 
-==================================
+
+==========================================================================================
 Theorie TODO
-==================================
-Problem Fork von FI Tools -> Merging eklig.
--> Liste mit konkreten Beispielen 
+==========================================================================================
+ - Problem Fork von FI Tools -> Merging eklig.
+   -> Liste mit konkreten Beispielen 
 
 
-
-========================
+==========================================================================================
 FailOVP-Bausteine TODO
-========================
+==========================================================================================
+Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
+
  - save/restore implementieren -> Speicher-, Register-, Timer-, ??- Zustaende 
  - Sections aus ELF Datei extrahieren, entsprechende Speicherbereiche (generisch) anlegen (rz)
  - Symbole aus ELF extrahieren -> Adressen von globalen Objekten/Funktionen in Experimenten angeben (rz)
  - Prozessormodell per cmake cleanen und neu bauen (mh)
  - CiAO ELF in OVP ausfuehren
 
-ERLEDIGT
-========================
-
-
+Erledigt:
+ - 
