@@ -62,8 +62,8 @@ bool CoolChecksumExperiment::run()
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	Trace trace;
-	tp.setTraceMessage(&trace);
+	std::ofstream of("trace.pb");
+	tp.setTraceFile(&of);
 
 	// this must be done *after* configuring the plugin:
 	sal::simulator.addFlow(&tp);
@@ -86,13 +86,11 @@ bool CoolChecksumExperiment::run()
 	sal::simulator.removeFlow(&tp);
 
 	// serialize trace to file
-	std::ofstream of("trace.pb");
 	if (of.fail()) {
 		log << "failed to write trace.pb" << endl;
 		sal::simulator.clearEvents(this);
 		return false;
 	}
-	trace.SerializeToOstream(&of);
 	of.close();
 #endif
 

@@ -4,6 +4,7 @@
 #include <ostream>
 #include "controller/ExperimentFlow.hpp"
 #include "util/MemoryMap.hpp"
+#include "util/ProtoStream.hpp"
 #include "config/FailConfig.hpp"
 
 #include "plugins/tracing/trace.pb.h"
@@ -41,13 +42,14 @@ private:
 	bool m_memonly; //!< log instructions only if they are memory accesses
 	bool m_iponly; //!< log instruction addresses only
 
-	Trace *m_trace; //!< protobuf message to store trace in
+	std::ostream *m_protoStreamFile;
 	std::ostream *m_os; //!< ostream to write human-readable trace into
+	ProtoOStream *ps;
 
 public:
 	TracingPlugin()
 	 : m_memMap(0), m_ipMap(0), m_memonly(false), m_iponly(false),
-	   m_trace(0), m_os(0) { }
+	   m_protoStreamFile(0), m_os(0) { }
 	bool run();
 	/**
 	 * Restricts tracing to memory addresses listed in this MemoryMap.  An
@@ -77,9 +79,9 @@ public:
 	 */
 	void setOstream(std::ostream *os) { m_os = os; }
 	/**
-	 * Protobuf message to trace into (trace.proto instance)
+	 * ProtoStream file to trace into (trace.proto instance)
 	 */
-	void setTraceMessage(Trace *trace) { m_trace = trace; }
+	void setTraceFile(std::ostream *os) { m_protoStreamFile = os; }
 };
 
 #endif /* __TRACING_PLUGIN_HPP__ */

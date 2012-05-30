@@ -4,6 +4,7 @@
 #include "experimentInfo.hpp"
 #include "controller/CampaignManager.hpp"
 #include "util/Logger.hpp"
+#include "util/ProtoStream.hpp"
 #include "SAL/SALConfig.hpp"
 
 #if COOL_FAULTSPACE_PRUNING
@@ -82,9 +83,7 @@ bool CoolChecksumCampaign::run()
 		log << "couldn't open " << trace_filename << endl;
 		return false;
 	}
-	Trace trace;
-	trace.ParseFromIstream(&tracef);
-	tracef.close();
+	ProtoIStream ps(&tracef);
 
 	// set of equivalence classes that need one (rather: eight, one for
 	// each bit in that byte) experiment to determine them all
@@ -105,19 +104,19 @@ bool CoolChecksumCampaign::run()
 		// XXX reorganizing the trace for efficient seeks could speed this up
 		int instr = 0;
 		sal::address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
-		Trace_Event const *ev;
-		for (int eventnr = 0; eventnr < trace.event_size(); ++eventnr) {
-			ev = &trace.event(eventnr);
-
+		Trace_Event ev;
+		ps.reset();
+		
+		while(ps.getNext(&ev)) {
 			// only count instruction events
-			if (!ev->has_memaddr()) {
+			if (!ev.has_memaddr()) {
 				// new instruction
 				instr++;
-				instr_absolute = ev->ip();
+				instr_absolute = ev.ip();
 				continue;
 
 			// skip accesses to other data
-			} else if (ev->memaddr() != byte_offset + COOL_ECC_OBJUNDERTEST) {
+			} else if (ev.memaddr() != byte_offset + COOL_ECC_OBJUNDERTEST) {
 				continue;
 
 			// skip zero-sized intervals: these can
@@ -137,12 +136,12 @@ bool CoolChecksumCampaign::run()
 			current_ec.instr2_absolute = instr_absolute;
 			current_ec.byte_offset = byte_offset;
 
-			if (ev->accesstype() == ev->READ) {
+			if (ev.accesstype() == ev.READ) {
 				// a sequence ending with READ: we need
 				// to do one experiment to cover it
 				// completely
 				ecs_need_experiment.push_back(current_ec);
-			} else if (ev->accesstype() == ev->WRITE) {
+			} else if (ev.accesstype() == ev.WRITE) {
 				// a sequence ending with WRITE: an
 				// injection anywhere here would have
 				// no effect.

@@ -22,7 +22,10 @@ bool TracingPlugin::run()
 	if (m_memonly || !m_iponly) {
 		simulator.addEvent(&ev_mem);
 	}
-
+	if(m_protoStreamFile) {
+		ps = new ProtoOStream(m_protoStreamFile);
+	}
+	
 	while (true) {
 		ev = simulator.waitAny();
 
@@ -36,9 +39,10 @@ bool TracingPlugin::run()
 
 			if (m_os)
 				*m_os << "[Tracing] IP " << hex << ip << "\n";
-			if (m_trace) {
-				Trace_Event *e = m_trace->add_event();
-				e->set_ip(ip);
+			if (m_protoStreamFile) {
+				Trace_Event e;
+				e.set_ip(ip);
+				ps->writeMessage(&e);
 			}
 		} else if (ev == &ev_mem) {
 			simulator.addEvent(&ev_mem);
@@ -56,14 +60,15 @@ bool TracingPlugin::run()
 				      << ((ev_mem.getTriggerAccessType() &
 				           MemAccessEvent::MEM_READ) ? "R " : "W ")
 				      << addr << " width " << width << " IP " << ip << "\n";
-			if (m_trace) {
-				Trace_Event *e = m_trace->add_event();
-				e->set_ip(ip);
-				e->set_memaddr(addr);
-				e->set_width(width);
-				e->set_accesstype(
+			if (m_protoStreamFile) {
+				Trace_Event e;
+				e.set_ip(ip);
+				e.set_memaddr(addr);
+				e.set_width(width);
+				e.set_accesstype(
 				  (ev_mem.getTriggerAccessType() & MemAccessEvent::MEM_READ) ?
-				  e->READ : e->WRITE);
+				  e.READ : e.WRITE);
+				ps->writeMessage(&e);
 			}
 		} else {
 			if (m_os)
