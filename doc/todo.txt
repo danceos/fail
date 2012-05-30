@@ -34,8 +34,6 @@ Abstraktionen:
  - Merkmalmodell von Implementierungsdetails trennen (hsc)
    -> automatische Konfigurierung anhand Experimentauswahl
    -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
- - zum Verpacken in ExperimentData-Nachrichten Register<->String-Konvertierung
-   vereinfachen (ab)
  - Namespace Confusion: aufräumen (ab)
  - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
    Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
@@ -47,8 +45,7 @@ Abstraktionen:
    -> "Ausgabesystem", "Logger"
 
 Events:
- - Speicherzugriffe: bei Instruction Fetch?  INC $Adresse?  CALL?  PUSH?
-   PUSHF?  Interrupt? (ab)
+ - 
 
 Parallelisierung:
  - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
@@ -146,9 +143,9 @@ Erledigt:
    (rh)
  - die schlimmsten Speicherlecks in Bochs eliminieren (rh)
  - Event-IDs als Identifikationsmittel für Events auf den zweiten Platz verweisen
-   -> IDs gibt's weiterhin (getId()), aber z.B. waitAny() liefert einen Pointer
+   -> IDs gibt's weiterhin (getId()), aber z.B. waitAny() liefert einen Pointer (ab)
  - Brauchen wir eigentlich IDs als Handles für Events, oder genügt es nicht
-   eigentlich, die Event-Objektadresse zu verwenden?
+   eigentlich, die Event-Objektadresse zu verwenden? (ab)
  - Event-Match-Schleife von Event-Feuer-Schleife trennen (ab):
    - erst alle Events, die aktuell matchen, sammeln (Code ggf. spezifisch für die Ereignisart)
    - dann sequentiell feuern (Code zentral in SimulatorController)
@@ -164,6 +161,10 @@ Erledigt:
  - EXP*-options nur einmal in config/, nicht in drei verschiedenen Dateien
    (config/CMakelists.txt, config/experiments.hpp.in,
    experiments/CMakeLists.txt)
+ - zum Verpacken in ExperimentData-Nachrichten Register<->String-Konvertierung
+   vereinfachen (ab)
+ - Speicherzugriffe: bei Instruction Fetch?  INC $Adresse?  CALL?  PUSH?
+   PUSHF?  Interrupt? (ab)
 
 
 ==========================================================================================
@@ -178,7 +179,10 @@ FailOVP-Bausteine TODO
 ==========================================================================================
 Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
 
+Abstraktionen:
  - save/restore implementieren -> Speicher-, Register-, Timer-, ??- Zustaende 
+
+Sonstiges:
  - Sections aus ELF Datei extrahieren, entsprechende Speicherbereiche (generisch) anlegen (rz)
  - Symbole aus ELF extrahieren -> Adressen von globalen Objekten/Funktionen in Experimenten angeben (rz)
  - Prozessormodell per cmake cleanen und neu bauen (mh)
