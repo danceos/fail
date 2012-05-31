@@ -9,12 +9,15 @@
 namespace sal
 {
 
+#ifdef DANCEOS_RESTORE
 bx_bool restore_bochs_request = false;
-bx_bool save_bochs_request = false;
-bx_bool reboot_bochs_request = false;
+bx_bool save_bochs_request    = false;
+string  sr_path               = "";
+#endif
+
+bx_bool reboot_bochs_request        = false;
 bx_bool interrupt_injection_request = false;
-int interrupt_to_fire = -1;
-std::string  sr_path = "";
+int     interrupt_to_fire           = -1;
 
 BochsController::BochsController()
 	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager())
