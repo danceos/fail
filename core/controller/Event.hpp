@@ -201,7 +201,6 @@ class BPRangeEvent : virtual public BPEvent
 	private:
 		sal::address_t m_WatchStartAddr;
 		sal::address_t m_WatchEndAddr;
-		sal::address_t m_TriggerInstrPtr;
 	public:
 		/**
 		 * Creates a new breakpoint-range event.  The range's ends are both
