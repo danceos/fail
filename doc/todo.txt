@@ -26,8 +26,6 @@ Bochs:
    - optional: Interrupts auslösen
 
 Abstraktionen:
- ! Timer (Bochs: basierend auf bx_pc_system.register_timer()) für "echte"
-   Timeouts (die auch dann greifen, wenn die CPU z.B. in einem CLI/HLT steht)
  - Traces: geeignet kapseln, in einer Sequenz von protobuf-Nachrichten statt
    einer großen rausschreiben/laden (rh)
  - Endianness?
@@ -40,9 +38,6 @@ Abstraktionen:
    -> "Fehlerinjektion" ist das ja nicht immer
  - (Allgemeine) Testfälle?
    -> Modifikationen an FAIL* sind damit leichter zu verifizieren
- - Ausgaben (z.B. im Bochs-Controller, siehe BochsController::save)
-   vereinheitlichen, evtl. zusätzlich via (Non-)Verbose-Mode(s)
-   -> "Ausgabesystem", "Logger"
 
 Events:
  - 
@@ -70,8 +65,6 @@ Parallelisierung:
    * Aufträge pro Sekunde
    * ETA bis Kampagne komplett
  - Client/Server-TCP-Verbindungen aufrechterhalten
- - Client-Timeouts untersuchen, Server-Implementierung tunen?  Retries im Client?
- - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben
  - die Möglichkeit schaffen, im Server mehr Informationen über einen Job
    vorhält (und dann auch loggt), als man an den Client kommuniziert
    -> bei Fault-Space-Pruning hat man im Server Äquivalenzklassen, aus denen
@@ -88,7 +81,10 @@ Parallelisierung:
 
 Implementierungsdetails:
  - einheitliche Fehlerbehandlung
- - einheitliches Logging (Loglevels?)
+ - einheitliches Logging (Loglevels?), Ausgaben (z.B. im Bochs-Controller,
+   siehe BochsController::save) vereinheitlichen, evtl. zusätzlich via
+   (Non-)Verbose-Mode(s)
+   -> "Ausgabesystem", "Logger"
 
 Effizienz:
  - getrennte Queues?
@@ -165,8 +161,11 @@ Erledigt:
    vereinfachen (ab)
  - Speicherzugriffe: bei Instruction Fetch?  INC $Adresse?  CALL?  PUSH?
    PUSHF?  Interrupt? (ab)
-
-
+ - Timer (Bochs: basierend auf bx_pc_system.register_timer()) für "echte"
+   Timeouts (die auch dann greifen, wenn die CPU z.B. in einem CLI/HLT steht) (ab)
+ - Client-Timeouts untersuchen, Server-Implementierung tunen?  Retries im Client? (ab)
+ - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben (ab)
+ 
 ==========================================================================================
 Theorie TODO
 ==========================================================================================
