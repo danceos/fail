@@ -117,6 +117,28 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	//       implementation.
 }
 
+void BochsController::onIOPortEvent(unsigned char data, unsigned port, bool out) {
+	// Check for active breakpoint-events:
+	fi::EventList::iterator it = m_EvList.begin();
+	while(it != m_EvList.end())
+	{
+		// FIXME: Maybe we need to improve the performance of this check.
+		fi::IOPortEvent* pIOPt = dynamic_cast<fi::IOPortEvent*>(*it);
+		if(pIOPt && pIOPt->isMatching(port, out))
+		{
+			pIOPt->setData(data);
+			it = m_EvList.makeActive(it);
+			// "it" has already been set to the next element (by calling
+			// makeActive()):
+			continue; // -> skip iterator increment
+		}
+		it++;
+	}
+	m_EvList.fireActiveEvents();
+	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
+	//       implementation.
+}
+
 void BochsController::save(const string& path)
 {
 	int stat;

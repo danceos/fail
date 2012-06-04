@@ -10,6 +10,7 @@
 #cmakedefine CONFIG_EVENT_MEMREAD
 #cmakedefine CONFIG_EVENT_MEMWRITE
 #cmakedefine CONFIG_EVENT_GUESTSYS
+#cmakedefine CONFIG_EVENT_IOPORT
 #cmakedefine CONFIG_EVENT_INTERRUPT
 #cmakedefine CONFIG_EVENT_TRAP
 #cmakedefine CONFIG_EVENT_JUMP

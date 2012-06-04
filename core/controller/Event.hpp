@@ -478,6 +478,60 @@ class GuestEvent : virtual public BaseEvent
 };
 
 /**
+ * \class IOPortEvent
+ * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
+ */
+class IOPortEvent : virtual public BaseEvent
+{
+	private:
+		unsigned char  m_Data;
+		unsigned m_Port;
+		bool m_Out;
+	public:
+		/**
+		 * Initialises an IOPortEvent
+		 *
+		 * @param port the port the event ist listening on
+		 * @param out Defines the direction of the event.
+		 * \arg \c true Output on the given port is captured.
+		 * \arg \c false Input on the given port is captured.
+		 */
+		IOPortEvent(unsigned port, bool out) : m_Data(0), m_Port(port), m_Out(out) { }
+		/**
+		 * Returns the data sent to the specified port
+		 */
+		unsigned char getData() const { return (m_Data); }
+		/**
+		 * Sets the data which had been transmitted.
+		 */
+		void setData(unsigned char data) { m_Data = data; }
+		/**
+		 * Retrieves the port which this event is bound to.
+		 */
+		unsigned getPort() const { return (m_Port); }
+		/**
+		 * Sets the port which this event is bound to.
+		 */
+		void setPort(unsigned port) { m_Port = port; }
+		/**
+		* Checks whether a given port number is matching.
+		* @param p The port number an I/O event occured on
+		* @param out True if the communication was outbound, false otherwise
+		*/
+		bool isMatching(unsigned p, bool out) const { return ( out = isOutEvent() && p == getPort()); }
+		/**
+		 * Tells you if this event is capturing outbound communication (inbound if false)
+		 */
+		bool isOutEvent() const { return m_Out; }
+		/**
+		 * Change the event direction.
+		 * \arg \c true Output on the given port is captured.
+		 * \arg \c false Input on the given port is captured.
+		 */
+		void setOut(bool out) { m_Out = out; }
+};
+
+/**
  * \class JumpEvent
  * JumpEvents are used to observe conditional jumps (if...else if...else).
  */

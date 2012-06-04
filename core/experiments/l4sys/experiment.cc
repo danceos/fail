@@ -15,7 +15,7 @@
 #include "SAL/Memory.hpp"
 #include "SAL/bochs/BochsRegister.hpp"
 #include "controller/Event.hpp"
-#include "config/AspectConfig.hpp"
+#include "config/FailConfig.hpp"
 
 #include "l4sys.pb.h"
 
@@ -24,9 +24,9 @@ using std::endl;
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
     !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) || \
-    !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_GUESTSYS) || \
+    !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_IOPORT) || \
     !defined(CONFIG_EVENT_INTERRUPT)
-#error This experiment needs: breakpoints, suppressed-interrupts, traps, guest system and interrupt events, \
+#error This experiment needs: breakpoints, suppressed-interrupts, traps, I/O port and interrupt events, \
   save, and restore. Enable these in the configuration.
 #endif
 
@@ -56,17 +56,17 @@ std::string L4SysExperiment::sanitised(std::string in_str) {
 	return result;
 }
 
-fi::BaseEvent* L4SysExperiment::waitGuestOrOther(bool clear_output) {
-	fi::GuestEvent ev_guest;
+fi::BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output) {
+	fi::IOPortEvent ev_ioport(0x3F8, true);
 	fi::BaseEvent* ev = NULL;
 	if (clear_output)
 		output.clear();
 	while (true) {
-		sal::simulator.addEvent(&ev_guest);
+		sal::simulator.addEvent(&ev_ioport);
 		ev = sal::simulator.waitAny();
-		sal::simulator.removeEvent(&ev_guest);
-		if (ev == &ev_guest) {
-			output += ev_guest.getData();
+		sal::simulator.removeEvent(&ev_ioport);
+		if (ev == &ev_ioport) {
+			output += ev_ioport.getData();
 		} else {
 			break;
 		}
@@ -149,7 +149,7 @@ bool L4SysExperiment::run() {
 		bp.setWatchInstructionPointer(COOL_ECC_CALCDONE);
 		bp.setCounter(times_run);
 		sal::simulator.addEvent(&bp);
-		fi::BaseEvent* ev = waitGuestOrOther(true);
+		fi::BaseEvent* ev = waitIOOrOther(true);
 		if (ev == &bp) {
 			golden_run.assign(output.c_str());
 			golden_run_file << output.c_str();
@@ -206,7 +206,7 @@ bool L4SysExperiment::run() {
 		bp.setWatchInstructionPointer(instr_list[instr_offset]);
 		sal::simulator.addEvent(&bp);
 		//and log the output
-		waitGuestOrOther(true);
+		waitIOOrOther(true);
 
 		// inject
 		sal::RegisterManager& rm = sal::simulator.getRegisterManager();
@@ -254,7 +254,7 @@ bool L4SysExperiment::run() {
 		sal::simulator.addEvent(&ev_intr);
 
 		//do not discard output recorded so far
-		fi::BaseEvent *ev = waitGuestOrOther(false);
+		fi::BaseEvent *ev = waitIOOrOther(false);
 
 		/* copying a string object that contains control sequences
 		 * unfortunately does not work with the library I am using,

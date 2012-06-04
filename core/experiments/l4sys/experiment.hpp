@@ -11,7 +11,7 @@ public:
 	bool run();
 private:
 	std::string sanitised(std::string in_str);
-	fi::BaseEvent* waitGuestOrOther(bool clear_output);
+	fi::BaseEvent* waitIOOrOther(bool clear_output);
 };
 
 #endif 

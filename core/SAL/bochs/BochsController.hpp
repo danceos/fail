@@ -86,9 +86,17 @@ class BochsController : public SimulatorController
 		 * Instruction pointer modification handler. This method is called (from
 		 * the Breakpoints aspect) every time when the Bochs-internal IP changes.
 		 * @param instrPtr the new instruction pointer
-		 * @param address_space
+		 * @param address_space the address space the CPU is currently in
 		 */
 		void onInstrPtrChanged(address_t instrPtr, address_t address_space);
+		/**
+		 * I/O port communication handler. This method is called (from
+		 * the IOPortCom aspect) every time when Bochs performs a port I/O operation.
+		 * @param data the data transmitted
+		 * @param port the port it was transmitted on
+		 * @param out true if the I/O traffic has been outbound, false otherwise
+		 */
+		void onIOPortEvent(unsigned char data, unsigned port, bool out);
 		/**
 		 * This method is called when an experiment flow adds a new event by
 		 * calling \c simulator.addEvent(pev) or \c simulator.addEventAndWait(pev).
