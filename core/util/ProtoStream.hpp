@@ -43,8 +43,6 @@ class ProtoOStream
 		virtual ~ProtoOStream() {};
 		/**
 		 *	Writes a message to a file. 
-		 * 	This works only if the constructor was called wit a pointer 
-		 *  of an ostream.
 		 *  @param m The protobuf-message to be written.
 		 *  @return Returns true if data was written.
 		 */
@@ -74,14 +72,10 @@ class ProtoIStream
 		/**
 		 *	Resets the position of the get pointer. After that getNext 
 		 *  delivers the first message again.
-		 * 	This works only if the constructor was called wit a pointer 
-		 *  of an istream.
 		 */
 		void reset();
 		/**
 		 *	Delivers the protobuf-messages sequentially from file.
-		 * 	This works only if the constructor was called wit a pointer 
-		 *  of an istream.
 		 *  @param m The protobuf-message in which, the data should be 
 		 * 	written.
 		 *  @return Returns true if data was written to protobuf-message.
