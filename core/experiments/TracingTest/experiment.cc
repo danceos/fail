@@ -33,9 +33,8 @@ bool TracingTest::run()
 	cout << "[TracingTest] enabling tracing" << endl;
 
 	TracingPlugin tp;
-	tp.setOstream(&cout);
-	Trace trace;
-	tp.setTraceMessage(&trace);
+	std::ofstream of("trace.pb");
+	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
@@ -49,9 +48,9 @@ bool TracingTest::run()
 		cout << "INTERRUPT #" << ie.getTriggerNumber() << "\n";
 	}
 
-	cout << "[TracingTest] disabling tracing (trace size: "
-	     << std::dec << trace.ByteSize() << " bytes)\n";
+	cout << "[TracingTest] tracing finished. (trace.pb)";
 	simulator.removeFlow(&tp);
+	of.close();
 
 /*
 	// serialize trace to file
