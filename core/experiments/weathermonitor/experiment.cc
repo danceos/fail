@@ -25,6 +25,13 @@
 
 using std::endl;
 
+// Check if configuration dependencies are satisfied:
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
+    !defined(CONFIG_SR_SAVE) || !defined(CONFIG_EVENT_TRAP)
+    
+  #error This experiment needs: breakpoints, suppressed-interrupts, traps, save, and restore. Enable these in the configuration.
+#endif
+
 bool WeathermonitorExperiment::run()
 {
 	char const *statename = "bochs.state";
