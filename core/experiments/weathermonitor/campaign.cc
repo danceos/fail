@@ -7,6 +7,7 @@
 #include "controller/CampaignManager.hpp"
 #include "util/Logger.hpp"
 #include "util/MemoryMap.hpp"
+#include "util/ProtoStream.hpp"
 
 #include "vptr_map.hpp"
 
@@ -43,16 +44,12 @@ bool WeathermonitorCampaign::run()
 	log << "startup" << endl;
 
 	// load trace
-	log << "loading trace ..." << endl;
 	ifstream tracef(trace_filename);
 	if (tracef.fail()) {
 		log << "couldn't open " << trace_filename << endl;
 		return false;
 	}
-	Trace trace;
-	trace.ParseFromIstream(&tracef);
-	tracef.close();
-	log << "... done." << endl;
+	ProtoIStream ps(&tracef);
 
 	// a map of FI data addresses
 	MemoryMap mm;
@@ -81,24 +78,23 @@ bool WeathermonitorCampaign::run()
 		current_ec.instr1 = 0;
 		int instr = 0;
 		sal::address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
-		Trace_Event const *ev;
+		Trace_Event ev;
+		ps.reset();
 
 		// for every section in the trace between subsequent memory
 		// accesses to that address ...
-		for (int eventnr = 0; eventnr < trace.event_size(); ++eventnr) {
-			ev = &trace.event(eventnr);
-
+		while(ps.getNext(&ev)) {
 			// instruction events just get counted
-			if (!ev->has_memaddr()) {
+			if (!ev.has_memaddr()) {
 				// new instruction
 				instr++;
-				instr_absolute = ev->ip();
+				instr_absolute = ev.ip();
 				continue;
 
 			// skip accesses to other data
 			// FIXME again, do it the other way around, and use mm.isMatching()!
-			} else if (ev->memaddr() + ev->width() <= data_address
-			        || ev->memaddr() > data_address) {
+			} else if (ev.memaddr() + ev.width() <= data_address
+			        || ev.memaddr() > data_address) {
 				continue;
 
 			// skip zero-sized intervals: these can
@@ -118,7 +114,7 @@ bool WeathermonitorCampaign::run()
 			current_ec.instr2_absolute = instr_absolute;
 			current_ec.data_address = data_address;
 
-			if (ev->accesstype() == ev->READ) {
+			if (ev.accesstype() == ev.READ) {
 				// a sequence ending with READ: we need
 				// to do one experiment to cover it
 				// completely
@@ -137,7 +133,7 @@ bool WeathermonitorCampaign::run()
 
 				fi::campaignmanager.addParam(d);
 				++count;
-			} else if (ev->accesstype() == ev->WRITE) {
+			} else if (ev.accesstype() == ev.WRITE) {
 				// a sequence ending with WRITE: an
 				// injection anywhere here would have
 				// no effect.
