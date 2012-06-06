@@ -72,7 +72,8 @@ bool ChecksumOOStuBSExperiment::run()
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	std::ofstream of("trace.pb");
+	char const *tracefile = "trace.pb";
+	std::ofstream of(tracefile);
 	tp.setTraceFile(&of);
 
 	// this must be done *after* configuring the plugin:
