@@ -1,81 +1,80 @@
- - Sprache (Kommentare, SVN-Commits, Frickeleien): ausnahmslos Englisch
+Coding Style for Fail*
+======================
 
- - Einrückung: 1 Tab (entspricht 4 Spaces), bei Statements die bündig besser zu
-   lesen sind, ist eine Aufweichung möglich, Beispiele:
-       cout << "The counter value is: "
-            << value;
-       if (first_looong_condition &&
-           second_looong_condition) { // oder für while/for/...
-           ...
+You may violate/break any of the following rules if you have a good reason to
+do so, e.g., if readability is notably enhanced.
 
- - Namenskonventionen:
-    * Code-Dateien: .cc (Source), .hpp (Header), .ah (Aspect-Header), MixedCase
-    * Namespaces klein
-    * Klassen fangen mit Großbuchstaben an, dann MixedCase
-    * Public-Members beginnen mit Kleinbuchstaben, dann MixedCase
-    * Private & Protected-Member beginnen mit "m_", globale Variablen mit "g_"
-    * Präprozessor-Direktiven immer groß; Include-Guards für Datei MyFooBar.hpp
-      gemäß __MY_FOO_BAR_HPP__
-    * Konstante Variablen ebenfalls immer groß
-    * Keine Konvention für lokale Variablen
-    * typedef's-Bzeichner gemäß
-          typedef std::whatever<type> good_name_t
+ - Language (comments, SVN commit messages, "temporary" stuff): English
+   (without exception)
 
- - Kommentare
-    * Doxygen-Kommentaren:
-       ~ Detailiert für alle Public-Member (bzw. Funktionen), also Parameter,
-         Return-Wert, Seiteneffekte, ...
-       ~ In Kurzform für Private/Protected-Member
-       ~ An jedem Beginn einer (Aspekt-)Header-Datei: @brief
-       ~ Alle structs/classes/enums (und deren Elemente!)
-    * bei kompliziertem Kram (z.B.: drei verschiedene Datenstrukturen, zwischen
-      denen Events innerhalb von EventList hin- und herwandern können) gibt es
-      Kommentare nicht nur zum "was passiert hier", sondern auch zum "warum
-      machen wir das so"
-    * Innerhalb von Methoden/Funktionen "normale" C/C++ Kommentare (//, /**/)
-    * Keine Autorennamen oder Datum, etc. in den Code-Dateien vermerken
+ - Naming conventions:
+    * Source files: .cc (Source), .hpp (Header), .ah (Aspect Header), MixedCase
+    * Namespaces: lowercase
+    * Classes: MixedCase, starting with uppercase letter
+    * Public members: MixedCase, starting with lowercase letter
+    * Private & protected members: starting with "m_"
+    * Global Variables: starting with "g_"
+    * Preprocessor macros: uppercase
+      -  Include guard for MyFooBar.hpp: __MY_FOO_BAR_HPP__
+    * Constant variables: uppercase
+    * (no convention for local variables)
+    * typedefs: lowercase, underscores (good_name_t)
 
- - Formatierung
-    * Direktiven für bedingte Kompilierung beginnen ganz vorne, außer bei
-      eingerückten Anweisungen:
-      private:                           |      ...
-          int m_Bar;                     |      #ifndef __puma
-        #ifndef __puma                   |      extern int g_Foo;
-          boost::thread* m_pThread;      |      #endif
-        #endif                           |      ...
-          ...
-      Zur Verdeutlichung kann ein #endif mit "// !puma" beendet werden (bei
-      großem vertikalem Abstand)
-    * Einrückungsbreite: 100 Zeichen
-    * public/private/protected werden 1-mal eingerückt, Methoden/Var. ebenfalls
-          class pferd {
-              public:
-                  void eier();
+ - Comments:
+    * Doxygen comments:
+       -  In detail for all public members (parameters, return value, side
+          effects, ...)
+       -  (At least) Briefly for private/protected members
+       -  At the top of each (aspect) header file: @brief
+       -  For each complex data type (and its elements)
+    * Explain *nontrivial* program logic not only by describing the "what's
+      happening here", but also the "why are we doing it this way".
+    * Use "normal" C/C++ comments within functions (//, /**/).
+    * No author names, creation dates, change logs etc. in source files.
+      That's why we're using a VCS.
+
+ - Formatting:
+    * Indentation: 1 tab (tabstop at 4 spaces)
+       -  may be relaxed / mixed with spaces for better readability of
+          multi-line statements, e.g.:
+      <TAB>cout << "The counter value is: "
+      <TAB>     << value;
+      <TAB>if (first_looong_condition &&
+      <TAB>    second_looong_condition) {
+      <TAB><TAB>...
+    * Preprocessor directives start in column 1.
+    * Max. line length: 100 characters.
+    * "public"/"private"/"protected" has the same identation as its surrounding
+      "class Foo" statement (we'd waste one indentation level for every class
+      definition otherwise):
+          class Foo {
+          public:
+          <TAB>void doSomething();
           }
-      Bei switch/case/namespaces:
+      Similarly (and for the same reason) for namespaces and switch/case
+      statements:
           switch (foo) {
           case 1:
-              ...
+          <TAB>...
           }
-    * Blöcke: '{' in derselben Zeile mit einem Space davor (namespace, class,
-      if, while, for, ...)
-          namespace pferd {
-          ...
+    * Compound statements (blocks): <Space>+'{' in the same line as its
+      governing control structure (if, while, for, switch, try) or
+      namespace/class definition:
+          if (something) {
+          <TAB>...
           }
-    * Bei Funktionsdefinitionen folgt die '{' in einer neuen Zeile, außerdem
-      keine Spaces.
-      Definition:                   |  Deklaration:
+    * Function definitions are an exception to this ('{' in a new line):
+      Definition:                   |  Declaration:
           void myFunction(int i)    |      void myFunction(int i);
           {                         |
-              ...                   |
+          <TAB>...                  |
           }                         |
-    * Space zwischen Kontrollstruktur und Klammer zur Unterscheidung von
-      Funktionsaufrufen (für die Bedingungen keine weiteren Spaces):
+    * Control structure tokens ("if", "try", ...) are followed by a single
+      space for better disambiguation from function definitions:
           if (...) {
-              ...
+          <TAB>...
           } else if (...) {
-              ...
+          <TAB>...
           } else {
-              ...
+          <TAB>...
           }
-    * return ohne Klammerung
