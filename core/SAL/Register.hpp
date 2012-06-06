@@ -269,14 +269,6 @@ class RegisterManager
 		 * @return the base pointer
 		 */
 		virtual address_t getBasePointer() = 0;
-		/**
-		 * Retrieves the textual description (mnemoric) for the current
-		 * instruction.
-		 * The format of the returned string is simulator-specific.
-		 * @return the mnemoric of the current instruction whose address
-		 *         is given by \c getInstructionPointer().
-		 */
-		virtual const std::string& getMnemoric() const = 0;
 };
 
 } // end-of-namespace: sal

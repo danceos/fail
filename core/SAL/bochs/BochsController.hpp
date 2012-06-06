@@ -170,6 +170,30 @@ class BochsController : public SimulatorController
 		 */
 		void dbgEnableInstrPtrOutput(unsigned regularity, std::ostream* dest = &cout);
 	  #endif
+		/* ********************************************************************
+		 * BochsController-specific (not implemented in SimulatorController!):
+		 * ********************************************************************/
+		/**
+		 * Retrieves the textual description (mnemonic) for the current
+		 * instruction. The format of the returned string is Bochs-specific.
+		 * @return the mnemonic of the current instruction whose address
+		 *         is given by \c Register::getInstructionPointer(). On
+		 *         errors, the returned string is empty
+		 */
+		const std::string& getMnemonic() const
+		{
+			static std::string str;
+			bxICacheEntry_c* pEntry = BX_CPU(0)->getICacheEntry();
+			assert(pEntry != NULL && "FATAL ERROR: Bochs internal function returned NULL (not expected)!");
+			bxInstruction_c* pInstr = pEntry->i;
+			assert(pInstr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
+			const char* pszName = get_bx_opcode_name(pInstr->getIaOpcode());
+			if (pszName != NULL)
+				str = pszName;
+			else
+				str.clear();
+			return str;
+		}
 };
 
 } // end-of-namespace: sal

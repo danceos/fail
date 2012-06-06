@@ -38,7 +38,7 @@ class BochsRegister : public Register
 		 * Sets the content of the register.
 		 * @param data the new register data to be written
 		 */
-		virtual void setData(regdata_t data) { *m_pData = data; }
+		void setData(regdata_t data) { *m_pData = data; }
 };
 
 /**
@@ -238,27 +238,6 @@ class BochsRegisterManager : public RegisterManager
 		  #else
 			return (static_cast<address_t>(getRegister(RID_EBP)->getData()));
 		  #endif
-		}
-		/**
-		 * Retrieves the textual description (mnemoric) for the current
-		 * instruction. The format of the returned string is Bochs-specific.
-		 * @return the mnemoric of the current instruction whose address
-		 *         is given by \c getInstructionPointer(). On errors, the
-		 *         returned string is empty
-		 */
-		const std::string& getMnemoric() const
-		{
-			static std::string str;
-			bxICacheEntry_c* pEntry = BX_CPU(0)->getICacheEntry();
-			assert(pEntry != NULL && "FATAL ERROR: Bochs internal function returned NULL (not expected)!");
-			bxInstruction_c* pInstr = pEntry->i;
-			assert(pInstr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-			const char* pszName = get_bx_opcode_name(pInstr->getIaOpcode());
-			if (pszName != NULL)
-				str = pszName;
-			else
-				str.clear();
-			return str;
 		}
 };
 
