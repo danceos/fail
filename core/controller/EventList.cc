@@ -12,6 +12,10 @@ EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 	// a zero counter does not make sense
 	assert(ev->getCounter() != 0);
 	ev->setParent(pExp); // event is linked to experiment flow
+
+	BPEvent *bp_ev;
+	if((bp_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+		m_Bp_cache.add(bp_ev);
 	m_BufferList.push_back(ev);
 	return (ev->getId());
 }
@@ -27,6 +31,7 @@ void EventList::remove(BaseEvent* ev)
 			sal::simulator.onEventDeletion(*it);
 		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++)
 			sal::simulator.onEventDeletion(*it);
+		m_Bp_cache.clear();
 		m_BufferList.clear();
 		// all remaining active events must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
@@ -36,6 +41,10 @@ void EventList::remove(BaseEvent* ev)
 	//   * if ev in m_FireList, copy to m_DeleteList
 	} else {
 		sal::simulator.onEventDeletion(ev);
+
+		BPEvent *bp_ev;
+		if((bp_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+			m_Bp_cache.remove(bp_ev);
 		m_BufferList.remove(ev);
 		firelist_t::const_iterator it =
 			std::find(m_FireList.begin(), m_FireList.end(), ev);
@@ -61,6 +70,10 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 		sal::simulator.onEventDeletion(*it);
 		m_DeleteList.push_back(*it);
 	}
+
+	BPEvent *bp_ev;
+	if((bp_ev = dynamic_cast<BPEvent*>(*it)) != NULL)
+		m_Bp_cache.remove(bp_ev);
 	return (m_BufferList.erase(it));
 }
 
@@ -80,6 +93,7 @@ void EventList::remove(ExperimentFlow* flow)
 		for (bufferlist_t::iterator it = m_BufferList.begin();
 		     it != m_BufferList.end(); it++)
 			sal::simulator.onEventDeletion(*it); // invoke event handler
+		m_Bp_cache.clear();
 		m_BufferList.clear();
 	} else { // remove all events corresponding to a specific experiment ("flow"):
 		for (bufferlist_t::iterator it = m_BufferList.begin();

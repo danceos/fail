@@ -1,4 +1,5 @@
 set(SRCS
+	BufferCache.cc
 	CampaignManager.cc
 	CoroutineManager.cc
 	Event.cc

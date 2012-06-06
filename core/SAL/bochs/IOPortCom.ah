@@ -14,7 +14,7 @@
 aspect IOPortCom
 {
 // ATM only capturing bytewise output (most common, I suppose)
-	pointcut outInstruction() = "% ...::bx_cpu_c::OUT_DXAL%(...)";
+	pointcut outInstruction() = "% ...::bx_cpu_c::OUT_DXAL(...)";
 
 	advice execution (outInstruction()) : after ()
 	{
@@ -23,7 +23,7 @@ aspect IOPortCom
 		sal::simulator.onIOPortEvent(rAL, rDX, true);
 	}
 
-	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX%(...)";
+	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX(...)";
 
 	advice execution (inInstruction()) : after ()
 	{

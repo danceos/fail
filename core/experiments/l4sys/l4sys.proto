@@ -6,7 +6,7 @@ message L4SysProtoMsg {
 	// results
 	// make these optional to reduce overhead for server->client communication
 	enum ResultType {
-		CALCDONE = 1;
+		DONE = 1;
 		TIMEOUT = 2;
 		TRAP = 3;
 		INTR = 4;

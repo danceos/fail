@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "Event.hpp"
+#include "BufferCache.hpp"
 
 namespace fi
 {
@@ -53,6 +54,7 @@ class EventList
 		deletelist_t m_DeleteList; //!< the deleted events (used temporarily)
 		// TODO: Hashing?
 		BaseEvent* m_pFired; //!< the recently fired Event-object
+		BufferCache<BPEvent*> m_Bp_cache;
 	public:
 		/**
 		 * The iterator of this class used to loop through the list of
@@ -180,6 +182,11 @@ class EventList
 		 * TODO: Improve naming (instead of "fireActiveEvents")?
 		 */
 		void fireActiveEvents();
+		/**
+		 * Retrieves the BPEvent buffer cache.
+		 * @returns the buffer cache
+		 */
+		inline BufferCache<BPEvent*> *getBPBuffer() { return &m_Bp_cache; }
 };
 
 }; // end-of-namespace: fi

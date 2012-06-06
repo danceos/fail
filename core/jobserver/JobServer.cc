@@ -45,7 +45,7 @@ ExperimentData *JobServer::getDone()
 	 && m_doneJobs.Size() == 0) {
 		// FRICKEL workaround
 		sleep(1);
-		ExperimentData *exp;
+		ExperimentData *exp = NULL;
 		if (m_doneJobs.Dequeue_nb(exp)) {
 			return exp;
 		}

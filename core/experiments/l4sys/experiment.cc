@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -33,7 +34,7 @@ using std::endl;
 char const * const state_folder = "l4sys.state";
 char const * const instr_list_fn = "ip.list";
 char const * const golden_run_fn = "golden.out";
-sal::address_t const aspace = 0x1fd44000;
+sal::address_t const aspace = 0x01e00000;
 std::string output;
 std::vector<sal::address_t> instr_list;
 std::string golden_run;
@@ -80,14 +81,12 @@ bool L4SysExperiment::run() {
 
 	log << "startup" << endl;
 
-	//FIXME: this is a race condition:
-	//only one L4SysExperiment instance should execute this block
-	//at a time
+#ifdef PREPARE_EXPERIMENT
 
 	struct stat teststruct;
 	// STEP 1: run until interesting function starts, and save state
 	if (stat(state_folder, &teststruct) == -1) {
-		bp.setWatchInstructionPointer(COOL_ECC_FUNC_ENTRY);
+		bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
 		sal::simulator.addEventAndWait(&bp);
 
 		log << "test function entry reached, saving state" << endl;
@@ -112,7 +111,7 @@ bool L4SysExperiment::run() {
 		std::ofstream instr_list_file(instr_list_fn);
 		instr_list_file << std::hex;
 		bp.setWatchInstructionPointer(fi::ANY_ADDR);
-		while (bp.getTriggerInstructionPointer() != COOL_ECC_CALCDONE) {
+		while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 			sal::simulator.addEventAndWait(&bp);
 			//short sanity check
 			sal::address_t curr_instr = bp.getTriggerInstructionPointer();
@@ -146,7 +145,7 @@ bool L4SysExperiment::run() {
 		sal::simulator.addSuppressedInterrupt(32);
 
 		std::ofstream golden_run_file(golden_run_fn);
-		bp.setWatchInstructionPointer(COOL_ECC_CALCDONE);
+		bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
 		bp.setCounter(times_run);
 		sal::simulator.addEvent(&bp);
 		fi::BaseEvent* ev = waitIOOrOther(true);
@@ -183,10 +182,10 @@ bool L4SysExperiment::run() {
 		output.reserve(flen);
 	}
 
-	//end of critical section
+#endif
 
 	// STEP 4: The actual experiment.
-	for (int i = 0; i < COOL_ECC_NUMINSTR; i++) {
+	for (int i = 0; i < 1/*L4SYS_NUMINSTR*/; i++) {
 		log << "restoring state" << endl;
 		sal::simulator.restore(state_folder);
 
@@ -195,7 +194,7 @@ bool L4SysExperiment::run() {
 		if (!m_jc.getParam(param)) {
 			log << "Dying." << endl;
 			// communicate that we were told to die
-			sal::simulator.terminate(1); // "return (false);" ?
+			sal::simulator.terminate(1);
 		}
 		int id = param.getWorkloadID();
 		int instr_offset = param.msg.instr_offset();
@@ -239,10 +238,10 @@ bool L4SysExperiment::run() {
 		}
 
 		// aftermath
-		fi::BPSingleEvent ev_done(COOL_ECC_CALCDONE, aspace);
+		fi::BPSingleEvent ev_done(L4SYS_FUNC_EXIT, aspace);
 		ev_done.setCounter(times_run);
 		sal::simulator.addEvent(&ev_done);
-		const unsigned instr_run = times_run * COOL_ECC_NUMINSTR;
+		const unsigned instr_run = times_run * L4SYS_NUMINSTR;
 		fi::BPSingleEvent ev_timeout(fi::ANY_ADDR, aspace);
 		ev_timeout.setCounter(instr_run + 3000);
 		sal::simulator.addEvent(&ev_timeout);
@@ -264,7 +263,7 @@ bool L4SysExperiment::run() {
 		if (ev == &ev_done) {
 			if (strcmp(output.c_str(), golden_run.c_str()) == 0) {
 				log << std::dec << "Result DONE" << endl;
-				param.msg.set_resulttype(param.msg.CALCDONE);
+				param.msg.set_resulttype(param.msg.DONE);
 			} else {
 				log << std::dec << "Result WRONG" << endl;
 				param.msg.set_resulttype(param.msg.WRONG);

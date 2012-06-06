@@ -33,7 +33,7 @@ bool L4SysCampaign::run()
 	int count = 0;
 	//iterate over one register
 	for (int bit_offset = 0; bit_offset < 1; ++bit_offset) {
-		for (int instr_offset = 0; instr_offset < COOL_ECC_NUMINSTR; ++instr_offset) {
+		for (int instr_offset = 0; instr_offset < L4SYS_NUMINSTR; ++instr_offset) {
 			L4SysExperimentData *d = new L4SysExperimentData;
 			d->msg.set_instr_offset(instr_offset);
 			d->msg.set_bit_offset(bit_offset);

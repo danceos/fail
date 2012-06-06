@@ -3,9 +3,10 @@
 
 // FIXME autogenerate this
 
-#define COOL_ECC_FUNC_ENTRY		0x1007cd0
-#define COOL_ECC_CALCDONE		0x1007d3a
-#define COOL_ECC_NUMINSTR		3166
-#define HEADLESS_EXPERIMENT
+#define L4SYS_FUNC_ENTRY		0x1007cd0
+#define L4SYS_FUNC_EXIT			0x1007d3a
+#define L4SYS_NUMINSTR			3184
+//#define HEADLESS_EXPERIMENT
+#define PREPARE_EXPERIMENT
 
 #endif

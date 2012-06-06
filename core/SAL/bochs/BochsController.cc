@@ -92,10 +92,14 @@ void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream*
 
 void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space)
 {
-  #ifdef DEBUG
+#if 0
+	//the original code - performs magnitudes worse than
+	//the code below and is responsible for most (~87 per cent)
+	//of the slowdown of FailBochs
+#ifdef DEBUG
 	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
-  #endif
+#endif
 	// Check for active breakpoint-events:
 	fi::EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end())
@@ -113,6 +117,37 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		it++;
 	}
 	m_EvList.fireActiveEvents();
+#endif
+	//this code is highly optimised for the average case, so it me appear a bit ugly
+	bool do_fire = false;
+	unsigned i = 0;
+	fi::BufferCache<fi::BPEvent*> *buffer_cache = m_EvList.getBPBuffer();
+	while(i < buffer_cache->get_count()) {
+		fi::BPEvent *pEvBreakpt = buffer_cache->get(i);
+		if(pEvBreakpt->isMatching(instrPtr, address_space)) {
+			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
+
+			//transition to STL: find the element we are working on in the Event List
+			fi::EventList::iterator it = std::find(m_EvList.begin(), m_EvList.end(), pEvBreakpt);
+			it = m_EvList.makeActive(it);
+			//find out how much elements need to be skipped to get in sync again
+			//(should be one or none, the loop is just to make sure)
+			for(unsigned j = i; j < buffer_cache->get_count(); j++) {
+				if(buffer_cache->get(j) == (*it)) {
+					i = j;
+					break;
+				}
+			}
+			// we now know we need to fire the active events - usually we do not have to
+			do_fire = true;
+			// "i" has already been set to the next element (by calling
+			// makeActive()):
+			continue; // -> skip loop  increment
+		}
+		i++;
+	}
+	if(do_fire)
+		m_EvList.fireActiveEvents();
 	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
 	//       implementation.
 }
