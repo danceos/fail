@@ -244,12 +244,12 @@ void CommThread::sendPendingExperimentData(Minion& minion)
   #ifndef __puma
 	boost::unique_lock<boost::mutex> lock(m_CommMutex);
   #endif
-	if((exp = m_js.m_runningJobs.first()) != NULL) { // 2nd priority
-		// (This simply gets the first running-job.)
-		// TODO: Improve selection of parameter-set to be resend (the first is not
-		//       necessarily the best...especially when the specific parameter-set
-		//       causes the experiment-client to terminate abnormally -> endless loop!)
-		//       Further ideas: sequential, random, ...? (+ "retry-counter" for each job)
+	if((exp = m_js.m_runningJobs.pickone()) != NULL) { // 2nd priority
+		// (This picks one running job.)
+		// TODO: Improve selection of parameter set to be resent:
+		//  -  currently: Linear complexity!
+		//  -  pick entry at random?
+		//  -  retry counter for each job?
 
 		// Implement resend of running-parameter sets to improve campaign speed
 		// and to prevent result loss due to (unexpected) termination of experiment

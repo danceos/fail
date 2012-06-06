@@ -20,26 +20,46 @@ private:
 #ifndef __puma
 	boost::mutex m_mutex;				// The mutex to synchronise on
 #endif
-	public:
-		int Size(){
+
+	int nextpick;
+	enum { pick_window_size = 500 };
+
+public:
+	SynchronizedMap() : nextpick(0) {}
+	int Size(){
 #ifndef __puma
-			boost::unique_lock<boost::mutex> lock(m_mutex);
+		boost::unique_lock<boost::mutex> lock(m_mutex);
 #endif
-			return m_map.size();
-		}
+		return m_map.size();
+	}
 	/**
-	 * Retrieves the first element in the map.
-	 * @return a pointer to the first element, or \c NULL if empty
+	 * Retrieves one element from the map from a small window at the beginning.
+	 * @return a pointer to the element, or \c NULL if empty
 	 */
-	Tvalue first()
+	Tvalue pickone()
 	{
 	  #ifndef __puma
 		boost::unique_lock<boost::mutex> lock(m_mutex);
 	  #endif
-		if(m_map.size() > 0)
-			return m_map.begin()->second;
-		else
+		if (m_map.size() == 0) {
 			return NULL;
+		}
+
+		// XXX not really elegant: linear complexity
+		typename Tmap::iterator it = m_map.begin();
+		for (int i = 0; i < nextpick; ++i) {
+			++it;
+			if (it == m_map.end()) {
+				it = m_map.begin();
+				nextpick = 0;
+				break;
+			}
+		}
+		++nextpick;
+		if (nextpick >= pick_window_size) {
+			nextpick = 0;
+		}
+		return it->second;
 	} // Lock is automatically released here
 	/**
 	 * Add data to the map, return false if already present
