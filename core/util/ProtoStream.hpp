@@ -25,8 +25,8 @@
 /**
  * \class ProtoOStream
  * 
- * This class can be used to write messages in a file.
- *
+ * This class can be used to sequentially write a large number of protocol
+ * buffer messages to a std::ostream.
  */
 class ProtoOStream
 {
@@ -42,7 +42,7 @@ class ProtoOStream
 		/**
 		 *	Writes a message to a file. 
 		 *  @param m The protobuf-message to be written.
-		 *  @return Returns true if data was written.
+		 *  @return Returns true on success.
 		 */
 		bool writeMessage(google::protobuf::Message* m);
 };
@@ -51,8 +51,8 @@ class ProtoOStream
 /**
  * \class ProtoIStream
  * 
- * This class can be used to read messages sequentially from a file.
- *
+ * This class can be used to read protocol buffer messages sequentially from a
+ * std::istream.
  */
 class ProtoIStream
 {
@@ -69,14 +69,13 @@ class ProtoIStream
 		virtual ~ProtoIStream() {};
 		/**
 		 *	Resets the position of the get pointer. After that getNext 
-		 *  delivers the first message again.
+		 *  reads the first message again.
 		 */
 		void reset();
 		/**
-		 *	Delivers the protobuf-messages sequentially from file.
-		 *  @param m The protobuf-message in which, the data should be 
-		 * 	written.
-		 *  @return Returns true if data was written to protobuf-message.
+		 *	Reads the next protobuf message from the input stream.
+		 *  @param m The output protobuf message.
+		 *  @return Returns true on success.
 		 */
 		bool getNext(google::protobuf::Message* m);
 };
