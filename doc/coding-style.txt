@@ -4,6 +4,12 @@ Coding Style for Fail*
 You may violate/break any of the following rules if you have a good reason to
 do so, e.g., if readability is notably enhanced.
 
+For Python code, try to stick to <http://www.python.org/dev/peps/pep-0008>.
+Especially use 4 spaces per indentation level, and don't mix tabs and spaces
+for indentation.
+
+The following style rules apply to C/C++ code:
+
  - Language (comments, SVN commit messages, "temporary" stuff): English
    (without exception)
 
