@@ -9,8 +9,8 @@ Verrückte Ideen
  - Events fuer besondere Instruktionen (HLT?)
  - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
    GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
-   Backend-Metainformationen (welche Register gibt es, wie breit ist der
-   Datenbus, welche Traps können ausgelöst werden)
+   Backend-Architektur (welche Register gibt es, wie breit ist der
+   Datenbus, welche Traps können ausgelöst werden, etc.) trennen
 
 
 ==========================================================================================
@@ -36,7 +36,7 @@ Abstraktionen:
  - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
    Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
    -> "Fehlerinjektion" ist das ja nicht immer
- - (Allgemeine) Testfälle?
+ - (Allgemeine) Testfälle / Regression-Tests
    -> Modifikationen an FAIL* sind damit leichter zu verifizieren
 
 Events:
@@ -66,7 +66,7 @@ Parallelisierung:
    * ETA bis Kampagne komplett
  - Client/Server-TCP-Verbindungen aufrechterhalten
  - die Möglichkeit schaffen, im Server mehr Informationen über einen Job
-   vorhält (und dann auch loggt), als man an den Client kommuniziert
+   vorzuhalten (und zu loggen), als man an den Client kommuniziert
    -> bei Fault-Space-Pruning hat man im Server Äquivalenzklassen, aus denen
       man nur einen einzelnen Parametersatz auswählt und dem Client zum
       Ausprobieren gibt; die Informationen über die Äquivalenzklasse müss(t)en
@@ -88,7 +88,7 @@ Implementierungsdetails:
 
 Effizienz:
  - getrennte Queues?
- - Queue-Suche optimieren (z.B. Hash-Idee)?
+ - Queue-Suche optimieren (Hashes, Sortierung, ...)?
  - boolean/Counter für Events (um Durchlaufen der Queue zu verhindern)?
  - Dynamic AspectC++ ausprobieren
  - Löschliste in EventList via Hashing implementieren (o.Ä.)?
