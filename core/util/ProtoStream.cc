@@ -2,7 +2,7 @@
 
 using namespace std;
 
-ProtoOStream::ProtoOStream(ostream* outfile) : m_outfile(outfile)
+ProtoOStream::ProtoOStream(std::ostream *outfile) : m_outfile(outfile)
 {
 	m_log.setDescription("ProtoStream");
 	m_log.showTime(false);
@@ -26,7 +26,7 @@ bool ProtoOStream::writeMessage(google::protobuf::Message* m)
 
 //PROTOISTREAM
 
-ProtoIStream::ProtoIStream(istream* infile) : m_infile(infile)
+ProtoIStream::ProtoIStream(std::istream *infile) : m_infile(infile)
 {
 	m_log.setDescription("ProtoStream");
 	m_log.showTime(false);

@@ -22,8 +22,6 @@
 
 #include "Logger.hpp"
 
-using namespace std;
-
 /**
  * \class ProtoOStream
  * 
@@ -36,10 +34,10 @@ class ProtoOStream
 		uint32_t m_size;
 		
 		Logger m_log;
-		ostream* m_outfile;
+		std::ostream* m_outfile;
 		
 	public:
-		ProtoOStream(ostream * outfile);
+		ProtoOStream(std::ostream *outfile);
 		virtual ~ProtoOStream() {};
 		/**
 		 *	Writes a message to a file. 
@@ -63,11 +61,11 @@ class ProtoIStream
 		long m_sizeOfInfile;
 		
 		Logger m_log;
-		istream* m_infile;
+		std::istream *m_infile;
 		
 		
 	public:
-		ProtoIStream(istream * infile);
+		ProtoIStream(std::istream *infile);
 		virtual ~ProtoIStream() {};
 		/**
 		 *	Resets the position of the get pointer. After that getNext 
