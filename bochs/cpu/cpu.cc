@@ -795,6 +795,9 @@ void BX_CPU_C::prefetch(void)
       else {
         BX_PANIC(("prefetch: getHostMemAddr vetoed direct read, pAddr=0x" FMT_PHY_ADDRX, pAddr));
       }
+      // DanceOS
+      // XXX how would this be handled on a real machine?
+      exception(BX_GP_EXCEPTION, 0);
     }
   }
 }
