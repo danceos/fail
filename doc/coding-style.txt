@@ -8,7 +8,7 @@ For Python code, try to stick to <http://www.python.org/dev/peps/pep-0008>.
 Especially use 4 spaces per indentation level, and don't mix tabs and spaces
 for indentation.
 
-The following style rules apply to C/C++ code:
+The following style rules apply to C/C++/AspectC++ code:
 
  - Language (comments, SVN commit messages, "temporary" stuff): English
    (without exception)
@@ -56,7 +56,7 @@ The following style rules apply to C/C++ code:
           class Foo {
           public:
           <TAB>void doSomething();
-          }
+          };
       Similarly (and for the same reason) for namespaces and switch/case
       statements:
           switch (foo) {
@@ -69,14 +69,14 @@ The following style rules apply to C/C++ code:
           if (something) {
           <TAB>...
           }
-    * Function definitions are an exception to this ('{' in a new line):
+    * Method/Function definitions are an exception to this ('{' in a new line):
       Definition:                   |  Declaration:
           void myFunction(int i)    |      void myFunction(int i);
           {                         |
           <TAB>...                  |
           }                         |
-    * Control structure tokens ("if", "try", ...) are followed by a single
-      space for better disambiguation from function definitions:
+    * Control structure tokens ("if", "try", for, ...) are followed by a
+      single space for better disambiguation from function definitions:
           if (...) {
           <TAB>...
           } else if (...) {
