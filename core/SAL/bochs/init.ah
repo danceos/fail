@@ -4,8 +4,9 @@
 #include "../SALInst.hpp"
 
 aspect BochsInit {
-	advice call("int bxmain()") : before () {
-		sal::simulator.startup();
+	advice call("int bxmain()") : before ()
+	{
+		fail::simulator.startup();
 	}
 };
 

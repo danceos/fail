@@ -5,7 +5,7 @@
 #include <boost/thread.hpp>
 
 
-fi::JobServer js;
+fail::JobServer js;
 using namespace std;
 
 static const int nums = 30;

@@ -10,12 +10,11 @@
 #include "../../util/Logger.hpp"
 
 using namespace std;
-using namespace sal;
-using namespace fi;
-using namespace sal;
+using namespace fail;
 
 bool FaultCoverageExperiment::run()
 {
+	// FIXME: This should be translated (-> English)!
 	/*
 	Experimentskizze:
 	- starte Gastsystem
@@ -109,7 +108,7 @@ bool FaultCoverageExperiment::run()
 				  #else
 					const size_t expected_size = sizeof(uint64_t)*8;
 				  #endif
-					Register* pCAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(sal::RID_CAX);
+					Register* pCAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(RID_CAX);
 					assert(expected_size == pCAX->getWidth()); // we assume to get 32(64) bits...
 					regdata_t result = pCAX->getData();
 					res << "[FaultCoverageExperiment] Reg: " << pCAX->getName()

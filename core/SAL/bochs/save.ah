@@ -17,13 +17,13 @@ aspect save {
 	advice execution (cpuLoop()) : order ("save", "Breakpoints");
 
 	advice execution (cpuLoop()) : after () {
-		if (!sal::save_bochs_request) {
+		if (!fail::save_bochs_request) {
 			return;
 		}
-		assert(sal::sr_path.size() > 0 && "[FAIL] tried to save state without valid path");
-		SIM->save_state(sal::sr_path.c_str());
+		assert(fail::sr_path.size() > 0 && "[FAIL] tried to save state without valid path");
+		SIM->save_state(fail::sr_path.c_str());
 		std::cout << "[FAIL] Save finished" << std::endl;
-		sal::simulator.saveDone();
+		fail::simulator.saveDone();
 	}
 };
 

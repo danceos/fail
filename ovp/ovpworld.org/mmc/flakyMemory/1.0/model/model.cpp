@@ -133,7 +133,7 @@ static VMI_MEM_READ_FN(readNFull)
     );
     
 //    flipBits(value, bytes, processor, address);
-	//sal::simulator.onMemoryAccessEvent(address, bytes, false, processor.getPC());
+	//fail::simulator.onMemoryAccessEvent(address, bytes, false, processor.getPC());
        
     // increment counter of reads and writes:
     flaky->count += 1;

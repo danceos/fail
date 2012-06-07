@@ -3,10 +3,10 @@
 
 #include "controller/ExperimentFlow.hpp"
 
-class TracingTest : public fi::ExperimentFlow
+class TracingTest : public fail::ExperimentFlow
 {
 public:
 	bool run();
 };
 
-#endif /* __TRACING_TEST_HPP__ */
+#endif // __TRACING_TEST_HPP__

@@ -1,11 +1,12 @@
 #include "BufferCache.hpp"
 #include "Event.hpp"
 
-namespace fi {
+namespace fail {
 
-template<class T> int BufferCache<T>::add(T val) {
-	size_t new_size = get_count() + 1;
-	size_t new_last_index = get_count();
+template<class T> int BufferCache<T>::add(T val)
+{
+	size_t new_size = getCount() + 1;
+	size_t new_last_index = getCount();
 
 	int res = reallocate_buffer(new_size);
 	if (res == 0) {
@@ -15,14 +16,15 @@ template<class T> int BufferCache<T>::add(T val) {
 	return res;
 }
 
-template<class T> int BufferCache<T>::remove(T val) {
+template<class T> int BufferCache<T>::remove(T val)
+{
 	bool do_remove = false;
-	for (size_t i = 0; i < get_count(); i++) {
+	for (size_t i = 0; i < getCount(); i++) {
 		if (get(i) == val) {
 			do_remove = true;
 		}
 		if (do_remove) {
-			if (i > get_count() - 1) {
+			if (i > getCount() - 1) {
 				set(i, get(i + 1));
 			}
 		}
@@ -30,31 +32,34 @@ template<class T> int BufferCache<T>::remove(T val) {
 
 	int res = 0;
 	if (do_remove) {
-		size_t new_size = get_count() - 1;
+		size_t new_size = getCount() - 1;
 		res = reallocate_buffer(new_size);
 	}
 
 	return res;
 }
 
-template<class T> void BufferCache<T>::clear() {
-	set_count(0);
+template<class T> void BufferCache<T>::clear()
+{
+	setCount(0);
 	free(m_Buffer);
 	m_Buffer = NULL;
 }
 
-template<class T> int BufferCache<T>::erase(int idx) {
-	for (size_t i = idx; i < get_count() - 1; i++) {
+template<class T> int BufferCache<T>::erase(int idx)
+{
+	for (size_t i = idx; i < getCount() - 1; i++) {
 		set(i, get(i + 1));
 	}
 
-	size_t new_size = get_count() - 1;
+	size_t new_size = getCount() - 1;
 	if (reallocate_buffer(new_size) != 0)
 		return -1;
 	return idx;
 }
 
-template<class T> int BufferCache<T>::reallocate_buffer(size_t new_size) {
+template<class T> int BufferCache<T>::reallocate_buffer(size_t new_size)
+{
 	if (new_size == 0) {
 		clear();
 		return 0;
@@ -63,12 +68,11 @@ template<class T> int BufferCache<T>::reallocate_buffer(size_t new_size) {
 	if (new_buffer == NULL)
 		return 10;
 	m_Buffer = static_cast<T*>(new_buffer);
-	set_count(new_size);
+	setCount(new_size);
 	return 0;
 }
 
-//declare whatever instances of the template
-//you are going to use here:
+// Declare whatever instances of the template you are going to use here:
 template class BufferCache<BPEvent*>;
 
-} /* namespace fi */
+} // end-of-namespace: fail

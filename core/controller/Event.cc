@@ -1,8 +1,7 @@
 #include "Event.hpp"
 #include "../SAL/SALInst.hpp"
 
-namespace fi
-{
+namespace fail {
 
 EventId BaseEvent::m_Counter = 0;
 
@@ -42,7 +41,7 @@ bool TroubleEvent::addWatchNumber(unsigned troubleNumber)
 	return true;
 }
 
-bool MemAccessEvent::isMatching(sal::address_t addr, accessType_t accesstype) const
+bool MemAccessEvent::isMatching(address_t addr, accessType_t accesstype) const
 {
 	if(!(m_WatchType & accesstype))
 		return (false);
@@ -52,20 +51,20 @@ bool MemAccessEvent::isMatching(sal::address_t addr, accessType_t accesstype) co
 	return (true);
 }
 
-bool BPEvent::aspaceIsMatching(sal::address_t aspace) const
+bool BPEvent::aspaceIsMatching(address_t aspace) const
 {
 	if (m_CR3 == ANY_ADDR || m_CR3 == aspace)
 		return true;
 	return false;
 }
 
-void BPRangeEvent::setWatchInstructionPointerRange(sal::address_t start, sal::address_t end)
+void BPRangeEvent::setWatchInstructionPointerRange(address_t start, address_t end)
 {
 	m_WatchStartAddr = start;
 	m_WatchEndAddr = end;
 }
 
-bool BPRangeEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
+bool BPRangeEvent::isMatching(address_t addr, address_t aspace) const
 {
 	if (!aspaceIsMatching(aspace))
 		return false;
@@ -75,7 +74,7 @@ bool BPRangeEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
 	return true;
 }
 
-bool BPSingleEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
+bool BPSingleEvent::isMatching(address_t addr, address_t aspace) const
 {
 	if (aspaceIsMatching(aspace)) {
 		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr) {
@@ -85,4 +84,4 @@ bool BPSingleEvent::isMatching(sal::address_t addr, sal::address_t aspace) const
 	return false;
 }
 
-} // end-of-namespace: fi
+} // end-of-namespace: fail

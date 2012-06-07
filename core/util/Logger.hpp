@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace fail {
+
 /**
  * \class Logger
  * Provides logging mechanisms.
@@ -58,4 +60,6 @@ class Logger
 		}
 };
 
-#endif /* __LOGGER_HPP__ */
+} // end-of-namespace: fail
+
+#endif // __LOGGER_HPP__

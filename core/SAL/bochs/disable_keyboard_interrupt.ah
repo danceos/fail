@@ -21,6 +21,6 @@ aspect DisableKeybInt {
 	}
 };
 
-#endif /* CONFIG_DISABLE_KEYB_INTERRUPTS */
+#endif // CONFIG_DISABLE_KEYB_INTERRUPTS
 
-#endif /* __DISABLE_KEYBOARD_INTERRUPT_AH__ */
+#endif // __DISABLE_KEYBOARD_INTERRUPT_AH__

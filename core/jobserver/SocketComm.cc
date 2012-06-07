@@ -1,6 +1,8 @@
+#include <string>
+
 #include "SocketComm.hpp"
 
-namespace fi {
+namespace fail {
 
 bool SocketComm::send_msg(int sockfd, google::protobuf::Message& msg)
 {
@@ -39,11 +41,12 @@ bool SocketComm::rcv_msg(int sockfd, google::protobuf::Message& msg)
         return false;
     }
     std::string st(buf, size);
-    delete[] buf;
+    delete [] buf;
     msg.ParseFromString(st);
     return true;
 #else
     return msg.ParseFromFileDescriptor(sockfd);
 #endif
 }
-}
+
+} // end-of-namespace: fail

@@ -7,5 +7,5 @@
 int main(int argc, char **argv)
 {
 	WeathermonitorCampaign c;
-	return !fi::campaignmanager.runCampaign(&c);
+	return !fail::campaignmanager.runCampaign(&c);
 }

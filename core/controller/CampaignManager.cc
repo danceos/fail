@@ -1,9 +1,7 @@
 #include "CampaignManager.hpp"
 
+namespace fail {
 
-namespace fi
-{
-  
 CampaignManager campaignmanager;
 
-}//end-of-namespace
+} // end-of-namespace: fail

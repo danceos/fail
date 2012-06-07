@@ -3,8 +3,7 @@
 
 #include "../Memory.hpp"
 
-namespace sal
-{
+namespace fail {
 
 /**
  * \class BochsMemoryManager
@@ -115,6 +114,6 @@ class BochsMemoryManager : public MemoryManager
 		}
 };
 
-}
+} // end-of-namespace: fail
 
-#endif
+#endif // __BOCHS_MEMORY_HPP__

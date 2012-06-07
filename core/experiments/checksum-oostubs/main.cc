@@ -7,7 +7,7 @@
 int main(int argc, char **argv)
 {
 	ChecksumOOStuBSCampaign c;
-	if (fi::campaignmanager.runCampaign(&c)) {
+	if (fail::campaignmanager.runCampaign(&c)) {
 		return 0;
 	} else {
 		return 1;

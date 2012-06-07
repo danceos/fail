@@ -2,12 +2,15 @@
 // TODO We should consider to use Aspects for synchronisation primitives..
 
 #ifndef __SYNCHRONIZED_MAP_HPP__
-#define __SYNCHRONIZED_MAP_HPP__
+  #define __SYNCHRONIZED_MAP_HPP__
 
 #include <map>
+
 #ifndef __puma
 #include <boost/thread.hpp>
 #endif
+
+namespace fail {
 
 template <typename Tkey, typename Tvalue>
 class SynchronizedMap
@@ -103,7 +106,8 @@ public:
 			return false;
 		}
 	} // Lock is automatically released here
-
-
 };
-#endif
+
+} // end-of-namespace: fail
+
+#endif // __SYNCHRONIZED_MAP_HPP__

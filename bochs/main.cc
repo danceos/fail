@@ -304,7 +304,7 @@ marke:
 
     //DanceOS
 #ifdef DANCEOS_RESTORE
-    if(sal::restore_bochs_request){
+    if(fail::restore_bochs_request){
 
     	bx_devices.exit();
 
@@ -656,10 +656,10 @@ int bx_init_main(int argc, char *argv[])
   }
 //DanceOS
 #ifdef DANCEOS_RESTORE  
-  if(sal::restore_bochs_request){
+  if(fail::restore_bochs_request){
       SIM->get_param_bool(BXPN_RESTORE_FLAG)->set(1);
       SIM->get_param_enum(BXPN_BOCHS_START)->set(BX_QUICK_START);
-      SIM->get_param_string(BXPN_RESTORE_PATH)->set(sal::sr_path.c_str());
+      SIM->get_param_string(BXPN_RESTORE_PATH)->set(fail::sr_path.c_str());
   }
 #endif
 #if BX_WITH_CARBON
@@ -980,7 +980,7 @@ int bx_begin_simulation (int argc, char *argv[])
         }
 //DanceOS
 #ifdef DANCEOS_RESTORE
-        if(sal::restore_bochs_request){
+        if(fail::restore_bochs_request){
           
        	  return 1;
         }
@@ -1004,7 +1004,7 @@ int bx_begin_simulation (int argc, char *argv[])
         }
         //DanceOS
 #ifdef DANCEOS_RESTORE
-        if(sal::restore_bochs_request){
+        if(fail::restore_bochs_request){
             
          	  return 1;
         }

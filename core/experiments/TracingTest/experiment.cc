@@ -10,16 +10,14 @@
 #include <google/protobuf/io/gzip_stream.h>
 */
 
-using std::cout;
-using std::endl;
-using namespace fi;
-using namespace sal;
+using namespace std;
+using namespace fail;
 
 bool TracingTest::run()
 {
 	cout << "[TracingTest] Setting up experiment" << endl;
 
-#if 1
+#if 0
 	// STEP 1: run until interesting function starts, and save state
 	BPSingleEvent breakpoint(0x00101658);
 	simulator.addEventAndWait(&breakpoint);
@@ -33,17 +31,17 @@ bool TracingTest::run()
 	cout << "[TracingTest] enabling tracing" << endl;
 
 	TracingPlugin tp;
-	std::ofstream of("trace.pb");
+	ofstream of("trace.pb");
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
 	cout << "[TracingTest] tracing 1000000 instructions" << endl;
-	BPSingleEvent timeout(fi::ANY_ADDR);
+	BPSingleEvent timeout(ANY_ADDR);
 	timeout.setCounter(1000000);
 	simulator.addEvent(&timeout);
 
-	InterruptEvent ie(fi::ANY_INTERRUPT);
+	InterruptEvent ie(ANY_INTERRUPT);
 	while (simulator.addEventAndWait(&ie) != &timeout) {
 		cout << "INTERRUPT #" << ie.getTriggerNumber() << "\n";
 	}
@@ -54,7 +52,7 @@ bool TracingTest::run()
 
 /*
 	// serialize trace to file
-	std::ofstream of("trace.pb");
+	ofstream of("trace.pb");
 	if (of.fail()) { return false; }
 	trace.SerializeToOstream(&of);
 	of.close();

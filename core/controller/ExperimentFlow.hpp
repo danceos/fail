@@ -3,8 +3,7 @@
 
 #include "../SAL/SALInst.hpp"
 
-namespace fi
-{
+namespace fail {
 
 /**
  * \class ExperimentFlow
@@ -20,7 +19,6 @@ class ExperimentFlow
 		 * @return \c true if the experiment was successful, \c false otherwise
 		 */
 		virtual bool run() = 0;
-
 		/**
 		 * The entry point for this experiment's coroutine.
 		 * Should do some cleanup afterwards.
@@ -28,13 +26,13 @@ class ExperimentFlow
 		void coroutine_entry()
 		{
 			run();
-			sal::simulator.clearEvents(this); // remove residual events
+			simulator.clearEvents(this); // remove residual events
 			// FIXME: Consider removing this call (see EventList.cc, void remove(ExperimentFlow* flow)) 
 			//        a) with the advantage that we will potentially prevent serious segfaults but
 			//        b) with the drawback that we cannot enforce any cleanups.
 		}
 };
 
-}
+} // end-of-namespace: fail
 
-#endif /* __EXPERIMENT_FLOW_HPP__ */
+#endif // __EXPERIMENT_FLOW_HPP__

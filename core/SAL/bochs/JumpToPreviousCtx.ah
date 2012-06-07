@@ -3,6 +3,8 @@
 
 #include "config/FailConfig.hpp"
 
+// FIXME: What's the purpose of this file/code? Deprecated?
+
 #if 0
 // #if defined(CONFIG_SR_RESTORE) || defined(CONFIG_SR_REBOOT)
 
@@ -18,11 +20,11 @@ aspect jumpToPreviousCtx
 	advice execution (end_reset_handler()) : after ()
 	{
 		
-		if (sal::restore_bochs_request || sal::reboot_bochs_request )
+		if (fail::restore_bochs_request || fail::reboot_bochs_request )
 		{
-			sal::restore_bochs_request = false;
-			sal::reboot_bochs_request = false;
-			sal::simulator.toPreviousCtx();
+			fail::restore_bochs_request = false;
+			fail::reboot_bochs_request = false;
+			fail::simulator.toPreviousCtx();
 		}
 
 	}

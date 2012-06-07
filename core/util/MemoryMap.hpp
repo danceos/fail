@@ -7,7 +7,10 @@ using namespace boost::icl;
 #endif
 
 #include <set>
+
 #include "SAL/SALConfig.hpp"
+
+namespace fail {
 
 /**
  * \class MemoryMap
@@ -16,17 +19,17 @@ using namespace boost::icl;
 class MemoryMap
 {
 #ifdef BOOST_1_46_OR_NEWER
-	typedef interval<sal::address_t>::type address_interval;
-	typedef interval_set<sal::address_t>::type address_set;
+	typedef interval<address_t>::type address_interval;
+	typedef interval_set<address_t>::type address_set;
 
 	address_set as;
 public:
 	MemoryMap() {}
 	void clear() { as.clear(); }
-	void add(sal::address_t addr, int size) { as.add(address_interval(addr, addr+size-1)); }
-	void isMatching(sal::address_t addr, int size) { return intersects(as, address_interval(addr, addr+size-1)); }
+	void add(address_t addr, int size) { as.add(address_interval(addr, addr+size-1)); }
+	void isMatching(address_t addr, int size) { return intersects(as, address_interval(addr, addr+size-1)); }
 #endif
-	std::set<sal::address_t> as;
+	std::set<address_t> as;
 public:
 	MemoryMap() {}
 	/**
@@ -37,7 +40,7 @@ public:
 	/**
 	 * Adds one or a sequence of addresses to the map.
 	 */
-	void add(sal::address_t addr, int size = 1)
+	void add(address_t addr, int size = 1)
 	{
 		for (int i = 0; i < size; ++i) {
 			as.insert(addr + i);
@@ -48,7 +51,7 @@ public:
 	 * Determines whether a given memory access at address \a addr with width
 	 * \a size hits the map.  
 	 */
-	bool isMatching(sal::address_t addr, int size = 1)
+	bool isMatching(address_t addr, int size = 1)
 	{
 		for (int i = 0; i < size; ++i) {
 			if (as.find(addr + i) != as.end()) {
@@ -62,7 +65,7 @@ public:
 	 * The (STL-style) iterator of this class used to iterate over all
 	 * addresses in this map.
 	 */
-	typedef std::set<sal::address_t>::iterator iterator;
+	typedef std::set<address_t>::iterator iterator;
 
 	/**
 	 * Returns an (STL-style) iterator to the beginning of the internal data
@@ -77,4 +80,6 @@ public:
 	iterator end() { return as.end(); }
 };
 
-#endif
+} // end-of-namespace: fail
+
+#endif // __MEMORYMAP_HPP__

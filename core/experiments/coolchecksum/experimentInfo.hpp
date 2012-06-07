@@ -1,5 +1,5 @@
 #ifndef __EXPERIMENT_INFO_HPP__
-#define __EXPERIMENT_INFO_HPP__
+  #define __EXPERIMENT_INFO_HPP__
 
 #define COOL_FAULTSPACE_PRUNING 0
 
@@ -37,4 +37,4 @@
 
 #endif
 
-#endif
+#endif // __EXPERIMENT_INFO_HPP__

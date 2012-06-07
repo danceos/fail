@@ -26,14 +26,14 @@ Message *get_job(int sockfd)
 	ctrlmsg.set_build_id(42);
 
 	cout << "Sending need work msg: " << ctrlmsg.build_id() << ", Command: " << ctrlmsg.command() << endl;
-	fi::SocketComm::send_msg(sockfd, ctrlmsg);
+	fail::SocketComm::send_msg(sockfd, ctrlmsg);
 	cout << "sent ctrl message." << endl;
-	fi::SocketComm::rcv_msg(sockfd, ctrlmsg);
+	fail::SocketComm::rcv_msg(sockfd, ctrlmsg);
          cout << "Received ctrl message: " << ctrlmsg.command() << endl;
 	 switch(ctrlmsg.command()){
 	   case FailControlMessage_Command_DIE: return 0;
 	   case FailControlMessage_Command_WORK_FOLLOWS:
-		fi::SocketComm::rcv_msg(sockfd, *msg);
+		fail::SocketComm::rcv_msg(sockfd, *msg);
 		return msg;
 	   default:
 		cerr << "wtf?" << endl;
@@ -49,8 +49,8 @@ void return_result(int sockfd, Message *msg)
 	ctrlmsg.set_command(FailControlMessage_Command_RESULT_FOLLOWS);
 	ctrlmsg.set_build_id(42);
 	cout << "Sending Result msg: " << ctrlmsg.build_id() << ", Command: " << ctrlmsg.command() << endl;
-	fi::SocketComm::send_msg(sockfd, ctrlmsg);
-	fi::SocketComm::send_msg(sockfd, *msg);
+	fail::SocketComm::send_msg(sockfd, ctrlmsg);
+	fail::SocketComm::send_msg(sockfd, *msg);
 	delete msg;
 }
 

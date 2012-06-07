@@ -215,7 +215,7 @@ void BX_MEM_C::cleanup_memory()
 
 // DanceOS
 #ifdef DANCEOS_RESTORE
-  if (BX_MEM_THIS vector != NULL || sal::restore_bochs_request) {
+  if (BX_MEM_THIS vector != NULL || fail::restore_bochs_request) {
 #else
   if (BX_MEM_THIS vector != NULL) {
 #endif

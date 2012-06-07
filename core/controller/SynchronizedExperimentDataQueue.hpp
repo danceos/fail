@@ -6,6 +6,8 @@
  *
  */
 
+// FIXME: This file is not used. Delete it.
+
 #ifndef __SYNC_EXPERIMENT_DATA_QUEUE_H__
 #define __SYNC_EXPERIMENT_DATA_QUEUE_H__
 

@@ -668,8 +668,8 @@ void bx_gui_c::restore_handler(void)
 	                            bx_param_string_c::SELECT_FOLDER_DLG);
 	    if ((ret >= 0) && (strcmp(temp_path, "none"))) {
 
-	    	sal::restore_bochs_request = true;
-	    	sal::sr_path = temp_path;
+	    	fail::restore_bochs_request = true;
+	    	fail::sr_path = temp_path;
 	    }
 	}
 

@@ -14,7 +14,8 @@
   #error This experiment needs: breakpoints, save, and restore. Enable these in the configuration.
 #endif
 
-using std::endl;
+using namespace std;
+using namespace fail;
 
 bool hscsimpleExperiment::run()
 {
@@ -24,31 +25,31 @@ bool hscsimpleExperiment::run()
 	// do funny things here...
 #if 1
     // STEP 1
-	fi::BPSingleEvent mainbp(0x00003c34);
-	sal::simulator.addEventAndWait(&mainbp);
+	BPSingleEvent mainbp(0x00003c34);
+	simulator.addEventAndWait(&mainbp);
 	log << "breakpoint reached, saving" << endl;
-	sal::simulator.save("hello.state");
+	simulator.save("hello.state");
 #elif 0
     // STEP 2
 	log << "restoring ..." << endl;
-	sal::simulator.restore("hello.state");
+	simulator.restore("hello.state");
 	log << "restored!" << endl;
 
 	log << "waiting for last square() instruction" << endl;
-	fi::BPSingleEvent breakpoint(0x3c9e); // square(x) ret instruction
-	sal::simulator.addEventAndWait(&breakpoint);
+	BPSingleEvent breakpoint(0x3c9e); // square(x) ret instruction
+	simulator.addEventAndWait(&breakpoint);
 	log << "injecting hellish fault" << endl;
 	// RID_CAX is the RAX register in 64 bit mode and EAX in 32 bit mode:
-	sal::simulator.getRegisterManager().getRegister(sal::RID_CAX)->setData(666);
+	simulator.getRegisterManager().getRegister(RID_CAX)->setData(666);
 	log << "waiting for last main() instruction" << endl;
 	breakpoint.setWatchInstructionPointer(0x3c92);
-	sal::simulator.addEventAndWait(&breakpoint);
+	simulator.addEventAndWait(&breakpoint);
 
 	log << "reached" << endl;
 
-	sal::simulator.addEventAndWait(&breakpoint);
+	simulator.addEventAndWait(&breakpoint);
 #endif
 
-	sal::simulator.clearEvents(this);
+	simulator.clearEvents(this);
 	return true;
 }

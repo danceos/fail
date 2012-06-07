@@ -13,7 +13,7 @@
  */
 
 #ifndef __PROTOSTREAM_HPP__
-#define __PROTOSTREAM_HPP__
+  #define __PROTOSTREAM_HPP__
 
 #include <iostream>
 #include <sys/types.h>
@@ -21,6 +21,8 @@
 #include <google/protobuf/message.h>
 
 #include "Logger.hpp"
+
+namespace fail {
 
 /**
  * \class ProtoOStream
@@ -46,7 +48,6 @@ class ProtoOStream
 		 */
 		bool writeMessage(google::protobuf::Message* m);
 };
-
 
 /**
  * \class ProtoIStream
@@ -80,4 +81,6 @@ class ProtoIStream
 		bool getNext(google::protobuf::Message* m);
 };
 
-#endif
+} // end-of-namespace: fail
+
+#endif // __PROTOSTREAM_HPP__

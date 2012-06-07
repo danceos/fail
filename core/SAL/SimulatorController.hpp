@@ -1,8 +1,5 @@
 #ifndef __SIMULATOR_CONTROLLER_HPP__
   #define __SIMULATOR_CONTROLLER_HPP__
-  
-// Author: Adrian Böckenkamp
-// Date:   23.01.2012
 
 #include <iostream>
 #include <string>
@@ -19,17 +16,10 @@
 #include "../controller/ExperimentData.hpp"
 #include "SALConfig.hpp"
 
-using namespace std;
+namespace fail {
 
-namespace fi {
+// Incomplete types suffice here:
 class ExperimentFlow;
-}
-
-/// Simulator Abstraction Layer namespace
-namespace sal
-{
-
-// incomplete types suffice here
 class RegisterManager;
 class MemoryManager;
 
@@ -37,7 +27,8 @@ class MemoryManager;
  * \class SimulatorController
  *
  * \brief The abstract interface for controlling simulators and
- *        accessing experiment data/flows.
+ *        accessing experiment data/flows (as part of the "Simulator
+ *        Abstraction Layer".
  *
  * This class manages (1..N) experiments and provides access to the underlying
  * simulator/debugger system. Experiments can enlist arbritrary events
@@ -48,13 +39,13 @@ class MemoryManager;
 class SimulatorController
 {
 	protected:
-		fi::EventList m_EvList; //!< storage where events are being buffered
-		fi::CoroutineManager m_Flows; //!< managed experiment flows
+		EventList m_EvList; //!< storage where events are being buffered
+		CoroutineManager m_Flows; //!< managed experiment flows
 		RegisterManager *m_Regs; //!< access to cpu register
 		MemoryManager *m_Mem; //!< access to memory pool
 		//! list of suppressed interrupts
 		std::vector<unsigned> m_SuppressedInterrupts;
-		friend class fi::EventList; //!< "outsources" the event management
+		friend class EventList; //!< "outsources" the event management
 	public:
 		SimulatorController()
 			: m_Regs(NULL), m_Mem(NULL) { }
@@ -130,7 +121,7 @@ class SimulatorController
 		 *         the addition of the event \a pev, yielding an error in the
 		 *         experiment flow (i.e. -1 is returned).
 		 */
-		virtual bool onEventAddition(fi::BaseEvent* pev) { return true; }
+		virtual bool onEventAddition(BaseEvent* pev) { return true; }
 		/**
 		 * This method is called when an experiment flow removes an event from
 		 * the event-management by calling \c removeEvent(prev), \c clearEvents()
@@ -138,7 +129,7 @@ class SimulatorController
 		 * event handler will be called *before* the event is actually deleted.
 		 * @param pev the event to be deleted when returning from the event handler
 		 */
-		virtual void onEventDeletion(fi::BaseEvent* pev) { }
+		virtual void onEventDeletion(BaseEvent* pev) { }
 		/**
 		 * This method is called when an previously added event is about to be
 		 * triggered by the simulator-backend. More specifically, this event handler
@@ -146,7 +137,7 @@ class SimulatorController
 		 * corresponding coroutine is toggled.
 		 * @param pev the event to be triggered when returning from the event handler
 		 */
-		virtual void onEventTrigger(fi::BaseEvent* pev) { }
+		virtual void onEventTrigger(BaseEvent* pev) { }
 		/* ********************************************************************
 		 * Simulator Controller & Access API:
 		 * ********************************************************************/
@@ -154,13 +145,13 @@ class SimulatorController
 		 * Save simulator state.
 		 * @param path Location to store state information
 		 */
-		virtual void save(const string& path) = 0;
+		virtual void save(const std::string& path) = 0;
 		/**
 		 * Restore simulator state.  Implicitly discards all previously
 		 * registered events.
 		 * @param path Location to previously saved state information
 		 */
-		virtual void restore(const string& path) = 0;
+		virtual void restore(const std::string& path) = 0;
 		/**
 		 * Reboot simulator.
 		 */
@@ -221,13 +212,13 @@ class SimulatorController
 		 * run it in.
 		 * @param flow the experiment flow object to be added
 		 */
-		void addFlow(fi::ExperimentFlow* flow);
+		void addFlow(ExperimentFlow* flow);
 		/**
 		 * Removes the specified experiment or plugin and destroys its coroutine
 		 * and all associated events.
 		 * @param flow the experiment flow object to be removed
 		 */
-		void removeFlow(fi::ExperimentFlow* flow);
+		void removeFlow(ExperimentFlow* flow);
 		/**
 		 * Add event ev to the event management. This causes the event to be
 		 * active.
@@ -235,19 +226,19 @@ class SimulatorController
 		 * @return the id of the event used to identify the object on occurrence;
 		 *         -1 is returned on errors
 		 */
-		fi::EventId addEvent(fi::BaseEvent* ev);
+		EventId addEvent(BaseEvent* ev);
 		/**
 		 * Removes the event with the specified id.
 		 * @param ev the pointer of the event-object to be removed; if \a ev is
 		 *        equal to \c NULL all events (for all experiments) will be
 		 *        removed
 		 */
-		void removeEvent(fi::BaseEvent* ev) { m_EvList.remove(ev); }
+		void removeEvent(BaseEvent* ev) { m_EvList.remove(ev); }
 		/**
 		 * Removes all previously added events for all experiments.  To
 		 * restrict this to a specific experiment flow, pass a pointer to it.
 		 */
-		void clearEvents(fi::ExperimentFlow *flow = 0) { m_EvList.remove(flow); }
+		void clearEvents(ExperimentFlow *flow = 0) { m_EvList.remove(flow); }
 		/**
 		 * Waits on any events which have been added to the event management. If
 		 * one of those events occour, waitAny() will return the id of that event.
@@ -256,7 +247,7 @@ class SimulatorController
 		 * FIXME: Maybe this should return immediately if there are not events?
 		 *        (additional parameter flag?)
 		 */
-		fi::BaseEvent* waitAny();
+		BaseEvent* waitAny();
 		/**
 		 * Add event \a ev to the global buffer and wait for it (combines
 		 * \c addEvent() and \c waitAny()).
@@ -266,7 +257,7 @@ class SimulatorController
 		 *
 		 * FIXME: Rename to make clear this returns when *any* event occurs
 		 */
-		fi::BaseEvent* addEventAndWait(fi::BaseEvent* ev);
+		BaseEvent* addEventAndWait(BaseEvent* ev);
 		/**
 		 * Checks whether any experiment flow has events in the event-list.
 		 * @return \c true if there are still events, or \c false otherwise
@@ -285,6 +276,6 @@ class SimulatorController
 		template <class T> T* getExperimentData();
 };
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail
 
-#endif /* __SIMULATOR_CONTROLLER_HPP__ */
+#endif // __SIMULATOR_CONTROLLER_HPP__

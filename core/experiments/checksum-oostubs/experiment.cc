@@ -5,11 +5,9 @@
 #include <unistd.h>
 
 #include "util/Logger.hpp"
-
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "campaign.hpp"
-
 #include "SAL/SALConfig.hpp"
 #include "SAL/SALInst.hpp"
 #include "SAL/Memory.hpp"
@@ -21,7 +19,8 @@
 
 #include "ecc_region.hpp"
 
-using std::endl;
+using namespace std;
+using namespace fail;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
@@ -33,33 +32,33 @@ bool ChecksumOOStuBSExperiment::run()
 {
 	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
-	fi::BPSingleEvent bp;
+	BPSingleEvent bp;
 	
 	log << "startup" << endl;
 
 #if 1
 	// STEP 0: record memory map with addresses of "interesting" objects
-	fi::GuestEvent g;
+	GuestEvent g;
 	while (true) {
-		sal::simulator.addEventAndWait(&g);
-		std::cout << g.getData() << std::flush;
+		simulator.addEventAndWait(&g);
+		cout << g.getData() << flush;
 	}
 #elif 0
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(OOSTUBS_FUNC_ENTRY);
-	sal::simulator.addEventAndWait(&bp);
+	simulator.addEventAndWait(&bp);
 	log << "test function entry reached, saving state" << endl;
-	log << "EIP = " << std::hex << bp.getTriggerInstructionPointer() << endl;
-	log << "error_corrected = " << std::dec << ((int)sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
-	sal::simulator.save(statename);
+	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
+	log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
+	simulator.save(statename);
 	assert(bp.getTriggerInstructionPointer() == OOSTUBS_FUNC_ENTRY);
-	assert(sal::simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
+	assert(simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 #elif 1
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
-	sal::simulator.restore(statename);
-	log << "EIP = " << std::hex << sal::simulator.getRegisterManager().getInstructionPointer() << endl;
-	assert(sal::simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
+	simulator.restore(statename);
+	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+	assert(simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -73,37 +72,37 @@ bool ChecksumOOStuBSExperiment::run()
 
 	// record trace
 	char const *tracefile = "trace.pb";
-	std::ofstream of(tracefile);
+	ofstream of(tracefile);
 	tp.setTraceFile(&of);
 
 	// this must be done *after* configuring the plugin:
-	sal::simulator.addFlow(&tp);
+	simulator.addFlow(&tp);
 
-	bp.setWatchInstructionPointer(fi::ANY_ADDR);
+	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(OOSTUBS_NUMINSTR);
-	sal::simulator.addEvent(&bp);
-	fi::BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
-	sal::simulator.addEvent(&func_finish);
+	simulator.addEvent(&bp);
+	BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
+	simulator.addEvent(&func_finish);
 
-	if (sal::simulator.waitAny() == &func_finish) {
+	if (simulator.waitAny() == &func_finish) {
 		log << "experiment reached finish()" << endl;
 		// FIXME add instruction counter to SimulatorController
-		sal::simulator.waitAny();
+		simulator.waitAny();
 	}
-	log << "experiment finished after " << std::dec << OOSTUBS_NUMINSTR << " instructions" << endl;
+	log << "experiment finished after " << dec << OOSTUBS_NUMINSTR << " instructions" << endl;
 	
 	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
-	sal::simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
+	simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
 	for (unsigned i = 0; i < sizeof(results) / sizeof(*results); ++i) {
-		log << "results[" << i << "]: " << std::dec << results[i] << endl;
+		log << "results[" << i << "]: " << dec << results[i] << endl;
 	}
 
-	sal::simulator.removeFlow(&tp);
+	simulator.removeFlow(&tp);
 
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
-		sal::simulator.clearEvents(this);
+		simulator.clearEvents(this);
 		return false;
 	}
 	of.close();
@@ -117,7 +116,7 @@ bool ChecksumOOStuBSExperiment::run()
 
 	// STEP 3: The actual experiment.
 	log << "restoring state" << endl;
-	sal::simulator.restore(statename);
+	simulator.restore(statename);
 
 	// get an experiment parameter set
 	log << "asking job server for experiment parameters" << endl;
@@ -125,7 +124,7 @@ bool ChecksumOOStuBSExperiment::run()
 	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
 		// communicate that we were told to die
-		sal::simulator.terminate(1);
+		simulator.terminate(1);
 	}
 /*
 	// XXX debug
@@ -142,49 +141,49 @@ bool ChecksumOOStuBSExperiment::run()
 	log << "job " << id << " instr " << instr_offset << " mem " << mem_addr << "+" << bit_offset << endl;
 
 	// XXX debug
-	std::stringstream fname;
+	stringstream fname;
 	fname << "job." << ::getpid();
-	std::ofstream job(fname.str().c_str());
+	ofstream job(fname.str().c_str());
 	job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
 	job.close();
 
 	// reaching finish() could happen before OR after FI
-	fi::BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
-	sal::simulator.addEvent(&func_finish);
+	BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
+	simulator.addEvent(&func_finish);
 	bool finish_reached = false;
 
 	// no need to wait if offset is 0
 	if (instr_offset > 0) {
 		// XXX test this with coolchecksum first (or reassure with sanity checks)
 		// XXX could be improved with intermediate states (reducing runtime until injection)
-		bp.setWatchInstructionPointer(fi::ANY_ADDR);
+		bp.setWatchInstructionPointer(ANY_ADDR);
 		bp.setCounter(instr_offset);
-		sal::simulator.addEvent(&bp);
+		simulator.addEvent(&bp);
 
 		// finish() before FI?
-		if (sal::simulator.waitAny() == &func_finish) {
+		if (simulator.waitAny() == &func_finish) {
 			finish_reached = true;
 			log << "experiment reached finish() before FI" << endl;
 
 			// wait for bp
-			sal::simulator.waitAny();
+			simulator.waitAny();
 		}
 	}
 
 	// --- fault injection ---
-	sal::MemoryManager& mm = sal::simulator.getMemoryManager();
-	sal::byte_t data = mm.getByte(mem_addr);
-	sal::byte_t newdata = data ^ (1 << bit_offset);
+	MemoryManager& mm = simulator.getMemoryManager();
+	byte_t data = mm.getByte(mem_addr);
+	byte_t newdata = data ^ (1 << bit_offset);
 	mm.setByte(mem_addr, newdata);
 	// note at what IP we did it
-	int32_t injection_ip = sal::simulator.getRegisterManager().getInstructionPointer();
+	int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
 	param.msg.set_injection_ip(injection_ip);
 	log << "fault injected @ ip " << injection_ip
-	    << " 0x" << std::hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
+	    << " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 	// sanity check
 	if (param.msg.has_instr_address() &&
 	    injection_ip != param.msg.instr_address()) {
-		std::stringstream ss;
+		stringstream ss;
 		ss << "SANITY CHECK FAILED: " << injection_ip
 		   << " != " << param.msg.instr_address();
 		log << ss.str() << endl;
@@ -192,7 +191,7 @@ bool ChecksumOOStuBSExperiment::run()
 		param.msg.set_latest_ip(injection_ip);
 		param.msg.set_details(ss.str());
 
-		sal::simulator.clearEvents();
+		simulator.clearEvents();
 		m_jc.sendResult(param);
 		continue;
 	}
@@ -209,27 +208,27 @@ bool ChecksumOOStuBSExperiment::run()
 	//   * a correct result[0-2]
 
 	// catch traps as "extraordinary" ending
-	fi::TrapEvent ev_trap(fi::ANY_TRAP);
-	sal::simulator.addEvent(&ev_trap);
+	TrapEvent ev_trap(ANY_TRAP);
+	simulator.addEvent(&ev_trap);
 	// OOStuBS' way to terminally halt (CLI+HLT)
-	fi::BPSingleEvent ev_halt(OOSTUBS_FUNC_CPU_HALT);
-	sal::simulator.addEvent(&ev_halt);
+	BPSingleEvent ev_halt(OOSTUBS_FUNC_CPU_HALT);
+	simulator.addEvent(&ev_halt);
 	// remaining instructions until "normal" ending
-	fi::BPSingleEvent ev_done(fi::ANY_ADDR);
+	BPSingleEvent ev_done(ANY_ADDR);
 	ev_done.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
-	sal::simulator.addEvent(&ev_done);
+	simulator.addEvent(&ev_done);
 
 /*
 	// XXX debug
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
 	tp.setLogIPOnly(true);
-	tp.setOstream(&std::cout);
+	tp.setOstream(&cout);
 	// this must be done *after* configuring the plugin:
-	sal::simulator.addFlow(&tp);
+	simulator.addFlow(&tp);
 */
 
-	fi::BaseEvent* ev = sal::simulator.waitAny();
+	BaseEvent* ev = simulator.waitAny();
 
 	// Do we reach finish() while waiting for ev_trap/ev_done?
 	if (ev == &func_finish) {
@@ -237,40 +236,40 @@ bool ChecksumOOStuBSExperiment::run()
 		log << "experiment reached finish()" << endl;
 
 		// wait for ev_trap/ev_done
-		ev = sal::simulator.waitAny();
+		ev = simulator.waitAny();
 	}
 
 	// record resultdata, finish_reached and error_corrected regardless of result
 	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
-	sal::simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
+	simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
 	for (unsigned i = 0; i < sizeof(results) / sizeof(*results); ++i) {
-		log << "results[" << i << "]: " << std::dec << results[i] << endl;
+		log << "results[" << i << "]: " << dec << results[i] << endl;
 		param.msg.add_resultdata(results[i]);
 	}
 	param.msg.set_finish_reached(finish_reached);
-	int32_t error_corrected = sal::simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED);
+	int32_t error_corrected = simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED);
 	param.msg.set_error_corrected(error_corrected);
-	param.msg.set_latest_ip(sal::simulator.getRegisterManager().getInstructionPointer());
+	param.msg.set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
 
 	if (ev == &ev_done) {
-		log << std::dec << "Result FINISHED" << endl;
+		log << dec << "Result FINISHED" << endl;
 		param.msg.set_resulttype(param.msg.FINISHED);
 	} else if (ev == &ev_halt) {
-		log << std::dec << "Result HALT" << endl;
+		log << dec << "Result HALT" << endl;
 		param.msg.set_resulttype(param.msg.HALT);
 	} else if (ev == &ev_trap) {
-		log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
+		log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 		param.msg.set_resulttype(param.msg.TRAP);
 
-		std::stringstream ss;
+		stringstream ss;
 		ss << ev_trap.getTriggerNumber();
 		param.msg.set_details(ss.str());
 	} else {
-		log << std::dec << "Result WTF?" << endl;
+		log << dec << "Result WTF?" << endl;
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 
-		std::stringstream ss;
-		ss << "eventid " << ev->getId() << " EIP " << sal::simulator.getRegisterManager().getInstructionPointer();
+		stringstream ss;
+		ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_details(ss.str());
 	}
 	m_jc.sendResult(param);
@@ -278,5 +277,5 @@ bool ChecksumOOStuBSExperiment::run()
 	}
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
-	sal::simulator.terminate();
+	simulator.terminate();
 }

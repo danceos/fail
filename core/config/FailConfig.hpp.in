@@ -35,4 +35,4 @@
 // Fault injection
 #cmakedefine CONFIG_FI_MEM_ACCESS_BITFLIP
 
-#endif /* __FAIL_CONFIG_HPP__ */
+#endif // __FAIL_CONFIG_HPP__

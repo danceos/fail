@@ -9,10 +9,11 @@
 #include <cstdlib>
 #include <string>
 #include <ctime>
+
 #include "../../../bochs/bochs.h"
 #include "../SALInst.hpp"
 
-using namespace std;
+// FIXME: This seems (partial) deprecated as well...
 
 aspect Jump
 {
@@ -59,7 +60,7 @@ aspect Jump
 	advice execution (defJumpInstructions()) : around()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		sal::simulator.onJumpEvent(true, pInstr->getIaOpcode());
+		fail::simulator.onJumpEvent(true, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 		if(pThis == NULL)
@@ -108,7 +109,7 @@ aspect Jump
 	advice execution (regJumpInstructions()) : around ()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		sal::simulator.onJumpEvent(false, pInstr->getIaOpcode());
+		fail::simulator.onJumpEvent(false, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 
@@ -135,5 +136,5 @@ aspect Jump
 
 #endif // CONFIG_EVENT_JUMP
 
-#endif /* __JUMP_AH__ */
+#endif // __JUMP_AH__
 

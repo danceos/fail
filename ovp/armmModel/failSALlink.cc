@@ -5,8 +5,8 @@ using namespace std;
 
 
 void hello(unsigned int p){
-	cout << "&sal::simulator: " << hex << p << endl;
-//	sal::SimulatorController * salp = reinterpret_cast<sal::SimulatorController * >(p);
+	cout << "&fail::simulator: " << hex << p << endl;
+//	fail::SimulatorController * salp = reinterpret_cast<fail::SimulatorController * >(p);
 	
 }
 

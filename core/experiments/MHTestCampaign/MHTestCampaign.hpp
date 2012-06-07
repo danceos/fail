@@ -1,27 +1,23 @@
-#ifndef __TESTCAMPAIGN_HPP__
-#define __TESTCAMPAIGN_HPP__
-  
- 
+#ifndef __MH_TEST_CAMPAIGN_HPP__
+  #define __MH_TEST_CAMPAIGN_HPP__
+
 #include <controller/Campaign.hpp>
 #include "controller/ExperimentData.hpp"
 #include <experiments/MHTestCampaign/MHTest.pb.h>
 
-using namespace fi;
-
-class MHExperimentData : public ExperimentData {
-  public:
-    MHTestData msg;
-  public:
-    MHExperimentData() : ExperimentData(&msg){  };
+class MHExperimentData : public fail::ExperimentData {
+public:
+	MHTestData msg;
+	MHExperimentData() : fail::ExperimentData(&msg) { }
 };
 
 
-class MHTestCampaign : public Campaign {
-    int m_parameter_count; 
-  public:
-    MHTestCampaign(int parametercount) : m_parameter_count(parametercount){};
-    virtual bool run();
+class MHTestCampaign : public fail::Campaign {
+private:
+	int m_parameter_count; 
+public:
+	MHTestCampaign(int parametercount) : m_parameter_count(parametercount) { }
+	bool run();
 };
 
-  
-#endif 
+#endif // __MH_TEST_CAMPAIGN_HPP__

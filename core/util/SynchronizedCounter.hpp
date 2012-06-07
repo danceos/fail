@@ -1,12 +1,14 @@
 // Thread safe counter
 
 #ifndef __SYNCHRONIZED_COUNTER_HPP__
-#define __SYNCHRONIZED_COUNTER_HPP__
+  #define __SYNCHRONIZED_COUNTER_HPP__
 
 #ifndef __puma
 #include <boost/thread.hpp>
 #include <sys/types.h>
 #endif
+
+namespace fail {
 
 class SynchronizedCounter
 {
@@ -23,4 +25,6 @@ private:
 		int getValue();
 };
 
-#endif
+} // end-of-namespace: fail
+
+#endif // __SYNCHRONIZED_COUNTER_HPP__

@@ -2,6 +2,7 @@
   #define __TRACING_PLUGIN_HPP__
 
 #include <ostream>
+
 #include "controller/ExperimentFlow.hpp"
 #include "util/MemoryMap.hpp"
 #include "util/ProtoStream.hpp"
@@ -34,17 +35,17 @@
  *        made for huge messages)
  * FIXME: destructor -> removeFlow?
  */
-class TracingPlugin : public fi::ExperimentFlow
+class TracingPlugin : public fail::ExperimentFlow
 {
 private:
-	MemoryMap *m_memMap; //!< address restriction for memory accesses
-	MemoryMap *m_ipMap; //!< instruction address restriction
+	fail::MemoryMap *m_memMap; //!< address restriction for memory accesses
+	fail::MemoryMap *m_ipMap; //!< instruction address restriction
 	bool m_memonly; //!< log instructions only if they are memory accesses
 	bool m_iponly; //!< log instruction addresses only
 
 	std::ostream *m_protoStreamFile;
 	std::ostream *m_os; //!< ostream to write human-readable trace into
-	ProtoOStream *ps;
+	fail::ProtoOStream *ps;
 
 public:
 	TracingPlugin()
@@ -56,14 +57,14 @@ public:
 	 * access wider than 8 bit *is* logged if *one* of the bytes it
 	 * reads/writes is listed.
 	 */
-	void restrictMemoryAddresses(MemoryMap *mm) { m_memMap = mm; }
+	void restrictMemoryAddresses(fail::MemoryMap *mm) { m_memMap = mm; }
 	/**
 	 * Restricts tracing to instruction addresses listed in this MemoryMap.
 	 * This restriction currently silently assumes instructions are only
 	 * one byte wide; make sure your memory map covers this first byte of
 	 * the instructions you want to trace.
 	 */
-	void restrictInstructionAddresses(MemoryMap *mm) { m_ipMap = mm; }
+	void restrictInstructionAddresses(fail::MemoryMap *mm) { m_ipMap = mm; }
 	/**
 	 * If invoked with memonly=true, instructions are only logged if they
 	 * conducted a memory access.  Defaults to false: All instructions are
@@ -84,4 +85,4 @@ public:
 	void setTraceFile(std::ostream *os) { m_protoStreamFile = os; }
 };
 
-#endif /* __TRACING_PLUGIN_HPP__ */
+#endif // __TRACING_PLUGIN_HPP__

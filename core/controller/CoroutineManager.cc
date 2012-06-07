@@ -1,29 +1,26 @@
-
-// Author: Adrian Böckenkamp
-// Date:   05.10.2011
-
 #include <iostream>
+#include <cassert>
+
 #include "CoroutineManager.hpp"
 #include "../controller/ExperimentFlow.hpp"
 
-namespace fi
-{
+namespace fail {
 
 void CoroutineManager::m_invoke(void* pData)
 {
 	//std::cerr << "CORO m_invoke " << co_current() << std::endl;
+	// TODO: Log-Level?
 	reinterpret_cast<ExperimentFlow*>(pData)->coroutine_entry();
-	//m_togglerstack.pop(); // FIXME need to pop our caller
+	//m_togglerstack.pop();
+	// FIXME: need to pop our caller
 	co_exit(); // deletes the associated coroutine memory as well
 
-	// we really shouldn't get here
-	std::cerr << "CoroutineManager::m_invoke() shitstorm unloading" << std::endl;
-	while (1) ;
+	// We really shouldn't get here:
+	assert(false && "FATAL ERROR: CoroutineManager::m_invoke() -- shitstorm unloading!");
+	while (1); // freeze.
 }
 
-CoroutineManager::~CoroutineManager()
-{
-}
+CoroutineManager::~CoroutineManager() { }
 
 void CoroutineManager::toggle(ExperimentFlow* flow)
 {
@@ -94,4 +91,4 @@ ExperimentFlow* CoroutineManager::getCurrent()
 
 const ExperimentFlow* CoroutineManager::SIM_FLOW = NULL;
 
-}
+} // end-of-namespace: fail

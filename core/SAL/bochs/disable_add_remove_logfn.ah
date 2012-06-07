@@ -16,4 +16,4 @@ aspect DisableLogfn {
 	advice execution (add_remove_logfn()) : around () {}
 };
 
-#endif /* __DISABLE_ADD_REMOVE_LOGFN_AH__ */
+#endif // __DISABLE_ADD_REMOVE_LOGFN_AH__

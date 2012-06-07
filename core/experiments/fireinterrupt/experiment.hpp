@@ -3,11 +3,10 @@
 
 #include "controller/ExperimentFlow.hpp"
 
-class fireinterruptExperiment : public fi::ExperimentFlow
+class fireinterruptExperiment : public fail::ExperimentFlow
 {
 	public:
 		fireinterruptExperiment() { }
-	
 		bool run();
 };
 

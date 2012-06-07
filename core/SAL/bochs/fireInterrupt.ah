@@ -16,11 +16,11 @@ aspect fireInterrupt
 
 	advice execution (cpuLoop()) : before ()
 	{
-		if (!sal::interrupt_injection_request) {
+		if (!fail::interrupt_injection_request) {
 			return;
 		}else{
-			BX_SET_INTR(sal::interrupt_to_fire);
-			DEV_pic_raise_irq(sal::interrupt_to_fire);
+			BX_SET_INTR(fail::interrupt_to_fire);
+			DEV_pic_raise_irq(fail::interrupt_to_fire);
 		}
 	}
 };
@@ -32,12 +32,12 @@ aspect InterruptDone
 
 	advice execution (interrupt_method()) : before ()
 	{
-		if (!sal::interrupt_injection_request) {
+		if (!fail::interrupt_injection_request) {
 			return;
 		}else{
-			if(*(tjp->arg<0>()) == 32 + sal::interrupt_to_fire){
-				DEV_pic_lower_irq(sal::interrupt_to_fire);
-				sal::simulator.fireInterruptDone();
+			if(*(tjp->arg<0>()) == 32 + fail::interrupt_to_fire){
+				DEV_pic_lower_irq(fail::interrupt_to_fire);
+				fail::simulator.fireInterruptDone();
 			}
 		}
 	}
@@ -45,4 +45,4 @@ aspect InterruptDone
 
 #endif // CONFIG_FIRE_INTERRUPTS
 
-#endif /* __FIREINTERRUPT_AH__ */
+#endif // __FIREINTERRUPT_AH__

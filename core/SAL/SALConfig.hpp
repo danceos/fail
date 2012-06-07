@@ -13,8 +13,7 @@
   #error SAL Config Target not defined
 #endif
 
-namespace sal
-{
+namespace fail {
 
 typedef guest_address_t  address_t;   //!< common address type to be used in experiment flows
 typedef uint8_t          byte_t;      //!< 8 bit type for memory access (read or write)
@@ -24,6 +23,6 @@ typedef timer_t          timer_id_t;  //!< type of timer IDs
 
 extern const address_t ADDR_INV; //!< invalid address flag (defined in Memory.cc)
 
-}
+} // end-of-namespace: fail
 
 #endif // __SAL_CONFIG_HPP__

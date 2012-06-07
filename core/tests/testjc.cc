@@ -5,7 +5,7 @@
 
 
 using namespace std;
-using namespace fi;
+using namespace fail;
 int main(int argc, char** argv){
     
 	int portno;

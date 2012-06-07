@@ -8,10 +8,12 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include "bochs.h"
 
+#include "bochs.h"
 #include "../../controller/EventList.hpp"
 #include "../../controller/Event.hpp"
+
+// FIXME: This is deprecated stuff. Delete this file.
 
 using namespace std;
 

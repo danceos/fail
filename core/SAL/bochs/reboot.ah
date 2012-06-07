@@ -12,13 +12,14 @@ aspect reboot {
 	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
 
 	advice execution (cpuLoop()) : after () {
-		if (!sal::reboot_bochs_request) {
+		if (!fail::reboot_bochs_request) {
 			return;
 		}
 		
 		bx_gui_c::reset_handler();
 		std::cout << "[FAIL] Reboot finished" << std::endl;
-		sal::simulator.rebootDone();
+		// TODO: Log-level?
+		fail::simulator.rebootDone();
 	}
 };
 

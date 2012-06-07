@@ -1,5 +1,7 @@
 #include "SynchronizedExperimentDataQueue.hpp"
 
+// FIXME: This file is not used. Delete it either.
+
 namespace fi {
 
 void SynchronizedExperimentDataQueue::addData(ExperimentData* exp){

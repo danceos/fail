@@ -1,17 +1,13 @@
 #ifndef __MEMORY_HPP__
   #define __MEMORY_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   07.09.2011
-
 #include <vector>
 #include <stdint.h>
 #include <cstring> // Added for size_t support
 
 #include "SALConfig.hpp"
 
-namespace sal
-{
+namespace fail {
 
 /**
  * \class MemoryManager
@@ -73,6 +69,6 @@ class MemoryManager
 		virtual host_address_t guestToHost(guest_address_t addr) = 0;
 };
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail
 
-#endif /* __MEMORY_HPP__ */
+#endif // __MEMORY_HPP__

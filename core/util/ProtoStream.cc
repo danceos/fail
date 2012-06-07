@@ -1,6 +1,6 @@
 #include "ProtoStream.hpp"
 
-using namespace std;
+namespace fail {
 
 ProtoOStream::ProtoOStream(std::ostream *outfile) : m_outfile(outfile)
 {
@@ -14,7 +14,7 @@ bool ProtoOStream::writeMessage(google::protobuf::Message* m)
 	m_outfile->write(reinterpret_cast<char*>(&m_size), sizeof(m_size));
 	
 	if (m_outfile->bad()) {
-		m_log << "Could not write to file!" << endl;
+		m_log << "Could not write to file!" << std::endl;
 		return false;
 	}
 	
@@ -22,9 +22,6 @@ bool ProtoOStream::writeMessage(google::protobuf::Message* m)
 	
     return true;
 }
-
-
-//PROTOISTREAM
 
 ProtoIStream::ProtoIStream(std::istream *infile) : m_infile(infile)
 {
@@ -35,7 +32,7 @@ ProtoIStream::ProtoIStream(std::istream *infile) : m_infile(infile)
 void ProtoIStream::reset()
 {
 	m_infile->clear();
-	m_infile->seekg(0,ios::beg);
+	m_infile->seekg(0, std::ios::beg);
 }
 
 bool ProtoIStream::getNext(google::protobuf::Message* m)
@@ -55,6 +52,8 @@ bool ProtoIStream::getNext(google::protobuf::Message* m)
 	std::string st(buf, m_size);
 	m->ParseFromString(st);
 	
-	delete[] buf;
+	delete [] buf;
 	return true;
 }
+
+} // end-of-namespace: fail

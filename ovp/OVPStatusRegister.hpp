@@ -1,5 +1,5 @@
-#ifndef __OVPSTATUSREGISTER_HPP__
-#define __OVPSTATUSREGISTER_HPP__
+#ifndef __OVP_STATUS_REGISTER_HPP__
+  #define __OVP_STATUS_REGISTER_HPP__
 
 #include "SAL/ovp/OVPRegister.hpp"
 
@@ -7,13 +7,13 @@
  * \class OVPStatusRegister
  * Abstract class for status register implementation
  */
-class OVPStatusRegister : public sal::OVPRegister {
+class OVPStatusRegister : public fail::OVPRegister {
 
 	protected:
 	
 	public:
 		OVPStatusRegister(uint32_t width, void *link) 
-			: sal::OVPRegister(width, 32, link, sal::RT_ST) { }
+			: fail::OVPRegister(width, 32, link, fail::RT_ST) { }
 		~OVPStatusRegister() {}
 
 		virtual bool getSignFlag() const = 0;
@@ -49,4 +49,4 @@ class OVPStatusRegister : public sal::OVPRegister {
 		}*/
 };
 
-#endif
+#endif // __OVP_STATUS_REGISTER_HPP__

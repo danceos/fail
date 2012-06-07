@@ -1,17 +1,17 @@
 /**
  * \brief The representation of a minion.
- * 
- * \author Richard Hellwig
  *
  */
 
 #ifndef __MINION_HPP__
   #define __MINION_HPP__
 
+#include <string>
+
 #include "controller/ExperimentData.hpp"
 
-namespace fi
-{
+namespace fail {
+
 /**
  * \class Minion
  * 
@@ -20,26 +20,32 @@ namespace fi
 class Minion
 {
 	private:
-		string hostname;
+		std::string hostname;
 		bool isWorking;
 		ExperimentData* currentExperimentData;	
 		int sockfd;
 	public:
 		Minion() : isWorking(false), currentExperimentData(0), sockfd(-1) { }
-		  
+		/**
+		 * Sets the socket descriptor.
+		 * @param sock the new socket descriptor (used internal)
+		 */
 		void setSocketDescriptor(int sock) { sockfd = sock; }
+		/**
+		 * Retrives the socket descriptor.
+		 * @return the socket descriptor
+		 */
 		int getSocketDescriptor() const { return (sockfd); }
-		  
 		/**
 		 * Returns the hostname of the minion.
 		 * @return the hostname
 		 */
-		string getHostname() { return (hostname); }
+		const std::string& getHostname() { return (hostname); }
 		/**
 		 * Sets the hostname of the minion.
 		 * @param host the hostname
 		 */
-		void setHostname(string host) { hostname = host; }
+		void setHostname(const std::string& host) { hostname = host; }
 		/**
 		 * Returns the current ExperimentData which the minion is working with.
 		 * @return a pointer of the current ExperimentData
@@ -62,6 +68,6 @@ class Minion
 		void setBusy(bool state) { isWorking = state; }
 };
 
-};
+} // end-of-namespace: fail
 
-#endif /* __MINION_HPP__ */
+#endif // __MINION_HPP__

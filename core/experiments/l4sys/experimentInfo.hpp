@@ -1,5 +1,5 @@
 #ifndef __EXPERIMENT_INFO_HPP__
-#define __EXPERIMENT_INFO_HPP__
+  #define __EXPERIMENT_INFO_HPP__
 
 // FIXME autogenerate this
 
@@ -9,4 +9,4 @@
 //#define HEADLESS_EXPERIMENT
 #define PREPARE_EXPERIMENT
 
-#endif
+#endif // __EXPERIMENT_INFO_HPP__

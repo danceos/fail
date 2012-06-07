@@ -3,8 +3,7 @@
 
 #include "../Memory.hpp"
 
-namespace sal
-{
+namespace fail {
 
 /**
  * \class OVPMemoryManager
@@ -90,4 +89,4 @@ class OVPMemoryManager : public MemoryManager
 
 }
 
-#endif
+#endif // __OVP_MEMORY_HPP__

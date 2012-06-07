@@ -11,8 +11,8 @@
 
 aspect @EXPERIMENT_TYPE@ExperimentHook {
 	@EXPERIMENT_TYPE@ experiment;
-	advice execution ("void sal::SimulatorController::initExperiments()") : after () {
-		sal::simulator.addFlow(&experiment);
+	advice execution ("void fail::SimulatorController::initExperiments()") : after () {
+		fail::simulator.addFlow(&experiment);
 	}
 };
 

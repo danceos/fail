@@ -1,11 +1,10 @@
 #include <sstream>
 #include <fstream>
-#include <cassert>
 #include <time.h>
 
 #include "Logger.hpp"
 
-using std::endl;
+namespace fail {
 
 void Logger::timestamp()
 {
@@ -23,3 +22,5 @@ void Logger::timestamp()
 	}
 	(*m_pDest) << "] ";
 }
+
+} // end-of-namespace: fail

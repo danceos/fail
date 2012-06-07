@@ -9,8 +9,7 @@
 #include "Event.hpp"
 #include "BufferCache.hpp"
 
-namespace fi
-{
+namespace fail {
 
 class ExperimentFlow;
 
@@ -49,10 +48,10 @@ typedef std::vector<BaseEvent*>  deletelist_t;
 class EventList
 {
 	private:
+		// TODO: List separation of "critical types"? Hashing/sorted lists? (-> performance!)
 		bufferlist_t m_BufferList; //!< the storage for events added by exp.
 		firelist_t m_FireList; //!< the active events (used temporarily)
 		deletelist_t m_DeleteList; //!< the deleted events (used temporarily)
-		// TODO: Hashing?
 		BaseEvent* m_pFired; //!< the recently fired Event-object
 		BufferCache<BPEvent*> m_Bp_cache;
 	public:
@@ -189,6 +188,6 @@ class EventList
 		inline BufferCache<BPEvent*> *getBPBuffer() { return &m_Bp_cache; }
 };
 
-}; // end-of-namespace: fi
+} // end-of-namespace: fail
 
-#endif /* __EVENT_LIST_HPP__ */
+#endif // __EVENT_LIST_HPP__

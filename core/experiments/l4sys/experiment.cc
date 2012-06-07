@@ -20,7 +20,8 @@
 
 #include "l4sys.pb.h"
 
-using std::endl;
+using namespace std;
+using namespace fail;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
@@ -31,17 +32,18 @@ using std::endl;
   save, and restore. Enable these in the configuration.
 #endif
 
-char const * const state_folder = "l4sys.state";
+char const * const state_folder  = "l4sys.state";
 char const * const instr_list_fn = "ip.list";
 char const * const golden_run_fn = "golden.out";
-sal::address_t const aspace = 0x01e00000;
-std::string output;
-std::vector<sal::address_t> instr_list;
-std::string golden_run;
+address_t const aspace = 0x01e00000;
+string output;
+vector<address_t> instr_list;
+string golden_run;
 //the program needs to run 5 times without a fault
 const unsigned times_run = 5;
 
-std::string L4SysExperiment::sanitised(std::string in_str) {
+string L4SysExperiment::sanitised(string in_str)
+{
 	string result;
 	result.reserve(in_str.size());
 	for (string::iterator it = in_str.begin(); it != in_str.end(); it++) {
@@ -57,15 +59,16 @@ std::string L4SysExperiment::sanitised(std::string in_str) {
 	return result;
 }
 
-fi::BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output) {
-	fi::IOPortEvent ev_ioport(0x3F8, true);
-	fi::BaseEvent* ev = NULL;
+BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output)
+{
+	IOPortEvent ev_ioport(0x3F8, true);
+	BaseEvent* ev = NULL;
 	if (clear_output)
 		output.clear();
 	while (true) {
-		sal::simulator.addEvent(&ev_ioport);
-		ev = sal::simulator.waitAny();
-		sal::simulator.removeEvent(&ev_ioport);
+		simulator.addEvent(&ev_ioport);
+		ev = simulator.waitAny();
+		simulator.removeEvent(&ev_ioport);
 		if (ev == &ev_ioport) {
 			output += ev_ioport.getData();
 		} else {
@@ -75,9 +78,10 @@ fi::BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output) {
 	return ev;
 }
 
-bool L4SysExperiment::run() {
+bool L4SysExperiment::run()
+{
 	Logger log("L4Sys", false);
-	fi::BPSingleEvent bp(0, aspace);
+	BPSingleEvent bp(0, aspace);
 
 	log << "startup" << endl;
 
@@ -87,46 +91,46 @@ bool L4SysExperiment::run() {
 	// STEP 1: run until interesting function starts, and save state
 	if (stat(state_folder, &teststruct) == -1) {
 		bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
-		sal::simulator.addEventAndWait(&bp);
+		simulator.addEventAndWait(&bp);
 
 		log << "test function entry reached, saving state" << endl;
-		log << "EIP = " << std::hex << bp.getTriggerInstructionPointer()
+		log << "EIP = " << hex << bp.getTriggerInstructionPointer()
 				<< " or "
-				<< sal::simulator.getRegisterManager().getInstructionPointer()
+				<< simulator.getRegisterManager().getInstructionPointer()
 				<< endl;
-		sal::simulator.save(state_folder);
+		simulator.save(state_folder);
 	}
 
 	// STEP 2: determine instructions executed
 	if (stat(instr_list_fn, &teststruct) == -1) {
 		log << "restoring state" << endl;
-		sal::simulator.restore(state_folder);
-		log << "EIP = " << std::hex
-				<< sal::simulator.getRegisterManager().getInstructionPointer()
+		simulator.restore(state_folder);
+		log << "EIP = " << hex
+				<< simulator.getRegisterManager().getInstructionPointer()
 				<< endl;
 
 		// make sure the timer interrupt doesn't disturb us
-		sal::simulator.addSuppressedInterrupt(32);
+		simulator.addSuppressedInterrupt(32);
 
-		std::ofstream instr_list_file(instr_list_fn);
-		instr_list_file << std::hex;
-		bp.setWatchInstructionPointer(fi::ANY_ADDR);
+		ofstream instr_list_file(instr_list_fn);
+		instr_list_file << hex;
+		bp.setWatchInstructionPointer(ANY_ADDR);
 		while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
-			sal::simulator.addEventAndWait(&bp);
+			simulator.addEventAndWait(&bp);
 			//short sanity check
-			sal::address_t curr_instr = bp.getTriggerInstructionPointer();
+			address_t curr_instr = bp.getTriggerInstructionPointer();
 			assert(
-					curr_instr == sal::simulator.getRegisterManager().getInstructionPointer());
+					curr_instr == simulator.getRegisterManager().getInstructionPointer());
 			instr_list.push_back(curr_instr);
 			instr_list_file << curr_instr << endl;
 		}
 		log << "saving instructions triggered during normal execution" << endl;
 		instr_list_file.close();
 	} else {
-		std::ifstream instr_list_file(instr_list_fn);
-		instr_list_file >> std::hex;
+		ifstream instr_list_file(instr_list_fn);
+		instr_list_file >> hex;
 		while (!instr_list_file.eof()) {
-			sal::address_t curr_instr;
+			address_t curr_instr;
 			instr_list_file >> curr_instr;
 			instr_list.push_back(curr_instr);
 		}
@@ -136,19 +140,19 @@ bool L4SysExperiment::run() {
 	// STEP 3: determine the output of a "golden run"
 	if (stat(golden_run_fn, &teststruct) == -1) {
 		log << "restoring state" << endl;
-		sal::simulator.restore(state_folder);
-		log << "EIP = " << std::hex
-				<< sal::simulator.getRegisterManager().getInstructionPointer()
+		simulator.restore(state_folder);
+		log << "EIP = " << hex
+				<< simulator.getRegisterManager().getInstructionPointer()
 				<< endl;
 
 		// make sure the timer interrupt doesn't disturb us
-		sal::simulator.addSuppressedInterrupt(32);
+		simulator.addSuppressedInterrupt(32);
 
-		std::ofstream golden_run_file(golden_run_fn);
+		ofstream golden_run_file(golden_run_fn);
 		bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
 		bp.setCounter(times_run);
-		sal::simulator.addEvent(&bp);
-		fi::BaseEvent* ev = waitIOOrOther(true);
+		simulator.addEvent(&bp);
+		BaseEvent* ev = waitIOOrOther(true);
 		if (ev == &bp) {
 			golden_run.assign(output.c_str());
 			golden_run_file << output.c_str();
@@ -158,23 +162,23 @@ bool L4SysExperiment::run() {
 					<< "Obviously, there is some trouble with the events registered - aborting simulation!"
 					<< endl;
 			golden_run_file.close();
-			sal::simulator.terminate(10);
+			simulator.terminate(10);
 		}
-		sal::simulator.clearEvents();
+		simulator.clearEvents();
 		bp.setCounter(1);
 		log << "saving output generated during normal execution" << endl;
 		golden_run_file.close();
 	} else {
-		std::ifstream golden_run_file(golden_run_fn);
+		ifstream golden_run_file(golden_run_fn);
 
 		//shamelessly copied from http://stackoverflow.com/questions/2602013/:
-		golden_run_file.seekg(0, std::ios::end);
+		golden_run_file.seekg(0, ios::end);
 		size_t flen = golden_run_file.tellg();
 		golden_run.reserve(flen);
-		golden_run_file.seekg(0, std::ios::beg);
+		golden_run_file.seekg(0, ios::beg);
 
-		golden_run.assign((std::istreambuf_iterator<char>(golden_run_file)),
-				std::istreambuf_iterator<char>());
+		golden_run.assign((istreambuf_iterator<char>(golden_run_file)),
+				istreambuf_iterator<char>());
 
 		golden_run_file.close();
 
@@ -187,14 +191,14 @@ bool L4SysExperiment::run() {
 	// STEP 4: The actual experiment.
 	for (int i = 0; i < 1/*L4SYS_NUMINSTR*/; i++) {
 		log << "restoring state" << endl;
-		sal::simulator.restore(state_folder);
+		simulator.restore(state_folder);
 
 		log << "asking job server for experiment parameters" << endl;
 		L4SysExperimentData param;
 		if (!m_jc.getParam(param)) {
 			log << "Dying." << endl;
 			// communicate that we were told to die
-			sal::simulator.terminate(1);
+			simulator.terminate(1);
 		}
 		int id = param.getWorkloadID();
 		int instr_offset = param.msg.instr_offset();
@@ -203,28 +207,28 @@ bool L4SysExperiment::run() {
 				<< bit_offset << endl;
 
 		bp.setWatchInstructionPointer(instr_list[instr_offset]);
-		sal::simulator.addEvent(&bp);
+		simulator.addEvent(&bp);
 		//and log the output
 		waitIOOrOther(true);
 
 		// inject
-		sal::RegisterManager& rm = sal::simulator.getRegisterManager();
-		sal::Register *ebx = rm.getRegister(sal::RID_EBX);
-		sal::regdata_t data = ebx->getData();
-		sal::regdata_t newdata = data ^ (1 << bit_offset);
+		RegisterManager& rm = simulator.getRegisterManager();
+		Register *ebx = rm.getRegister(RID_EBX);
+		regdata_t data = ebx->getData();
+		regdata_t newdata = data ^ (1 << bit_offset);
 		ebx->setData(newdata);
 		// note at what IP we did it
-		sal::address_t injection_ip =
-				sal::simulator.getRegisterManager().getInstructionPointer();
+		address_t injection_ip =
+				simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
-		log << "inject @ ip " << injection_ip << " (offset " << std::dec
+		log << "inject @ ip " << injection_ip << " (offset " << dec
 				<< instr_offset << ")" << " bit " << bit_offset << ": 0x"
-				<< std::hex << ((int) data) << " -> 0x" << ((int) newdata)
+				<< hex << ((int) data) << " -> 0x" << ((int) newdata)
 				<< endl;
 
 		// sanity check (only works if we're working with an instruction trace)
 		if (injection_ip != instr_list[instr_offset]) {
-			std::stringstream ss;
+			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip << " != "
 					<< instr_list[instr_offset] << endl;
 			log << ss.str();
@@ -232,28 +236,28 @@ bool L4SysExperiment::run() {
 			param.msg.set_resultdata(injection_ip);
 			param.msg.set_details(ss.str());
 
-			sal::simulator.clearEvents();
+			simulator.clearEvents();
 			m_jc.sendResult(param);
 			continue;
 		}
 
 		// aftermath
-		fi::BPSingleEvent ev_done(L4SYS_FUNC_EXIT, aspace);
+		BPSingleEvent ev_done(L4SYS_FUNC_EXIT, aspace);
 		ev_done.setCounter(times_run);
-		sal::simulator.addEvent(&ev_done);
+		simulator.addEvent(&ev_done);
 		const unsigned instr_run = times_run * L4SYS_NUMINSTR;
-		fi::BPSingleEvent ev_timeout(fi::ANY_ADDR, aspace);
+		BPSingleEvent ev_timeout(ANY_ADDR, aspace);
 		ev_timeout.setCounter(instr_run + 3000);
-		sal::simulator.addEvent(&ev_timeout);
-		fi::TrapEvent ev_trap(fi::ANY_TRAP);
-		sal::simulator.addEvent(&ev_trap);
-		fi::InterruptEvent ev_intr(fi::ANY_INTERRUPT);
+		simulator.addEvent(&ev_timeout);
+		TrapEvent ev_trap(ANY_TRAP);
+		simulator.addEvent(&ev_trap);
+		InterruptEvent ev_intr(ANY_INTERRUPT);
 		//ten times as many interrupts as instructions justify an exception
 		ev_intr.setCounter(instr_run * 10);
-		sal::simulator.addEvent(&ev_intr);
+		simulator.addEvent(&ev_intr);
 
 		//do not discard output recorded so far
-		fi::BaseEvent *ev = waitIOOrOther(false);
+		BaseEvent *ev = waitIOOrOther(false);
 
 		/* copying a string object that contains control sequences
 		 * unfortunately does not work with the library I am using,
@@ -262,53 +266,53 @@ bool L4SysExperiment::run() {
 		 */
 		if (ev == &ev_done) {
 			if (strcmp(output.c_str(), golden_run.c_str()) == 0) {
-				log << std::dec << "Result DONE" << endl;
+				log << dec << "Result DONE" << endl;
 				param.msg.set_resulttype(param.msg.DONE);
 			} else {
-				log << std::dec << "Result WRONG" << endl;
+				log << dec << "Result WRONG" << endl;
 				param.msg.set_resulttype(param.msg.WRONG);
 				param.msg.set_output(sanitised(output.c_str()));
 			}
 		} else if (ev == &ev_timeout) {
-			log << std::dec << "Result TIMEOUT" << endl;
+			log << dec << "Result TIMEOUT" << endl;
 			param.msg.set_resulttype(param.msg.TIMEOUT);
 			param.msg.set_resultdata(
-					sal::simulator.getRegisterManager().getInstructionPointer());
+					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 		} else if (ev == &ev_trap) {
-			log << std::dec << "Result TRAP #" << ev_trap.getTriggerNumber()
+			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber()
 					<< endl;
 			param.msg.set_resulttype(param.msg.TRAP);
 			param.msg.set_resultdata(
-					sal::simulator.getRegisterManager().getInstructionPointer());
+					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 		} else if (ev == &ev_intr) {
-			log << std::hex << "Result INT FLOOD; Last INT #:"
+			log << hex << "Result INT FLOOD; Last INT #:"
 					<< ev_intr.getTriggerNumber() << endl;
 			param.msg.set_resulttype(param.msg.INTR);
 			param.msg.set_resultdata(
-					sal::simulator.getRegisterManager().getInstructionPointer());
+					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 		} else {
-			log << std::dec << "Result WTF?" << endl;
+			log << dec << "Result WTF?" << endl;
 			param.msg.set_resulttype(param.msg.UNKNOWN);
 			param.msg.set_resultdata(
-					sal::simulator.getRegisterManager().getInstructionPointer());
+					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 
-			std::stringstream ss;
+			stringstream ss;
 			ss << "eventid " << ev << " EIP "
-					<< sal::simulator.getRegisterManager().getInstructionPointer()
+					<< simulator.getRegisterManager().getInstructionPointer()
 					<< endl;
 			param.msg.set_details(ss.str());
 		}
 
-		sal::simulator.clearEvents();
+		simulator.clearEvents();
 		m_jc.sendResult(param);
 	}
 
 #ifdef HEADLESS_EXPERIMENT
-	sal::simulator.terminate(0);
+	simulator.terminate(0);
 #endif
 // experiment successfully conducted
 	return true;

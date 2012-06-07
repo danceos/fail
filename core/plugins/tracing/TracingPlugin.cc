@@ -4,11 +4,8 @@
 #include "SAL/Register.hpp"
 #include "TracingPlugin.hpp"
 
-using std::cout;
-using std::endl;
-
-using namespace fi;
-using namespace sal;
+using namespace std;
+using namespace fail;
 
 bool TracingPlugin::run()
 {

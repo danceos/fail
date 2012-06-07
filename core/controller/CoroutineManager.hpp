@@ -1,17 +1,12 @@
 #ifndef __COROUTINE_MANAGER_HPP__
   #define __COROUTINE_MANAGER_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   05.10.2011
-
 #include <map>
 #include <stack>
 
 #include <pcl.h> // the underlying "portable coroutine library"
 
-
-namespace fi
-{
+namespace fail {
 
 class ExperimentFlow;
 
@@ -73,6 +68,6 @@ class CoroutineManager
 		ExperimentFlow* getCurrent();
 };
 
-} // end-of-namespace: fi
+} // end-of-namespace: fail
 
-#endif /* __COROUTINE_MANAGER_HPP__ */
+#endif // __COROUTINE_MANAGER_HPP__

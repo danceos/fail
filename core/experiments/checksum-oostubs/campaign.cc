@@ -14,8 +14,8 @@
 #include "plugins/tracing/TracingPlugin.hpp"
 char const * const trace_filename = "trace.pb";
 
-using namespace fi;
-using std::endl;
+using namespace std;
+using namespace fail;
 
 char const * const results_csv = "chksumoostubs.csv";
 
@@ -24,9 +24,9 @@ char const * const results_csv = "chksumoostubs.csv";
 // [i1, i2]: interval of instruction numbers, counted from experiment
 //           begin
 struct equivalence_class {
-	sal::address_t data_address;
+	address_t data_address;
 	int instr1, instr2;
-	sal::address_t instr2_absolute; // FIXME we could record them all here
+	address_t instr2_absolute; // FIXME we could record them all here
 };
 
 bool ChecksumOOStuBSCampaign::run()
@@ -62,26 +62,26 @@ bool ChecksumOOStuBSCampaign::run()
 
 	// set of equivalence classes that need one (rather: eight, one for
 	// each bit in that byte) experiment to determine them all
-	std::vector<equivalence_class> ecs_need_experiment;
+	vector<equivalence_class> ecs_need_experiment;
 	// set of equivalence classes that need no experiment, because we know
 	// they'd be identical to the golden run
-	std::vector<equivalence_class> ecs_no_effect;
+	vector<equivalence_class> ecs_no_effect;
 
 	equivalence_class current_ec;
 
 	// map for efficient access when results come in
-	std::map<ChecksumOOStuBSExperimentData *, unsigned> experiment_ecs;
+	map<ChecksumOOStuBSExperimentData *, unsigned> experiment_ecs;
 	// experiment count
 	int count = 0;
 
 	// XXX do it the other way around: iterate over trace, search addresses
 	// for every injection address ...
 	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
-		std::cerr << ".";
-		sal::address_t data_address = *it;
+		cerr << ".";
+		address_t data_address = *it;
 		current_ec.instr1 = 0;
 		int instr = 0;
-		sal::address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
+		address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
 		Trace_Event ev;
 		ps.reset();
 
@@ -136,7 +136,7 @@ bool ChecksumOOStuBSCampaign::run()
 					// store index into ecs_need_experiment
 					experiment_ecs[d] = ecs_need_experiment.size() - 1;
 
-					fi::campaignmanager.addParam(d);
+					campaignmanager.addParam(d);
 					++count;
 				}
 			} else if (ev.accesstype() == ev.WRITE) {
@@ -173,7 +173,7 @@ bool ChecksumOOStuBSCampaign::run()
 		ecs_no_effect.push_back(current_ec);
 	}
 
-	fi::campaignmanager.noMoreParameters();
+	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
 	log << "equivalence classes generated:"
@@ -182,11 +182,11 @@ bool ChecksumOOStuBSCampaign::run()
 
 	// statistics
 	unsigned long num_dumb_experiments = 0;
-	for (std::vector<equivalence_class>::const_iterator it = ecs_need_experiment.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_need_experiment.begin();
 	     it != ecs_need_experiment.end(); ++it) {
 		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
 	}
-	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
 	     it != ecs_no_effect.end(); ++it) {
 		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
 	}
@@ -197,7 +197,7 @@ bool ChecksumOOStuBSCampaign::run()
 	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tresult0\tresult1\tresult2\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
 
 	// store no-effect "experiment" results
-	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
 	     it != ecs_no_effect.end(); ++it) {
 		results
 		 << (*it).instr1 << "\t"
@@ -215,10 +215,10 @@ bool ChecksumOOStuBSCampaign::run()
 	// collect results
 	ChecksumOOStuBSExperimentData *res;
 	int rescount = 0;
-	while ((res = static_cast<ChecksumOOStuBSExperimentData *>(fi::campaignmanager.getDone()))) {
+	while ((res = static_cast<ChecksumOOStuBSExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
-		std::map<ChecksumOOStuBSExperimentData *, unsigned>::iterator it =
+		map<ChecksumOOStuBSExperimentData *, unsigned>::iterator it =
 			experiment_ecs.find(res);
 		if (it == experiment_ecs.end()) {
 			results << "WTF, didn't find res!" << endl;

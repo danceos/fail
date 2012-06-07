@@ -6,19 +6,20 @@
 #include <cassert>
 #include <vector>
 #include <utility>
+#include <iostream>
 
 #include "../SAL/SALConfig.hpp"
-#include <iostream>
-namespace fi
-{
+
+namespace fail {
+
 class ExperimentFlow;
 
 typedef unsigned long EventId; //!< type of event ids
 
 //! invalid event id (used as a return indicator)
 const EventId    INVALID_EVENT = (EventId)-1;
-//! address wildcard (e.g. for BPEvent)
-const sal::address_t  ANY_ADDR = static_cast<sal::address_t>(-1);
+//! address wildcard (e.g. for BPEvent's)
+const address_t  ANY_ADDR      = static_cast<address_t>(-1);
 //! instruction wildcard
 const unsigned       ANY_INSTR = static_cast<unsigned>(-1);
 //! trap wildcard
@@ -93,9 +94,6 @@ class BaseEvent
 		 */
 		void setParent(ExperimentFlow* pFlow) { m_Parent = pFlow; }
 };
-// FIXME: Dynamische Casts zur Laufzeit evtl. zu uneffizient?
-//        (vgl. auf NULL evtl. akzeptabel?) Bessere Lösungen?
-
 // ----------------------------------------------------------------------------
 // Specialized events:
 //
@@ -107,8 +105,8 @@ class BaseEvent
 class BPEvent : virtual public BaseEvent
 {
 	private:
-		sal::address_t m_CR3;
-		sal::address_t m_TriggerInstrPtr;
+		address_t m_CR3;
+		address_t m_TriggerInstrPtr;
 	public:
 		/**
 		 * Creates a new breakpoint event. The range information is specific to
@@ -119,37 +117,37 @@ class BPEvent : virtual public BaseEvent
 		 *        ANY_ADDR can be used as a placeholder to allow debugging
 		 *        in a random address space.
 		 */
-		BPEvent(sal::address_t address_space = ANY_ADDR)
+		BPEvent(address_t address_space = ANY_ADDR)
 			: m_CR3(address_space), m_TriggerInstrPtr(ANY_ADDR)
 			  {}
 		/**
 		 * Returns the address space register of this event.
 		 */
-		sal::address_t getCR3() const
+		address_t getCR3() const
 		{ return m_CR3; }
 		/**
 		 * Sets the address space register for this event.
 		 */
-		void setCR3(sal::address_t iptr)
+		void setCR3(address_t iptr)
 		{ m_CR3 = iptr; }
 		/**
 		 * Checks whether a given address space is matching.
 		 */
-		bool aspaceIsMatching(sal::address_t address_space = ANY_ADDR) const;
+		bool aspaceIsMatching(address_t address_space = ANY_ADDR) const;
 		/**
 		 * Checks whether a given address is matching.
 		 */
-		virtual bool isMatching(sal::address_t addr = 0, sal::address_t address_space = ANY_ADDR) const = 0;
+		virtual bool isMatching(address_t addr = 0, address_t address_space = ANY_ADDR) const = 0;
 		/**
 		 * Returns the instruction pointer that triggered this event.
 		 */
-		sal::address_t getTriggerInstructionPointer() const
+		address_t getTriggerInstructionPointer() const
 		{ return m_TriggerInstrPtr; }
 		/**
 		 * Sets the instruction pointer that triggered this event.  Should not
 		 * be used by experiment code.
 		 */
-		void setTriggerInstructionPointer(sal::address_t iptr)
+		void setTriggerInstructionPointer(address_t iptr)
 		{ m_TriggerInstrPtr = iptr; }
 };
 
@@ -160,7 +158,7 @@ class BPEvent : virtual public BaseEvent
 class BPSingleEvent : virtual public BPEvent
 {
 	private:
-		sal::address_t m_WatchInstrPtr;
+		address_t m_WatchInstrPtr;
 	public:
 		/**
 		 * Creates a new breakpoint event.
@@ -174,22 +172,22 @@ class BPSingleEvent : virtual public BPEvent
 		 *        Here, too, ANY_ADDR is a placeholder to allow debugging
 		 *        in a random address space.
 		 */
-		BPSingleEvent(sal::address_t ip = 0, sal::address_t address_space = ANY_ADDR)
+		BPSingleEvent(address_t ip = 0, address_t address_space = ANY_ADDR)
 			: BPEvent(address_space), m_WatchInstrPtr(ip) { }
 		/**
 		 * Returns the instruction pointer this event waits for.
 		 */
-		sal::address_t getWatchInstructionPointer() const
+		address_t getWatchInstructionPointer() const
 		{ return m_WatchInstrPtr; }
 		/**
 		 * Sets the instruction pointer this event waits for.
 		 */
-		void setWatchInstructionPointer(sal::address_t iptr)
+		void setWatchInstructionPointer(address_t iptr)
 		{ m_WatchInstrPtr = iptr; }
 		/**
 		 * Checks whether a given address is matching.
 		 */
-		bool isMatching(sal::address_t addr, sal::address_t address_space) const;
+		bool isMatching(address_t addr, address_t address_space) const;
 };
 
 /**
@@ -199,8 +197,8 @@ class BPSingleEvent : virtual public BPEvent
 class BPRangeEvent : virtual public BPEvent
 {
 	private:
-		sal::address_t m_WatchStartAddr;
-		sal::address_t m_WatchEndAddr;
+		address_t m_WatchStartAddr;
+		address_t m_WatchEndAddr;
 	public:
 		/**
 		 * Creates a new breakpoint-range event.  The range's ends are both
@@ -208,24 +206,24 @@ class BPRangeEvent : virtual public BPEvent
 		 * ANY_ADDR denotes the lower respectively the upper end of the address
 		 * space.
 		 */
-		BPRangeEvent(sal::address_t start = 0, sal::address_t end = 0, sal::address_t address_space = ANY_ADDR)
+		BPRangeEvent(address_t start = 0, address_t end = 0, address_t address_space = ANY_ADDR)
 			: BPEvent(address_space), m_WatchStartAddr(start), m_WatchEndAddr(end)
 			  { }
 		/**
 		 * Returns the instruction pointer watch range of this event.
 		 */
-		std::pair<sal::address_t, sal::address_t> getWatchInstructionPointerRange() const
+		std::pair<address_t, address_t> getWatchInstructionPointerRange() const
 		{ return std::make_pair(m_WatchStartAddr, m_WatchEndAddr); }
 		/**
 		 * Sets the instruction pointer watch range.  Both ends of the range
 		 * may be ANY_ADDR (cf. constructor).
 		 */
-		void setWatchInstructionPointerRange(sal::address_t start,
-											 sal::address_t end);
+		void setWatchInstructionPointerRange(address_t start,
+											 address_t end);
 		/**
 		 * Checks whether a given address is within the range.
 		 */
-		bool isMatching(sal::address_t addr, sal::address_t address_space) const;
+		bool isMatching(address_t addr, address_t address_space) const;
 };
 
 /**
@@ -246,18 +244,18 @@ class MemAccessEvent : virtual public BaseEvent
 		};
 	private:
 		//! Specific guest system address to watch, or ANY_ADDR.
-		sal::address_t m_WatchAddr;
+		address_t m_WatchAddr;
 		/**
 		 * Memory access type we want to watch
 		 * (MEM_READ || MEM_WRITE || MEM_READWRITE).
 		 */
 		accessType_t m_WatchType;
 		//! Specific guest system address that actually triggered the event.
-		sal::address_t m_TriggerAddr;
+		address_t m_TriggerAddr;
 		//! Width of the memory access (# bytes).
 		size_t m_TriggerWidth;
 		//! Address of the instruction that caused the memory access.
-		sal::address_t m_TriggerIP;
+		address_t m_TriggerIP;
 		//! Memory access type at m_TriggerAddr.
 		accessType_t m_AccessType;
 	public:
@@ -265,7 +263,7 @@ class MemAccessEvent : virtual public BaseEvent
 			: m_WatchAddr(ANY_ADDR), m_WatchType(watchtype),
 			  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
 			  m_AccessType(MEM_UNKNOWN) { }
-		MemAccessEvent(sal::address_t addr, 
+		MemAccessEvent(address_t addr, 
 					   accessType_t watchtype = MEM_READWRITE)
 			: m_WatchAddr(addr), m_WatchType(watchtype),
 			  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
@@ -273,25 +271,25 @@ class MemAccessEvent : virtual public BaseEvent
 		/**
 		 * Returns the memory address to be observed.
 		 */
-		sal::address_t getWatchAddress() const { return m_WatchAddr; }
+		address_t getWatchAddress() const { return m_WatchAddr; }
 		/**
 		 * Sets the memory address to be observed.  (Wildcard: ANY_ADDR)
 		 */
-		void setWatchAddress(sal::address_t addr) { m_WatchAddr = addr; }
+		void setWatchAddress(address_t addr) { m_WatchAddr = addr; }
 		/**
 		 * Checks whether a given address is matching.
 		 */
-		bool isMatching(sal::address_t addr, accessType_t accesstype) const;
+		bool isMatching(address_t addr, accessType_t accesstype) const;
 		/**
 		 * Returns the specific memory address that actually triggered the
 		 * event.
 		 */
-		sal::address_t getTriggerAddress() const { return (m_TriggerAddr); }
+		address_t getTriggerAddress() const { return (m_TriggerAddr); }
 		/**
 		 * Sets the specific memory address that actually triggered the event.
 		 * Should not be used by experiment code.
 		 */
-		void setTriggerAddress(sal::address_t addr) { m_TriggerAddr = addr; }
+		void setTriggerAddress(address_t addr) { m_TriggerAddr = addr; }
 		/**
 		 * Returns the specific memory address that actually triggered the
 		 * event.
@@ -306,13 +304,13 @@ class MemAccessEvent : virtual public BaseEvent
 		 * Returns the address of the instruction causing this memory
 		 * access.
 		 */
-		sal::address_t getTriggerInstructionPointer() const
+		address_t getTriggerInstructionPointer() const
 		{ return (m_TriggerIP); }
 		/**
 		 * Sets the address of the instruction causing this memory
 		 * access.  Should not be used by experiment code.
 		 */
-		void setTriggerInstructionPointer(sal::address_t addr)
+		void setTriggerInstructionPointer(address_t addr)
 		{ m_TriggerIP = addr; }
 		/**
 		 * Returns type (MEM_READ || MEM_WRITE) of the memory access that
@@ -330,6 +328,7 @@ class MemAccessEvent : virtual public BaseEvent
 		 */
 		accessType_t getWatchAccessType() const { return (m_WatchType); }
 };
+
 /**
  * \class MemReadEvent
  * Observes memory read accesses.
@@ -339,7 +338,7 @@ class MemReadEvent : virtual public MemAccessEvent
 	public:
 		MemReadEvent()
 			: MemAccessEvent(MEM_READ) { }
-		MemReadEvent(sal::address_t addr)
+		MemReadEvent(address_t addr)
 			: MemAccessEvent(addr, MEM_READ) { }
 };
 
@@ -352,7 +351,7 @@ class MemWriteEvent : virtual public MemAccessEvent
 	public:
 		MemWriteEvent()
 			: MemAccessEvent(MEM_READ) { }
-		MemWriteEvent(sal::address_t addr)
+		MemWriteEvent(address_t addr)
 			: MemAccessEvent(addr, MEM_WRITE) { }
 };
 
@@ -582,7 +581,7 @@ class TimerEvent : public BaseEvent
 {
 	private:
 		unsigned m_Timeout; //!< timeout interval in milliseconds
-		sal::timer_id_t m_Id; //!< internal timer id (sim-specific)
+		timer_id_t m_Id; //!< internal timer id (sim-specific)
 		bool m_Once; //!< true, if the timer should be triggered only once
 	public:
 		/**
@@ -600,12 +599,12 @@ class TimerEvent : public BaseEvent
 		 * Retrieves the internal timer id. Maybe useful for debug output.
 		 * @return the timer id
 		 */
-		sal::timer_id_t getId() const { return m_Id; }
+		timer_id_t getId() const { return m_Id; }
 		/**
 		 * Sets the internal timer id. This should not be used by the experiment.
 		 * @param id the new timer id, given by the underlying simulator-backend
 		 */
-		void setId(sal::timer_id_t id) { m_Id = id; }
+		void setId(timer_id_t id) { m_Id = id; }
 		/**
 		 * Retrieves the timer's timeout value.
 		 * @return the timout in milliseconds
@@ -618,6 +617,6 @@ class TimerEvent : public BaseEvent
 		bool getOnceFlag() const { return m_Once; }
 };
 
-} // end-of-namespace: fi
+} // end-of-namespace: fail
 
-#endif /* __EVENT_HPP__ */
+#endif // __EVENT_HPP__

@@ -2,13 +2,12 @@
   #define __BOCHS_REGISTER_HPP__
 
 #include "../Register.hpp"
-
 #include "../../../bochs/bochs.h"
 
 #include <iostream>
 #include <cassert>
 
-namespace sal {
+namespace fail {
 
 /**
  * \class BochsRegister
@@ -241,6 +240,6 @@ class BochsRegisterManager : public RegisterManager
 		}
 };
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail
 
-#endif /* __BOCHS_REGISTER_HPP__ */
+#endif // __BOCHS_REGISTER_HPP__

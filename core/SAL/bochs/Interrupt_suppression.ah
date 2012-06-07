@@ -16,7 +16,7 @@ aspect Interrupt_FI
 	advice execution (interrupt_method()) : around ()
 	{	
 		unsigned vector = *(tjp->arg<0>());
-		if(!sal::simulator.isSuppressedInterrupt(vector)){
+		if(!fail::simulator.isSuppressedInterrupt(vector)){
 			tjp->proceed();
 		}
 	}
@@ -24,4 +24,4 @@ aspect Interrupt_FI
 
 #endif // CONFIG_SUPPRESS_INTERRUPTS
 
-#endif /* __INTERRUPT_SUPPRESSION_AH__ */
+#endif // __INTERRUPT_SUPPRESSION_AH__

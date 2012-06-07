@@ -1,7 +1,5 @@
 // <iostream> needs to be included before *.pb.h, otherwise ac++/Puma chokes on the latter
 #include <iostream>
-
-#include "JobServer.hpp"
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,6 +9,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+#include "JobServer.hpp"
 #include "jobserver/messagedefs/FailControlMessage.pb.h"
 #include "SocketComm.hpp"
 #include "controller/Minion.hpp"
@@ -22,9 +21,10 @@
 
 using namespace std;
 
-namespace fi {
+namespace fail {
 
-void JobServer::addParam(ExperimentData* exp){
+void JobServer::addParam(ExperimentData* exp)
+{
 #ifndef __puma
 	m_undoneJobs.Enqueue(exp);
 #endif
@@ -58,6 +58,7 @@ ExperimentData *JobServer::getDone()
 #ifdef SERVER_PERFORMANCE_MEASURE
 void JobServer::measure()
 {
+	// TODO: Log-level?
 	cout << "\n[Server] Logging throughput in \"" << SERVER_PERF_LOG_PATH << "\"..." << endl;
 	ofstream m_file(SERVER_PERF_LOG_PATH, std::ios::trunc); // overwrite existing perf-logs
 	if(!m_file.is_open()) {
@@ -303,4 +304,4 @@ void CommThread::receiveExperimentResults(Minion& minion, uint32_t workloadID)
 	}
 }
 
-};
+} // end-of-namespace: fail

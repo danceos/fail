@@ -2,12 +2,15 @@
 // from: http://www.quantnet.com/cplusplus-multithreading-boost/
 
 #ifndef __SYNCHRONIZED_QUEUE_HPP__
-#define __SYNCHRONIZED_QUEUE_HPP__
+  #define __SYNCHRONIZED_QUEUE_HPP__
 
 #include <queue>
+
 #ifndef __puma
 #include <boost/thread.hpp>
 #endif
+
+namespace fail {
 
 template <typename T>
 class SynchronizedQueue
@@ -84,7 +87,8 @@ private:
 			return false;
 		}
 	} // Lock is automatically released here
-
-	
 };
-#endif
+
+} // end-of-namespace: fail
+
+#endif // __SYNCHRONIZED_QUEUE_HPP__

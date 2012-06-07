@@ -1,10 +1,11 @@
 #include <iostream>
+
 #include "OVPController.hpp"
 #include "OVPMemory.hpp"
 #include "OVPRegister.hpp"
 #include "../../../ovp/OVPStatusRegister.hpp"
 
-namespace sal {
+namespace fail {
 
 OVPController::OVPController()
 	: SimulatorController(new OVPRegisterManager(), new OVPMemoryManager())
@@ -78,14 +79,14 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 //		<< " R0: 0x" << hex << r0 << " ST: 0x" << hex << st  << endl;
 
 	// Check for active breakpoint-events:
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end())
 	{
 		// FIXME: Performance verbessern (dazu muss entsprechend auch die Speicherung
 		// in EventList(.cc|.hpp) angepasst bzw. verbessert werden).
-		fi::BPSingleEvent* pEvBreakpt = dynamic_cast<fi::BPSingleEvent*>(*it);
+		BPSingleEvent* pEvBreakpt = dynamic_cast<BPSingleEvent*>(*it);
 		if(pEvBreakpt && (instrPtr == pEvBreakpt->getWatchInstructionPointer() ||
-		   pEvBreakpt->getWatchInstructionPointer() == fi::ANY_ADDR))
+		   pEvBreakpt->getWatchInstructionPointer() == ANY_ADDR))
 		{
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
@@ -93,7 +94,7 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 			// makeActive()):
 			continue; // -> skip iterator increment
 		}
-		fi::BPRangeEvent* pEvRange = dynamic_cast<fi::BPRangeEvent*>(*it);
+		BPRangeEvent* pEvRange = dynamic_cast<BPRangeEvent*>(*it);
 		if(pEvRange && pEvRange->isMatching(instrPtr))
 		{
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
@@ -130,4 +131,4 @@ void OVPController::reboot()
 	//bx_gui_c::reset_handler();//TODO: leider protected, so geht das also nicht...
 }
 
-};
+}

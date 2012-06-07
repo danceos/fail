@@ -8,18 +8,12 @@
 
 #include "../SimulatorController.hpp"
 #include "../../controller/Event.hpp"
-
 #include "../../../ovp/OVPPlatform.hpp"
-
 #include "../Register.hpp"
-
-using namespace std;
 
 extern OVPPlatform ovpplatform;
 
-/// Simulator Abstraction Layer namespace
-namespace sal
-{
+namespace fail {
 
 /**
  * \class OVPController
@@ -46,12 +40,12 @@ class OVPController : public SimulatorController
 		 * Save simulator state.
 		 * @param path Location to store state information
 		 */
-		virtual void save(const string& path);
+		virtual void save(const std::string& path);
 		/**
 		 * Restore simulator state.
 		 * @param path Location to previously saved state information
 		 */
-		virtual void restore(const string& path);
+		virtual void restore(const std::string& path);
 		/**
 		 * Reboot simulator.
 		 */
@@ -60,10 +54,9 @@ class OVPController : public SimulatorController
 		 * Returns the current instruction pointer.
 		 * @return the current eip
 		 */
-
-		 void makeGPRegister(int, void*, const string&);
-		 void makeSTRegister(Register *, const string&);
-		 void makePCRegister(int, void*, const string&);
+		 void makeGPRegister(int, void*, const std::string&);
+		 void makeSTRegister(Register *, const std::string&);
+		 void makePCRegister(int, void*, const std::string&);
 		 
 		 //DELETE-ME:This should be obsolete now...
 		 /**
@@ -71,8 +64,8 @@ class OVPController : public SimulatorController
 		  * must tell OVPController when it is finished
 		  */
 		 //void finishedRegisterCreation();
-
-};
 };
 
-#endif
+}
+
+#endif // __OVP_CONTROLLER_HPP__

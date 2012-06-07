@@ -12,4 +12,4 @@ static inline BX_CPU_C *getCPU(BX_CPU_C *that)
 #endif
 }
 
-#endif
+#endif // __BOCHS_HELPERS_HPP__

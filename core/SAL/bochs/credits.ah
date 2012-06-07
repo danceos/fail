@@ -11,7 +11,8 @@ aspect credits {
 	advice call ("% bx_center_print(...)") 
 	    && within ("void bx_print_header()")
 	    && args(file, line, maxwidth)
-	    : around (FILE *file, const char *line, unsigned maxwidth) {
+	    : around (FILE *file, const char *line, unsigned maxwidth)
+	{
 		if (!first) {
 			tjp->proceed();
 			return;

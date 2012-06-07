@@ -8,8 +8,7 @@
 
 #include "bochs/BochsController.hpp"
 
-namespace sal
-{
+namespace fail {
 
 typedef BochsController ConcreteSimulatorController; //!< concrete simulator (type)
 extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
@@ -20,8 +19,7 @@ extern ConcreteSimulatorController simulator; //!< the global simulator-controll
 
 #include "ovp/OVPController.hpp"
 
-namespace sal
-{
+namespace fail {
 
 typedef OVPController ConcreteSimulatorController; //!< concrete simulator (type)
 extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
@@ -32,4 +30,4 @@ extern ConcreteSimulatorController simulator; //!< the global simulator-controll
 #error SAL Instance not defined
 #endif
 
-#endif /* __SAL_INSTANCE_HPP__ */
+#endif // __SAL_INSTANCE_HPP__

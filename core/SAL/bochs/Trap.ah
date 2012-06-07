@@ -16,7 +16,7 @@ aspect Trap
 
 	advice execution (exception_method()) : before ()
 	{
-		sal::simulator.onTrapEvent(*(tjp->arg<0>()));
+		fail::simulator.onTrapEvent(*(tjp->arg<0>()));
 		// TODO: There are some different types of exceptions at cpu.h (line 265-281)
 		//       Which kind of a trap are these types?
 	}
@@ -24,4 +24,4 @@ aspect Trap
 
 #endif // CONFIG_EVENT_TRAP
 
-#endif /* __TRAP_AH__ */
+#endif // __TRAP_AH__

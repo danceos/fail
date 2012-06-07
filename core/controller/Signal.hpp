@@ -1,8 +1,7 @@
 #ifndef __SIGNAL_HPP__
   #define __SIGNAL_HPP__
 
-// Author: Adrian Böckenkamp
-// Date:   15.06.2011
+// FIXME: This is deprecated stuff. Delete it.
 
 #include <cassert>
 #include <memory>

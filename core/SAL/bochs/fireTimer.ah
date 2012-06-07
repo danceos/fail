@@ -3,11 +3,13 @@
 
 #include <iostream>
 
+// FIXME: This seems deprecated...?!
 
 aspect fireTimer {
 	
 	advice "bx_pc_system_c" : slice class {
 		public:
+			// TODO: Log-level?
 			void fireTimer(Bit32u timerNum){
 				if(timerNum <= numTimers){
 					if(!timer[timerNum].active){

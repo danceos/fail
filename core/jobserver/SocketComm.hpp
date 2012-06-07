@@ -1,11 +1,9 @@
 /**
- * \brief Socket based communictaion
- *
- * \author Horst Schirmeier, Martin Hoffmann
+ * \brief Socket based communictaion wrapper functions.
  */
 
-#ifndef __SOCKETCOMM_HPP__
-#define __SOCKETCOMM_HPP__
+#ifndef __SOCKET_COMM_HPP__
+  #define __SOCKET_COMM_HPP__
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -15,13 +13,13 @@
 #include <iostream>
 #include <fstream>
 #include <google/protobuf/message.h>
+
 #define USE_SIZE_PREFIX
 
-namespace fi {
+namespace fail {
 
 class SocketComm {
 public:	
-  
 	/**
 	 * Send Protobuf-generated message
 	 * @param sockfd open socket descriptor to write to
@@ -29,7 +27,6 @@ public:
 	 * \return false if message sending failed
 	 */
 	static bool send_msg(int sockfd, google::protobuf::Message& msg);
-  
 	/**
 	 * Receive Protobuf-generated message
 	 * @param sockfd open socket descriptor to read from
@@ -39,6 +36,6 @@ public:
 	static bool rcv_msg(int sockfd, google::protobuf::Message& msg);
 };
   
-}
+} // end-of-namespace: fail
 
-#endif 
+#endif // __SOCKET_COMM_HPP__

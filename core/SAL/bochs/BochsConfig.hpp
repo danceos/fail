@@ -7,8 +7,7 @@
 // Type definitions and configuration settings for
 // the Bochs simulator.
  
-namespace sal
-{
+namespace fail {
 
 typedef bx_address guest_address_t; //!< the guest memory address type
 typedef Bit8u*     host_address_t;  //!< the host memory address type
@@ -19,7 +18,6 @@ typedef Bit8u*     host_address_t;  //!< the host memory address type
 #endif
 typedef int        timer_t;         //!< type of timer IDs
 
-};
+} // end-of-namespace: fail
 
-#endif /* __BOCHS_CONFIG_HPP__ */
-
+#endif // __BOCHS_CONFIG_HPP__

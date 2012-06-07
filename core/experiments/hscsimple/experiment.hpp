@@ -3,7 +3,7 @@
 
 #include "controller/ExperimentFlow.hpp"
 
-class hscsimpleExperiment : public fi::ExperimentFlow
+class hscsimpleExperiment : public fail::ExperimentFlow
 {
 	public:
 		hscsimpleExperiment() { }

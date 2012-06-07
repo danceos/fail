@@ -49,6 +49,6 @@ aspect nonverbose {
 	}
 };
 
-#endif
+#endif // CONFIG_STFU
 
-#endif
+#endif // __NONVERBOSE_AH__

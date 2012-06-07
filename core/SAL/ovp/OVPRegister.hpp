@@ -7,7 +7,7 @@
 
 extern OVPPlatform ovpplatform;
 
-namespace sal {
+namespace fail {
 
 /**
  * \class OVPRegister
@@ -74,7 +74,8 @@ class OVPRegisterManager : public RegisterManager
 		{
 			return 0;
 		}
-
 };
+
 }
-#endif
+
+#endif // __OVP_REGISTER_HPP__

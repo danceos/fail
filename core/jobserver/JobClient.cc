@@ -1,7 +1,8 @@
 #include "JobClient.hpp"
 
+using namespace std;
 
-namespace fi {
+namespace fail {
 
 JobClient::JobClient(std::string server, int port)
 {
@@ -10,6 +11,7 @@ JobClient::JobClient(std::string server, int port)
 	m_server_ent = gethostbyname(m_server.c_str());
 	if(m_server_ent == NULL) {
 		perror("[Client@gethostbyname()]");
+		// TODO: Log-level?
 		exit(1);
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
@@ -22,6 +24,7 @@ bool JobClient::connectToServer()
 	m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(m_sockfd < 0) {
 		perror("[Client@socket()]");
+		// TODO: Log-level?
 		exit(0);
 	}
 
@@ -38,10 +41,12 @@ bool JobClient::connectToServer()
     while(true) {
 		if(connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 			perror("[Client@connect()]");
+			// TODO: Log-level?
 			if(retries > 0) {
 				// Wait CLIENT_RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
 				int delay = rand() % (CLIENT_RAND_BACKOFF_TEND-CLIENT_RAND_BACKOFF_TSTART) + CLIENT_RAND_BACKOFF_TSTART;
 				cout << "[Client] Retrying to connect to server in ~" << delay << "s..." << endl;
+				// TODO: Log-level?
 				sleep(delay);
 				usleep(rand() % 1000000);
 				--retries;
@@ -49,11 +54,13 @@ bool JobClient::connectToServer()
 			}
 			cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT << " times); "
 			     << "I'll give it up!" << endl;
+			     // TODO: Log-level?
 			return false; // finally: unable to connect, give it up :-(
 		}
 		break; // connected! :-)
 	}
 	cout << "[Client] Connection established!" << endl;
+	// TODO: Log-level?
 
     return true;
 }
@@ -110,6 +117,7 @@ bool JobClient::sendResult(ExperimentData& result)
     ctrlmsg.set_build_id(42);
     ctrlmsg.set_workloadid(result.getWorkloadID());	
     cout << "[Client] Sending back result [" << std::dec << result.getWorkloadID() << "]..."  << endl;
+    // TODO: Log-level?
     SocketComm::send_msg(m_sockfd, ctrlmsg);
     SocketComm::send_msg(m_sockfd, result.getMessage());
     // close connection.
@@ -117,5 +125,4 @@ bool JobClient::sendResult(ExperimentData& result)
     return true;
 }
 
-
-}
+} // end-of-namespace: fail

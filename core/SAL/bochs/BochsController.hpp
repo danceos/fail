@@ -20,13 +20,9 @@
 #include "../../../bochs/iodev/iodev.h"
 #include "../../../bochs/pc_system.h"
 
-using namespace std;
+namespace fail {
 
-namespace fi { class ExperimentFlow; }
-
-/// Simulator Abstraction Layer namespace
-namespace sal
-{
+class ExperimentFlow;
 	
 /**
  * \class BochsController
@@ -35,7 +31,7 @@ namespace sal
 class BochsController : public SimulatorController
 {
 	private:
-		fi::ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
+		ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
 	  #ifdef DEBUG
 		unsigned m_Regularity;
 		unsigned m_Counter;
@@ -67,14 +63,14 @@ class BochsController : public SimulatorController
 		 *         along with the TimerEvent, @see getId(). On error, -1 is returned
 		 *         (e.g. because a timer with the same id is already existing)
 		 */
-		timer_id_t m_registerTimer(fi::TimerEvent* pev);
+		timer_id_t m_registerTimer(TimerEvent* pev);
 		/**
 		 * Deletes a timer. No further events will be triggered by the timer.
 		 * @param pev a pointer to the TimerEvent-object to be removed
 		 * @return \c true if the timer with \a pev->getId() has been removed
 		 *         successfully, \c false otherwise
 		 */
-		bool m_unregisterTimer(fi::TimerEvent* pev);
+		bool m_unregisterTimer(TimerEvent* pev);
 	public:
 		// Initialize the controller.
 		BochsController();
@@ -106,7 +102,7 @@ class BochsController : public SimulatorController
 		 * @return You should return \c true to continue and \c false to prevent
 		 *         the addition of the event \a pev.
 		 */
-		bool onEventAddition(fi::BaseEvent* pev);
+		bool onEventAddition(BaseEvent* pev);
 		/**
 		 * This method is called when an experiment flow removes an event from
 		 * the event-management by calling \c removeEvent(prev), \c clearEvents()
@@ -114,7 +110,7 @@ class BochsController : public SimulatorController
 		 * this event handler will be called *before* the event is actually deleted.
 		 * @param pev the event to be deleted when returning from the event handler
 		 */
-		void onEventDeletion(fi::BaseEvent* pev);
+		void onEventDeletion(BaseEvent* pev);
 		/**
 		 * This method is called when an previously added event is about to be
 		 * triggered by the simulator-backend. More specifically, this event handler
@@ -122,7 +118,7 @@ class BochsController : public SimulatorController
 		 * corresponding coroutine is toggled.
 		 * @param pev the event to be triggered when returning from the event handler
 		 */
-		void onEventTrigger(fi::BaseEvent* pev);
+		void onEventTrigger(BaseEvent* pev);
 		/* ********************************************************************
 		 * Simulator Controller & Access API:
 		 * ********************************************************************/
@@ -130,7 +126,7 @@ class BochsController : public SimulatorController
 		 * Save simulator state.
 		 * @param path Location to store state information
 		 */
-		void save(const string& path);
+		void save(const std::string& path);
 		/**
 		 * Save finished: Callback from Simulator
 		 */
@@ -139,7 +135,7 @@ class BochsController : public SimulatorController
 		 * Restore simulator state. Clears all Events.
 		 * @param path Location to previously saved state information
 		 */
-		void restore(const string& path);
+		void restore(const std::string& path);
 		/**
 		 * Restore finished: Callback from Simulator
 		 */
@@ -168,7 +164,7 @@ class BochsController : public SimulatorController
 		 *        instruction pointer, 0 to disable
 		 * @param dest specifies the output destition; defaults to \c std::cout
 		 */
-		void dbgEnableInstrPtrOutput(unsigned regularity, std::ostream* dest = &cout);
+		void dbgEnableInstrPtrOutput(unsigned regularity, std::ostream* dest = &std::cout);
 	  #endif
 		/* ********************************************************************
 		 * BochsController-specific (not implemented in SimulatorController!):
@@ -196,6 +192,6 @@ class BochsController : public SimulatorController
 		}
 };
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail
 
-#endif /* __BOCHS_CONTROLLER_HPP__ */
+#endif // __BOCHS_CONTROLLER_HPP__

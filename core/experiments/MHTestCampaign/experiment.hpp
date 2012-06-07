@@ -1,17 +1,17 @@
-#ifndef __TESTEXPERIMENT_HPP__
-#define __TESTEXPERIMENT_HPP__
+#ifndef __MH_TEST_EXPERIMENT_HPP__
+  #define __MH_TEST_EXPERIMENT_HPP__
   
 #include "controller/ExperimentFlow.hpp"
 #include "jobserver/JobClient.hpp"
 
-class MHTestExperiment : public fi::ExperimentFlow {
-  fi::JobClient m_jc;
-  public: 
-    MHTestExperiment(){};
-    ~MHTestExperiment(){};
-    bool run();
+class MHTestExperiment : public fail::ExperimentFlow {
+private:
+	fail::JobClient m_jc;
+public: 
+	MHTestExperiment() { }
+	~MHTestExperiment() { }
+
+	bool run();
 };
 
-  
-  
-#endif 
+#endif // __MH_TEST_EXPERIMENT_HPP__

@@ -2,25 +2,24 @@
 #include "SALInst.hpp"
 #include "../controller/Event.hpp"
 
-namespace sal
-{
+namespace fail {
 
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
 
-fi::EventId SimulatorController::addEvent(fi::BaseEvent* ev)
+EventId SimulatorController::addEvent(BaseEvent* ev)
 {
 	assert(ev != NULL && "FATAL ERROR: ev pointer cannot be NULL!");
-	fi::EventId ret = m_EvList.add(ev, m_Flows.getCurrent());
+	EventId ret = m_EvList.add(ev, m_Flows.getCurrent());
 	// Call the common postprocessing function:
 	if (!onEventAddition(ev)) { // If the return value signals "false"...,
 		m_EvList.remove(ev); // ...skip the addition
-		ret = -1;
+		ret = INVALID_EVENT;
 	}
 	return ret;
 }
 
-fi::BaseEvent* SimulatorController::waitAny(void)
+BaseEvent* SimulatorController::waitAny(void)
 {
 	m_Flows.resume();
 	assert(m_EvList.getLastFired() != NULL &&
@@ -32,6 +31,7 @@ void SimulatorController::startup()
 {
 	// Some greetings to the user:
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
+	// TODO: Log-Level?
 	
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
@@ -50,12 +50,12 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr, address_t addres
 	// FIXME: Improve performance
 
 	// Loop through all events of type BP*Event:
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while (it != m_EvList.end())
 	{
-		fi::BaseEvent* pev = *it;
-		fi::BPSingleEvent* pbp; fi::BPRangeEvent* pbpr;
-		if((pbp = dynamic_cast<fi::BPSingleEvent*>(pev)) && pbp->isMatching(instrPtr, address_space))
+		BaseEvent* pev = *it;
+		BPSingleEvent* pbp; BPRangeEvent* pbpr;
+		if((pbp = dynamic_cast<BPSingleEvent*>(pev)) && pbp->isMatching(instrPtr, address_space))
 		{
 			pbp->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
@@ -63,7 +63,7 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr, address_t addres
 			// makeActive()):
 			continue; // -> skip iterator increment
 		}
-		else if((pbpr = dynamic_cast<fi::BPRangeEvent*>(pev)) &&
+		else if((pbpr = dynamic_cast<BPRangeEvent*>(pev)) &&
 		        pbpr->isMatching(instrPtr, address_space))
 		{
 			pbpr->setTriggerInstructionPointer(instrPtr);
@@ -80,15 +80,15 @@ void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
 {
 	// FIXME: Improve performance
 
-	fi::MemAccessEvent::accessType_t accesstype =
-		is_write ? fi::MemAccessEvent::MEM_WRITE
-		         : fi::MemAccessEvent::MEM_READ;
+	MemAccessEvent::accessType_t accesstype =
+		is_write ? MemAccessEvent::MEM_WRITE
+		         : MemAccessEvent::MEM_READ;
 
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
-		fi::BaseEvent* pev = *it;
-		fi::MemAccessEvent* ev = dynamic_cast<fi::MemAccessEvent*>(pev);
+		BaseEvent* pev = *it;
+		MemAccessEvent* ev = dynamic_cast<MemAccessEvent*>(pev);
 		// Is this a MemAccessEvent? Correct access type?
 		if(!ev || !ev->isMatching(addr, accesstype))
 		{
@@ -106,11 +106,11 @@ void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
 
 void SimulatorController::onInterruptEvent(unsigned interruptNum, bool nmi)
 {
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
-		fi::BaseEvent* pev = *it;
-		fi::InterruptEvent* pie = dynamic_cast<fi::InterruptEvent*>(pev);
+		BaseEvent* pev = *it;
+		InterruptEvent* pie = dynamic_cast<InterruptEvent*>(pev);
 		if(!pie || !pie->isMatching(interruptNum))
 		{
 			++it;
@@ -127,7 +127,7 @@ bool SimulatorController::isSuppressedInterrupt(unsigned interruptNum)
 {
 	for(size_t i = 0; i < m_SuppressedInterrupts.size(); i++)
 		if((m_SuppressedInterrupts[i] == interruptNum ||
-		   m_SuppressedInterrupts[i] == fi::ANY_INTERRUPT) && interruptNum != (unsigned) interrupt_to_fire+32  ){
+		   m_SuppressedInterrupts[i] == ANY_INTERRUPT) && interruptNum != (unsigned) interrupt_to_fire+32  ){
 				if((int)interruptNum == interrupt_to_fire+32){
 					interrupt_to_fire = -1;
 					return(true);
@@ -143,7 +143,7 @@ bool SimulatorController::addSuppressedInterrupt(unsigned interruptNum)
 	if(isSuppressedInterrupt(interruptNum+32))
 		return (false); // already added: nothing to do here
 		
-	if(interruptNum == fi::ANY_INTERRUPT){
+	if(interruptNum == ANY_INTERRUPT){
 		m_SuppressedInterrupts.push_back(interruptNum);
 		return (true);
 	}else{
@@ -156,7 +156,7 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 {
 	for(size_t i = 0; i < m_SuppressedInterrupts.size(); i++)
 	{	
-		if(m_SuppressedInterrupts[i] == interruptNum+32 || m_SuppressedInterrupts[i] == fi::ANY_INTERRUPT)
+		if(m_SuppressedInterrupts[i] == interruptNum+32 || m_SuppressedInterrupts[i] == ANY_INTERRUPT)
 		{
 			m_SuppressedInterrupts.erase(m_SuppressedInterrupts.begin() + i);
 			return (true);
@@ -167,11 +167,11 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 
 void SimulatorController::onTrapEvent(unsigned trapNum)
 {
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
-		fi::BaseEvent* pev = *it;
-		fi::TrapEvent* pte = dynamic_cast<fi::TrapEvent*>(pev);
+		BaseEvent* pev = *it;
+		TrapEvent* pte = dynamic_cast<TrapEvent*>(pev);
 		if(!pte || !pte->isMatching(trapNum))
 		{
 			++it;
@@ -185,11 +185,11 @@ void SimulatorController::onTrapEvent(unsigned trapNum)
 
 void SimulatorController::onGuestSystemEvent(char data, unsigned port)
 {
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
-		fi::BaseEvent* pev = *it;
-		fi::GuestEvent* pge = dynamic_cast<fi::GuestEvent*>(pev);
+		BaseEvent* pev = *it;
+		GuestEvent* pge = dynamic_cast<GuestEvent*>(pev);
 		if(pge != NULL)
 		{
 			pge->setData(data);
@@ -204,10 +204,10 @@ void SimulatorController::onGuestSystemEvent(char data, unsigned port)
 
 void SimulatorController::onJumpEvent(bool flagTriggered, unsigned opcode)
 {
-	fi::EventList::iterator it = m_EvList.begin();
+	EventList::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) // check for active events
 	{
-		fi::JumpEvent* pje = dynamic_cast<fi::JumpEvent*>(*it);
+		JumpEvent* pje = dynamic_cast<JumpEvent*>(*it);
 		if(pje != NULL)
 		{
 			pje->setOpcode(opcode);
@@ -220,7 +220,7 @@ void SimulatorController::onJumpEvent(bool flagTriggered, unsigned opcode)
 	m_EvList.fireActiveEvents();
 }
 
-void SimulatorController::addFlow(fi::ExperimentFlow* flow)
+void SimulatorController::addFlow(ExperimentFlow* flow)
 {
 	// Store the (flow,corohandle)-tuple internally and create its coroutine:
 	m_Flows.create(flow);
@@ -228,7 +228,7 @@ void SimulatorController::addFlow(fi::ExperimentFlow* flow)
 	m_Flows.toggle(flow);
 }
 
-void SimulatorController::removeFlow(fi::ExperimentFlow* flow)
+void SimulatorController::removeFlow(ExperimentFlow* flow)
 {
 	// remove all remaining events of this flow
 	clearEvents(flow);
@@ -236,7 +236,7 @@ void SimulatorController::removeFlow(fi::ExperimentFlow* flow)
 	m_Flows.remove(flow);
 }
 
-fi::BaseEvent* SimulatorController::addEventAndWait(fi::BaseEvent* ev)
+BaseEvent* SimulatorController::addEventAndWait(BaseEvent* ev)
 {
 	addEvent(ev);
 	return (waitAny());
@@ -247,7 +247,7 @@ T* SimulatorController::getExperimentData()
 {
 	//BEGIN ONLY FOR TESTING------REMOVE--------REMOVE---------REMOVE--------REMOVE-------REMOVE-------
 	//Daten in Struktur schreiben und in Datei speichern
-	ofstream fileWrite;
+	std::ofstream fileWrite;
 	fileWrite.open("test.txt");
 
 	T* faultCovExWrite =  new T();;
@@ -261,7 +261,7 @@ T* SimulatorController::getExperimentData()
 	faultCovExWrite->set_m_instrptr2(0x1122);
 
 	//In ExperimentData verpacken
-	fi::ExperimentData exDaWrite(faultCovExWrite);
+	ExperimentData exDaWrite(faultCovExWrite);
 	//Serialisierung ueber Wrapper-Methode in ExperimentData
 	exDaWrite.serialize(&fileWrite);
 
@@ -269,13 +269,13 @@ T* SimulatorController::getExperimentData()
 
 	fileWrite.close(); 
 	
-	ifstream fileRead;
+	std::ifstream fileRead;
 	fileRead.open("test.txt");
 	//END ONLY FOR TESTING------REMOVE--------REMOVE---------REMOVE--------REMOVE-------REMOVE-------
 	//TODO: implement server-client communication----------------------------------------------
 	
 	T* concreteExpDat = new T();
-	fi::ExperimentData exDaRead(concreteExpDat);
+	ExperimentData exDaRead(concreteExpDat);
 	exDaRead.unserialize(&fileRead);
 
 	return (concreteExpDat);
@@ -285,8 +285,8 @@ void SimulatorController::terminate(int exCode)
 {
 	// Attention: This could cause problems, e.g., because of non-closed sockets
 	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
-	// TODO: (Non-)Verbose-Mode?
+	// TODO: (Non-)Verbose-Mode? Log-Level?
 	exit(exCode);
 }
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail

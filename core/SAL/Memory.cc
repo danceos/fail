@@ -1,12 +1,9 @@
-
-// Author: Adrian Böckenkamp
-// Date:   09.09.2011
+#include <cstdlib>
 
 #include "Memory.hpp"
 
-#include <cstdlib>
+namespace fail {
 
-namespace sal
-{
-	const guest_address_t ADDR_INV = 0;
+const guest_address_t ADDR_INV = 0;
+
 }

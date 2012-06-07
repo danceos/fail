@@ -1,5 +1,5 @@
-#ifndef __FAULTCOVERAGE_EXPERIMENT_HPP__
-  #define __FAULTCOVERAGE_EXPERIMENT_HPP__
+#ifndef __FAULT_COVERAGE_EXPERIMENT_HPP__
+  #define __FAULT_COVERAGE_EXPERIMENT_HPP__
 
 #include <iostream>
 #include <fstream>
@@ -17,13 +17,9 @@
          breakpoints, traps, save/restore. Enable these in the configuration.
 #endif
 
-using namespace fi;
-
-class FaultCoverageExperiment : public ExperimentFlow
-{
-	public:
-		bool run();
+class FaultCoverageExperiment : public fail::ExperimentFlow {
+public:
+	bool run();
 };
 
-#endif // __FAULTCOVERAGE_EXPERIMENT_HPP__
- 
+#endif // __FAULT_COVERAGE_EXPERIMENT_HPP__

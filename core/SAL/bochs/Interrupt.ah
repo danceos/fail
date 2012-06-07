@@ -29,12 +29,12 @@ aspect Interrupt
 		unsigned vector = *(tjp->arg<0>());
 		unsigned type = *(tjp->arg<1>());
 		if(type == BX_EXTERNAL_INTERRUPT)
-			sal::simulator.onInterruptEvent(vector, false);
+			fail::simulator.onInterruptEvent(vector, false);
 		else if(type == BX_NMI)
-			sal::simulator.onInterruptEvent(vector, true);
+			fail::simulator.onInterruptEvent(vector, true);
 	}
 };
 
 #endif // CONFIG_EVENT_INTERRUPT
 
-#endif /* __INTERRUPT_AH__ */
+#endif // __INTERRUPT_AH__

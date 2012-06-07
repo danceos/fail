@@ -13,10 +13,10 @@
 
 // Fixed "port number" for "Guest system >> Bochs" communication
 #define BOCHS_COM_PORT	0x378
+// FIXME: This #define should be located in a config or passed within the event object...
 
 aspect GuestSysCom
 {
-
 	pointcut outInstructions() = "% ...::bx_cpu_c::OUT_DX%(...)";
 
 	advice execution (outInstructions()) : after ()
@@ -27,11 +27,11 @@ aspect GuestSysCom
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
 		if (rDX == BOCHS_COM_PORT) {
-			sal::simulator.onGuestSystemEvent((char)rAL, rDX);
+			fail::simulator.onGuestSystemEvent((char)rAL, rDX);
 		}
 	}
 };
 
 #endif // CONFIG_EVENT_GUESTSYS
 
-#endif /* __GUESTSYS_COM_AH__ */
+#endif // __GUESTSYS_COM_AH__

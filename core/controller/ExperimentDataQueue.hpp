@@ -6,6 +6,8 @@
  *
  */
 
+// FIXME: This is deprecated stuff. Remove it.
+
 #ifndef __EXPERIMENT_DATA_QUEUE_H__
 #define __EXPERIMENT_DATA_QUEUE_H__
 

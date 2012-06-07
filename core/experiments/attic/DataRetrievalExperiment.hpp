@@ -3,7 +3,7 @@
 
 #include "../controller/ExperimentFlow.hpp"
 
-class DataRetrievalExperiment : public fi::ExperimentFlow
+class DataRetrievalExperiment : public fail::ExperimentFlow
 {
 	public:
 		DataRetrievalExperiment() { }
@@ -11,4 +11,4 @@ class DataRetrievalExperiment : public fi::ExperimentFlow
 		bool run();
 };
 
-#endif /* __DATA_RETRIEVAL_EXPERIMENT_HPP__ */
+#endif // __DATA_RETRIEVAL_EXPERIMENT_HPP__

@@ -4,9 +4,10 @@
 #include "../SALInst.hpp"
 
 aspect OVPInit {
-	advice call("% ...::startSimulation(...)") : before () {
-		cout << "OVP init aspect!" << endl;
-		sal::simulator.startup();
+	advice call("% ...::startSimulation(...)") : before ()
+	{
+		std::cout << "OVP init aspect!" << std::endl;
+		fail::simulator.startup();
 	}
 };
 

@@ -1,5 +1,6 @@
-
 #include "SynchronizedCounter.hpp"
+
+namespace fail {
 
 int SynchronizedCounter::increment()
 {
@@ -27,4 +28,5 @@ int SynchronizedCounter::getValue()
 #endif
 	return m_counter;
 } // Lock is automatically released here
-	
+
+} // end-of-namespace: fail

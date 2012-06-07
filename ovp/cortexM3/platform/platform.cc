@@ -71,7 +71,7 @@ void ARM_Cortex_M3::init(bool gdb=false) {
 	attrList->addAttr("compatibility", "nopBKPT");
 	attrList->addAttr("variant", variant);
 	attrList->addAttr("UAL", "1");
-	attrList->addAttr("fail_salp", &sal::simulator);
+	attrList->addAttr("fail_salp", &fail::simulator);
 
 	char cpuname[64];
 	sprintf(cpuname,"cpu-%s", variant);
@@ -146,7 +146,7 @@ static ICM_MEM_READ_FN(extMemRead) {
 //	icmPrintf("EXTERNAL MEMORY: Reading 0x%08x from 0x%08x\n", *(Int32*)value, (Int32)address);
 //	*(Int32*) value = (Int32)arm.mem[(address-arm.offset)>>2];
 
-	sal::simulator.onMemoryAccessEvent(address, 4, false, ovpplatform.getPC());
+	fail::simulator.onMemoryAccessEvent(address, 4, false, ovpplatform.getPC());
 
 	res[0] = arm.mem[(address-arm.offset)+0];
 	res[1] = arm.mem[(address-arm.offset)+1];
@@ -166,7 +166,7 @@ static ICM_MEM_READ_FN(extMemRead) {
 static ICM_MEM_WRITE_FN(extMemWrite) {
 //	icmPrintf("EXTERNAL MEMORY: Writing 0x%08x to 0x%08x\n", (Int32)value, (Int32)address);
 //	icmPrintf("Callback: Writing 0x%08x to mem[0x%08x] should be 0x%08x from [0x%08x]\n", *(Int32*)value, (Int32)(address-arm.offset), *(Int32*) value, (Int32) address);
-	sal::simulator.onMemoryAccessEvent(address, 4, true, ovpplatform.getPC());
+	fail::simulator.onMemoryAccessEvent(address, 4, true, ovpplatform.getPC());
 
 	Int32 val = *(Int32*)value;
 
@@ -266,7 +266,7 @@ void ARM_Cortex_M3::makeGPRegister() {
 
 	for(int i = 0; i <= 12; ++i) {
 		icmRegInfoP reg = icmGetRegByIndex(processorP, i);
-		sal::simulator.makeGPRegister(32, (void *)reg, names[i]);
+		fail::simulator.makeGPRegister(32, (void *)reg, names[i]);
 	}
 
 	// set SP pointer
@@ -278,13 +278,13 @@ void ARM_Cortex_M3::makeGPRegister() {
 void ARM_Cortex_M3::makeSTRegister() {
 	OVPStatusRegister *streg = new CortexM3StatusRegister();
 
-	sal::simulator.makeSTRegister(streg, "sp");
+	fail::simulator.makeSTRegister(streg, "sp");
 }
 
 void ARM_Cortex_M3::makePCRegister() {
 	// ARM Cortex M3: PC pointer is ID 15
 	icmRegInfoP pc_reg = icmGetRegByIndex(processorP, 15);
-	sal::simulator.makePCRegister(32, (void *)pc_reg, "PC");
+	fail::simulator.makePCRegister(32, (void *)pc_reg, "PC");
 }
 
 int ARM_Cortex_M3::startSimulation(const char *app) {
@@ -303,7 +303,7 @@ int ARM_Cortex_M3::startSimulation(const char *app) {
 		// save PC
 		Addr pc_ptr = cpu->getPC();
 
-		sal::simulator.onInstrPtrChanged(pc_ptr);
+		fail::simulator.onInstrPtrChanged(pc_ptr);
 
 		// simulate the platform
 		icmStopReason stopreason = cpu->simulate(1);

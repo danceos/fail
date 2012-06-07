@@ -8,11 +8,12 @@
 #include "config/FailConfig.hpp"
 
 #include <list>
+
 #ifndef __puma
 #include <boost/thread.hpp>
 #endif
 
-namespace fi {
+namespace fail {
 
 class CommThread;
   
@@ -133,7 +134,6 @@ public:
 	void done() { m_finish = true; };
 };
 
-
 /**
  * @class CommThread
  * Implementation of the communication threads.
@@ -171,6 +171,6 @@ private:
 	void receiveExperimentResults(Minion& minion, uint32_t workloadID);
 };
 
-};
+} // end-of-namespace: fail
 
 #endif //__JOB_SERVER_H__

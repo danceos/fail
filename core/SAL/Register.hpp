@@ -9,11 +9,11 @@
 
 #include "SALConfig.hpp"
 
-namespace sal
-{
+namespace fail {
 
 /**
  * \enum RegisterType
+ *
  * Lists the different register types. You need to expand this enumeration
  * to provide more detailed types for your concrete derived register classes
  * specific to a simulator.
@@ -27,6 +27,7 @@ enum RegisterType
 
 /**
  * \class Register
+ *
  * Represents the basic generic register class. A set of registers is composed
  * of classes which had been derived from this class.
  */
@@ -106,6 +107,7 @@ class Register
 
 /**
  * \class UniformRegisterSet
+ *
  * Represents a (type-uniform) set of registers, e.g. all general purpose
  * registers. The granularity of the register type is determined by the
  * enumeration \c RegisterType. (All registers within this set must be of the
@@ -271,6 +273,6 @@ class RegisterManager
 		virtual address_t getBasePointer() = 0;
 };
 
-} // end-of-namespace: sal
+} // end-of-namespace: fail
 
-#endif /* __REGISTER_HPP__ */
+#endif // __REGISTER_HPP__

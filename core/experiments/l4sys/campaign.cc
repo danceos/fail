@@ -6,8 +6,8 @@
 #include "util/Logger.hpp"
 #include "SAL/SALConfig.hpp"
 
-using namespace fi;
-using std::endl;
+using namespace std;
+using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
 
@@ -39,23 +39,23 @@ bool L4SysCampaign::run()
 			d->msg.set_bit_offset(bit_offset);
 			d->msg.set_bit_offset(0);
 	  
-			fi::campaignmanager.addParam(d);
+			campaignmanager.addParam(d);
 			++count;
 		}
 	}
-	fi::campaignmanager.noMoreParameters();
+	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
 	// collect results
 	L4SysExperimentData *res;
 	int rescount = 0;
 	results << "injection_ip,instr_offset,injection_bit,resulttype,resultdata,output,details" << endl;
-	while ((res = static_cast<L4SysExperimentData *>(fi::campaignmanager.getDone()))) {
+	while ((res = static_cast<L4SysExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
-		results << std::hex
+		results << hex
 		 << res->msg.injection_ip() << ","
-		 << std::dec << res->msg.instr_offset() << ","
+		 << dec << res->msg.instr_offset() << ","
 		 << res->msg.bit_offset() << ","
 		 << res->msg.resulttype() << ","
 		 << res->msg.resultdata();

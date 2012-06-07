@@ -1,13 +1,13 @@
 #ifndef __FAILBOCHS_HPP__
-#define __FAILBOCHS_HPP__
+  #define __FAILBOCHS_HPP__
 
 #include <string>
-#include <string.h>
 
 #include "config.h" 
 
-namespace sal
-{
+// FIXME: Maybe rename this file to "FailBochsGlobals.hpp"?
+
+namespace fail {
 
 #ifdef DANCEOS_RESTORE
   extern bx_bool restore_bochs_request;
@@ -21,4 +21,4 @@ extern int interrupt_to_fire;
 
 }
 
-#endif /* __FAILBOCHS_HPP__ */
+#endif // __FAILBOCHS_HPP__

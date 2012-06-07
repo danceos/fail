@@ -18,7 +18,7 @@
 // TODO warn on uncovered memory accesses
 aspect MemEvents
 {
-	sal::address_t rmw_address;
+	fail::address_t rmw_address;
 
 	pointcut write_methods() =
 		"% ...::bx_cpu_c::write_virtual_%(...)" && // -> access32/64.cc
@@ -59,27 +59,29 @@ aspect MemEvents
 	//
 #ifdef CONFIG_EVENT_MEMWRITE
 	advice execution (write_methods()) : after () {
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<2>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (write_methods_RMW()) : after () {
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			rmw_address, sizeof(*(tjp->arg<0>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (write_methods_new_stack()) : after () {
 		std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
-		sal::simulator.onMemoryAccessEvent(
+		// TODO: Log-level?
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<3>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (write_methods_new_stack_64()) : after () {
 		std::cerr << "WOOOOOT write_methods_new_stack_64" << std::endl;
-		sal::simulator.onMemoryAccessEvent(
+		// TODO: Log-level?
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<0>()), sizeof(*(tjp->arg<2>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -90,7 +92,7 @@ aspect MemEvents
 		// memory (e.g., to read vectors from the interrupt vector
 		// table).
 /*
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<0>()), sizeof(*(tjp->arg<1>())), true,
 			getCPU(tjp->that())->prev_rip);
 */
@@ -105,13 +107,13 @@ aspect MemEvents
 	//
 #ifdef CONFIG_EVENT_MEMREAD
 	advice execution (read_methods()) : before () {
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (read_methods_dqword()) : before () {
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), 16, false,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -120,7 +122,7 @@ aspect MemEvents
 	advice execution (read_methods_RMW()) : before () {
 		rmw_address = *(tjp->arg<1>());
 #ifdef CONFIG_EVENT_MEMREAD
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 #endif
@@ -133,7 +135,7 @@ aspect MemEvents
 		// memory (e.g., to read vectors from the interrupt vector
 		// table).
 /*
-		sal::simulator.onMemoryAccessEvent(
+		fail::simulator.onMemoryAccessEvent(
 			*(tjp->arg<0>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 */
@@ -143,4 +145,4 @@ aspect MemEvents
 
 #endif // CONFIG_EVENT_MEMACCESS
 
-#endif /* __MEM_EVENTS_AH__ */
+#endif // __MEM_EVENTS_AH__

@@ -12,8 +12,8 @@
 char const * const trace_filename = "trace.pb";
 #endif
 
-using namespace fi;
-using std::endl;
+using namespace std;
+using namespace fail;
 
 char const * const results_csv = "coolcampaign.csv";
 
@@ -24,7 +24,7 @@ char const * const results_csv = "coolcampaign.csv";
 struct equivalence_class {
 	unsigned byte_offset;
 	int instr1, instr2;
-	sal::address_t instr2_absolute; // FIXME we could record them all here
+	address_t instr2_absolute; // FIXME we could record them all here
 };
 
 bool CoolChecksumCampaign::run()
@@ -52,18 +52,18 @@ bool CoolChecksumCampaign::run()
 			d->msg.set_instr_offset(instr_offset);
 			d->msg.set_bit_offset(bit_offset);
 	  
-			fi::campaignmanager.addParam(d);
+			campaignmanager.addParam(d);
 			++count;
 		}
 	}
-	fi::campaignmanager.noMoreParameters();
+	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
 	// collect results
 	CoolChecksumExperimentData *res;
 	int rescount = 0;
 	results << "injection_ip\tinstr_offset\tinjection_bit\tresulttype\tresultdata\terror_corrected\tdetails" << endl;
-	while ((res = static_cast<CoolChecksumExperimentData *>(fi::campaignmanager.getDone()))) {
+	while ((res = static_cast<CoolChecksumExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
 		results
@@ -87,10 +87,10 @@ bool CoolChecksumCampaign::run()
 
 	// set of equivalence classes that need one (rather: eight, one for
 	// each bit in that byte) experiment to determine them all
-	std::vector<equivalence_class> ecs_need_experiment;
+	vector<equivalence_class> ecs_need_experiment;
 	// set of equivalence classes that need no experiment, because we know
 	// they'd be identical to the golden run
-	std::vector<equivalence_class> ecs_no_effect;
+	vector<equivalence_class> ecs_no_effect;
 
 	equivalence_class current_ec;
 
@@ -103,7 +103,7 @@ bool CoolChecksumCampaign::run()
 		// accesses to that address ...
 		// XXX reorganizing the trace for efficient seeks could speed this up
 		int instr = 0;
-		sal::address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
+		address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
 		Trace_Event ev;
 		ps.reset();
 		
@@ -180,11 +180,11 @@ bool CoolChecksumCampaign::run()
 
 	// statistics
 	int num_dumb_experiments = 0;
-	for (std::vector<equivalence_class>::const_iterator it = ecs_need_experiment.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_need_experiment.begin();
 	     it != ecs_need_experiment.end(); ++it) {
 		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
 	}
-	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
 	     it != ecs_no_effect.end(); ++it) {
 		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
 	}
@@ -192,9 +192,9 @@ bool CoolChecksumCampaign::run()
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
 	// map for efficient access when results come in
-	std::map<CoolChecksumExperimentData *, equivalence_class *> experiment_ecs;
+	map<CoolChecksumExperimentData *, equivalence_class *> experiment_ecs;
 	int count = 0;
-	for (std::vector<equivalence_class>::iterator it = ecs_need_experiment.begin();
+	for (vector<equivalence_class>::iterator it = ecs_need_experiment.begin();
 	     it != ecs_need_experiment.end(); ++it) {
 		for (int bitnr = 0; bitnr < 8; ++bitnr) {
 			CoolChecksumExperimentData *d = new CoolChecksumExperimentData;
@@ -205,11 +205,11 @@ bool CoolChecksumCampaign::run()
 
 			experiment_ecs[d] = &(*it);
 
-			fi::campaignmanager.addParam(d);
+			campaignmanager.addParam(d);
 			++count;
 		}
 	}
-	fi::campaignmanager.noMoreParameters();
+	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
 	// CSV header
@@ -217,7 +217,7 @@ bool CoolChecksumCampaign::run()
 
 	// store no-effect "experiment" results
 	// (for comparison reasons; we'll store that more compactly later)
-	for (std::vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
+	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
 	     it != ecs_no_effect.end(); ++it) {
 		for (int bitnr = 0; bitnr < 8; ++bitnr) {
 			for (int instr = (*it).instr1; instr <= (*it).instr2; ++instr) {
@@ -236,7 +236,7 @@ bool CoolChecksumCampaign::run()
 	// collect results
 	CoolChecksumExperimentData *res;
 	int rescount = 0;
-	while ((res = static_cast<CoolChecksumExperimentData *>(fi::campaignmanager.getDone()))) {
+	while ((res = static_cast<CoolChecksumExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
 		equivalence_class *ec = experiment_ecs[res];

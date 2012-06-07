@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+// FIXME: This is deprecated stuff. Remove it.
+
 namespace fi
 {
 
