@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <string.h>
 
-#include "failbochs.hpp"
+#include "FailBochsGlobals.hpp"
 
 #include "../SimulatorController.hpp"
 #include "../../controller/Event.hpp"

@@ -10,7 +10,7 @@ else()
 		Memory.cc
 		Register.cc
 		SimulatorController.cc
-		${VARIANT}/Controller.cc
+		${VARIANT}/OVPController.cc
 	)
 endif(BUILD_BOCHS)
 

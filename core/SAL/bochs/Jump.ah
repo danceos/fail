@@ -13,10 +13,9 @@
 #include "../../../bochs/bochs.h"
 #include "../SALInst.hpp"
 
-// FIXME: This seems (partial) deprecated as well...
+// FIXME: This seems (partial) deprecated/incomplete as well...
 
-aspect Jump
-{
+aspect Jump {
 	// Note: Have a look at the Bochs-Code (cpu/cpu.h) and the Intel
 	// Architecture Software Developer's Manual - Instruction Set Reference
 	// p. 3-329 (PDF p. 369) for further information:

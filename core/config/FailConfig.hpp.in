@@ -21,7 +21,7 @@
 #cmakedefine CONFIG_SR_REBOOT
 
 // Fail configuration
-#cmakedefine CONFIG_STFU
+#cmakedefine CONFIG_BOCHS_NON_VERBOSE
 #cmakedefine CONFIG_SUPPRESS_INTERRUPTS
 #cmakedefine CONFIG_FIRE_INTERRUPTS
 #cmakedefine CONFIG_DISABLE_KEYB_INTERRUPTS
@@ -31,8 +31,5 @@
 #cmakedefine CLIENT_RAND_BACKOFF_TSTART      @CLIENT_RAND_BACKOFF_TSTART@
 #cmakedefine CLIENT_RAND_BACKOFF_TEND        @CLIENT_RAND_BACKOFF_TEND@
 #cmakedefine CLIENT_RETRY_COUNT              @CLIENT_RETRY_COUNT@
-
-// Fault injection
-#cmakedefine CONFIG_FI_MEM_ACCESS_BITFLIP
 
 #endif // __FAIL_CONFIG_HPP__

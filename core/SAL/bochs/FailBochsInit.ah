@@ -1,0 +1,13 @@
+#ifndef __FAIL_BOCHS_INIT_AH__
+  #define __FAIL_BOCHS_INIT_AH__
+
+#include "../SALInst.hpp"
+
+aspect FailBochsInit {
+	advice call("int bxmain()") : before ()
+	{
+		fail::simulator.startup();
+	}
+};
+
+#endif // __FAIL_BOCHS_INIT_AH__

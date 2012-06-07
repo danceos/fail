@@ -9,11 +9,11 @@
 #include "../../../bochs/cpu/cpu.h"
 #include "../SALInst.hpp"
 
-#include "bochs_helpers.hpp"
+#include "BochsHelpers.hpp"
 
-aspect IOPortCom
-{
-// ATM only capturing bytewise output (most common, I suppose)
+// TODO: ATM only capturing bytewise output (most common, I suppose)
+
+aspect IOPortCom {
 	pointcut outInstruction() = "% ...::bx_cpu_c::OUT_DXAL(...)";
 
 	advice execution (outInstruction()) : after ()

@@ -10,8 +10,7 @@
 
 #include "../SALInst.hpp"
 
-aspect Trap
-{
+aspect Trap {
 	pointcut exception_method() = "void bx_cpu_c::exception(...)";
 
 	advice execution (exception_method()) : before ()

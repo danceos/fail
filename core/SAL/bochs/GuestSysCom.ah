@@ -1,5 +1,5 @@
-#ifndef __GUESTSYS_COM_AH__
-  #define __GUESTSYS_COM_AH__
+#ifndef __GUEST_SYS_COM_AH__
+  #define __GUEST_SYS_COM_AH__
 
 #include "config/FailConfig.hpp"
 
@@ -9,21 +9,17 @@
 #include "../../../bochs/cpu/cpu.h"
 #include "../SALInst.hpp"
 
-#include "bochs_helpers.hpp"
+#include "BochsHelpers.hpp"
 
 // Fixed "port number" for "Guest system >> Bochs" communication
 #define BOCHS_COM_PORT	0x378
 // FIXME: This #define should be located in a config or passed within the event object...
 
-aspect GuestSysCom
-{
+aspect GuestSysCom {
 	pointcut outInstructions() = "% ...::bx_cpu_c::OUT_DX%(...)";
 
-	advice execution (outInstructions()) : after ()
+	advice execution (outInstructions()) : after () // Event source: "guest system"
 	{
-		//
-		// Event source: "guest system"
-		//
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
 		if (rDX == BOCHS_COM_PORT) {
@@ -34,4 +30,4 @@ aspect GuestSysCom
 
 #endif // CONFIG_EVENT_GUESTSYS
 
-#endif // __GUESTSYS_COM_AH__
+#endif // __GUEST_SYS_COM_AH__

@@ -9,8 +9,7 @@
 #include "../../../bochs/cpu/cpu.h"
 #include "../SALInst.hpp"
 
-aspect Interrupt
-{
+aspect Interrupt {
 	// cpu/exception.cc
 	pointcut interrupt_method() = "void bx_cpu_c::interrupt(...)";
 
@@ -28,9 +27,9 @@ aspect Interrupt
 
 		unsigned vector = *(tjp->arg<0>());
 		unsigned type = *(tjp->arg<1>());
-		if(type == BX_EXTERNAL_INTERRUPT)
+		if (type == BX_EXTERNAL_INTERRUPT)
 			fail::simulator.onInterruptEvent(vector, false);
-		else if(type == BX_NMI)
+		else if (type == BX_NMI)
 			fail::simulator.onInterruptEvent(vector, true);
 	}
 };
