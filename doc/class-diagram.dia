@@ -12198,7 +12198,7 @@
             <dia:string>#m_TriggerAddr#</dia:string>
           </dia:attribute>
           <dia:attribute name="type">
-            <dia:string>#sal::address_t#</dia:string>
+            <dia:string>#address_t#</dia:string>
           </dia:attribute>
           <dia:attribute name="value">
             <dia:string>##</dia:string>
