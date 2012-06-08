@@ -1,7 +1,0 @@
-#ifndef VARIANT_CONFIG_H
-#define VARIANT_CONFIG_H
-
-#cmakedefine BUILD_OVP
-#cmakedefine BUILD_BOCHS
-
-#endif

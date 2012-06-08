@@ -31,7 +31,7 @@ message(STATUS "[${PROJECT_NAME}] Compiler: ${CMAKE_C_COMPILER}/${CMAKE_CXX_COMP
 #### Add some custom targets for the autoconf-based Bochs
 if(BUILD_BOCHS)
 
-  set(bochs_src_dir ${CMAKE_CURRENT_SOURCE_DIR}/bochs )
+  set(bochs_src_dir ${CMAKE_CURRENT_SOURCE_DIR}/simulators/bochs )
 
   add_custom_target( bochsclean
   		COMMAND +make -C ${bochs_src_dir} clean
@@ -44,14 +44,14 @@ if(BUILD_BOCHS)
   )
   
   add_custom_target( bochs
-  		COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/core -I${CMAKE_BINARY_DIR}/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\"
+  		COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\"
   		COMMENT "[${PROJECT_NAME}] Building Bochs"
   )
   add_dependencies(bochs fail)
   
   
   add_custom_target( bochsinstall
-  		COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/core -I${CMAKE_BINARY_DIR}/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" install
+  		COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" install
   		COMMENT "[${PROJECT_NAME}] Installing Bochs..."
   )
 

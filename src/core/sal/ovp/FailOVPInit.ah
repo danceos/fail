@@ -1,0 +1,17 @@
+#ifndef __OVPINIT_AH__
+  #define __OVPINIT_AH__
+
+#include <iostream>
+
+#include "../SALInst.hpp"
+
+aspect FailOVPInit {
+	advice call("% ...::startSimulation(...)") : before ()
+	{
+		std::cout << "OVP init aspect!" << std::endl;
+		// TODO: Log-Level?
+		fail::simulator.startup();
+	}
+};
+
+#endif // __OVPINIT_AH__

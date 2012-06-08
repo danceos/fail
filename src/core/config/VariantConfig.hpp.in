@@ -1,0 +1,7 @@
+#ifndef __VARIANT_CONFIG_HPP__
+  #define __VARIANT_CONFIG_HPP__
+
+#cmakedefine BUILD_OVP
+#cmakedefine BUILD_BOCHS
+
+#endif // __VARIANT_CONFIG_HPP__

@@ -1,0 +1,29 @@
+#ifndef __REBOOT_AH__
+  #define __REBOOT_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_SR_REBOOT
+
+#include "bochs.h"
+#include "../SALInst.hpp"
+
+aspect Reboot {
+	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
+
+	advice execution (cpuLoop()) : after ()
+	{
+		if (!fail::reboot_bochs_request) {
+			return;
+		}
+		
+		bx_gui_c::reset_handler();
+		std::cout << "[FAIL] Reboot finished" << std::endl;
+		// TODO: Log-level?
+		fail::simulator.rebootDone();
+	}
+};
+
+#endif // CONFIG_SR_REBOOT
+
+#endif // __REBOOT_AH__

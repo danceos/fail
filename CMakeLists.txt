@@ -30,7 +30,7 @@ if(BUILD_OVP)
 else(BUILD_OVP)
   message(STATUS "[${PROJECT_NAME}] Building Bochs variant...")
   ## add necessary additional header search paths.
-  add_definitions(-I${CMAKE_SOURCE_DIR}/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/bochs/)
+  add_definitions(-I${CMAKE_SOURCE_DIR}/simulators/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/simulators/bochs)
   SET(VARIANT bochs)
 endif(BUILD_OVP)
 
@@ -40,11 +40,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}")
 ## Tell the linker where to find the libfail.a
 link_directories("${LIBRARY_OUTPUT_PATH}")
 
-## Add CMakeLists from subdirectories (at the moment only core)
-add_subdirectory(core)
+# Add "simulators"-directory to the include path. This allows
+# us to use simulator-specific headers in a comfortable way.
+include_directories(${CMAKE_BINARY_DIR}/src/core)
+# FIXME: this should be in src/core/CMakeLists.txt but actually doesn't work
+
+## Add CMakeLists from subdirectories:
+add_subdirectory(src)
 
 if(BUILD_OVP)
-	add_subdirectory(ovp)
+	add_subdirectory(simulators/ovp)
 else(BUILD_OVP)
 endif(BUILD_OVP)
 
@@ -63,3 +68,9 @@ endif(BUILD_OVP)
 #	BUILD_IN_SOURCE 	1
 #	PREFIX			${BOCHS_PREFIX_DIR}
 #)
+#
+#message(STATUS "Include directories are:")
+#get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+#foreach(dir ${dirs})
+#  message(STATUS "    ${dir}")
+#endforeach(dir)

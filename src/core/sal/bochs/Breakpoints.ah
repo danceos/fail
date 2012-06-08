@@ -1,0 +1,32 @@
+#ifndef __BREAKPOINTS_AH__
+  #define __BREAKPOINTS_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_EVENT_BREAKPOINTS
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+
+aspect Breakpoints {
+	pointcut cpuLoop() = "void defineCPULoopJoinPoint(...)";
+
+	advice execution (cpuLoop()) : after () // Event source: "instruction pointer"
+	{
+		// Points to the cpu class: "this" if BX_USE_CPU_SMF == 0,
+		// BX_CPU(0) otherwise
+		BX_CPU_C* pThis = *(tjp->arg<0>());
+		// Points to the *current* bxInstruction-object
+		//bxInstruction_c* pInstr = *(tjp->arg<1>());
+
+		// report this event to the Bochs controller:
+		fail::simulator.onInstrPtrChanged(pThis->get_instruction_pointer(), pThis->cr3);
+		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.
+	}
+};
+
+#endif // CONFIG_EVENT_BREAKPOINTS
+
+#endif // __BREAKPOINTS_AH__
