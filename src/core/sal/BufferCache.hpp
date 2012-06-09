@@ -68,7 +68,7 @@ public:
 	 * @param idx the position to retrieve the element from
 	 * @return the element at the given position
 	 */
-	inline T get(int idx) { return (idx >= 0 && idx < getCount() ? m_Buffer[idx] : NULL); }
+	inline T get(int idx) const { return (idx >= 0 && idx < getCount() ? m_Buffer[idx] : NULL); }
 	/**
 	 * Set an element at a given position. Should be inlined.
 	 * @param idx the position to change an element at
@@ -79,7 +79,7 @@ public:
 	 * Retrieves the current length of the array. Should be inlined.
 	 * @return the array length
 	 */
-	inline int getCount() { return m_BufferCount; }
+	inline int getCount() const { return m_BufferCount; }
 	/**
 	 * Acts as a replacement for EventList::makeActive, manipulating
 	 * the buffer cache exclusively. EventList::fireActiveEvents needs
