@@ -54,6 +54,7 @@ class EventList
 		deletelist_t m_DeleteList; //!< the deleted events (used temporarily)
 		BaseEvent* m_pFired; //!< the recently fired Event-object
 		BufferCache<BPEvent*> m_Bp_cache;
+		friend int BufferCache<BPEvent*>::makeActive(EventList &ev_list, int idx);
 	public:
 		/**
 		 * The iterator of this class used to loop through the list of

@@ -1,27 +1,28 @@
+#include <algorithm>
+#include <vector>
 #include "BufferCache.hpp"
 #include "Event.hpp"
+#include "EventList.hpp"
 
 namespace fail {
 
 template<class T>
-int BufferCache<T>::add(T val)
+void BufferCache<T>::add(T val)
 {
-	size_t new_size = getCount() + 1;
-	size_t new_last_index = getCount();
+	int new_size = getCount() + 1;
+	int new_last_index = getCount();
 
 	int res = reallocate_buffer(new_size);
-	if (res == 0) {
-		set(new_last_index, val);
-	}
+	assert (res == 0 && "FATAL ERROR: Could not add event to cache");
 
-	return res;
+	set(new_last_index, val);
 }
 
 template<class T>
-int BufferCache<T>::remove(T val)
+void BufferCache<T>::remove(T val)
 {
 	bool do_remove = false;
-	for (size_t i = 0; i < getCount(); i++) {
+	for (int i = 0; i < getCount(); i++) {
 		if (get(i) == val) {
 			do_remove = true;
 		}
@@ -32,13 +33,11 @@ int BufferCache<T>::remove(T val)
 		}
 	}
 
-	int res = 0;
 	if (do_remove) {
-		size_t new_size = getCount() - 1;
-		res = reallocate_buffer(new_size);
+		int new_size = getCount() - 1;
+		int res = reallocate_buffer(new_size);
+		assert (res == 0 && "FATAL ERROR: Could not remove event from cache");
 	}
-
-	return res;
 }
 
 template<class T>
@@ -52,19 +51,25 @@ void BufferCache<T>::clear()
 template<class T>
 int BufferCache<T>::erase(int idx)
 {
-	for (size_t i = idx; i < getCount() - 1; i++) {
+	if(idx < 0 || idx >= getCount())
+		return -2;
+
+	for (int i = idx; i < getCount() - 1; i++) {
 		set(i, get(i + 1));
 	}
 
-	size_t new_size = getCount() - 1;
+	int new_size = getCount() - 1;
 	if (reallocate_buffer(new_size) != 0)
 		return -1;
 	return idx;
 }
 
 template<class T>
-int BufferCache<T>::reallocate_buffer(size_t new_size)
+int BufferCache<T>::reallocate_buffer(int new_size)
 {
+	if (new_size < 0)
+		return 20;
+
 	if (new_size == 0) {
 		clear();
 		return 0;
@@ -75,6 +80,26 @@ int BufferCache<T>::reallocate_buffer(size_t new_size)
 	m_Buffer = static_cast<T*>(new_buffer);
 	setCount(new_size);
 	return 0;
+}
+
+template<class T>
+int BufferCache<T>::makeActive(EventList &ev_list, int idx)
+{
+	assert(idx < getCount() &&
+		   "FATAL ERROR: Index larger than cache!");
+	T ev = get(idx);
+	assert(ev && "FATAL ERROR: Object pointer cannot be NULL!");
+	ev->decreaseCounter();
+	if (ev->getCounter() > 0) {
+		return ++idx;
+	}
+	ev->resetCounter();
+	// Note: This is the one and only situation in which remove() should NOT
+	//       store the removed item in the delete-list.
+	EventList::iterator it = std::find(ev_list.begin(), ev_list.end(), static_cast<BaseEvent*>(ev));
+	ev_list.m_remove(it, true); // remove event from buffer-list
+	ev_list.m_FireList.push_back(ev);
+	return erase(idx);
 }
 
 // Declare whatever instances of the template you are going to use here:

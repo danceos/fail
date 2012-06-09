@@ -97,7 +97,7 @@ Build Bochs
 ===========
 For the first time
 ------------------
-cd ../bochs
+cd ../simulators/bochs
 > Sufficient:
 ./configure --prefix=$(echo ~/localroot/usr) --enable-{cpu-level=6,ne2000,trace-cache,gdb-stub} --disable-docbook
 > More optimised:
@@ -136,17 +136,17 @@ Debug build
 -----------
 > Configure Bochs to use debugging-related compiler flags:
 cd ../bochs
-CXXFLAGS="-g -O0" ./configure --prefix=... ... (see above)
+CFLAGS="-g -O0" CXXFLAGS="-g -O0" ./configure --prefix=... ... (see above)
 
 Profiling-based optimization build
 ----------------------------------
 > FIXME: ag++ needs to be run with --keep_woven
 > Configure Bochs to use compiler flags to enable profiling:
 cd ../bochs
-CXXFLAGS="-fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=... ... (see above)
+CFLAGS="-fprofile-generate" CXXFLAGS="-fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=... ... (see above)
 > Build Bochs normally, and run it.
 > Configure Bochs to use compiler flags to enable optimizations based on profiling results:
-CXXFLAGS="-fprofile-use -Wcoverage-mismatch" LDFLAGS="-fprofile-use" ./configure --prefix=... ... (see above)
+CFLAGS="-fprofile-use -Wcoverage-mismatch" CXXFLAGS="-fprofile-use -Wcoverage-mismatch" LDFLAGS="-fprofile-use" ./configure --prefix=... ... (see above)
 
 Benchmarking
 ------------

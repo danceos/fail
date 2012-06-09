@@ -32,12 +32,29 @@ using namespace fail;
   save, and restore. Enable these in the configuration.
 #endif
 
+typedef struct __trace_instr_type {
+	address_t trigger_addr;
+	unsigned bp_counter;
+} trace_instr;
+
+ostream& operator<<(ostream& out, const trace_instr &val) {
+	out << val.trigger_addr << "," << val.bp_counter;
+	return out;
+}
+istream& operator>>(istream& in, trace_instr &val) {
+	in >> val.trigger_addr;
+	//skip the comma
+	in.ignore(1);
+	in >> val.bp_counter;
+	return in;
+}
+
 char const * const state_folder  = "l4sys.state";
 char const * const instr_list_fn = "ip.list";
 char const * const golden_run_fn = "golden.out";
 address_t const aspace = 0x01e00000;
 string output;
-vector<address_t> instr_list;
+vector<trace_instr> instr_list;
 string golden_run;
 //the program needs to run 5 times without a fault
 const unsigned times_run = 5;
@@ -85,8 +102,6 @@ bool L4SysExperiment::run()
 
 	log << "startup" << endl;
 
-#ifdef PREPARE_EXPERIMENT
-
 	struct stat teststruct;
 	// STEP 1: run until interesting function starts, and save state
 	if (stat(state_folder, &teststruct) == -1) {
@@ -115,14 +130,25 @@ bool L4SysExperiment::run()
 		ofstream instr_list_file(instr_list_fn);
 		instr_list_file << hex;
 		bp.setWatchInstructionPointer(ANY_ADDR);
+
+		map<address_t, unsigned> times_called_map;
 		while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 			simulator.addEventAndWait(&bp);
 			//short sanity check
-			address_t curr_instr = bp.getTriggerInstructionPointer();
+			address_t curr_addr = bp.getTriggerInstructionPointer();
 			assert(
-					curr_instr == simulator.getRegisterManager().getInstructionPointer());
-			instr_list.push_back(curr_instr);
-			instr_list_file << curr_instr << endl;
+					curr_addr == simulator.getRegisterManager().getInstructionPointer());
+
+			unsigned times_called = times_called_map[curr_addr];
+			times_called++;
+			times_called_map[curr_addr] = times_called;
+
+			trace_instr new_instr;
+			new_instr.trigger_addr = curr_addr;
+			new_instr.bp_counter = times_called;
+			instr_list.push_back(new_instr);
+
+			instr_list_file << new_instr << endl;
 		}
 		log << "saving instructions triggered during normal execution" << endl;
 		instr_list_file.close();
@@ -130,7 +156,7 @@ bool L4SysExperiment::run()
 		ifstream instr_list_file(instr_list_fn);
 		instr_list_file >> hex;
 		while (!instr_list_file.eof()) {
-			address_t curr_instr;
+			trace_instr curr_instr;
 			instr_list_file >> curr_instr;
 			instr_list.push_back(curr_instr);
 		}
@@ -186,10 +212,8 @@ bool L4SysExperiment::run()
 		output.reserve(flen);
 	}
 
-#endif
-
 	// STEP 4: The actual experiment.
-	for (int i = 0; i < 1/*L4SYS_NUMINSTR*/; i++) {
+	for (int i = 0; i < L4SYS_NUMINSTR; i++) {
 		log << "restoring state" << endl;
 		simulator.restore(state_folder);
 
@@ -206,7 +230,8 @@ bool L4SysExperiment::run()
 		log << "job " << id << " instr " << instr_offset << " bit "
 				<< bit_offset << endl;
 
-		bp.setWatchInstructionPointer(instr_list[instr_offset]);
+		bp.setWatchInstructionPointer(instr_list[instr_offset].trigger_addr);
+		bp.setCounter(instr_list[instr_offset].bp_counter);
 		simulator.addEvent(&bp);
 		//and log the output
 		waitIOOrOther(true);
@@ -227,10 +252,10 @@ bool L4SysExperiment::run()
 				<< endl;
 
 		// sanity check (only works if we're working with an instruction trace)
-		if (injection_ip != instr_list[instr_offset]) {
+		if (injection_ip != instr_list[instr_offset].trigger_addr) {
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip << " != "
-					<< instr_list[instr_offset] << endl;
+					<< instr_list[instr_offset].trigger_addr << endl;
 			log << ss.str();
 			param.msg.set_resulttype(param.msg.UNKNOWN);
 			param.msg.set_resultdata(injection_ip);

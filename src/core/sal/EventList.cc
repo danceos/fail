@@ -63,16 +63,23 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 	if (!skip_deletelist) {
 		// If skip_deletelist = true, m_remove was called from makeActive. Accordingly, we
 		// are not going to delete an event, instead we are "moving" an event object (= *it)
-		// from the buffer list to the fire-list. Therefor we only need to call the simulator's
+		// from the buffer list to the fire-list. Therefore we only need to call the simulator's
 		// event handler (m_onEventDeletion), if m_remove is called with the primary intention
 		// to *delete* (not "move") an event.
 		simulator.onEventDeletion(*it);
 		m_DeleteList.push_back(*it);
+
+		// Cached events have their own BufferCache<T>::makeActive() implementation, which
+		// calls this method and afterwards erase() in the cache class. This is why, when
+		// called from any kind of makeActive() method, it is unnecessary to call
+		// BufferCache<T>::remove() from m_remove().
+
+		// NOTE: in case the semantics of skip_deletelist change, please adapt the following lines
+		BPEvent *bp_ev;
+		if((bp_ev = dynamic_cast<BPEvent*>(*it)) != NULL)
+			m_Bp_cache.remove(bp_ev);
 	}
 
-	BPEvent *bp_ev;
-	if((bp_ev = dynamic_cast<BPEvent*>(*it)) != NULL)
-		m_Bp_cache.remove(bp_ev);
 	return (m_BufferList.erase(it));
 }
 

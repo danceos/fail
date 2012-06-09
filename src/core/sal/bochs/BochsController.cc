@@ -119,24 +119,17 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 #endif
 	//this code is highly optimised for the average case, so it me appear a bit ugly
 	bool do_fire = false;
-	unsigned i = 0;
+	int i = 0;
 	BufferCache<BPEvent*> *buffer_cache = m_EvList.getBPBuffer();
 	while(i < buffer_cache->getCount()) {
 		BPEvent *pEvBreakpt = buffer_cache->get(i);
 		if(pEvBreakpt->isMatching(instrPtr, address_space)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 
-			//transition to STL: find the element we are working on in the Event List
-			EventList::iterator it = std::find(m_EvList.begin(), m_EvList.end(), pEvBreakpt);
-			it = m_EvList.makeActive(it);
-			//find out how much elements need to be skipped to get in sync again
-			//(should be one or none, the loop is just to make sure)
-			for(unsigned j = i; j < buffer_cache->getCount(); j++) {
-				if(buffer_cache->get(j) == (*it)) {
-					i = j;
-					break;
-				}
-			}
+			i = buffer_cache->makeActive(m_EvList, i);
+			assert(i >= 0 &&
+					   "FATAL ERROR: Could not erase BPEvent from cache");
+
 			// we now know we need to fire the active events - usually we do not have to
 			do_fire = true;
 			// "i" has already been set to the next element (by calling
