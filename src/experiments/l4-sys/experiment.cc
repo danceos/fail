@@ -49,7 +49,7 @@ istream& operator>>(istream& in, trace_instr &val) {
 	return in;
 }
 
-char const * const state_folder  = "l4sys.state";
+char const * const state_folder = "l4sys.state";
 char const * const instr_list_fn = "ip.list";
 char const * const golden_run_fn = "golden.out";
 address_t const aspace = 0x01e00000;
@@ -59,8 +59,7 @@ string golden_run;
 //the program needs to run 5 times without a fault
 const unsigned times_run = 5;
 
-string L4SysExperiment::sanitised(string in_str)
-{
+string L4SysExperiment::sanitised(string in_str) {
 	string result;
 	result.reserve(in_str.size());
 	for (string::iterator it = in_str.begin(); it != in_str.end(); it++) {
@@ -76,8 +75,7 @@ string L4SysExperiment::sanitised(string in_str)
 	return result;
 }
 
-BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output)
-{
+BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output) {
 	IOPortEvent ev_ioport(0x3F8, true);
 	BaseEvent* ev = NULL;
 	if (clear_output)
@@ -95,8 +93,7 @@ BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output)
 	return ev;
 }
 
-bool L4SysExperiment::run()
-{
+bool L4SysExperiment::run() {
 	Logger log("L4Sys", false);
 	BPSingleEvent bp(0, aspace);
 
@@ -109,8 +106,7 @@ bool L4SysExperiment::run()
 		simulator.addEventAndWait(&bp);
 
 		log << "test function entry reached, saving state" << endl;
-		log << "EIP = " << hex << bp.getTriggerInstructionPointer()
-				<< " or "
+		log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or "
 				<< simulator.getRegisterManager().getInstructionPointer()
 				<< endl;
 		simulator.save(state_folder);
@@ -213,7 +209,7 @@ bool L4SysExperiment::run()
 	}
 
 	// STEP 4: The actual experiment.
-	for (int i = 0; i < L4SYS_NUMINSTR; i++) {
+	while (1) {
 		log << "restoring state" << endl;
 		simulator.restore(state_folder);
 
@@ -247,9 +243,8 @@ bool L4SysExperiment::run()
 				simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		log << "inject @ ip " << injection_ip << " (offset " << dec
-				<< instr_offset << ")" << " bit " << bit_offset << ": 0x"
-				<< hex << ((int) data) << " -> 0x" << ((int) newdata)
-				<< endl;
+				<< instr_offset << ")" << " bit " << bit_offset << ": 0x" << hex
+				<< ((int) data) << " -> 0x" << ((int) newdata) << endl;
 
 		// sanity check (only works if we're working with an instruction trace)
 		if (injection_ip != instr_list[instr_offset].trigger_addr) {
@@ -263,7 +258,7 @@ bool L4SysExperiment::run()
 
 			simulator.clearEvents();
 			m_jc.sendResult(param);
-			continue;
+			simulator.terminate(20);
 		}
 
 		// aftermath
@@ -305,8 +300,7 @@ bool L4SysExperiment::run()
 					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 		} else if (ev == &ev_trap) {
-			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber()
-					<< endl;
+			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 			param.msg.set_resulttype(param.msg.TRAP);
 			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
@@ -339,6 +333,7 @@ bool L4SysExperiment::run()
 #ifdef HEADLESS_EXPERIMENT
 	simulator.terminate(0);
 #endif
-// experiment successfully conducted
+
+	// experiment successfully conducted
 	return true;
 }

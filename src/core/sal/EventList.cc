@@ -4,7 +4,34 @@
 #include "SALInst.hpp"
 
 namespace fail {
-	
+
+void EventList::addToCaches(BaseEvent *ev)
+{
+	BPEvent *bps_ev;
+	if((bps_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+		m_Bp_cache.add(bps_ev);
+
+	IOPortEvent *io_ev;
+	if((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
+		m_Io_cache.add(io_ev);
+}
+
+void EventList::removeFromCaches(BaseEvent *ev)
+{
+	BPEvent *bpr_ev;
+	if((bpr_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+		m_Bp_cache.remove(bpr_ev);
+
+	IOPortEvent *io_ev;
+	if((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
+		m_Io_cache.remove(io_ev);
+}
+
+void EventList::clearCaches() {
+	m_Bp_cache.clear();
+	m_Io_cache.clear();
+}
+
 EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 {
 	assert(ev != NULL && "FATAL ERROR: Event (of base type BaseEvent*) cannot be NULL!");
@@ -12,9 +39,7 @@ EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 	assert(ev->getCounter() != 0);
 	ev->setParent(pExp); // event is linked to experiment flow
 
-	BPEvent *bp_ev;
-	if((bp_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
-		m_Bp_cache.add(bp_ev);
+	addToCaches(ev);
 	m_BufferList.push_back(ev);
 	return (ev->getId());
 }
@@ -30,7 +55,7 @@ void EventList::remove(BaseEvent* ev)
 			simulator.onEventDeletion(*it);
 		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++)
 			simulator.onEventDeletion(*it);
-		m_Bp_cache.clear();
+		clearCaches();
 		m_BufferList.clear();
 		// all remaining active events must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
@@ -41,9 +66,7 @@ void EventList::remove(BaseEvent* ev)
 	} else {
 		simulator.onEventDeletion(ev);
 
-		BPEvent *bp_ev;
-		if((bp_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
-			m_Bp_cache.remove(bp_ev);
+		removeFromCaches(ev);
 		m_BufferList.remove(ev);
 		firelist_t::const_iterator it =
 			std::find(m_FireList.begin(), m_FireList.end(), ev);
@@ -75,9 +98,7 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 		// BufferCache<T>::remove() from m_remove().
 
 		// NOTE: in case the semantics of skip_deletelist change, please adapt the following lines
-		BPEvent *bp_ev;
-		if((bp_ev = dynamic_cast<BPEvent*>(*it)) != NULL)
-			m_Bp_cache.remove(bp_ev);
+		removeFromCaches((*it));
 	}
 
 	return (m_BufferList.erase(it));
@@ -99,7 +120,7 @@ void EventList::remove(ExperimentFlow* flow)
 		for (bufferlist_t::iterator it = m_BufferList.begin();
 		     it != m_BufferList.end(); it++)
 			simulator.onEventDeletion(*it); // invoke event handler
-		m_Bp_cache.clear();
+		clearCaches();
 		m_BufferList.clear();
 	} else { // remove all events corresponding to a specific experiment ("flow"):
 		for (bufferlist_t::iterator it = m_BufferList.begin();

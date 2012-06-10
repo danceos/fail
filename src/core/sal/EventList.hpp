@@ -31,13 +31,21 @@ typedef std::vector<BaseEvent*>  firelist_t;
 typedef std::vector<BaseEvent*>  deletelist_t;
 
 /**
+ * Cache classes for the most commonly used types of events, utilising static typing.
+ * Apart from that, they work like bufferlist_t.
+ */
+typedef BufferCache<BPEvent*> bp_cache_t;
+typedef bp_cache_t::iterator bp_iter_t;
+typedef BufferCache<IOPortEvent*> io_cache_t;
+typedef io_cache_t::iterator io_iter_t;
+/**
  * \class EventList
  *
  * \brief This class manages the events of the Fail* implementation.
  *
  * If a event is triggered, the internal data structure will be updated (id est,
  * the event will be removed from the so called buffer-list and added to the
- * fire-list). Additionaly, if an experiment-flow deletes an "active" event
+ * fire-list). Additionally, if an experiment-flow deletes an "active" event
  * which is currently stored in the fire-list, the event (to be removed) will
  * be added to a -so called- delete-list. This ensures to prevent triggering
  * "active" events which have already been deleted by a previous experiment
@@ -53,8 +61,10 @@ class EventList
 		firelist_t m_FireList; //!< the active events (used temporarily)
 		deletelist_t m_DeleteList; //!< the deleted events (used temporarily)
 		BaseEvent* m_pFired; //!< the recently fired Event-object
-		BufferCache<BPEvent*> m_Bp_cache;
-		friend int BufferCache<BPEvent*>::makeActive(EventList &ev_list, int idx);
+		bp_cache_t m_Bp_cache; //!< the storage cache for breakpoint events
+		io_cache_t m_Io_cache; //!< the storage cache for port i/o events
+		friend bp_iter_t bp_cache_t::makeActive(EventList &ev_list, bp_iter_t idx);
+		friend io_iter_t io_cache_t::makeActive(EventList &ev_list, io_iter_t idx);
 	public:
 		/**
 		 * The iterator of this class used to loop through the list of
@@ -186,7 +196,27 @@ class EventList
 		 * Retrieves the BPEvent buffer cache.
 		 * @returns the buffer cache
 		 */
-		inline BufferCache<BPEvent*> *getBPBuffer() { return &m_Bp_cache; }
+		inline bp_cache_t &getBPBuffer() { return m_Bp_cache; }
+		/**
+		 * Retrieves the IOPortEvent buffer cache.
+		 * @returns the buffer cache
+		 */
+		inline io_cache_t &getIOBuffer() { return m_Io_cache; }
+	private:
+		/**
+		 * Add an event to its appropriate cache.
+		 * @param the event to add
+		 */
+		void addToCaches(BaseEvent *ev);
+		/**
+		 * Remove an event from its cache.
+		 * @param the event to remove
+		 */
+		void removeFromCaches(BaseEvent *ev);
+		/**
+		 * Clear the event caches.
+		 */
+		void clearCaches();
 };
 
 } // end-of-namespace: fail

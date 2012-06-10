@@ -91,33 +91,34 @@ void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream*
 
 void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space)
 {
-#if 0
-	//the original code - performs magnitudes worse than
-	//the code below and is responsible for most (~87 per cent)
-	//of the slowdown of FailBochs
 #ifdef DEBUG
 	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
 #endif
+	bool do_fire = false;
 	// Check for active breakpoint-events:
-	EventList::iterator it = m_EvList.begin();
-	while(it != m_EvList.end())
+	bp_cache_t &buffer_cache = m_EvList.getBPBuffer();
+	bp_cache_t::iterator it = buffer_cache.begin();
+	while(it != buffer_cache.end())
 	{
-		// FIXME: Maybe we need to improve the performance of this check.
-		BPEvent* pEvBreakpt = dynamic_cast<BPEvent*>(*it);
-		if(pEvBreakpt && pEvBreakpt->isMatching(instrPtr, address_space))
+		BPEvent* pEvBreakpt = *it;
+		if(pEvBreakpt->isMatching(instrPtr, address_space))
 		{
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = m_EvList.makeActive(it);
+			it = buffer_cache.makeActive(m_EvList, it);
+			do_fire = true;
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
 		}
 		it++;
 	}
-	m_EvList.fireActiveEvents();
-#endif
-	//this code is highly optimised for the average case, so it me appear a bit ugly
+	if(do_fire)
+		m_EvList.fireActiveEvents();
+	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
+	//       implementation.
+#if 0
+	//deprecated - this code is ugly
 	bool do_fire = false;
 	int i = 0;
 	BufferCache<BPEvent*> *buffer_cache = m_EvList.getBPBuffer();
@@ -140,21 +141,20 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	}
 	if(do_fire)
 		m_EvList.fireActiveEvents();
-	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
-	//       implementation.
+#endif
 }
 
 void BochsController::onIOPortEvent(unsigned char data, unsigned port, bool out) {
 	// Check for active breakpoint-events:
-	EventList::iterator it = m_EvList.begin();
-	while(it != m_EvList.end())
+	io_cache_t &buffer_cache = m_EvList.getIOBuffer();
+	io_cache_t::iterator it = buffer_cache.begin();
+	while(it != buffer_cache.end())
 	{
-		// FIXME: Maybe we need to improve the performance of this check.
-		IOPortEvent* pIOPt = dynamic_cast<IOPortEvent*>(*it);
-		if(pIOPt && pIOPt->isMatching(port, out))
+		IOPortEvent* pIOPt = (*it);
+		if(pIOPt->isMatching(port, out))
 		{
 			pIOPt->setData(data);
-			it = m_EvList.makeActive(it);
+			it = buffer_cache.makeActive(m_EvList, it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment

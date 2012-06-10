@@ -7,87 +7,11 @@
 namespace fail {
 
 template<class T>
-void BufferCache<T>::add(T val)
+typename BufferCache<T>::iterator BufferCache<T>::makeActive(EventList &ev_list, BufferCache<T>::iterator idx)
 {
-	int new_size = getCount() + 1;
-	int new_last_index = getCount();
-
-	int res = reallocate_buffer(new_size);
-	assert (res == 0 && "FATAL ERROR: Could not add event to cache");
-
-	set(new_last_index, val);
-}
-
-template<class T>
-void BufferCache<T>::remove(T val)
-{
-	bool do_remove = false;
-	for (int i = 0; i < getCount(); i++) {
-		if (get(i) == val) {
-			do_remove = true;
-		}
-		if (do_remove) {
-			if (i > getCount() - 1) {
-				set(i, get(i + 1));
-			}
-		}
-	}
-
-	if (do_remove) {
-		int new_size = getCount() - 1;
-		int res = reallocate_buffer(new_size);
-		assert (res == 0 && "FATAL ERROR: Could not remove event from cache");
-	}
-}
-
-template<class T>
-void BufferCache<T>::clear()
-{
-	setCount(0);
-	free(m_Buffer);
-	m_Buffer = NULL;
-}
-
-template<class T>
-int BufferCache<T>::erase(int idx)
-{
-	if(idx < 0 || idx >= getCount())
-		return -2;
-
-	for (int i = idx; i < getCount() - 1; i++) {
-		set(i, get(i + 1));
-	}
-
-	int new_size = getCount() - 1;
-	if (reallocate_buffer(new_size) != 0)
-		return -1;
-	return idx;
-}
-
-template<class T>
-int BufferCache<T>::reallocate_buffer(int new_size)
-{
-	if (new_size < 0)
-		return 20;
-
-	if (new_size == 0) {
-		clear();
-		return 0;
-	}
-	void *new_buffer = realloc(m_Buffer, new_size * sizeof(T));
-	if (new_buffer == NULL)
-		return 10;
-	m_Buffer = static_cast<T*>(new_buffer);
-	setCount(new_size);
-	return 0;
-}
-
-template<class T>
-int BufferCache<T>::makeActive(EventList &ev_list, int idx)
-{
-	assert(idx < getCount() &&
+	assert(idx != end() &&
 		   "FATAL ERROR: Index larger than cache!");
-	T ev = get(idx);
+	T ev = *idx;
 	assert(ev && "FATAL ERROR: Object pointer cannot be NULL!");
 	ev->decreaseCounter();
 	if (ev->getCounter() > 0) {
@@ -102,7 +26,8 @@ int BufferCache<T>::makeActive(EventList &ev_list, int idx)
 	return erase(idx);
 }
 
-// Declare whatever instances of the template you are going to use here:
+// Declare here whatever instances of the template you are going to use:
 template class BufferCache<BPEvent*>;
+template class BufferCache<IOPortEvent*>;
 
 } // end-of-namespace: fail

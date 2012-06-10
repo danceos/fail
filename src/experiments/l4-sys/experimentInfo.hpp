@@ -1,12 +1,15 @@
 #ifndef __EXPERIMENT_INFO_HPP__
   #define __EXPERIMENT_INFO_HPP__
 
-// FIXME autogenerate this
+//experiment types:
+#define GPRFLIP 10
+#define IDCFLIP 20
 
 #define L4SYS_FUNC_ENTRY		0x1007cd0
 #define L4SYS_FUNC_EXIT			0x1007d3a
 #define L4SYS_NUMINSTR			3184
-//#define HEADLESS_EXPERIMENT
-#define PREPARE_EXPERIMENT
+#define HEADLESS_EXPERIMENT
+#define EXPERIMENT_TYPE			IDCFLIP
+//#define PREPARE_EXPERIMENT
 
 #endif // __EXPERIMENT_INFO_HPP__
