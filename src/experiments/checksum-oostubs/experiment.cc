@@ -31,7 +31,7 @@ using namespace fail;
 
 bool ChecksumOOStuBSExperiment::run()
 {
-//	char const *statename = "checksum-oostubs.state"; // FIXME: Variable is unused!
+	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
 	BPSingleEvent bp;
 	

@@ -34,7 +34,7 @@ using namespace fail;
 
 bool WeatherMonitorExperiment::run()
 {
-// 	char const *statename = "bochs.state"; // FIXME: Variable is unused, accidental?
+	char const *statename = "bochs.state";
 	Logger log("Weathermonitor", false);
 	BPSingleEvent bp;
 	
