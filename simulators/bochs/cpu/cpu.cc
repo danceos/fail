@@ -507,6 +507,13 @@ unsigned BX_CPU_C::handleAsyncEvent(void)
 #endif
 
       BX_TICKN(10); // when in HLT run time faster for single CPU
+
+      // DanceOS
+#ifdef DANCEOS_RESTORE
+      if (fail::restore_bochs_request) {			
+        return 1;
+      }
+#endif
     }
   } else if (bx_pc_system.kill_bochs_request) {
     // setting kill_bochs_request causes the cpu loop to return ASAP.
