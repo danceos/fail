@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 
+#include <boost/timer.hpp>
+
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
 #include "cpn/CampaignManager.hpp"
@@ -43,6 +45,8 @@ bool WeatherMonitorCampaign::run()
 	}
 
 	log << "startup" << endl;
+
+	boost::timer t;
 
 	// load trace
 	ifstream tracef(trace_filename);
@@ -270,8 +274,9 @@ bool WeatherMonitorCampaign::run()
 		}
 		//delete res;	// currently racy if jobs are reassigned
 	}
-	log << "done.  sent " << count << " received " << rescount << endl;
 	results.close();
+	log << "done.  sent " << count << " received " << rescount << endl;
+	log << "elapsed: " << t.elapsed() << "s" << endl;
 
 	return true;
 }
