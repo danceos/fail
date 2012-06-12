@@ -21,6 +21,8 @@ EOF
 
 function alldefs() {
 cat <<EOF
+// suffix for simulator state, trace file
+#define WEATHER_SUFFIX				".`basename $1|sed s/\\\\..*$//`"
 // main() address:
 // nm -C $(basename $1)|fgrep main
 #define WEATHER_FUNC_MAIN			0x`addrof $1 main`

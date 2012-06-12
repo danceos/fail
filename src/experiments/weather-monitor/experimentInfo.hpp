@@ -8,6 +8,8 @@
 
 #if WEATHERMONITOR_VARIANT == 0 // without vptr guards
 
+// suffix for simulator state, trace file
+#define WEATHER_SUFFIX				".vanilla"
 // main() address:
 // nm -C vanilla.elf|fgrep main
 #define WEATHER_FUNC_MAIN			0x00100f70
@@ -44,6 +46,8 @@
 
 #elif WEATHERMONITOR_VARIANT == 1 // with guards
 
+// suffix for simulator state, trace file
+#define WEATHER_SUFFIX				".guarded"
 // main() address:
 // nm -C guarded.elf|fgrep main
 #define WEATHER_FUNC_MAIN			0x00100fc0
@@ -80,6 +84,8 @@
 
 #elif WEATHERMONITOR_VARIANT == 2 // with guards + plausibility check
 
+// suffix for simulator state, trace file
+#define WEATHER_SUFFIX				".plausibility"
 // main() address:
 // nm -C plausibility.elf|fgrep main
 #define WEATHER_FUNC_MAIN			0x00100fd0

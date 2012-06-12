@@ -19,8 +19,8 @@
 using namespace std;
 using namespace fail;
 
-char const * const trace_filename   = "trace.pb";
-char const * const results_filename = "weathermonitor.csv";
+char const * const trace_filename   = "trace.tc" WEATHER_SUFFIX;
+char const * const results_filename = "weathermonitor" WEATHER_SUFFIX ".csv";
 
 // equivalence class type: addr, [i1, i2]
 // addr: byte to inject a bit-flip into

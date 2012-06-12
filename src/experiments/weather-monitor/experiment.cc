@@ -34,7 +34,7 @@ using namespace fail;
 
 bool WeatherMonitorExperiment::run()
 {
-	char const *statename = "bochs.state";
+	char const *statename = "bochs.state" WEATHER_SUFFIX;
 	Logger log("Weathermonitor", false);
 	BPSingleEvent bp;
 	
@@ -75,7 +75,7 @@ bool WeatherMonitorExperiment::run()
 	//tp.setLogIPOnly(true);
 
 	// record trace
-	char const *tracefile = "trace.pb";
+	char const *tracefile = "trace.tc" WEATHER_SUFFIX;
 	ofstream of(tracefile);
 	tp.setTraceFile(&of);
 
