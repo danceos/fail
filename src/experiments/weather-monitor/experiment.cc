@@ -249,6 +249,10 @@ bool WeatherMonitorExperiment::run()
 		// error detected
 		BPSingleEvent ev_detected(WEATHER_FUNC_VPTR_PANIC);
 		simulator.addEvent(&ev_detected);
+		// timeout (e.g., stuck in a HLT instruction)
+		// 10000us = 500000 instructions
+		TimerEvent ev_timeout(10000, true);
+		simulator.addEvent(&ev_timeout);
 
 #if LOCAL && 0
 		// XXX debug
@@ -277,6 +281,10 @@ bool WeatherMonitorExperiment::run()
 			log << "Result FINISHED (" << dec
 			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
 			result->set_resulttype(result->FINISHED);
+		} else if (ev == &ev_timeout) {
+			log << "Result TIMEOUT (" << dec
+			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
+			result->set_resulttype(result->TIMEOUT);
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);

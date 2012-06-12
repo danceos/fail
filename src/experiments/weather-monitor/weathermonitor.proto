@@ -30,7 +30,8 @@ message WeathermonitorProtoMsg {
 			TRAP = 2;
 			OUTSIDE = 3;
 			DETECTED = 4;
-			UNKNOWN = 5;
+			TIMEOUT = 5;
+			UNKNOWN = 6;
 		}
 		required ResultType resulttype = 2;
 
