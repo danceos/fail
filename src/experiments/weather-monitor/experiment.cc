@@ -306,7 +306,9 @@ bool WeatherMonitorExperiment::run()
 			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
-		simulator.removeEvent(&ev_timeout);
+		// explicitly remove all events before we leave their scope
+		// FIXME event destructors should remove them from the queues
+		simulator.clearEvents();
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
