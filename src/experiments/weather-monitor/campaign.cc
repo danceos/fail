@@ -250,7 +250,9 @@ bool WeatherMonitorCampaign::run()
 			log << "ec.instr2 != instr_offset" << endl;
 		}
 		if (res->msg.result_size() != 8) {
-			results << "result_size " << res->msg.result_size() << endl;
+			results << "result_size " << res->msg.result_size()
+			        << " instr2 " << ec.instr2
+			        << " data_address " << ec.data_address << endl;
 			log << "result_size " << res->msg.result_size() << endl;
 		}
 
