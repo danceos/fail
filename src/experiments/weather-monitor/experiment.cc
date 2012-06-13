@@ -82,9 +82,17 @@ bool WeatherMonitorExperiment::run()
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
+#if 1
 	// trace WEATHER_NUMITER_TRACING measurement loop iterations
+	// -> calibration
 	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
 	bp.setCounter(WEATHER_NUMITER_TRACING);
+#else
+	// trace WEATHER_NUMINSTR_TRACING instructions
+	// -> campaign-ready traces with identical lengths
+	bp.setWatchInstructionPointer(ANY_ADDR);
+	bp.setCounter(WEATHER_NUMINSTR_TRACING);
+#endif
 	simulator.addEvent(&bp);
 	BPSingleEvent ev_count(ANY_ADDR);
 	simulator.addEvent(&ev_count);
