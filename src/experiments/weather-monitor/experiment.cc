@@ -321,10 +321,13 @@ bool WeatherMonitorExperiment::run()
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
 		log << "WTF? param.msg.result_size() != 8" << endl;
-	}
+	} else {
 #if !LOCAL
-	m_jc.sendResult(param);
+		m_jc.sendResult(param);
+#endif
+	}
 
+#if !LOCAL
 	}
 #endif
 
