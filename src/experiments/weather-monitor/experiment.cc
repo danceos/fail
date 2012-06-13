@@ -306,6 +306,7 @@ bool WeatherMonitorExperiment::run()
 			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
+		simulator.removeEvent(&ev_timeout);
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
