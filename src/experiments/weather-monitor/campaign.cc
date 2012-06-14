@@ -88,7 +88,7 @@ bool WeatherMonitorCampaign::run()
 
 		// for every section in the trace between subsequent memory
 		// accesses to that address ...
-		while(ps.getNext(&ev)) {
+		while (ps.getNext(&ev) && instr < WEATHER_NUMINSTR_TRACING) {
 			// instruction events just get counted
 			if (!ev.has_memaddr()) {
 				// new instruction

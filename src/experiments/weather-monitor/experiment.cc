@@ -88,6 +88,8 @@ bool WeatherMonitorExperiment::run()
 	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
 	bp.setCounter(WEATHER_NUMITER_TRACING);
 #else
+	// FIXME this doesn't work properly: trace is one instruction too short as
+	//       tp is removed before all events were delivered
 	// trace WEATHER_NUMINSTR_TRACING instructions
 	// -> campaign-ready traces with identical lengths
 	bp.setWatchInstructionPointer(ANY_ADDR);
