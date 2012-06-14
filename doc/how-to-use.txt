@@ -1,0 +1,171 @@
+=========================================================================================
+Steps to run a boot image in Fail* using the Bochs simulator backend:
+=========================================================================================
+Follow the Bochs documentation, and start your own "bochsrc" configuration file
+based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
+"/usr/share/doc/bochs/examples/bochsrc.gz" on Debian systems with Bochs installed).
+ 1. Add your floppy/cdrom/hdd image in the floppya/ata0-master/ata0-slave
+    sections; configure the boot: section appropriately.
+ 2. Comment out com1 and parport1.
+ 3. The following Bochs configuration settings (managed in the "bochsrc" file) might
+    be helpful, depending on your needs:
+     - For "headless" experiments:
+         config_interface: textconfig
+         display_library: nogui
+     - For an X11 GUI:
+         config_interface: textconfig
+         display_library: x
+     - For a wxWidgets GUI (does not play well with Fail*'s "restore" feature):
+         config_interface: wx
+         display_library: wx
+     - Reduce the guest system's RAM to a minimum to reduce Fail*'s memory footprint
+       and save/restore overhead, e.g.:
+         memory: guest=16, host=16
+     - If you want to redirect FailBochs's output to a file using the shell's
+       redirection operator '>', make sure "/dev/stdout" is not used as a target
+       file for logging.  (The Debian "bochsrc" template unfortunately does this
+       in two places.  It suffices to comment out these entries.)
+     - To make Fail* terminate if something unexpected happens in a larger
+       campaign, be sure it doesn't "ask" in these cases, e.g.:
+         panic: action=fatal
+         error: action=fatal
+         info: action=ignore
+         debug: action=ignore
+         pass: action=ignore
+     - If you need a quick-and-dirty way to pass data from the guest system to the
+       outside world, and you don't want to write an experiment utilizing
+       GuestEvents, you can use the "port e9 hack" that prints all outb's to port
+       0xe9 to the console:
+         port_e9_hack: enabled=1
+     - Determinism:  (Fail)Bochs is deterministic regarding timer interrupts,
+       i.e., two experiment runs after calling simulator.restore() will count the
+       same number of instructions between two interrupts.  Though, you need to be
+       careful when running (Fail)Bochs with a GUI enabled:  Typing "bochs -q<return>"
+       on the command line may lead to the GUI window receiving a "return key
+       released" event, resulting in a keyboard interrupt for the guest system.
+       This can be avoided by starting Bochs with "sleep 1; bochs -q", or
+       disabling the GUI (see "headless experiments" above).
+
+=========================================================================================
+Example experiments and code snippets
+=========================================================================================
+
+Experiment "hsc-simple":
+**********************************************************************
+A simple standalone experiment (without a separate campaign). To compile this
+experiment, the following steps are required:
+ 1. Add "hsc-simple" to ccmake's EXPERIMENTS_ACTIVATED.
+ 2. Enable CONFIG_EVENT_BREAKPOINTS, CONFIG_SR_RESTORE and CONFIG_SR_SAVE.
+ 3. Build Fail* and Bochs, see "how-to-build.txt" for details-
+ 4. Enter experiment_targets/hscsimple/, bunzip2 -k *.bz2
+ 5. Start the Bochs simulator by typing
+      $ bochs -q
+    After successfully booting the eCos/hello world example, the console shows
+    "[HSC] breakpoint reached, saving", and a hello.state/ subdirectory appears.
+    You probably need to adjust the bochsrc's paths to romimage/vgaromimage.
+    These by default point to the locations installed by the Debian packages
+    "bochsbios" and "vgabios"; for example, you alternatively may use the
+    BIOSes supplied in "${FAIL_DIR}/simulators/bochs/bios/".
+ 6. Compile the experiment's second step: edit
+    fail/src/experiments/hsc-simple/experiment.cc, and change the first "#if 1"
+    into "#if 0".  Make an incremental build, e.g., by running
+    "${FAIL_DIR}/scripts/rebuild-bochs.sh -" from your ${BUILD_DIR}.
+ 7. Back to ../experiment_targets/hscsimple/ (assuming, your are in ${FAIL_DIR}),
+    run 
+      $ bochs -q
+    After restoring the state, the hello world program's calculation should
+    yield a different result.
+
+
+Experiment "coolchecksum":
+**********************************************************************
+An example for separate campaign/experiment implementations. To compile this
+experiment, the following steps are required:
+ 1. Run step #1 (and if you're curious how COOL_ECC_NUMINSTR in
+    experimentInfo.hpp was figured out, then step #2) of the experiment
+    (analogous to what needed to be done in case of the "hsc-simple" experiment,
+    see above).  The experiment's target guest system can be found under
+    ../experiment_targets/coolchecksum/.
+    (If you want to enable COOL_FAULTSPACE_PRUNING, step #2 is mandatory because
+    it generates the instruction/memory access trace needed for pruning.)
+ 2. Build the campaign server: make coolchecksum-server
+ 3. Run the campaign server: bin/coolchecksum-server
+ 4. In another terminal, run step #3 of the experiment ("bochs -q").
+
+Step #3 of the experiment currently runs 2000 experiment iterations and then
+terminates, because Bochs has some memory leak issues.  You need to re-run
+Bochs for the next 2k experiments.
+
+The experiments can be significantly sped up by
+ a) parallelization (run more FailBochs clients and
+ b) a headless (and more optimized) Fail* configuration (see above).
+
+
+Experiment "MHTestCampaign":
+**********************************************************************
+An example for separate campaign/experiment implementations.
+ 1. Execute Campaign (job server): ${BUILD_DIR}/bin/MHTestCampaign-server
+ 2. Run the FailBochs instance, in properly defined environment:
+      $ bochs -q
+
+=========================================================================================
+Parallelization
+=========================================================================================
+Fail* is designed to allow parallelization of experiment execution allowing to reduce
+the time needed to execute the experiments on a (larger) set of experiment data (aka
+input parameters for the experiment execution, e.g. instruction pointer, registers, bit
+numbers, ...). We call such "experiment data" the parameter sets. The so called "campaign"
+is responsible for managing the parameter sets (i.e., the data to be used by the experiment
+flows), inquired by the clients. As a consequence, the campaign is running on the server-
+side and the experiment flow are running on the (distributed) clients.
+First of all, the Fail* instances (and other required files, e.g. saved state) are
+distributed to the clients. In the second step the campaign(-server) is started, preparing
+it's parameter-sets in order to be able to answer the requests from the clients. (Once
+there are available parameter-sets, the clients can request them.) In the final step,
+the distributed Fail* clients have to be started. As soon as this setup is finished,
+the clients request new parameter-sets, execute their experiment code and return their
+results to the server (aka campaign) in an iterative way, until all paremeter-sets have
+been processed successfully. If all (new) parameter-sets have been distributed, the
+campaign starts to resend unfinished parameter-sets to requesting clients in order to
+speed up the overall campaign execution. Additionally, this ensures that all parameter
+sets will produce a corresponding result set. (If, for example, a client terminates
+abnormally, no result is send back. This scenario is managed by this "resend-mechanism"
+of the campain, too.)
+
+
+Shell scripts supporting experiment distribution:
+**********************************************************************
+These can be found in ${FAIL_DIR}/scripts/ (for now have a look at the script files
+themselves, they contain some documentation):
+ - fail-env.sh: Environment variables for distribution/parallelization host
+                lists etc.; don't modify in-place but edit your own copy!
+ - distribute-experiment.sh: Distribute necessary FailBochs ingredients to
+                             experiment hosts.
+ - runcampaign.sh: Locally run a campaign server, and a large amount of
+                   clients on the experiment hosts.
+ - multiple-clients.sh: Is run on an experiment host by runcampaign.sh,
+                        starts several instances of client.sh in a tmux session.
+ - client.sh: (Repeatedly) Runs a single FailBochs instance.
+
+
+Some useful things to note:
+**********************************************************************
+ - Using the distribute-experiment.sh script causes the local bochs binary to
+   be copied to the hosts. If the binary is not present in the current directory
+   the default bochs binary (-> $ which bochs) will be used. If you have modified
+   some of your experiment code (i.e., your bochs binary will change), don't
+   forget to delete the local bochs binary in order to distribute the *new* binary.
+ - The runcampaign.sh script prints some status information about the clients
+   recently started. In addition, there will be a few error messages concerning
+   ssh, tmux and so on. They can be ignored for now.
+ - The runcampaign.sh script starts the coolchecksum-server. Note that the server
+   instance will terminate immediatly (without notice), if there is still an
+   existing coolcampaign.csv file.
+ - In order to make the performance gains (mentioned above) take effect, a "workload
+   balancing" between the server and the clients is mandatory. This means that
+   the communication overhead (client <-> server) and the time, needed to execute
+   the experiment code on the client-side should be in due proportion. More
+   specifically, for each experiment there will be exactly 2 TCP connections
+   (send parameter-set to client, send result to server) established. Therefore
+   you should ensure that the execution time of the experiment is "long enough"
+   (heuristic). (See existing experiments for examples.)
