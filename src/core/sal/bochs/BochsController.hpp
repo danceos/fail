@@ -81,7 +81,7 @@ public:
 	 * @param instrPtr the new instruction pointer
 	 * @param address_space the address space the CPU is currently in
 	 */
-	void onInstrPtrChanged(address_t instrPtr, address_t address_space);
+	void onInstrPtrChanged(address_t instrPtr, address_t address_space, BX_CPU_C *context, bxICacheEntry_c *cache_entry);
 	/**
 	 * I/O port communication handler. This method is called (from
 	 * the IOPortCom aspect) every time when Bochs performs a port I/O operation.
@@ -174,6 +174,19 @@ public:
 	 *         the returned string is empty
 	 */
 	const std::string& getMnemonic() const;
+	/**
+	 * Retrieves the current Bochs instruction cache entry
+	 * @returns a pointer to a bxICacheEntry_c object
+	 */
+	inline bxICacheEntry_c *getICacheEntry() const { return m_CacheEntry; }
+	/**
+	 * Retrieves the current CPU context
+	 * @return a pointer to a BX_CPU_C object
+	 */
+	inline BX_CPU_C *getCPUContext() const { return m_CPUContext; }
+private:
+	BX_CPU_C *m_CPUContext;
+	bxICacheEntry_c *m_CacheEntry;
 };
 
 } // end-of-namespace: fail

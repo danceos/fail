@@ -19,10 +19,10 @@ aspect Breakpoints {
 		// BX_CPU(0) otherwise
 		BX_CPU_C* pThis = *(tjp->arg<0>());
 		// Points to the *current* bxInstruction-object
-		//bxInstruction_c* pInstr = *(tjp->arg<1>());
+		bxICacheEntry_c* pEntry = *(tjp->arg<1>());
 
 		// report this event to the Bochs controller:
-		fail::simulator.onInstrPtrChanged(pThis->get_instruction_pointer(), pThis->cr3);
+		fail::simulator.onInstrPtrChanged(pThis->get_instruction_pointer(), pThis->cr3, pThis, pEntry);
 		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.
 	}
 };

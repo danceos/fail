@@ -19,7 +19,8 @@ bx_bool interrupt_injection_request = false;
 int     interrupt_to_fire           = -1;
 
 BochsController::BochsController()
-	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager())
+	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager()),
+	  m_CPUContext(NULL), m_CacheEntry(NULL)
 {
 	// -------------------------------------
 	// Add the general purpose register:
@@ -89,12 +90,15 @@ void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream*
 }
 #endif // DEBUG
 
-void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space)
+void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space,
+		BX_CPU_C *context, bxICacheEntry_c *cache_entry)
 {
 #ifdef DEBUG
 	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
 #endif
+	m_CPUContext = context;
+	m_CacheEntry = cache_entry;
 	bool do_fire = false;
 	// Check for active breakpoint-events:
 	bp_cache_t &buffer_cache = m_EvList.getBPBuffer();
@@ -117,31 +121,6 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		m_EvList.fireActiveEvents();
 	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
 	//       implementation.
-#if 0
-	//deprecated - this code is ugly
-	bool do_fire = false;
-	int i = 0;
-	BufferCache<BPEvent*> *buffer_cache = m_EvList.getBPBuffer();
-	while(i < buffer_cache->getCount()) {
-		BPEvent *pEvBreakpt = buffer_cache->get(i);
-		if(pEvBreakpt->isMatching(instrPtr, address_space)) {
-			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
-
-			i = buffer_cache->makeActive(m_EvList, i);
-			assert(i >= 0 &&
-					   "FATAL ERROR: Could not erase BPEvent from cache");
-
-			// we now know we need to fire the active events - usually we do not have to
-			do_fire = true;
-			// "i" has already been set to the next element (by calling
-			// makeActive()):
-			continue; // -> skip loop  increment
-		}
-		i++;
-	}
-	if(do_fire)
-		m_EvList.fireActiveEvents();
-#endif
 }
 
 void BochsController::onIOPortEvent(unsigned char data, unsigned port, bool out) {
@@ -300,11 +279,13 @@ void BochsController::onEventTrigger(BaseEvent* pev)
 const std::string& BochsController::getMnemonic() const
 {
 	static std::string str;
+#if 0
 	bxICacheEntry_c* pEntry = BX_CPU(0)->getICacheEntry();
 	assert(pEntry != NULL && "FATAL ERROR: Bochs internal function returned NULL (not expected)!");
 	bxInstruction_c* pInstr = pEntry->i;
 	assert(pInstr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-	const char* pszName = get_bx_opcode_name(pInstr->getIaOpcode());
+#endif
+	const char* pszName = get_bx_opcode_name(getICacheEntry()->i->getIaOpcode());
 	if (pszName != NULL)
 		str = pszName;
 	else

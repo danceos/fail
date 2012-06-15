@@ -14,6 +14,8 @@ public:
 class L4SysCampaign : public fail::Campaign {
 public:
 	virtual bool run();
+private:
+	std::string output_result(L4SysProtoMsg_ResultType res);
 };
 
 #endif // __L4SYS_CAMPAIGN_HPP__
