@@ -20,7 +20,7 @@ fail:  Fail* parent directory, containing all source & configuration files (${FA
       |-bochs:  backend source files to the Bochs simulator
       |-ovp:  backend source files to the Open Virtual Platform simulator
     |-cpn:  campaign- (and therefore server-)related source files
-    |-efw:  experiment-framework- (and therefore client-)related soure files
+    |-efw:  experiment-framework- (and therefore client-)related source files
     |-comm:  communication related source files (these files are used by cpn and efw)
       |-msg:  Google protobuf message definitions used for communication purposes
   |-experiments:  experiment code files (within a new dir) need to be located here
