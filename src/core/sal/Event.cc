@@ -3,7 +3,7 @@
 
 namespace fail {
 
-EventId BaseEvent::m_Counter = 0;
+event_id_t BaseEvent::m_Counter = 0;
 
 bool TroubleEvent::isMatching(unsigned troubleNum) const
 {

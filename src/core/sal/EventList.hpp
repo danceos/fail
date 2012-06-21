@@ -83,7 +83,7 @@ public:
 	 *        which is interested in such events, cannot be \c NULL)
 	 * @return the id of the added event object, that is ev->getId()
 	 */
-	EventId add(BaseEvent* ev, ExperimentFlow* pExp);
+	event_id_t add(BaseEvent* ev, ExperimentFlow* pExp);
 	/**
 	 * Removes the event based upon the specified \a ev pointer (requires
 	 * to loop through the whole buffer-list).
@@ -134,7 +134,7 @@ public:
 	 * @param id of event to be retrieved.
 	 * @return pointer to event or \c NULL of \a id could not be found
 	 */
-	BaseEvent* getEventFromId(EventId id);
+	BaseEvent* getEventFromId(event_id_t id);
 	/**
 	 * Removes all events for the specified experiment.
 	 * @param flow pointer to experiment context (0 = all experiments)

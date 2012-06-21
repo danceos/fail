@@ -193,7 +193,7 @@ public:
 	 * @return the id of the event used to identify the object on occurrence;
 	 *         -1 is returned on errors
 	 */
-	EventId addEvent(BaseEvent* ev);
+	event_id_t addEvent(BaseEvent* ev);
 	/**
 	 * Removes the event with the specified id.
 	 * @param ev the pointer of the event-object to be removed; if \a ev is

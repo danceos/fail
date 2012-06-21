@@ -39,8 +39,6 @@ public:
 	 * mechanism in the experiment-flow. The timer starts automatically when
 	 * added to FailBochs.
 	 * @param timeout the time intervall in milliseconds (ms)
-	 * @param once \c true, if the TimerEvent should be triggered once,
-	 *        \c false if it should occur regularly
 	 * @see SimulatorController::addEvent
 	 */
 	TimerEvent(unsigned timeout)
@@ -56,14 +54,14 @@ public:
 	 *         the addition of the event \a pev, yielding an error in the
 	 *         experiment flow (i.e. -1 is returned).
 	 */
-	virtual bool onEventAddition();
+	bool onEventAddition();
 	/**
 	 * This method is called when an experiment flow removes an event from
 	 * the event-management by calling \c removeEvent(prev), \c clearEvents()
 	 * or by deleting a complete flow (\c removeFlow). More specifically, this
 	 * event handler will be called *before* the event is actually deleted.
 	 */
-	virtual void onEventDeletion();
+	void onEventDeletion();
 	/**
 	 * This method is called when an previously added event is about to be
 	 * triggered by the simulator-backend. More specifically, this event handler

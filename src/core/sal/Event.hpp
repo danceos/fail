@@ -14,10 +14,10 @@ namespace fail {
 
 class ExperimentFlow;
 
-typedef unsigned long EventId; //!< type of event ids
+typedef unsigned long event_id_t; //!< type of event ids
 
 //! invalid event id (used as a return indicator)
-const EventId    INVALID_EVENT = static_cast<EventId>(-1);
+const event_id_t    INVALID_EVENT = static_cast<event_id_t>(-1);
 //! address wildcard (e.g. for BPEvent's)
 const address_t       ANY_ADDR = static_cast<address_t>(-1);
 //! instruction wildcard
@@ -34,9 +34,9 @@ const unsigned   ANY_INTERRUPT = static_cast<unsigned>(-1);
 class BaseEvent {
 private:
 	//! current class-scoped id counter to provide \a unique id's
-	static EventId m_Counter;
+	static event_id_t m_Counter;
 protected:
-	EventId m_Id; //!< unique id of this event
+	event_id_t m_Id; //!< unique id of this event
 	time_t m_tStamp; //!< time stamp of event
 	unsigned int m_OccCounter; //!< event fires when 0 is reached
 	unsigned int m_OccCounterInit; //!< initial value for m_OccCounter
@@ -73,7 +73,7 @@ public:
 	 * Retrieves the unique event id for this event.
 	 * @return the unique id
 	 */
-	EventId getId() const { return (m_Id); }
+	event_id_t getId() const { return (m_Id); }
 	/**
 	 * Retrieves the time stamp of this event. The time stamp is set when
 	 * the event gets created, id est the constructor is called. The meaning

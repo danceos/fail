@@ -33,7 +33,7 @@ void EventList::clearCaches()
 	m_Io_cache.clear();
 }
 
-EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
+event_id_t EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 {
 	assert(ev != NULL && "FATAL ERROR: Event (of base type BaseEvent*) cannot be NULL!");
 	// a zero counter does not make sense
@@ -146,7 +146,7 @@ EventList::~EventList()
 	// nothing to do here yet
 }
 
-BaseEvent* EventList::getEventFromId(EventId id)
+BaseEvent* EventList::getEventFromId(event_id_t id)
 {
 	// Loop through all events:
 	for (bufferlist_t::iterator it = m_BufferList.begin();
