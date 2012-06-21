@@ -14,6 +14,7 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
+#include "sal/bochs/BochsEvents.hpp"
 #include "sal/Event.hpp"
 
 // you need to have the tracing plugin enabled for this
@@ -261,7 +262,7 @@ bool WeatherMonitorExperiment::run()
 		simulator.addEvent(&ev_detected);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(10000, true);
+		TimerEvent ev_timeout(10000);
 		simulator.addEvent(&ev_timeout);
 
 #if LOCAL && 0
@@ -316,9 +317,6 @@ bool WeatherMonitorExperiment::run()
 			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
-		// explicitly remove all events before we leave their scope
-		// FIXME event destructors should remove them from the queues
-		simulator.clearEvents();
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
