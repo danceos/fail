@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 
+#include <boost/timer.hpp>
+
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
 #include "cpn/CampaignManager.hpp"
@@ -13,12 +15,12 @@
 #include "ecc_region.hpp"
 
 #include "../plugins/tracing/TracingPlugin.hpp"
-char const * const trace_filename = "trace.pb";
 
 using namespace std;
 using namespace fail;
 
-char const * const results_csv = "chksumoostubs.csv";
+char const * const trace_filename = "trace.pb";
+char const * const results_filename = "chksumoostubs.csv";
 
 // equivalence class type: addr, [i1, i2]
 // addr: byte to inject a bit-flip into
@@ -34,18 +36,17 @@ bool ChecksumOOStuBSCampaign::run()
 {
 	Logger log("ChecksumOOStuBS Campaign");
 
-	ifstream test(results_csv);
-	if (test.is_open()) {
-		log << results_csv << " already exists" << endl;
-		return false;
-	}
-	ofstream results(results_csv);
+	// non-destructive: due to the CSV header we can always manually recover
+	// from an accident (append mode)
+	ofstream results(results_filename, ios::out | ios::app);
 	if (!results.is_open()) {
-		log << "failed to open " << results_csv << endl;
+		log << "failed to open " << results_filename << endl;
 		return false;
 	}
 
 	log << "startup" << endl;
+
+	boost::timer t;
 
 	// load trace
 	ifstream tracef(trace_filename);
@@ -76,6 +77,7 @@ bool ChecksumOOStuBSCampaign::run()
 	int count = 0;
 
 	// XXX do it the other way around: iterate over trace, search addresses
+	//   -> one "open" EC for every address
 	// for every injection address ...
 	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
 		cerr << ".";
@@ -89,7 +91,7 @@ bool ChecksumOOStuBSCampaign::run()
 		// for every section in the trace between subsequent memory
 		// accesses to that address ...
 		// XXX reorganizing the trace for efficient seeks could speed this up
-		while(ps.getNext(&ev)) {
+		while(ps.getNext(&ev) && instr < OOSTUBS_NUMINSTR) { //XXX: not sure if (instr < OOSTUBS_NUMINSTR) is really needed --chb
 			// instruction events just get counted
 			if (!ev.has_memaddr()) {
 				// new instruction
@@ -98,7 +100,9 @@ bool ChecksumOOStuBSCampaign::run()
 				continue;
 
 			// skip accesses to other data
-			} else if (ev.memaddr() != data_address) {
+			// FIXME again, do it the other way around, and use mm.isMatching()!
+			} else if (ev.memaddr() + ev.width() <= data_address
+			        || ev.memaddr() > data_address) {
 				continue;
 
 			// skip zero-sized intervals: these can
@@ -124,22 +128,19 @@ bool ChecksumOOStuBSCampaign::run()
 				// completely
 				ecs_need_experiment.push_back(current_ec);
 
-				// instantly enqueue jobs: that way the job clients can already
+				// instantly enqueue job: that way the job clients can already
 				// start working in parallel
-				for (int bitnr = 0; bitnr < 8; ++bitnr) {
-					ChecksumOOStuBSExperimentData *d = new ChecksumOOStuBSExperimentData;
-					// we pick the rightmost instruction in that interval
-					d->msg.set_instr_offset(current_ec.instr2);
-					d->msg.set_instr_address(current_ec.instr2_absolute);
-					d->msg.set_mem_addr(current_ec.data_address);
-					d->msg.set_bit_offset(bitnr);
+				ChecksumOOStuBSExperimentData *d = new ChecksumOOStuBSExperimentData;
+				// we pick the rightmost instruction in that interval
+				d->msg.set_instr_offset(current_ec.instr2);
+				d->msg.set_instr_address(current_ec.instr2_absolute);
+				d->msg.set_mem_addr(current_ec.data_address);
 
-					// store index into ecs_need_experiment
-					experiment_ecs[d] = ecs_need_experiment.size() - 1;
+				// store index into ecs_need_experiment
+				experiment_ecs[d] = ecs_need_experiment.size() - 1;
 
-					campaignmanager.addParam(d);
-					++count;
-				}
+				campaignmanager.addParam(d);
+				++count;
 			} else if (ev.accesstype() == ev.WRITE) {
 				// a sequence ending with WRITE: an
 				// injection anywhere here would have
@@ -164,13 +165,14 @@ bool ChecksumOOStuBSCampaign::run()
 		// result comparable to the non-pruned campaign.
 		// XXX still true for checksum-oostubs?
 		current_ec.instr2 = instr - 1;
-		current_ec.instr2_absolute = 0; // won't be used
+		current_ec.instr2_absolute = 0;  // unknown
 		current_ec.data_address = data_address;
 		// zero-sized?  skip.
 		if (current_ec.instr1 > current_ec.instr2) {
 			continue;
 		}
 		// as the experiment ends, this byte is a "don't care":
+		// TODO: still true for checksum-oostubs? compare to weathermonitor!
 		ecs_no_effect.push_back(current_ec);
 	}
 
@@ -195,7 +197,7 @@ bool ChecksumOOStuBSCampaign::run()
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
 	// CSV header
-	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tresulttype\tresult0\tresult1\tresult2\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
+	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tresult0\tresult1\tresult2\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
 
 	// store no-effect "experiment" results
 	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
@@ -205,11 +207,12 @@ bool ChecksumOOStuBSCampaign::run()
 		 << (*it).instr2 << "\t"
 		 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
 		 << (*it).data_address << "\t"
+		 << "0\t" // this entry starts at bit 0 ...
+		 << "8\t" // ... and is 8 bits wide
+		 << "1\t"
+		 << "99\t99\t99\t" // dummy value: we didn't do any real experiments
+		 << "1\t"
 		 << "99\t" // dummy value: we didn't do any real experiments
-		 << "1\t"
-		 << "99\t99\t99\t"
-		 << "1\t"
-		 << "99\t"
 		 << "0\t\n";
 	}
 
@@ -230,29 +233,43 @@ bool ChecksumOOStuBSCampaign::run()
 
 		// sanity check
 		if (ec.instr2 != res->msg.instr_offset()) {
-			results << "WTF" << endl;
-			log << "WTF" << endl;
-			//delete res;	// currently racy if jobs are reassigned
+			results << "ec.instr2 != instr_offset" << endl;
+			log << "ec.instr2 != instr_offset" << endl;
+		}
+		if (res->msg.result_size() != 8) {
+			results << "result_size " << res->msg.result_size()
+			        << " instr2 " << ec.instr2
+			        << " data_address " << ec.data_address << endl;
+			log << "result_size " << res->msg.result_size() << endl;
 		}
 
-		results
-		 << ec.instr1 << "\t"
-		 << ec.instr2 << "\t"
-		 << ec.instr2_absolute << "\t" // incorrect in all but one case!
-		 << ec.data_address << "\t"
-		 << res->msg.bit_offset() << "\t"
-		 << res->msg.resulttype() << "\t"
-		 << res->msg.resultdata(0) << "\t"
-		 << res->msg.resultdata(1) << "\t"
-		 << res->msg.resultdata(2) << "\t"
-		 << res->msg.finish_reached() << "\t"
-		 << res->msg.latest_ip() << "\t"
-		 << res->msg.error_corrected() << "\t"
-		 << res->msg.details() << "\n";
+		// one job contains 8 experiments
+		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
+			//results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tresult0\tresult1\tresult2\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
+			results
+			// repeated for all single experiments:
+			 << ec.instr1 << "\t"
+			 << ec.instr2 << "\t"
+			 << ec.instr2_absolute << "\t"
+			 << ec.data_address << "\t"
+			// individual results:
+			 << res->msg.result(idx).bit_offset() << "\t"
+			 << "1\t" // 1 bit wide
+			 << res->msg.result(idx).resulttype() << "\t"
+			 << res->msg.result(idx).resultdata(0) << "\t"
+			 << res->msg.result(idx).resultdata(1) << "\t"
+			 << res->msg.result(idx).resultdata(2) << "\t"
+			 << res->msg.result(idx).finish_reached() << "\t"
+			 << res->msg.result(idx).latest_ip() << "\t"
+			 << res->msg.result(idx).error_corrected() << "\t"
+			 << res->msg.result(idx).details() << "\n";
+		}
 		//delete res;	// currently racy if jobs are reassigned
+
 	}
-	log << "done.  sent " << count << " received " << rescount << endl;
 	results.close();
+	log << "done.  sent " << count << " received " << rescount << endl;
+	log << "elapsed: " << t.elapsed() << "s" << endl;
 
 	return true;
 }

@@ -7,31 +7,29 @@
 
 // the task function's entry address:
 // nm -C ecc.elf|fgrep main
-#define OOSTUBS_FUNC_ENTRY		0x00103f2c 
+#define OOSTUBS_FUNC_ENTRY		0x00101e88
 // empty function that is called explicitly when the experiment finished
 // nm -C ecc.elf|fgrep "finished()"
-#define OOSTUBS_FUNC_FINISH		0x001093f0
+#define OOSTUBS_FUNC_FINISH		0x00105040
 // function executing HLT with no chance for further progress (after panic())
 // nm -C ecc.elf|fgrep cpu_halt
-#define OOSTUBS_FUNC_CPU_HALT	0x00100987
+#define OOSTUBS_FUNC_CPU_HALT	0x001009f7
+
+#define OOSTUBS_TEXT_START		0x00100000 //FIXME: use real values provided by linker
+#define OOSTUBS_TEXT_END		0x00106bcc //FIXME: use real values provided by linker
+
 // number of instructions the target executes under non-error conditions from ENTRY to DONE:
 // (result of experiment's step #2)
-#define OOSTUBS_NUMINSTR		0x4a3401
+#define OOSTUBS_NUMINSTR		0x3FB877
 // number of instructions that are executed additionally for error corrections
 // (this is a rough guess ... TODO)
 #define OOSTUBS_RECOVERYINSTR	0x2000
-// the ECC protected object's address:
-// nm -C ecc.elf|fgrep objectUnderTest
-#define COOL_ECC_OBJUNDERTEST		0x002127a4 //FIXME
-// the ECC protected object's payload size:
-// (we know that from the object's definition and usual memory layout)
-#define COOL_ECC_OBJUNDERTEST_SIZE	10 //FIXME
 // the variable that's increased if ECC corrects an error:
 // nm -C ecc.elf|fgrep errors_corrected
-#define OOSTUBS_ERROR_CORRECTED	0x0010e3a4
+#define OOSTUBS_ERROR_CORRECTED	0x00109c14
 //
 // nm -C ecc.elf|fgrep results
-#define OOSTUBS_RESULTS_ADDR	0x0010d794
+#define OOSTUBS_RESULTS_ADDR	0x00108f90
 #define OOSTUBS_RESULTS_BYTES	12
 #define OOSTUBS_RESULT0			0xab3566a9
 #define OOSTUBS_RESULT1			0x44889112
