@@ -13,7 +13,7 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-//#include "sal/bochs/BochsEvents.hpp"
+#include "sal/bochs/BochsEvents.hpp"
 #include "sal/Event.hpp"
 
 // You need to have the tracing plugin enabled for this
@@ -240,7 +240,7 @@ bool ChecksumOOStuBSExperiment::run()
 		simulator.addEvent(&ev_beyond_text);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(1000000, true); // 50,000,000 instructions !!
+		TimerEvent ev_timeout(1000000); // 50,000,000 instructions !!
 		simulator.addEvent(&ev_timeout);
 
 		// remaining instructions until "normal" ending
