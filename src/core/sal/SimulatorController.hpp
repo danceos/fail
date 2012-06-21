@@ -105,33 +105,6 @@ public:
 	 * @param opcode the opcode of the conrecete jump instruction
 	 */
 	void onJumpEvent(bool flagTriggered, unsigned opcode);
-	/**
-	 * This method is called when an experiment flow adds a new event by
-	 * calling \c simulator.addEvent(pev) or \c simulator.addEventAndWait(pev).
-	 * More specifically, the event will be added to the event-list first
-	 * (buffer-list, to be precise) and then this event handler is called.
-	 * @param pev the event which has been added
-	 * @return You should return \c true to continue and \c false to prevent
-	 *         the addition of the event \a pev, yielding an error in the
-	 *         experiment flow (i.e. -1 is returned).
-	 */
-	virtual bool onEventAddition(BaseEvent* pev) { return true; }
-	/**
-	 * This method is called when an experiment flow removes an event from
-	 * the event-management by calling \c removeEvent(prev), \c clearEvents()
-	 * or by deleting a complete flow (\c removeFlow). More specifically, this
-	 * event handler will be called *before* the event is actually deleted.
-	 * @param pev the event to be deleted when returning from the event handler
-	 */
-	virtual void onEventDeletion(BaseEvent* pev) { }
-	/**
-	 * This method is called when an previously added event is about to be
-	 * triggered by the simulator-backend. More specifically, this event handler
-	 * will be called *before* the event is actually triggered, i.e. before the
-	 * corresponding coroutine is toggled.
-	 * @param pev the event to be triggered when returning from the event handler
-	 */
-	virtual void onEventTrigger(BaseEvent* pev) { }
 	/* ********************************************************************
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/
@@ -236,10 +209,8 @@ public:
 	/**
 	 * Waits on any events which have been added to the event management. If
 	 * one of those events occour, waitAny() will return the id of that event.
-	 * @return the previously occurred event
-	 * 
-	 * FIXME: Maybe this should return immediately if there are not events?
-	 *        (additional parameter flag?)
+	 * @return the previously occurred event, or \c NULL if there are no
+	 *         events to wait for
 	 */
 	BaseEvent* waitAny();
 	/**

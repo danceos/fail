@@ -7,6 +7,7 @@ if(BUILD_BOCHS)
 		Register.cc
 		SimulatorController.cc
 		bochs/BochsController.cc
+		bochs/BochsEvents.cc
 	)
 else()
 	set(SRCS

@@ -8,26 +8,27 @@ namespace fail {
 void EventList::addToCaches(BaseEvent *ev)
 {
 	BPEvent *bps_ev;
-	if((bps_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+	if ((bps_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
 		m_Bp_cache.add(bps_ev);
 
 	IOPortEvent *io_ev;
-	if((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
+	if ((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
 		m_Io_cache.add(io_ev);
 }
 
 void EventList::removeFromCaches(BaseEvent *ev)
 {
 	BPEvent *bpr_ev;
-	if((bpr_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
+	if ((bpr_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
 		m_Bp_cache.remove(bpr_ev);
 
 	IOPortEvent *io_ev;
-	if((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
+	if ((io_ev = dynamic_cast<IOPortEvent*>(ev)) != NULL)
 		m_Io_cache.remove(io_ev);
 }
 
-void EventList::clearCaches() {
+void EventList::clearCaches()
+{
 	m_Bp_cache.clear();
 	m_Io_cache.clear();
 }
@@ -41,7 +42,7 @@ EventId EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 
 	addToCaches(ev);
 	m_BufferList.push_back(ev);
-	return (ev->getId());
+	return ev->getId();
 }
 
 void EventList::remove(BaseEvent* ev)
@@ -52,9 +53,9 @@ void EventList::remove(BaseEvent* ev)
 	//   * copy m_FireList to m_DeleteList
 	if (ev == 0) {
 		for (bufferlist_t::iterator it = m_BufferList.begin(); it != m_BufferList.end(); it++)
-			simulator.onEventDeletion(*it);
+			(*it)->onEventDeletion();
 		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++)
-			simulator.onEventDeletion(*it);
+			(*it)->onEventDeletion();
 		clearCaches();
 		m_BufferList.clear();
 		// all remaining active events must not fire anymore
@@ -64,7 +65,7 @@ void EventList::remove(BaseEvent* ev)
 	//   * find/remove ev in m_BufferList
 	//   * if ev in m_FireList, copy to m_DeleteList
 	} else {
-		simulator.onEventDeletion(ev);
+		ev->onEventDeletion();
 
 		removeFromCaches(ev);
 		m_BufferList.remove(ev);
@@ -78,7 +79,7 @@ void EventList::remove(BaseEvent* ev)
 
 EventList::iterator EventList::remove(iterator it)
 {
-	return (m_remove(it, false));
+	return m_remove(it, false);
 }
 
 EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
@@ -87,9 +88,9 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 		// If skip_deletelist = true, m_remove was called from makeActive. Accordingly, we
 		// are not going to delete an event, instead we are "moving" an event object (= *it)
 		// from the buffer list to the fire-list. Therefore we only need to call the simulator's
-		// event handler (m_onEventDeletion), if m_remove is called with the primary intention
+		// event handler (onEventDeletion), if m_remove is called with the primary intention
 		// to *delete* (not "move") an event.
-		simulator.onEventDeletion(*it);
+		(*it)->onEventDeletion();
 		m_DeleteList.push_back(*it);
 
 		// Cached events have their own BufferCache<T>::makeActive() implementation, which
@@ -98,35 +99,26 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 		// BufferCache<T>::remove() from m_remove().
 
 		// NOTE: in case the semantics of skip_deletelist change, please adapt the following lines
-		removeFromCaches((*it));
+		removeFromCaches(*it);
 	}
 
-	return (m_BufferList.erase(it));
+	return m_BufferList.erase(it);
 }
 
 void EventList::remove(ExperimentFlow* flow)
 {
-	// WARNING: (*it) (= all elements in the lists) can be an invalid ptr because
-	// clearEvents will be called automatically when the allocating experiment (i.e.
-	// run()) has already ended. Accordingly, we cannot call
-	//        simulator.onEventDeletion(*it)
-	// because a dynamic-cast of *it would cause a SEGFAULT. Therefor we require the
-	// experiment flow to remove all residual events by calling clearEvents() (with-
-	// in run()). As a consequence, we are now allowed to call the event-handler here.
-	// See ExperimentFlow.hpp for more details.
-
 	// all events?
 	if (flow == 0) {
 		for (bufferlist_t::iterator it = m_BufferList.begin();
 		     it != m_BufferList.end(); it++)
-			simulator.onEventDeletion(*it); // invoke event handler
+			(*it)->onEventDeletion(); // invoke event handler
 		clearCaches();
 		m_BufferList.clear();
 	} else { // remove all events corresponding to a specific experiment ("flow"):
 		for (bufferlist_t::iterator it = m_BufferList.begin();
 		     it != m_BufferList.end(); ) {
 			if ((*it)->getParent() == flow) {
-				simulator.onEventDeletion(*it);
+				(*it)->onEventDeletion();
 				it = m_BufferList.erase(it);
 			} else {
 				++it;
@@ -143,7 +135,7 @@ void EventList::remove(ExperimentFlow* flow)
 		// ... need to be pushed into m_DeleteList, as we're currently
 		// iterating over m_FireList in fireActiveEvents() and cannot modify it
 		if (flow == 0 || (*it)->getParent() == flow) {
-			simulator.onEventDeletion(*it);
+			(*it)->onEventDeletion();
 			m_DeleteList.push_back(*it);
 		}
 	}
@@ -157,11 +149,11 @@ EventList::~EventList()
 BaseEvent* EventList::getEventFromId(EventId id)
 {
 	// Loop through all events:
-	for(bufferlist_t::iterator it = m_BufferList.begin();
-	    it != m_BufferList.end(); it++)
-		if((*it)->getId() == id)
-			return (*it);
-	return (NULL); // Nothing found.
+	for (bufferlist_t::iterator it = m_BufferList.begin();
+	     it != m_BufferList.end(); it++)
+		if ((*it)->getId() == id)
+			return *it;
+	return NULL; // Nothing found.
 }
 
 EventList::iterator EventList::makeActive(iterator it)
@@ -179,7 +171,7 @@ EventList::iterator EventList::makeActive(iterator it)
 	//       store the removed item in the delete-list.
 	iterator it_next = m_remove(it, true); // remove event from buffer-list
 	m_FireList.push_back(ev);
-	return (it_next);
+	return it_next;
 }
 
 void EventList::fireActiveEvents()
@@ -191,7 +183,7 @@ void EventList::fireActiveEvents()
 			m_pFired = *it;
 			// Inform (call) the simulator's (internal) event handler that we are about
 			// to trigger an event (*before* we actually toggle the experiment flow):
-			simulator.onEventTrigger(m_pFired);
+			m_pFired->onEventTrigger();
 			ExperimentFlow* pFlow = m_pFired->getParent();
 			assert(pFlow && "FATAL ERROR: The event has no parent experiment (owner)!");
 			simulator.m_Flows.toggle(pFlow);
@@ -205,8 +197,8 @@ void EventList::fireActiveEvents()
 size_t EventList::getContextCount() const
 {
 	std::set<ExperimentFlow*> uniqueFlows; // count unique ExperimentFlow-ptr
-	for(bufferlist_t::const_iterator it = m_BufferList.begin();
-		it != m_BufferList.end(); it++)
+	for (bufferlist_t::const_iterator it = m_BufferList.begin();
+		 it != m_BufferList.end(); it++)
 		uniqueFlows.insert((*it)->getParent());
 
 	return uniqueFlows.size();

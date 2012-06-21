@@ -209,7 +209,7 @@ void BochsController::fireInterruptDone()
 	m_Flows.toggle(m_CurrFlow);
 }
 
-void BochsController::m_onTimerTrigger(void* thisPtr)
+void BochsController::onTimerTrigger(void* thisPtr)
 {
 	// FIXME: The timer logic can be modified to use only one timer in Bochs.
 	//        (For now, this suffices.)
@@ -223,57 +223,6 @@ void BochsController::m_onTimerTrigger(void* thisPtr)
 	//       reducing the time complexity to O(1).
 	simulator.m_EvList.makeActive(it);
 	simulator.m_EvList.fireActiveEvents();
-}
-
-timer_id_t BochsController::m_registerTimer(TimerEvent* pev)
-{
-	assert(pev != NULL);
-	return static_cast<timer_id_t>(
-		bx_pc_system.register_timer(pev, m_onTimerTrigger, pev->getTimeout(), !pev->getOnceFlag(),
-									1/*start immediately*/, "Fail*: BochsController"/*name*/));
-}
-
-bool BochsController::m_unregisterTimer(TimerEvent* pev)
-{
-	assert(pev != NULL);
-	bx_pc_system.deactivate_timer(static_cast<unsigned>(pev->getId()));
-	return bx_pc_system.unregisterTimer(static_cast<unsigned>(pev->getId()));
-}
-
-bool BochsController::onEventAddition(BaseEvent* pev)
-{
-	TimerEvent* tmev;
-	// Register the timer event in the Bochs simulator:
-	if ((tmev = dynamic_cast<TimerEvent*>(pev)) != NULL) {
-		tmev->setId(m_registerTimer(tmev));
-		if(tmev->getId() == -1)
-			return false; // unable to register the timer (error in Bochs' function call)
-	}
-	// Note: Maybe more stuff to do here for other event types.
-	return true;
-}
-
-void BochsController::onEventDeletion(BaseEvent* pev)
-{
-	TimerEvent* tmev;
-	// Unregister the time event:
-	if ((tmev = dynamic_cast<TimerEvent*>(pev)) != NULL) {
-		m_unregisterTimer(tmev);
-	}
-	// Note: Maybe more stuff to do here for other event types.
-}
-
-void BochsController::onEventTrigger(BaseEvent* pev)
-{
-	TimerEvent* tmev;
-	// Unregister the time event, if once-flag is true:
-	if ((tmev = dynamic_cast<TimerEvent*>(pev)) != NULL) {
-		if (tmev->getOnceFlag()) // deregister the timer (timer = single timeout)
-			m_unregisterTimer(tmev);
-		else // re-add the event (repetitive timer), tunneling the onEventAddition-handler
-			m_EvList.add(tmev, tmev->getParent());
-	}
-	// Note: Maybe more stuff to do here for other event types.
 }
 
 const std::string& BochsController::getMnemonic() const

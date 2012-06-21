@@ -17,9 +17,9 @@ class ExperimentFlow;
 typedef unsigned long EventId; //!< type of event ids
 
 //! invalid event id (used as a return indicator)
-const EventId    INVALID_EVENT = (EventId)-1;
+const EventId    INVALID_EVENT = static_cast<EventId>(-1);
 //! address wildcard (e.g. for BPEvent's)
-const address_t  ANY_ADDR      = static_cast<address_t>(-1);
+const address_t       ANY_ADDR = static_cast<address_t>(-1);
 //! instruction wildcard
 const unsigned       ANY_INSTR = static_cast<unsigned>(-1);
 //! trap wildcard
@@ -45,6 +45,30 @@ public:
 	BaseEvent() : m_Id(++m_Counter), m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
 	{ updateTime(); }
 	virtual ~BaseEvent() { }
+	/**
+	 * This method is called when an experiment flow adds a new event by
+	 * calling \c simulator.addEvent(pev) or \c simulator.addEventAndWait(pev).
+	 * More specifically, the event will be added to the event-list first
+	 * (buffer-list, to be precise) and then this event handler is called.
+	 * @return You should return \c true to continue and \c false to prevent
+	 *         the addition of the event \a pev, yielding an error in the
+	 *         experiment flow (i.e. \c INVALID_EVENT is returned).
+	 */
+	virtual bool onEventAddition() { return true; }
+	/**
+	 * This method is called when an experiment flow removes an event from
+	 * the event-management by calling \c removeEvent(prev), \c clearEvents()
+	 * or by deleting a complete flow (\c removeFlow). More specifically, this
+	 * event handler will be called *before* the event is actually deleted.
+	 */
+	virtual void onEventDeletion() { }
+	/**
+	 * This method is called when an previously added event is about to be
+	 * triggered by the simulator-backend. More specifically, this event handler
+	 * will be called *before* the event is actually triggered, i.e. before the
+	 * corresponding coroutine is toggled.
+	 */
+	virtual void onEventTrigger() { }
 	/**
 	 * Retrieves the unique event id for this event.
 	 * @return the unique id
@@ -116,8 +140,7 @@ public:
 	 *        in a random address space.
 	 */
 	BPEvent(address_t address_space = ANY_ADDR)
-		: m_CR3(address_space), m_TriggerInstrPtr(ANY_ADDR)
-		  {}
+		: m_CR3(address_space), m_TriggerInstrPtr(ANY_ADDR) { }
 	/**
 	 * Returns the address space register of this event.
 	 */
@@ -539,7 +562,7 @@ public:
 	 */
 	unsigned getOpcode() const { return (m_Opcode); }
 	/**
-	 * Returns \c true, of the event was triggered due to specific register
+	 * Returns \c true, if the event was triggered due to specific register
 	 * content, \c false otherwise.
 	 */
 	bool isRegisterTriggered() { return (!m_FlagTriggered); }
@@ -560,26 +583,31 @@ public:
 };
 
 /**
- * \class TimerEvent
- * This event type is used to create timeouts/timers within in an experiment.
+ * \class GenericTimerEvent
+ * This event type is used to create timeouts within in an experiment.
+ *
+ * Depending on your simulator backend, a concrete class needs to be derived
+ * from \c GenericTimerEvent. \c onEventAddition should be used to register and
+ * \c onEventDeletion to unregister the timer. \c onEventTrigger can be used to
+ * re-register the timer if a repetitive timer is requested and the back-
+ * end doesn't support such timer types natively.
  */
-class TimerEvent : public BaseEvent {
-private:
+class GenericTimerEvent : public BaseEvent {
+protected:
 	unsigned m_Timeout; //!< timeout interval in milliseconds
 	timer_id_t m_Id; //!< internal timer id (sim-specific)
-	bool m_Once; //!< true, if the timer should be triggered only once
+	bool m_Once; //!< \c true, if the timer should be triggered only once, \c false otherwise
 public:
 	/**
 	 * Creates a new timer event. This can be used to implement a timeout-
 	 * mechanism in the experiment-flow. The timer starts automatically when
-	 * added to the simulator backend (@see SimulatorController::addEvent)
+	 * added to the simulator backend.
 	 * @param timeout the time intervall in milliseconds (ms)
-	 * @param once \c true, if the TimerEvent should be triggered once,
-	 *        \c false if it should occur regularly
+	 * @see SimulatorController::addEvent
 	 */
-	TimerEvent(unsigned timeout, bool once)
-		: m_Timeout(timeout), m_Id(-1), m_Once(once) { }
-	~TimerEvent() { }
+	GenericTimerEvent(unsigned timeout)
+		: m_Timeout(timeout), m_Id(-1) { }
+	~GenericTimerEvent() { }
 	/**
 	 * Retrieves the internal timer id. Maybe useful for debug output.
 	 * @return the timer id
@@ -595,11 +623,6 @@ public:
 	 * @return the timout in milliseconds
 	 */
 	unsigned getTimeout() const { return m_Timeout; }
-	/**
-	 * Checks whether the timer occurs once or repetitive.
-	 * @return \c true if timer triggers once, \c false if repetitive
-	 */
-	bool getOnceFlag() const { return m_Once; }
 };
 
 } // end-of-namespace: fail

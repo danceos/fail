@@ -7,9 +7,8 @@ EventId BaseEvent::m_Counter = 0;
 
 bool TroubleEvent::isMatching(unsigned troubleNum) const
 {
-	for(unsigned i = 0; i < m_WatchNumbers.size(); i++)
-	{
-		if(m_WatchNumbers[i] == troubleNum ||
+	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
+		if (m_WatchNumbers[i] == troubleNum ||
 		   m_WatchNumbers[i] == ANY_TRAP)
 			return true;
 	}
@@ -18,10 +17,8 @@ bool TroubleEvent::isMatching(unsigned troubleNum) const
 
 bool TroubleEvent::removeWatchNumber(unsigned troubleNum) 
 {
-	for(unsigned i = 0; i < m_WatchNumbers.size(); i++)
-	{
-		if(m_WatchNumbers[i] == troubleNum)
-		{
+	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
+		if (m_WatchNumbers[i] == troubleNum) {
 			m_WatchNumbers.erase(m_WatchNumbers.begin()+i);
 			return true;
 		}
@@ -31,10 +28,8 @@ bool TroubleEvent::removeWatchNumber(unsigned troubleNum)
 
 bool TroubleEvent::addWatchNumber(unsigned troubleNumber) 
 {
-	for(unsigned i = 0; i < m_WatchNumbers.size(); i++)
-	{
-		
-		if(m_WatchNumbers[i] == troubleNumber)
+	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
+		if (m_WatchNumbers[i] == troubleNumber)
 			return false;
 	}	
 	m_WatchNumbers.push_back(troubleNumber);
@@ -43,12 +38,12 @@ bool TroubleEvent::addWatchNumber(unsigned troubleNumber)
 
 bool MemAccessEvent::isMatching(address_t addr, accessType_t accesstype) const
 {
-	if(!(m_WatchType & accesstype))
-		return (false);
-	else if(m_WatchAddr != addr &&
+	if (!(m_WatchType & accesstype))
+		return false;
+	else if (m_WatchAddr != addr &&
 			   m_WatchAddr != ANY_ADDR)
-		return (false);
-	return (true);
+		return false;
+	return true;
 }
 
 bool BPEvent::aspaceIsMatching(address_t aspace) const
@@ -77,9 +72,8 @@ bool BPRangeEvent::isMatching(address_t addr, address_t aspace) const
 bool BPSingleEvent::isMatching(address_t addr, address_t aspace) const
 {
 	if (aspaceIsMatching(aspace)) {
-		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr) {
+		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr)
 			return true;
-		}
 	}
 	return false;
 }

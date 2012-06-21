@@ -26,9 +26,6 @@ public:
 	{
 		run();
 		simulator.clearEvents(this); // remove residual events
-		// FIXME: Consider removing this call (see EventList.cc, void remove(ExperimentFlow* flow)) 
-		//        a) with the advantage that we will potentially prevent serious segfaults but
-		//        b) with the drawback that we cannot enforce any cleanups.
 	}
 };
 
