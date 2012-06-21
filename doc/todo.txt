@@ -32,7 +32,6 @@ Abstraktionen:
  - Merkmalmodell von Implementierungsdetails trennen (hsc)
    -> automatische Konfigurierung anhand Experimentauswahl
    -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
- - Namespace Confusion: aufräumen (ab)
  - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
    Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
    -> "Fehlerinjektion" ist das ja nicht immer
@@ -99,7 +98,7 @@ Buildsystem:
    brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
    Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
    * Bochs / OVP sind Alternativen, nicht beide anschaltbar (?)
- - Hinzufügen eines neuen Experiments konkreter dokumentieren (howto-build.txt?)
+ - Hinzufügen eines neuen Experiments konkreter dokumentieren (how-to-build.txt?)
 
 Dokumentation:
  - Änderungen im Klassendiagramm nachziehen (hsc)
@@ -128,7 +127,7 @@ Erledigt:
    -> Bochs-spezifische Aspekte leiten nur noch Kontrollfluss um,
       Implementierung von Ereignissen separat
  - (sofern möglich) Ereignisse von FI trennen
- - Scattering-Graphik (ab)
+ - Scattering-Graphik, (Python-)Skript (ab)
  - ohne GUI bzw. gesetztem $DISPLAY lauffähig? (rh)
  - Save (rh):
    - Zielverzeichnis anlegen, falls nicht existent
@@ -165,7 +164,9 @@ Erledigt:
    Timeouts (die auch dann greifen, wenn die CPU z.B. in einem CLI/HLT steht) (ab)
  - Client-Timeouts untersuchen, Server-Implementierung tunen?  Retries im Client? (ab)
  - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben (ab)
- 
+ - Namespace Confusion: aufräumen (ab)
+ - Verzeichnisstruktur umstrukturieren und aufräumen (ab)
+
 ==========================================================================================
 Theorie TODO
 ==========================================================================================
