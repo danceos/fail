@@ -16,7 +16,7 @@ The following style rules apply to C/C++/AspectC++ code:
  - Naming conventions:
     * Source files: .cc (Source), .hpp (Header), .ah (Aspect Header), MixedCase
     * Namespaces: lowercase
-    * Classes: MixedCase, starting with uppercase letter
+    * Classes, (global) functions: MixedCase, starting with uppercase letter
     * Public members: MixedCase, starting with lowercase letter
     * Private & protected members: starting with "m_"
     * Global Variables: starting with "g_"
