@@ -97,7 +97,9 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
 #endif
+	assert(context != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
 	m_CPUContext = context;
+	assert(cache_entry != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
 	m_CacheEntry = cache_entry;
 	bool do_fire = false;
 	// Check for active breakpoint-events:
@@ -228,13 +230,9 @@ void BochsController::onTimerTrigger(void* thisPtr)
 const std::string& BochsController::getMnemonic() const
 {
 	static std::string str;
-#if 0
-	bxICacheEntry_c* pEntry = BX_CPU(0)->getICacheEntry();
-	assert(pEntry != NULL && "FATAL ERROR: Bochs internal function returned NULL (not expected)!");
-	bxInstruction_c* pInstr = pEntry->i;
+	bxInstruction_c* pInstr = getICacheEntry()->i;
 	assert(pInstr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-#endif
-	const char* pszName = get_bx_opcode_name(getICacheEntry()->i->getIaOpcode());
+	const char* pszName = get_bx_opcode_name(pInstr->getIaOpcode());
 	if (pszName != NULL)
 		str = pszName;
 	else

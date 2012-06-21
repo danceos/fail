@@ -8,6 +8,7 @@
 
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
+#include "UDIS86.hpp"
 
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
@@ -93,28 +94,29 @@ const Bit8u *L4SysExperiment::calculateInstructionAddress() {
 	return result;
 }
 
-bx_bool L4SysExperiment::fetchInstruction(BX_CPU_C *instance, const Bit8u *instr, bxInstruction_c *iStorage)
-{
-  unsigned remainingInPage = instance->eipPageWindowSize - eipBiased();
-  int ret;
+bx_bool L4SysExperiment::fetchInstruction(BX_CPU_C *instance,
+		const Bit8u *instr, bxInstruction_c *iStorage) {
+	unsigned remainingInPage = instance->eipPageWindowSize - eipBiased();
+	int ret;
 
 #if BX_SUPPORT_X86_64
-  if (BX_CPU_THIS_PTR cpu_mode == BX_MODE_LONG_64)
-    ret = instance->fetchDecode64(instr, iStorage, remainingInPage);
-  else
+	if (BX_CPU_THIS_PTR cpu_mode == BX_MODE_LONG_64)
+	ret = instance->fetchDecode64(instr, iStorage, remainingInPage);
+	else
 #endif
-    ret = instance->fetchDecode32(instr, iStorage, remainingInPage);
+	ret = instance->fetchDecode32(instr, iStorage, remainingInPage);
 
-  if (ret < 0) {
-    // handle instrumentation callback inside boundaryFetch
-    instance->boundaryFetch(instr, remainingInPage, iStorage);
-    return 0;
-  }
+	if (ret < 0) {
+		// handle instrumentation callback inside boundaryFetch
+		instance->boundaryFetch(instr, remainingInPage, iStorage);
+		return 0;
+	}
 
-  return 1;
+	return 1;
 }
 
-void L4SysExperiment::logInjection(Logger &log, const L4SysExperimentData &param) {
+void L4SysExperiment::logInjection(Logger &log,
+		const L4SysExperimentData &param) {
 	// explicit type assignment necessary before sending over output stream
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
@@ -122,42 +124,124 @@ void L4SysExperiment::logInjection(Logger &log, const L4SysExperimentData &param
 	int exp_type = param.msg.exp_type();
 	address_t injection_ip = param.msg.injection_ip();
 
-	log << "job " << id << " exp_type " << exp_type	<< endl;
-	log << "inject @ ip " << injection_ip << " (offset " << dec
-			<< instr_offset << ")" << " bit " << bit_offset << endl;
+	log << "job " << id << " exp_type " << exp_type << endl;
+	log << "inject @ ip " << injection_ip << " (offset " << dec << instr_offset
+			<< ")" << " bit " << bit_offset << endl;
 }
 
 bool L4SysExperiment::isALUInstruction(unsigned opcode) {
-	switch(opcode) {
-		case BX_IA_INC_Eb: case BX_IA_INC_Ew: case BX_IA_INC_Ed: case BX_IA_INC_RX: case BX_IA_INC_ERX:
-		case BX_IA_DEC_Eb: case BX_IA_DEC_Ew: case BX_IA_DEC_Ed: case BX_IA_DEC_RX: case BX_IA_DEC_ERX:
-		case BX_IA_ADC_EbGb: case BX_IA_ADC_EdGd: case BX_IA_ADC_EwGw: case BX_IA_ADD_EbGb: case BX_IA_ADD_EdGd:
-		case BX_IA_ADD_EwGw: case BX_IA_AND_EbGb: case BX_IA_AND_EdGd: case BX_IA_AND_EwGw: case BX_IA_CMP_EbGb:
-		case BX_IA_CMP_EdGd: case BX_IA_CMP_EwGw: case BX_IA_OR_EbGb: case BX_IA_OR_EdGd: case BX_IA_OR_EwGw:
-		case BX_IA_SBB_EbGb: case BX_IA_SBB_EdGd: case BX_IA_SBB_EwGw: case BX_IA_SUB_EbGb: case BX_IA_SUB_EdGd:
-		case BX_IA_SUB_EwGw: case BX_IA_XOR_EbGb: case BX_IA_XOR_EdGd: case BX_IA_XOR_EwGw: case BX_IA_ADC_ALIb:
-		case BX_IA_ADC_AXIw: case BX_IA_ADC_EAXId: case BX_IA_ADD_EbIb: case BX_IA_OR_EbIb: case BX_IA_ADC_EbIb:
-		case BX_IA_SBB_EbIb: case BX_IA_AND_EbIb: case BX_IA_SUB_EbIb: case BX_IA_XOR_EbIb: case BX_IA_CMP_EbIb:
-		case BX_IA_ADD_EwIw: case BX_IA_OR_EwIw: case BX_IA_ADC_EwIw: case BX_IA_SBB_EwIw: case BX_IA_AND_EwIw:
-		case BX_IA_SUB_EwIw: case BX_IA_XOR_EwIw: case BX_IA_CMP_EwIw: case BX_IA_ADD_EdId: case BX_IA_OR_EdId:
-		case BX_IA_ADC_EdId: case BX_IA_SBB_EdId: case BX_IA_AND_EdId: case BX_IA_SUB_EdId: case BX_IA_XOR_EdId:
-		case BX_IA_CMP_EdId: case BX_IA_ADC_GbEb: case BX_IA_ADC_GwEw: case BX_IA_ADC_GdEd: case BX_IA_ADD_ALIb:
-		case BX_IA_ADD_AXIw: case BX_IA_ADD_EAXId: case BX_IA_ADD_GbEb: case BX_IA_ADD_GwEw: case BX_IA_ADD_GdEd:
-		case BX_IA_AND_ALIb: case BX_IA_AND_AXIw: case BX_IA_AND_EAXId: case BX_IA_AND_GbEb: case BX_IA_AND_GwEw:
-		case BX_IA_AND_GdEd: case BX_IA_ROL_Eb: case BX_IA_ROR_Eb: case BX_IA_RCL_Eb: case BX_IA_RCR_Eb:
-		case BX_IA_SHL_Eb: case BX_IA_SHR_Eb: case BX_IA_SAR_Eb: case BX_IA_ROL_Ew: case BX_IA_ROR_Ew:
-		case BX_IA_RCL_Ew: case BX_IA_RCR_Ew: case BX_IA_SHL_Ew: case BX_IA_SHR_Ew: case BX_IA_SAR_Ew:
-		case BX_IA_ROL_Ed: case BX_IA_ROR_Ed: case BX_IA_RCL_Ed: case BX_IA_RCR_Ed: case BX_IA_SHL_Ed:
-		case BX_IA_SHR_Ed: case BX_IA_SAR_Ed: case BX_IA_NOT_Eb: case BX_IA_NEG_Eb: case BX_IA_NOT_Ew:
-		case BX_IA_NEG_Ew: case BX_IA_NOT_Ed: case BX_IA_NEG_Ed:
-			return true;
-		default:
-			return false;
+	switch (opcode) {
+	case BX_IA_INC_Eb:
+	case BX_IA_INC_Ew:
+	case BX_IA_INC_Ed:
+	case BX_IA_INC_RX:
+	case BX_IA_INC_ERX:
+	case BX_IA_DEC_Eb:
+	case BX_IA_DEC_Ew:
+	case BX_IA_DEC_Ed:
+	case BX_IA_DEC_RX:
+	case BX_IA_DEC_ERX:
+	case BX_IA_ADC_EbGb:
+	case BX_IA_ADC_EdGd:
+	case BX_IA_ADC_EwGw:
+	case BX_IA_ADD_EbGb:
+	case BX_IA_ADD_EdGd:
+	case BX_IA_ADD_EwGw:
+	case BX_IA_AND_EbGb:
+	case BX_IA_AND_EdGd:
+	case BX_IA_AND_EwGw:
+	case BX_IA_CMP_EbGb:
+	case BX_IA_CMP_EdGd:
+	case BX_IA_CMP_EwGw:
+	case BX_IA_OR_EbGb:
+	case BX_IA_OR_EdGd:
+	case BX_IA_OR_EwGw:
+	case BX_IA_SBB_EbGb:
+	case BX_IA_SBB_EdGd:
+	case BX_IA_SBB_EwGw:
+	case BX_IA_SUB_EbGb:
+	case BX_IA_SUB_EdGd:
+	case BX_IA_SUB_EwGw:
+	case BX_IA_XOR_EbGb:
+	case BX_IA_XOR_EdGd:
+	case BX_IA_XOR_EwGw:
+	case BX_IA_ADC_ALIb:
+	case BX_IA_ADC_AXIw:
+	case BX_IA_ADC_EAXId:
+	case BX_IA_ADD_EbIb:
+	case BX_IA_OR_EbIb:
+	case BX_IA_ADC_EbIb:
+	case BX_IA_SBB_EbIb:
+	case BX_IA_AND_EbIb:
+	case BX_IA_SUB_EbIb:
+	case BX_IA_XOR_EbIb:
+	case BX_IA_CMP_EbIb:
+	case BX_IA_ADD_EwIw:
+	case BX_IA_OR_EwIw:
+	case BX_IA_ADC_EwIw:
+	case BX_IA_SBB_EwIw:
+	case BX_IA_AND_EwIw:
+	case BX_IA_SUB_EwIw:
+	case BX_IA_XOR_EwIw:
+	case BX_IA_CMP_EwIw:
+	case BX_IA_ADD_EdId:
+	case BX_IA_OR_EdId:
+	case BX_IA_ADC_EdId:
+	case BX_IA_SBB_EdId:
+	case BX_IA_AND_EdId:
+	case BX_IA_SUB_EdId:
+	case BX_IA_XOR_EdId:
+	case BX_IA_CMP_EdId:
+	case BX_IA_ADC_GbEb:
+	case BX_IA_ADC_GwEw:
+	case BX_IA_ADC_GdEd:
+	case BX_IA_ADD_ALIb:
+	case BX_IA_ADD_AXIw:
+	case BX_IA_ADD_EAXId:
+	case BX_IA_ADD_GbEb:
+	case BX_IA_ADD_GwEw:
+	case BX_IA_ADD_GdEd:
+	case BX_IA_AND_ALIb:
+	case BX_IA_AND_AXIw:
+	case BX_IA_AND_EAXId:
+	case BX_IA_AND_GbEb:
+	case BX_IA_AND_GwEw:
+	case BX_IA_AND_GdEd:
+	case BX_IA_ROL_Eb:
+	case BX_IA_ROR_Eb:
+	case BX_IA_RCL_Eb:
+	case BX_IA_RCR_Eb:
+	case BX_IA_SHL_Eb:
+	case BX_IA_SHR_Eb:
+	case BX_IA_SAR_Eb:
+	case BX_IA_ROL_Ew:
+	case BX_IA_ROR_Ew:
+	case BX_IA_RCL_Ew:
+	case BX_IA_RCR_Ew:
+	case BX_IA_SHL_Ew:
+	case BX_IA_SHR_Ew:
+	case BX_IA_SAR_Ew:
+	case BX_IA_ROL_Ed:
+	case BX_IA_ROR_Ed:
+	case BX_IA_RCL_Ed:
+	case BX_IA_RCR_Ed:
+	case BX_IA_SHL_Ed:
+	case BX_IA_SHR_Ed:
+	case BX_IA_SAR_Ed:
+	case BX_IA_NOT_Eb:
+	case BX_IA_NEG_Eb:
+	case BX_IA_NOT_Ew:
+	case BX_IA_NEG_Ew:
+	case BX_IA_NOT_Ed:
+	case BX_IA_NEG_Ed:
+		return true;
+	default:
+		return false;
 	}
 }
 
-void L4SysExperiment::readFromFileToVector(std::ifstream &file, std::vector<trace_instr> &instr_list)
-{
+void L4SysExperiment::readFromFileToVector(std::ifstream &file,
+		std::vector<trace_instr> &instr_list) {
 	file >> hex;
 	while (!file.eof()) {
 		trace_instr curr_instr;
@@ -167,7 +251,8 @@ void L4SysExperiment::readFromFileToVector(std::ifstream &file, std::vector<trac
 	file.close();
 }
 
-void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest, bxInstruction_c *src) {
+void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest,
+		bxInstruction_c *src) {
 	// backup the current and insert the faulty instruction
 	bxInstruction_c old_instr;
 	memcpy(&old_instr, dest, sizeof(bxInstruction_c));
@@ -186,6 +271,7 @@ void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest, bxInstructio
 bool L4SysExperiment::run() {
 	Logger log("L4Sys", false);
 	BPSingleEvent bp(0, L4SYS_ADDRESS_SPACE);
+	srand(time(NULL));
 
 	log << "startup" << endl;
 
@@ -213,8 +299,8 @@ bool L4SysExperiment::run() {
 		log << "restoring state" << endl;
 		simulator.restore(L4SYS_STATE_FOLDER);
 		log << "EIP = " << hex
-				<< simulator.getRegisterManager().getInstructionPointer()
-				<< endl;
+		<< simulator.getRegisterManager().getInstructionPointer()
+		<< endl;
 
 		// make sure the timer interrupt doesn't disturb us
 		simulator.addSuppressedInterrupt(32);
@@ -342,7 +428,7 @@ bool L4SysExperiment::run() {
 	if (injection_ip != instr_list[instr_offset].trigger_addr) {
 		stringstream ss;
 		ss << "SANITY CHECK FAILED: " << injection_ip << " != "
-				<< instr_list[instr_offset].trigger_addr << endl;
+		<< instr_list[instr_offset].trigger_addr << endl;
 		log << ss.str();
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 		param.msg.set_resultdata(injection_ip);
@@ -364,9 +450,9 @@ bool L4SysExperiment::run() {
 
 		// do the logging in case everything worked out
 		logInjection(log, param);
-		log << "register data: 0x" << hex
-					<< ((int) data) << " -> 0x" << ((int) newdata) << endl;
-	} else if(exp_type == param.msg.IDCFLIP) {
+		log << "register data: 0x" << hex << ((int) data) << " -> 0x"
+				<< ((int) newdata) << endl;
+	} else if (exp_type == param.msg.IDCFLIP) {
 		// this is a twisted one
 
 		// initial definitions
@@ -396,16 +482,115 @@ bool L4SysExperiment::run() {
 		// decode the instruction
 		bxInstruction_c bochs_instr;
 		memset(&bochs_instr, 0, sizeof(bxInstruction_c));
-		fetchInstruction(simulator.getCPUContext(), curr_instr_plain, &bochs_instr);
+		fetchInstruction(simulator.getCPUContext(), curr_instr_plain,
+				&bochs_instr);
 
 		// inject it
 		changeBochsInstruction(cache_entry->i, &bochs_instr);
 
 		// do the logging
 		logInjection(log, param);
-	} else if(exp_type == param.msg.RATFLIP) {
+	} else if (exp_type == param.msg.RATFLIP) {
 		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
+		Udis86 udis(calculateInstructionAddress(), cache_entry->i->ilen());
+		if (udis.fetchNextInstruction()) {
+			ud_t _ud = udis.getCurrentState();
 
+			/* start Bjoern Doebel's code (slightly modified) */
+			/* ============================================== */
+			unsigned opcount     = 0;
+			unsigned operands[4] = { ~0U, ~0U, ~0U, ~0U };
+			enum {
+				RAT_IDX_MASK   = 0x0FF,
+				RAT_IDX_OFFSET = 0x100
+			};
+
+			for (unsigned i = 0; i < 3; ++i) {
+				/*
+				 * Case 1: operand is a register
+				 */
+				if (_ud.operand[i].type == UD_OP_REG) {
+					operands[opcount++] = i;
+				} else if (_ud.operand[i].type == UD_OP_MEM) {
+					/*
+					 * Case 2: operand is memory op.
+					 *
+					 * In this case, we may have 2 registers involved for the
+					 * index-scale address calculation.
+					 */
+					if (_ud.operand[i].base != 0)  // 0 if hard-wired mem operand
+						operands[opcount++] = i;
+					if (_ud.operand[i].index != 0)
+						operands[opcount++] = i + RAT_IDX_OFFSET;
+				}
+			}
+
+			ud_type_t which;
+			unsigned rnd = random() % opcount;
+			if (operands[rnd] > RAT_IDX_OFFSET) {
+				which = _ud.operand[operands[rnd] - RAT_IDX_OFFSET].index;
+			} else {
+				which = _ud.operand[operands[rnd]].base;
+			}
+			/* ============================================ */
+			/* end Bjoern Doebel's code (slightly modified) */
+
+			if (which != UD_NONE) {
+				// so we are able to flip the associated registers
+				// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
+
+				// some declarations
+				GPRegisterId bochs_reg = Udis86::udisGPRToFailBochsGPR(which);
+				int exchg_reg = -1;
+				RegisterManager &rm = simulator.getRegisterManager();
+
+				// first, decide if the fault hits a register bound to this thread
+				// (ten percent chance)
+				if (rand() % 10) {
+					// assure exchange of registers
+					exchg_reg = rand() % 7;
+					if (exchg_reg == bochs_reg)
+						exchg_reg++;
+
+				}
+
+				// prepare the fault
+				regdata_t data = rm.getRegister(bochs_reg)->getData();
+				if (rnd > 0) {
+					//input register - do the fault injection here
+					regdata_t newdata = 0;
+					if(exchg_reg >= 0) {
+						newdata = rm.getRegister(exchg_reg)->getData();
+					} else {
+						newdata = rand();
+					}
+					rm.getRegister(bochs_reg)->setData(newdata);
+				}
+
+				// execute the instruction
+				BPSingleEvent execute_single_instr(ANY_INSTR, L4SYS_ADDRESS_SPACE);
+				simulator.addEvent(&execute_single_instr);
+				waitIOOrOther(false);
+				simulator.removeEvent(&execute_single_instr);
+
+				// restore
+				if (rnd > 0) {
+					// restore input register
+					rm.getRegister(bochs_reg)->setData(data);
+				} else if (rnd == 0) {
+					// output register - do the fault injection here
+					if(exchg_reg >= 0) {
+						// write the result into the wrong local register
+						regdata_t newdata = rm.getRegister(bochs_reg)->getData();
+						rm.getRegister(exchg_reg)->setData(newdata);
+					}
+					// restore the value of the actual output register
+					// in reality, it would never have been overwritten
+					rm.getRegister(bochs_reg)->setData(data);
+				}
+			}
+
+		}
 	}
 
 	// aftermath

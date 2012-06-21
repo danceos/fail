@@ -1,15 +1,15 @@
 message L4SysProtoMsg {
 	// experiment types
 	enum ExperimentType {
-		GPRFLIP = 10;
-		RATFLIP = 15;
-		IDCFLIP = 20;
-		ALUINSTR = 30;
+		GPRFLIP = 1;
+		RATFLIP = 2;
+		IDCFLIP = 3;
+		ALUINSTR = 4;
 	}
 	// parameters
-	required ExperimentType exp_type = 10;
-	required int32 instr_offset = 20;
-	required int32 bit_offset = 30;
+	required ExperimentType exp_type = 1;
+	required int32 instr_offset = 2;
+	required int32 bit_offset = 3;
 
 	// results
 	// make these optional to reduce overhead for server->client communication
@@ -22,13 +22,13 @@ message L4SysProtoMsg {
 		UNKNOWN = 6;
 	}
 	// instruction pointer where injection was done
-	optional uint32 injection_ip = 40;
+	optional uint32 injection_ip = 4;
 	// result type, see above
-	optional ResultType resulttype = 50;
+	optional ResultType resulttype = 5;
 	// result data, depending on resulttype (see source code)
-	optional uint32 resultdata = 60;
+	optional uint32 resultdata = 6;
 	// generated output
-	optional string output = 70;
+	optional string output = 7;
 	// optional textual description of what happened
-	optional string details = 80;
+	optional string details = 8;
 }

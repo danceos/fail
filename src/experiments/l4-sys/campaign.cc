@@ -50,7 +50,7 @@ bool L4SysCampaign::run() {
 	srand(time(NULL));
 	for (int i = 0; i < 3000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.IDCFLIP);
+		d->msg.set_exp_type(d->msg.RATFLIP);
 		d->msg.set_instr_offset(rand() % L4SYS_NUMINSTR);
 		// 15 bytes (120 bits) are the longest instruction Bochs still executes
 		int bit_offset = rand() % 120;
