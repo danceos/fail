@@ -14,6 +14,8 @@ set(MY_CAMPAIGN_SRCS
 	experiment.cc
 	campaign.hpp
 	campaign.cc
+	UDIS86.hpp
+	UDIS86.cc
 )
 
 #### PROTOBUFS ####

@@ -5,8 +5,9 @@
 
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
-#include "campaign.hpp"
 #include "util/Logger.hpp"
+
+class L4SysExperimentData;
 
 class L4SysExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;

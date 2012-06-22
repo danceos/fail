@@ -9,6 +9,7 @@
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "UDIS86.hpp"
+#include "campaign.hpp"
 
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
