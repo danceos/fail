@@ -16,6 +16,8 @@
 
 #include "../plugins/tracing/TracingPlugin.hpp"
 
+//#define PRUNING_DEBUG_OUTPUT
+
 using namespace std;
 using namespace fail;
 
@@ -67,6 +69,7 @@ bool WeatherMonitorCampaign::run()
 	// they'd be identical to the golden run
 	vector<equivalence_class> ecs_no_effect;
 
+#if 0
 	equivalence_class current_ec;
 
 	// map for efficient access when results come in
@@ -78,7 +81,7 @@ bool WeatherMonitorCampaign::run()
 	//   -> one "open" EC for every address
 	// for every injection address ...
 	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
-		cerr << ".";
+		//cerr << ".";
 		address_t data_address = *it;
 		current_ec.instr1 = 0;
 		int instr = 0;
@@ -124,6 +127,9 @@ bool WeatherMonitorCampaign::run()
 				// to do one experiment to cover it
 				// completely
 				ecs_need_experiment.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+				cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
 
 				// instantly enqueue job: that way the job clients can already
 				// start working in parallel
@@ -143,6 +149,9 @@ bool WeatherMonitorCampaign::run()
 				// injection anywhere here would have
 				// no effect.
 				ecs_no_effect.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+				cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
 			} else {
 				log << "WAT" << endl;
 			}
@@ -173,6 +182,9 @@ bool WeatherMonitorCampaign::run()
 		//     fix: full trace, limited FI window
 		//ecs_no_effect.push_back(current_ec);
 		ecs_need_experiment.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+		cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
 
 		// FIXME copy/paste, encapsulate this:
 		// instantly enqueue job: that way the job clients can already
@@ -189,6 +201,147 @@ bool WeatherMonitorCampaign::run()
 		campaignmanager.addParam(d);
 		++count;
 	}
+#else
+	// map for efficient access when results come in
+	map<WeatherMonitorExperimentData *, unsigned> experiment_ecs;
+	// map for keeping one "open" EC for every address
+	map<address_t, equivalence_class> open_ecs;
+	// experiment count
+	int count = 0;
+
+	// instruction counter within trace
+	int instr = 0;
+
+	// fill open_ecs with one EC for every address
+	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
+		open_ecs[*it].instr1 = instr;
+	}
+
+	// absolute address of current trace instruction
+	address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
+
+	Trace_Event ev;
+	// for every event in the trace ...
+	while (ps.getNext(&ev) && instr < WEATHER_NUMINSTR_TRACING) {
+		// instruction events just get counted
+		if (!ev.has_memaddr()) {
+			// new instruction
+			instr++;
+			instr_absolute = ev.ip();
+			continue;
+		}
+
+		// for each single byte in this memory access ...
+		for (address_t data_address = ev.memaddr(); data_address < ev.memaddr() + ev.width();
+			++data_address) {
+			// skip accesses to data outside our map of interesting addresses
+			map<address_t, equivalence_class>::iterator current_ec_it;
+			if ((current_ec_it = open_ecs.find(data_address)) == open_ecs.end()) {
+				continue;
+			}
+			equivalence_class& current_ec = current_ec_it->second;
+
+			// skip zero-sized intervals: these can occur when an instruction
+			// accesses a memory location more than once (e.g., INC, CMPXCHG)
+			if (current_ec.instr1 > instr) {
+				continue;
+			}
+
+			// we now have an interval-terminating R/W event to the memaddr
+			// we're currently looking at:
+
+			// complete the equivalence interval
+			current_ec.instr2 = instr;
+			current_ec.instr2_absolute = instr_absolute;
+			current_ec.data_address = data_address;
+
+			if (ev.accesstype() == ev.READ) {
+				// a sequence ending with READ: we need to do one experiment to
+				// cover it completely
+				ecs_need_experiment.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+				cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
+
+				// instantly enqueue job: that way the job clients can already
+				// start working in parallel
+				WeatherMonitorExperimentData *d = new WeatherMonitorExperimentData;
+				// we pick the rightmost instruction in that interval
+				d->msg.set_instr_offset(current_ec.instr2);
+				d->msg.set_instr_address(current_ec.instr2_absolute);
+				d->msg.set_mem_addr(current_ec.data_address);
+
+				// store index into ecs_need_experiment
+				experiment_ecs[d] = ecs_need_experiment.size() - 1;
+
+				campaignmanager.addParam(d);
+				++count;
+			} else if (ev.accesstype() == ev.WRITE) {
+				// a sequence ending with WRITE: an injection anywhere here
+				// would have no effect.
+				ecs_no_effect.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+				cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
+			} else {
+				log << "WAT" << endl;
+			}
+
+			// next interval must start at next instruction; the aforementioned
+			// skipping mechanism wouldn't work otherwise
+			current_ec.instr1 = instr + 1;
+		}
+	}
+
+	// close all open intervals (right end of the fault-space)
+	for (map<address_t, equivalence_class>::iterator current_ec_it = open_ecs.begin();
+	     current_ec_it != open_ecs.end(); ++current_ec_it) {
+		address_t data_address = current_ec_it->first;
+		equivalence_class& current_ec = current_ec_it->second;
+
+		// Why -1?  In most cases it does not make sense to inject before the
+		// very last instruction, as we won't execute it anymore.  This *only*
+		// makes sense if we also inject into parts of the result vector.  This
+		// is not the case in this experiment, and with -1 we'll get a result
+		// comparable to the non-pruned campaign.
+		// XXX still true for weathermonitor?
+		
+		current_ec.instr2 = instr - 1;
+		current_ec.instr2_absolute = 0; // unknown
+		current_ec.data_address = data_address;
+
+		// zero-sized?  skip.
+		if (current_ec.instr1 > current_ec.instr2) {
+			continue;
+		}
+
+		// the run continues after the FI window, so do this experiment
+		// XXX this creates at least one experiment for *every* bit!
+		//     fix: full trace, limited FI window
+		//ecs_no_effect.push_back(current_ec);
+		ecs_need_experiment.push_back(current_ec);
+#ifdef PRUNING_DEBUG_OUTPUT
+		cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+#endif
+
+		// FIXME copy/paste, encapsulate this:
+		// instantly enqueue job: that way the job clients can already start
+		// working in parallel
+		WeatherMonitorExperimentData *d = new WeatherMonitorExperimentData;
+		// we pick the rightmost instruction in that interval
+		d->msg.set_instr_offset(current_ec.instr2);
+		//d->msg.set_instr_address(current_ec.instr2_absolute); // unknown!
+		d->msg.set_mem_addr(current_ec.data_address);
+
+		// store index into ecs_need_experiment
+		experiment_ecs[d] = ecs_need_experiment.size() - 1;
+
+		campaignmanager.addParam(d);
+		++count;
+	}
+	// conserve some memory
+	open_ecs.clear();
+#endif
 
 	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
