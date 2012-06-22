@@ -91,7 +91,7 @@ bool ChecksumOOStuBSCampaign::run()
 		// for every section in the trace between subsequent memory
 		// accesses to that address ...
 		// XXX reorganizing the trace for efficient seeks could speed this up
-		while(ps.getNext(&ev) && instr < OOSTUBS_NUMINSTR) { //XXX: not sure if (instr < OOSTUBS_NUMINSTR) is really needed --chb
+		while(ps.getNext(&ev) && instr < OOSTUBS_NUMINSTR) {
 			// instruction events just get counted
 			if (!ev.has_memaddr()) {
 				// new instruction
@@ -172,7 +172,6 @@ bool ChecksumOOStuBSCampaign::run()
 			continue;
 		}
 		// as the experiment ends, this byte is a "don't care":
-		// TODO: still true for checksum-oostubs? compare to weathermonitor!
 		ecs_no_effect.push_back(current_ec);
 	}
 
