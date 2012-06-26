@@ -1,3 +1,5 @@
+#if 0
+		// temporarily disabled to make the code in the repository compile - will soon be fixed
 #ifndef __UDIS86_HPP__
   #define __UDIS86_HPP__
 
@@ -39,3 +41,4 @@ public:
 };
 
 #endif // __UDIS86_HPP__
+#endif

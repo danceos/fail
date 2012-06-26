@@ -1,3 +1,5 @@
+#if 0
+		// temporarily disabled to make the code in the repository compile - will soon be fixed
 #include "sal/bochs/BochsController.hpp"
 #include "UDIS86.hpp"
 
@@ -58,3 +60,4 @@ GPRegisterId Udis86::udisGPRToFailBochsGPR(ud_type_t udisReg) {
 	}
 #undef REG_CASE
 }
+#endif

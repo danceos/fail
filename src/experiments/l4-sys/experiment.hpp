@@ -6,6 +6,8 @@
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
+// not implemented yet
+// #include "aluinstr.hpp"
 
 class L4SysExperimentData;
 
@@ -50,9 +52,21 @@ private:
 	 * @returns \a false if the instruction continued on the following page in memory
 	 */
 	bx_bool fetchInstruction(BX_CPU_C *instance, const Bit8u *instr, bxInstruction_c *iStorage);
+	/**
+	 * Write out the injection parameters to the given logger.
+	 * @param log A reference to the Logger object
+	 * @param param The experiment parameter object to log data from
+	 */
 	void logInjection(fail::Logger &log, const L4SysExperimentData &param);
-	bool isALUInstruction(unsigned opcode);
+	/**
+	 * May be obsolete. Not supplying docu until I am sure whether I need to
+	 */
 	void readFromFileToVector(std::ifstream &file, std::vector<struct __trace_instr_type> &instr_list);
+	/**
+	 * Overwrites one Bochs instruction with another.
+	 * @param dest the instruction to copy to
+	 * @param src the instruction to copy from
+	 */
 	void changeBochsInstruction(bxInstruction_c *dest, bxInstruction_c *src);
 };
 

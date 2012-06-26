@@ -130,117 +130,6 @@ void L4SysExperiment::logInjection(Logger &log,
 			<< ")" << " bit " << bit_offset << endl;
 }
 
-bool L4SysExperiment::isALUInstruction(unsigned opcode) {
-	switch (opcode) {
-	case BX_IA_INC_Eb:
-	case BX_IA_INC_Ew:
-	case BX_IA_INC_Ed:
-	case BX_IA_INC_RX:
-	case BX_IA_INC_ERX:
-	case BX_IA_DEC_Eb:
-	case BX_IA_DEC_Ew:
-	case BX_IA_DEC_Ed:
-	case BX_IA_DEC_RX:
-	case BX_IA_DEC_ERX:
-	case BX_IA_ADC_EbGb:
-	case BX_IA_ADC_EdGd:
-	case BX_IA_ADC_EwGw:
-	case BX_IA_ADD_EbGb:
-	case BX_IA_ADD_EdGd:
-	case BX_IA_ADD_EwGw:
-	case BX_IA_AND_EbGb:
-	case BX_IA_AND_EdGd:
-	case BX_IA_AND_EwGw:
-	case BX_IA_CMP_EbGb:
-	case BX_IA_CMP_EdGd:
-	case BX_IA_CMP_EwGw:
-	case BX_IA_OR_EbGb:
-	case BX_IA_OR_EdGd:
-	case BX_IA_OR_EwGw:
-	case BX_IA_SBB_EbGb:
-	case BX_IA_SBB_EdGd:
-	case BX_IA_SBB_EwGw:
-	case BX_IA_SUB_EbGb:
-	case BX_IA_SUB_EdGd:
-	case BX_IA_SUB_EwGw:
-	case BX_IA_XOR_EbGb:
-	case BX_IA_XOR_EdGd:
-	case BX_IA_XOR_EwGw:
-	case BX_IA_ADC_ALIb:
-	case BX_IA_ADC_AXIw:
-	case BX_IA_ADC_EAXId:
-	case BX_IA_ADD_EbIb:
-	case BX_IA_OR_EbIb:
-	case BX_IA_ADC_EbIb:
-	case BX_IA_SBB_EbIb:
-	case BX_IA_AND_EbIb:
-	case BX_IA_SUB_EbIb:
-	case BX_IA_XOR_EbIb:
-	case BX_IA_CMP_EbIb:
-	case BX_IA_ADD_EwIw:
-	case BX_IA_OR_EwIw:
-	case BX_IA_ADC_EwIw:
-	case BX_IA_SBB_EwIw:
-	case BX_IA_AND_EwIw:
-	case BX_IA_SUB_EwIw:
-	case BX_IA_XOR_EwIw:
-	case BX_IA_CMP_EwIw:
-	case BX_IA_ADD_EdId:
-	case BX_IA_OR_EdId:
-	case BX_IA_ADC_EdId:
-	case BX_IA_SBB_EdId:
-	case BX_IA_AND_EdId:
-	case BX_IA_SUB_EdId:
-	case BX_IA_XOR_EdId:
-	case BX_IA_CMP_EdId:
-	case BX_IA_ADC_GbEb:
-	case BX_IA_ADC_GwEw:
-	case BX_IA_ADC_GdEd:
-	case BX_IA_ADD_ALIb:
-	case BX_IA_ADD_AXIw:
-	case BX_IA_ADD_EAXId:
-	case BX_IA_ADD_GbEb:
-	case BX_IA_ADD_GwEw:
-	case BX_IA_ADD_GdEd:
-	case BX_IA_AND_ALIb:
-	case BX_IA_AND_AXIw:
-	case BX_IA_AND_EAXId:
-	case BX_IA_AND_GbEb:
-	case BX_IA_AND_GwEw:
-	case BX_IA_AND_GdEd:
-	case BX_IA_ROL_Eb:
-	case BX_IA_ROR_Eb:
-	case BX_IA_RCL_Eb:
-	case BX_IA_RCR_Eb:
-	case BX_IA_SHL_Eb:
-	case BX_IA_SHR_Eb:
-	case BX_IA_SAR_Eb:
-	case BX_IA_ROL_Ew:
-	case BX_IA_ROR_Ew:
-	case BX_IA_RCL_Ew:
-	case BX_IA_RCR_Ew:
-	case BX_IA_SHL_Ew:
-	case BX_IA_SHR_Ew:
-	case BX_IA_SAR_Ew:
-	case BX_IA_ROL_Ed:
-	case BX_IA_ROR_Ed:
-	case BX_IA_RCL_Ed:
-	case BX_IA_RCR_Ed:
-	case BX_IA_SHL_Ed:
-	case BX_IA_SHR_Ed:
-	case BX_IA_SAR_Ed:
-	case BX_IA_NOT_Eb:
-	case BX_IA_NEG_Eb:
-	case BX_IA_NOT_Ew:
-	case BX_IA_NEG_Ew:
-	case BX_IA_NOT_Ed:
-	case BX_IA_NEG_Ed:
-		return true;
-	default:
-		return false;
-	}
-}
-
 void L4SysExperiment::readFromFileToVector(std::ifstream &file,
 		std::vector<trace_instr> &instr_list) {
 	file >> hex;
@@ -492,6 +381,8 @@ bool L4SysExperiment::run() {
 		// do the logging
 		logInjection(log, param);
 	} else if (exp_type == param.msg.RATFLIP) {
+#if 0
+		// temporarily disabled to make the code in the repository compile - will soon be fixed
 		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
 		Udis86 udis(calculateInstructionAddress(), cache_entry->i->ilen());
 		if (udis.fetchNextInstruction()) {
@@ -592,6 +483,8 @@ bool L4SysExperiment::run() {
 			}
 
 		}
+#endif
+	} else if (exp_type == param.msg.ALUINSTR) {
 	}
 
 	// aftermath
