@@ -5,13 +5,13 @@ namespace fail {
 Register* UniformRegisterSet::getRegister(size_t i)
 {
 	assert(i < m_Regs.size() && "FATAL ERROR: Invalid index provided!");
-	return (m_Regs[i]);
+	return m_Regs[i];
 }
 
 Register* RegisterManager::getRegister(size_t i)
 {
 	assert(i < m_Registers.size() && "FATAL ERROR: Invalid index provided!");
-	return (m_Registers[i]);
+	return m_Registers[i];
 }
 
 void RegisterManager::add(Register* reg)
@@ -20,7 +20,7 @@ void RegisterManager::add(Register* reg)
 	m_Registers.push_back(reg);
 
 	UniformRegisterSet* urs = getSetOfType(reg->getType());
-	if(urs == NULL) {
+	if (urs == NULL) {
 		urs = new UniformRegisterSet(reg->getType());
 		m_Subsets.push_back(urs);
 	}
@@ -38,29 +38,28 @@ void UniformRegisterSet::m_add(Register* preg)
 
 size_t RegisterManager::count() const
 {
-	return (m_Registers.size());
+	return m_Registers.size();
 }
 
 UniformRegisterSet& RegisterManager::getSet(size_t i)
 {
 	assert(i < m_Subsets.size() && "FATAL ERROR: Invalid index provided!");
-	return (*m_Subsets[i]);
+	return *m_Subsets[i];
 }
 
 UniformRegisterSet* RegisterManager::getSetOfType(RegisterType t)
 {
-	for(std::vector< UniformRegisterSet* >::iterator it = m_Subsets.begin();
-		it != m_Subsets.end(); it++)
-	{
+	for (std::vector< UniformRegisterSet* >::iterator it = m_Subsets.begin();
+		it != m_Subsets.end(); it++) {
 		if((*it)->getType() == t)
-			return (*it);
+			return *it;
 	}
-	return (NULL);
+	return NULL;
 }
 
 void RegisterManager::clear()
 {
-	for(std::vector< UniformRegisterSet* >::iterator it = m_Subsets.begin();
+	for (std::vector< UniformRegisterSet* >::iterator it = m_Subsets.begin();
 		it != m_Subsets.end(); it++)
 		delete (*it);
 	m_Subsets.clear();
