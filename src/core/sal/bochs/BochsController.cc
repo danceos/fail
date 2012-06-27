@@ -29,8 +29,7 @@ BochsController::BochsController()
   	const  std::string names[] = { "RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI",
   	                               "RDI", "R8", "R9", "R10", "R11", "R12", "R13",
   	                               "R14", "R15" };
-	for(unsigned short i = 0; i < 16; i++)
-	{
+	for (unsigned short i = 0; i < 16; i++) {
 		BxGPReg* pReg = new BxGPReg(i, 64, &(BX_CPU(0)->gen_reg[i].rrx));
 		pReg->setName(names[i]);
 		m_Regs->add(pReg);
@@ -39,8 +38,7 @@ BochsController::BochsController()
   	// -- 32 bit register --
   	const std::string names[] = { "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI",
 							      "EDI" };
-	for(unsigned short i = 0; i < 8; i++)
-	{
+	for (unsigned short i = 0; i < 8; i++) {
 		BxGPReg* pReg = new BxGPReg(i, 32, &(BX_CPU(0)->gen_reg[i].dword.erx));
 		pReg->setName(names[i]);
 		m_Regs->add(pReg);
@@ -94,7 +92,7 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		BX_CPU_C *context, bxICacheEntry_c *cache_entry)
 {
 #ifdef DEBUG
-	if(m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
+	if (m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
 #endif
 	assert(context != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
@@ -105,11 +103,9 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	// Check for active breakpoint-events:
 	bp_cache_t &buffer_cache = m_EvList.getBPBuffer();
 	bp_cache_t::iterator it = buffer_cache.begin();
-	while(it != buffer_cache.end())
-	{
+	while (it != buffer_cache.end()) {
 		BPEvent* pEvBreakpt = *it;
-		if(pEvBreakpt->isMatching(instrPtr, address_space))
-		{
+		if (pEvBreakpt->isMatching(instrPtr, address_space)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = buffer_cache.makeActive(m_EvList, it);
 			do_fire = true;
@@ -119,7 +115,7 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		}
 		it++;
 	}
-	if(do_fire)
+	if (do_fire)
 		m_EvList.fireActiveEvents();
 	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
 	//       implementation.
@@ -129,11 +125,9 @@ void BochsController::onIOPortEvent(unsigned char data, unsigned port, bool out)
 	// Check for active breakpoint-events:
 	io_cache_t &buffer_cache = m_EvList.getIOBuffer();
 	io_cache_t::iterator it = buffer_cache.begin();
-	while(it != buffer_cache.end())
-	{
+	while (it != buffer_cache.end()) {
 		IOPortEvent* pIOPt = (*it);
-		if(pIOPt->isMatching(port, out))
-		{
+		if (pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
 			it = buffer_cache.makeActive(m_EvList, it);
 			// "it" has already been set to the next element (by calling
@@ -152,7 +146,7 @@ void BochsController::save(const std::string& path)
 	int stat;
 	
 	stat = mkdir(path.c_str(), 0777);
-	if(!(stat == 0 || errno == EEXIST))
+	if (!(stat == 0 || errno == EEXIST))
 		std::cout << "[FAIL] Can not create target-directory to save!" << std::endl;
 		// TODO: (Non-)Verbose-Mode? Log-level? Maybe better: use return value to indicate failure?
 	
