@@ -17,7 +17,7 @@ class ExperimentFlow;
 typedef unsigned long event_id_t; //!< type of event ids
 
 //! invalid event id (used as a return indicator)
-const event_id_t    INVALID_EVENT = static_cast<event_id_t>(-1);
+const event_id_t INVALID_EVENT = static_cast<event_id_t>(-1);
 //! address wildcard (e.g. for BPEvent's)
 const address_t       ANY_ADDR = static_cast<address_t>(-1);
 //! instruction wildcard
@@ -144,13 +144,11 @@ public:
 	/**
 	 * Returns the address space register of this event.
 	 */
-	address_t getCR3() const
-	{ return m_CR3; }
+	address_t getCR3() const { return m_CR3; }
 	/**
 	 * Sets the address space register for this event.
 	 */
-	void setCR3(address_t iptr)
-	{ m_CR3 = iptr; }
+	void setCR3(address_t iptr) { m_CR3 = iptr; }
 	/**
 	 * Checks whether a given address space is matching.
 	 */
@@ -162,14 +160,12 @@ public:
 	/**
 	 * Returns the instruction pointer that triggered this event.
 	 */
-	address_t getTriggerInstructionPointer() const
-	{ return m_TriggerInstrPtr; }
+	address_t getTriggerInstructionPointer() const { return m_TriggerInstrPtr; }
 	/**
 	 * Sets the instruction pointer that triggered this event.  Should not
 	 * be used by experiment code.
 	 */
-	void setTriggerInstructionPointer(address_t iptr)
-	{ m_TriggerInstrPtr = iptr; }
+	void setTriggerInstructionPointer(address_t iptr) { m_TriggerInstrPtr = iptr; }
 };
 
 /**

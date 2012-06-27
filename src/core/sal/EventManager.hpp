@@ -1,5 +1,5 @@
-#ifndef __EVENT_LIST_HPP__
-  #define __EVENT_LIST_HPP__
+#ifndef __EVENT_MANAGER_HPP__
+  #define __EVENT_MANAGER_HPP__
 
 #include <cassert>
 #include <list>
@@ -39,7 +39,7 @@ typedef bp_cache_t::iterator bp_iter_t;
 typedef BufferCache<IOPortEvent*> io_cache_t;
 typedef io_cache_t::iterator io_iter_t;
 /**
- * \class EventList
+ * \class EventManager
  *
  * \brief This class manages the events of the Fail* implementation.
  *
@@ -50,10 +50,10 @@ typedef io_cache_t::iterator io_iter_t;
  * be added to a -so called- delete-list. This ensures to prevent triggering
  * "active" events which have already been deleted by a previous experiment
  * flow. (See makeActive() and fireActiveEvent() for implementation specific
- * details.) EventList is part of the SimulatorController and "outsources"
+ * details.) EventManager is part of the SimulatorController and "outsources"
  * it's event management.
  */
-class EventList {
+class EventManager {
 private:
 	// TODO: List separation of "critical types"? Hashing/sorted lists? (-> performance!)
 	bufferlist_t m_BufferList; //!< the storage for events added by exp.
@@ -62,8 +62,8 @@ private:
 	BaseEvent* m_pFired; //!< the recently fired Event-object
 	bp_cache_t m_Bp_cache; //!< the storage cache for breakpoint events
 	io_cache_t m_Io_cache; //!< the storage cache for port i/o events
-	friend bp_iter_t bp_cache_t::makeActive(EventList &ev_list, bp_iter_t idx);
-	friend io_iter_t io_cache_t::makeActive(EventList &ev_list, io_iter_t idx);
+	friend bp_iter_t bp_cache_t::makeActive(EventManager &ev_list, bp_iter_t idx);
+	friend io_iter_t io_cache_t::makeActive(EventManager &ev_list, io_iter_t idx);
 public:
 	/**
 	 * The iterator of this class used to loop through the list of
@@ -73,8 +73,8 @@ public:
 	 */
 	typedef bufferlist_t::iterator iterator;
 
-	EventList() : m_pFired(NULL) { }
-	~EventList();
+	EventManager() : m_pFired(NULL) { }
+	~EventManager();
 	/**
 	 * Adds the specified event object for the given ExperimentFlow to the
 	 * list of events to be watched for.
@@ -220,4 +220,4 @@ private:
 
 } // end-of-namespace: fail
 
-#endif // __EVENT_LIST_HPP__
+#endif // __EVENT_MANAGER_HPP__

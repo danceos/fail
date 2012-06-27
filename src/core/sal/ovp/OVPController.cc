@@ -85,10 +85,10 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 //		 << " R0: 0x" << hex << r0 << " ST: 0x" << hex << st  << endl;
 
 	// Check for active breakpoint-events:
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) {
 		// FIXME: Performance verbessern (dazu muss entsprechend auch die Speicherung
-		// in EventList(.cc|.hpp) angepasst bzw. verbessert werden).
+		// in EventManager(.cc|.hpp) angepasst bzw. verbessert werden).
 		BPSingleEvent* pEvBreakpt = dynamic_cast<BPSingleEvent*>(*it);
 		if (pEvBreakpt && (instrPtr == pEvBreakpt->getWatchInstructionPointer() ||
 		    pEvBreakpt->getWatchInstructionPointer() == ANY_ADDR)) {

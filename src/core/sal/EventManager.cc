@@ -1,11 +1,11 @@
 #include <set>
 
-#include "EventList.hpp"
+#include "EventManager.hpp"
 #include "SALInst.hpp"
 
 namespace fail {
 
-void EventList::addToCaches(BaseEvent *ev)
+void EventManager::addToCaches(BaseEvent *ev)
 {
 	BPEvent *bps_ev;
 	if ((bps_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
@@ -16,7 +16,7 @@ void EventList::addToCaches(BaseEvent *ev)
 		m_Io_cache.add(io_ev);
 }
 
-void EventList::removeFromCaches(BaseEvent *ev)
+void EventManager::removeFromCaches(BaseEvent *ev)
 {
 	BPEvent *bpr_ev;
 	if ((bpr_ev = dynamic_cast<BPEvent*>(ev)) != NULL)
@@ -27,13 +27,13 @@ void EventList::removeFromCaches(BaseEvent *ev)
 		m_Io_cache.remove(io_ev);
 }
 
-void EventList::clearCaches()
+void EventManager::clearCaches()
 {
 	m_Bp_cache.clear();
 	m_Io_cache.clear();
 }
 
-event_id_t EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
+event_id_t EventManager::add(BaseEvent* ev, ExperimentFlow* pExp)
 {
 	assert(ev != NULL && "FATAL ERROR: Event (of base type BaseEvent*) cannot be NULL!");
 	// a zero counter does not make sense
@@ -45,7 +45,7 @@ event_id_t EventList::add(BaseEvent* ev, ExperimentFlow* pExp)
 	return ev->getId();
 }
 
-void EventList::remove(BaseEvent* ev)
+void EventManager::remove(BaseEvent* ev)
 {
 	// possible cases:
 	// - ev == 0 -> remove all events
@@ -77,12 +77,12 @@ void EventList::remove(BaseEvent* ev)
 	}
 }
 
-EventList::iterator EventList::remove(iterator it)
+EventManager::iterator EventManager::remove(iterator it)
 {
 	return m_remove(it, false);
 }
 
-EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
+EventManager::iterator EventManager::m_remove(iterator it, bool skip_deletelist)
 {
 	if (!skip_deletelist) {
 		// If skip_deletelist = true, m_remove was called from makeActive. Accordingly, we
@@ -105,7 +105,7 @@ EventList::iterator EventList::m_remove(iterator it, bool skip_deletelist)
 	return m_BufferList.erase(it);
 }
 
-void EventList::remove(ExperimentFlow* flow)
+void EventManager::remove(ExperimentFlow* flow)
 {
 	// all events?
 	if (flow == 0) {
@@ -141,12 +141,12 @@ void EventList::remove(ExperimentFlow* flow)
 	}
 }
 
-EventList::~EventList()
+EventManager::~EventManager()
 {
 	// nothing to do here yet
 }
 
-BaseEvent* EventList::getEventFromId(event_id_t id)
+BaseEvent* EventManager::getEventFromId(event_id_t id)
 {
 	// Loop through all events:
 	for (bufferlist_t::iterator it = m_BufferList.begin();
@@ -156,7 +156,7 @@ BaseEvent* EventList::getEventFromId(event_id_t id)
 	return NULL; // Nothing found.
 }
 
-EventList::iterator EventList::makeActive(iterator it)
+EventManager::iterator EventManager::makeActive(iterator it)
 {
 	assert(it != m_BufferList.end() &&
 		   "FATAL ERROR: Iterator has already reached the end!");
@@ -174,7 +174,7 @@ EventList::iterator EventList::makeActive(iterator it)
 	return it_next;
 }
 
-void EventList::fireActiveEvents()
+void EventManager::fireActiveEvents()
 {
 	for (firelist_t::iterator it = m_FireList.begin();
 		 it != m_FireList.end(); it++) {
@@ -194,7 +194,7 @@ void EventList::fireActiveEvents()
 	// Note: Do NOT call any event handlers here!
 }
 
-size_t EventList::getContextCount() const
+size_t EventManager::getContextCount() const
 {
 	std::set<ExperimentFlow*> uniqueFlows; // count unique ExperimentFlow-ptr
 	for (bufferlist_t::const_iterator it = m_BufferList.begin();

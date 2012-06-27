@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "efw/CoroutineManager.hpp"
-#include "EventList.hpp"
+#include "EventManager.hpp"
 #include "SALConfig.hpp"
 #include "Event.hpp"
 
@@ -33,13 +33,13 @@ class MemoryManager;
  */
 class SimulatorController {
 protected:
-	EventList m_EvList; //!< storage where events are being buffered
+	EventManager m_EvList; //!< storage where events are being buffered
 	CoroutineManager m_Flows; //!< managed experiment flows
 	RegisterManager *m_Regs; //!< access to cpu register
 	MemoryManager *m_Mem; //!< access to memory pool
 	//! list of suppressed interrupts
 	std::vector<unsigned> m_SuppressedInterrupts;
-	friend class EventList; //!< "outsources" the event management
+	friend class EventManager; //!< "outsources" the event management
 public:
 	SimulatorController()
 		: m_Regs(NULL), m_Mem(NULL) { }

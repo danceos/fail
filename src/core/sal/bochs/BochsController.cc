@@ -218,7 +218,7 @@ void BochsController::onTimerTrigger(void* thisPtr)
 	TimerEvent* pTmEv = static_cast<TimerEvent*>(thisPtr);
 	// Check for a matching TimerEvent. (In fact, we are only
 	// interessted in the iterator pointing at pTmEv.):
-	EventList::iterator it = std::find(simulator.m_EvList.begin(),
+	EventManager::iterator it = std::find(simulator.m_EvList.begin(),
 											simulator.m_EvList.end(), pTmEv);
 	// TODO: This has O(|m_EvList|) time complexity. We can further improve this
 	//       by creating a method such that makeActive(pTmEv) works as well,

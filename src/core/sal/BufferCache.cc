@@ -2,12 +2,12 @@
 #include <vector>
 #include "BufferCache.hpp"
 #include "Event.hpp"
-#include "EventList.hpp"
+#include "EventManager.hpp"
 
 namespace fail {
 
 template<class T>
-typename BufferCache<T>::iterator BufferCache<T>::makeActive(EventList &ev_list, BufferCache<T>::iterator idx)
+typename BufferCache<T>::iterator BufferCache<T>::makeActive(EventManager &ev_list, BufferCache<T>::iterator idx)
 {
 	assert(idx != end() &&
 		   "FATAL ERROR: Index larger than cache!");
@@ -20,7 +20,7 @@ typename BufferCache<T>::iterator BufferCache<T>::makeActive(EventList &ev_list,
 	ev->resetCounter();
 	// Note: This is the one and only situation in which remove() should NOT
 	//       store the removed item in the delete-list.
-	EventList::iterator it = std::find(ev_list.begin(), ev_list.end(), static_cast<BaseEvent*>(ev));
+	EventManager::iterator it = std::find(ev_list.begin(), ev_list.end(), static_cast<BaseEvent*>(ev));
 	ev_list.m_remove(it, true); // remove event from buffer-list
 	ev_list.m_FireList.push_back(ev);
 	return erase(idx);

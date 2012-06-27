@@ -50,7 +50,7 @@ void SimulatorController::onBreakpointEvent(address_t instrPtr, address_t addres
 	// FIXME: Improve performance!
 
 	// Loop through all events of type BP*Event:
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) {
 		BaseEvent* pev = *it;
 		BPSingleEvent* pbp; BPRangeEvent* pbpr;
@@ -79,7 +79,7 @@ void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
 
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) { // check for active events
 		BaseEvent* pev = *it;
 		MemAccessEvent* ev = dynamic_cast<MemAccessEvent*>(pev);
@@ -99,7 +99,7 @@ void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
 
 void SimulatorController::onInterruptEvent(unsigned interruptNum, bool nmi)
 {
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) { // check for active events 
 		BaseEvent* pev = *it;
 		InterruptEvent* pie = dynamic_cast<InterruptEvent*>(pev);
@@ -157,7 +157,7 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 
 void SimulatorController::onTrapEvent(unsigned trapNum)
 {
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while(it != m_EvList.end()) { // check for active events
 		BaseEvent* pev = *it;
 		TrapEvent* pte = dynamic_cast<TrapEvent*>(pev);
@@ -173,7 +173,7 @@ void SimulatorController::onTrapEvent(unsigned trapNum)
 
 void SimulatorController::onGuestSystemEvent(char data, unsigned port)
 {
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) { // check for active events
 		BaseEvent* pev = *it;
 		GuestEvent* pge = dynamic_cast<GuestEvent*>(pev);
@@ -190,7 +190,7 @@ void SimulatorController::onGuestSystemEvent(char data, unsigned port)
 
 void SimulatorController::onJumpEvent(bool flagTriggered, unsigned opcode)
 {
-	EventList::iterator it = m_EvList.begin();
+	EventManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) { // check for active events
 		JumpEvent* pje = dynamic_cast<JumpEvent*>(*it);
 		if (pje != NULL) {

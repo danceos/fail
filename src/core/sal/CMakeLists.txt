@@ -2,7 +2,7 @@ if(BUILD_BOCHS)
 	set(SRCS
 		BufferCache.cc
 		Event.cc
-		EventList.cc
+		EventManager.cc
 		Memory.cc
 		Register.cc
 		SimulatorController.cc
@@ -13,7 +13,7 @@ else()
 	set(SRCS
 		BufferCache.cc
 		Event.cc
-		EventList.cc
+		EventManager.cc
 		Memory.cc
 		Register.cc
 		SimulatorController.cc

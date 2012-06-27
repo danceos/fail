@@ -6,7 +6,7 @@
 
 namespace fail {
 
-class EventList;
+class EventManager;
 
 /**
  * \class BufferCache
@@ -20,7 +20,7 @@ template<class T>
 class BufferCache {
 public:
 	/**
-	 * The list type inherent to this class. Like bufferlist_t in EventList.hpp,
+	 * The list type inherent to this class. Like bufferlist_t in EventManager.hpp,
 	 * but dynamically typed.
 	 */
 	typedef std::list<T> cachelist_t;
@@ -34,8 +34,8 @@ public:
 private:
 	cachelist_t m_Buffer; //!< The list holding the cached elements
 public:
-	BufferCache() {}
-	~BufferCache() {}
+	BufferCache() { }
+	~BufferCache() { }
 	/**
 	 * Add an element to the array. The object pointed to remains untouched.
 	 * @param val the element to add
@@ -79,14 +79,14 @@ public:
 	 */
 	inline iterator end() { return m_Buffer.end(); }
 	/**
-	 * Acts as a replacement for EventList::makeActive, manipulating
-	 * the buffer cache exclusively. EventList::fireActiveEvents needs
+	 * Acts as a replacement for EventManager::makeActive, manipulating
+	 * the buffer cache exclusively. EventManager::fireActiveEvents needs
 	 * to be called to fire the active events (see there).
-	 * This method is declared as a friend method in EventList.
+	 * This method is declared as a friend method in EventManager.
 	 * @param idx the index of the event to trigger
 	 * @returns an updated index which can be used to update a loop counter
 	 */
-	iterator makeActive(EventList &ev_list, iterator idx);
+	iterator makeActive(EventManager &ev_list, iterator idx);
 };
 
 } // end-of-namespace: fail

@@ -61,7 +61,7 @@ public:
 	/**
 	 * Static internal event handler for TimerEvents. This static function is
 	 * called when a previously registered (Bochs) timer triggers. This function
-	 * searches for the provided TimerEvent object within the EventList and
+	 * searches for the provided TimerEvent object within the EventManager and
 	 * fires such an event by calling \c fireActiveEvents().
 	 * @param thisPtr a pointer to the TimerEvent-object triggered
 	 * 
