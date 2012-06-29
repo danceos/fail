@@ -4,20 +4,40 @@ if(BUILD_BOCHS)
   message(STATUS "[${PROJECT_NAME}] Building Bochs variant ...")
   SET(VARIANT bochs)
 
-  # FIXME: some of these may not be mandatory, depending on the actual Bochs config!
+  # FIXME: some of these may be mandatory, depending on the actual Bochs config!
   # -L/usr/lib -lSDL -lasound -latk-1.0 -lcairo -lfontconfig -lfreetype -lgdk_pixbuf-2.0 -lgdk-x11-2.0 -lgio-2.0 -lglib-2.0 -lgmodule-2.0 -lgobject-2.0 -lgthread-2.0 -lgtk-x11-2.0 -lICE -lm -lncurses -lpango-1.0 -lpangocairo-1.0 -lpangoft2-1.0 -lrt -lSM -lvga -lvgagl -lwx_baseu-2.8 -lwx_gtk2u_core-2.8 -lX11 -lXpm -lXrandr -pthread)
-  find_package(SDL REQUIRED) # -lSDL
-  find_package(ALSA REQUIRED) # -lasoud
-  find_package(GTK2 COMPONENTS gtk REQUIRED) # -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0 -lgtk-x11-2.0 -lpango
-  find_package(Freetype REQUIRED) # -lfreetype
-  find_package(X11 REQUIRED) # -lICE -lX11 -lXpm -lXrandr -lSM
-  find_package(Curses REQUIRED) # -lncurses
-  find_package(wxWidgets REQUIRED) # -lwx_baseu-2.8? -lwx_gtk2u_core-2.8
-
-  link_directories(${wxWidgets_LIB_DIR})
+  find_package(SDL) # -lSDL
+  if(SDL_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${SDL_LIBRARY})
+  endif(SDL_FOUND)
+  find_package(ALSA) # -lasoud
+  if(ALSA_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${ALSA_LIBRARIES})
+  endif(ALSA_FOUND)
+  find_package(GTK2 COMPONENTS gtk) # -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgdk-x11-2.0 -lglib-2.0 -lgobject-2.0 -lgtk-x11-2.0 -lpango
+  if(GTK2_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${GTK2_ATK_LIBRARY} ${GTK2_CAIRO_LIBRARY} ${GTK2_GDK_PIXBUF_LIBRARY} ${GTK2_GDK_LIBRARY} ${GTK2_GLIB_LIBRARY} -lgmodule-2.0 ${GTK2_GOBJECT_LIBRARY} -lgthread-2.0 ${GTK2_GTK_LIBRARY} ${GTK2_PANGO_LIBRARY} -lpangocairo-1.0 -lpangoft2-1.0)
+  endif(GTK2_FOUND)
+  find_package(Freetype) # -lfreetype
+  if(FREETYPE_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${FREETYPE_LIBRARIES})
+  endif(FREETYPE_FOUND)
+  find_package(X11) # -lICE -lX11 -lXpm -lXrandr -lSM
+  if(X11_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${X11_X11_LIB} ${X11_ICE_LIB} ${X11_Xpm_LIB} ${X11_SM_LIB} ${X11_Xrandr_LIB} ${X11_SM_LIB})
+  endif(X11_FOUND)
+  find_package(Curses) # -lncurses
+  if(CURSES_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${CURSES_LIBRARIES})
+  endif(CURSES_FOUND)
+  find_package(wxWidgets) # -lwx_baseu-2.8? -lwx_gtk2u_core-2.8
+  if(wxWidgets_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${wxWidgets_LIBRARIES})
+    link_directories(${wxWidgets_LIB_DIR})
+  endif(wxWidgets_FOUND)
 
   # FIXME: some libraries still need to be located the "cmake way"
-  set(bochs_library_dependencies ${SDL_LIBRARY} ${ALSA_LIBRARIES} ${GTK2_ATK_LIBRARY} ${GTK2_CAIRO_LIBRARY} ${GTK2_GDK_PIXBUF_LIBRARY} ${GTK2_GDK_LIBRARY} -lfontconfig ${FREETYPE_LIBRARIES} ${GTK2_GLIB_LIBRARY} -lgmodule-2.0 ${GTK2_GOBJECT_LIBRARY} -lgthread-2.0 ${GTK2_GTK_LIBRARY} ${X11_X11_LIB} ${X11_ICE_LIB} ${X11_Xpm_LIB} ${X11_SM_LIB} ${X11_Xrandr_LIB} ${CURSES_LIBRARIES} ${GTK2_PANGO_LIBRARY} -lpangocairo-1.0 -lpangoft2-1.0 -lrt ${X11_SM_LIB} -lvga -lvgagl ${wxWidgets_LIBRARIES} -pthread)
+  set(bochs_library_dependencies ${bochs_library_dependencies} -lfontconfig -lrt -lvga -lvgagl -pthread)
 
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
 
