@@ -5,12 +5,12 @@
 # clients defaults to #CPUs+1.
 #
 # Prerequisites:
-#  - client.sh and all necessary FailBochs ingredients (bochs binary, bochsrc,
-#    BIOS/VGA-BIOS, boot image, possibly a saved state) in the current
+#  - client.sh and all necessary FailBochs ingredients (fail-client binary,
+#    bochsrc, BIOS/VGA-BIOS, boot image, possibly a saved state) in the current
 #    directory
 #  - tmux installed somewhere in $PATH
 #  - possibly missing dynamic libraries in ~/bochslibs (e.g., for running a
-#    i386 bochs binary in an x86_64 environment)
+#    i386 fail-client/bochs binary in an x86_64 environment)
 #
 
 set -e
@@ -20,9 +20,9 @@ LIBDIR=~/bochslibs
 # cleanup earlier failures
 # (FIXME: you probably don't want this on your local machine!)
 killall -q client.sh || true
-killall -q bochs || true
+killall -q fail-client || true
 sleep .5
-killall -q -9 bochs || true
+killall -q -9 fail-client || true
 
 # On many machines, ~ is mounted via NFS.  To avoid the (severe) performance
 # penalty, copy all experiment-related stuff to /tmp.
@@ -38,7 +38,7 @@ cd $TMP
 # tmux, please shut up.
 TMUX='tmux -q'
 COMMAND=./client.sh
-SESSION=failbochs.$$
+SESSION=fail-client.$$
 
 # Calculate number of clients from #processors.
 PROCESSORS=$(fgrep processor /proc/cpuinfo|wc -l)

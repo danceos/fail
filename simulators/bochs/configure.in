@@ -72,8 +72,7 @@ case "$target" in
     ;;
   *-solaris*)
     ADD_FLAGS="-D_XOPEN_SOURCE_EXTENDED=1 -D__EXTENSIONS__"      # required for correct function prototypes
-    LIBS="$LIBS -lsocket -lnsl -lpcl -lprotobuf -lpthread"
-
+    LIBS="$LIBS -lsocket -lnsl"
     DEFAULT_GUI=x11
     ;;
   *)
@@ -210,8 +209,7 @@ if test "$have_cos" = 1 -a "$have_floor" = 1; then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
-    LIBS="$LIBS -lm -lpcl -lprotobuf -lpthread"
-
+    LIBS="$LIBS -lm"
     # use different functions to bypass configure caching
     have_sin=0
     have_ceil=0

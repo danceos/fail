@@ -12,28 +12,25 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/core)
 add_subdirectory(core)
 
 # Here we add all user-defined experiments (which fills the target list)
-add_subdirectory(experiments/)
+add_subdirectory(experiments)
 message(STATUS "[${PROJECT_NAME}] Chosen experiment targets:")
 foreach(experiment_name ${EXPERIMENTS_ACTIVATED})
     message(STATUS "[${PROJECT_NAME}] -> ${experiment_name}")
 endforeach(experiment_name)
 
 # Here we add activated plugins
-add_subdirectory(plugins/)
+add_subdirectory(plugins)
 message(STATUS "[${PROJECT_NAME}] Chosen plugin targets:")
 foreach(plugin_name ${PLUGINS_ACTIVATED})
     message(STATUS "[${PROJECT_NAME}] -> ${plugin_name}")
 endforeach(plugin_name)
 
-## Merge all resulting Fail* libs into a single libfail.a and copy it into the fail source directory
-add_custom_target(fail
-	COMMAND ${CMAKE_SOURCE_DIR}/cmake/mergelib.sh ${LIBRARY_OUTPUT_PATH} && ${CMAKE_COMMAND} -E copy ${LIBRARY_OUTPUT_PATH}/libfail.a ${CMAKE_SOURCE_DIR}/src
-)
-# FIXME: "libfail.a" should not be located in the source-tree...?!
+# libfail: dummy library that pulls in all other libraries as dependencies
+# (probably there's a smarter way to do that with cmake?)
+add_library(fail dummy.cc)
 
 ## Setup build dependencies of the Fail* lib 
 ## -> the Fail* targets and user defined experiment targets
-add_dependencies(fail sal util cpn efw comm protomessages ${EXPERIMENTS_ACTIVATED} ${PLUGINS_ACTIVATED})
-
-# Let make clean also delete libfail.a
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${LIBRARY_OUTPUT_PATH}/libfail.a)
+# start/end-group: ld must iterate over these archives more than once to figure
+#                  out which objects are needed
+target_link_libraries(fail -Wl,--start-group ${EXPERIMENTS_ACTIVATED} ${PLUGINS_ACTIVATED} sal cpn efw comm util -Wl,--end-group)

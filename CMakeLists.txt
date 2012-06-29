@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 2.6)
+# cmake 2.6 might suffice, but we don't test it (even Debian stable has 2.8.2)
+cmake_minimum_required(VERSION 2.8.2)
+# system cmake modules take precedence over those in CMAKE_MODULE_PATH
+# (makes cmake 2.8.7 happy)
+cmake_policy(SET CMP0017 NEW)
 
 PROJECT(Fail*)
 
@@ -21,18 +25,16 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(compilerconfig)
 
 #### #OPTION to configure Bochs/OVP ####
-OPTION( BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
-OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
+OPTION(BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
+OPTION(BUILD_BOCHS  "Build Bochs Variant?" ON)
 
-if(BUILD_OVP)
-  message(STATUS "[${PROJECT_NAME}] Building OVP variant...")
-  SET(VARIANT ovp)
-else(BUILD_OVP)
-  message(STATUS "[${PROJECT_NAME}] Building Bochs variant...")
+if(BUILD_BOCHS)
   ## add necessary additional header search paths.
-  add_definitions(-I${CMAKE_SOURCE_DIR}/simulators/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/simulators/bochs)
-  SET(VARIANT bochs)
-endif(BUILD_OVP)
+  #add_definitions(-I${CMAKE_SOURCE_DIR}/simulators/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/simulators/bochs)
+  include_directories(simulators/bochs/instrument/stubs simulators/bochs)
+elseif(BUILD_OVP)
+  add_subdirectory(simulators/ovp)
+endif(BUILD_BOCHS)
 
 ## Additional Compiler flags ##
 set(CMAKE_C_FLAGS "-g -Wall")
@@ -48,10 +50,9 @@ include_directories(${CMAKE_BINARY_DIR}/src/core)
 ## Add CMakeLists from subdirectories:
 add_subdirectory(src)
 
-if(BUILD_OVP)
-	add_subdirectory(simulators/ovp)
-else(BUILD_OVP)
-endif(BUILD_OVP)
+#### Backend-related build system stuff
+include(bochs)
+include(ovp)
 
 ## Just for testing:
 ## Invoking bochs build via external project

@@ -9,7 +9,7 @@
 
 #include "comm/SocketComm.hpp"
 #include "comm/ExperimentData.hpp"
-#include "comm/msg/FailControlMessage.pb.h"
+#include "comm/FailControlMessage.pb.h"
 #include "config/FailConfig.hpp"
 
 namespace fail {

@@ -174,13 +174,33 @@ all: @PRIMARY_TARGET@ @PLUGIN_TARGET@ bximage@EXE@ bxcommit@EXE@ @BUILD_DOCBOOK_
 
 @EXTERNAL_DEPENDENCY@
 
-# DanceOS (added "../../src/libfail.a"):
+# DanceOS
+# FIXME: *Probably* we could remove this target and use libbochs_cpu.a and the
+# module libraries instead.  But: Some module libraries may not exist
+# (depending on the Bochs configuration), and (at least) the GDB stub is not
+# included.
+libfailbochs.a: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
+           cpu/libcpu.a memory/libmemory.a gui/libgui.a \
+           @DISASM_VAR@ @INSTRUMENT_VAR@ $(BX_OBJS) \
+           $(SIMX86_OBJS) @FPU_VAR@ @GDBSTUB_VAR@ @PLUGIN_VAR@
+	../../cmake/mergelib.sh $@ \
+		$(BX_OBJS) $(SIMX86_OBJS) \
+		@IODEV_LIB_VAR@ @DEBUGGER_VAR@ cpu/libcpu.a memory/libmemory.a gui/libgui.a \
+		@DISASM_VAR@ @INSTRUMENT_VAR@ @PLUGIN_VAR@ \
+		@GDBSTUB_VAR@ @FPU_VAR@
+	echo	@NONPLUGIN_GUI_LINK_OPTS@ \
+		$(MCH_LINK_FLAGS) \
+		$(SIMX86_LINK_FLAGS) \
+		$(READLINE_LIB) \
+		$(EXTRA_LINK_OPTS) \
+		$(LIBS)
+
 bochs@EXE@: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
-           cpu/libcpu.a memory/libmemory.a ../../src/libfail.a gui/libgui.a \
+           cpu/libcpu.a memory/libmemory.a gui/libgui.a \
            @DISASM_VAR@ @INSTRUMENT_VAR@ $(BX_OBJS) \
            $(SIMX86_OBJS) @FPU_VAR@ @GDBSTUB_VAR@ @PLUGIN_VAR@
 	@LINK@ @EXPORT_DYNAMIC@ $(BX_OBJS) $(SIMX86_OBJS) \
-		@IODEV_LIB_VAR@ @DEBUGGER_VAR@ cpu/libcpu.a memory/libmemory.a ../../src/libfail.a gui/libgui.a \
+		@IODEV_LIB_VAR@ @DEBUGGER_VAR@ cpu/libcpu.a memory/libmemory.a gui/libgui.a \
 		@DISASM_VAR@ @INSTRUMENT_VAR@ @PLUGIN_VAR@ \
 		@GDBSTUB_VAR@ @FPU_VAR@ \
 		@NONPLUGIN_GUI_LINK_OPTS@ \
@@ -190,25 +210,23 @@ bochs@EXE@: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
 		$(EXTRA_LINK_OPTS) \
 		$(LIBS)
 
-# DanceOS (added ../../src/libfail.a):
-
 # Special make target for cygwin/mingw using dlltool instead of
 # libtool.  This creates a .DEF file, and exports file, an import library,
 # and then links bochs.exe with the exports file.
 .win32_dll_plugin_target: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
-           cpu/libcpu.a memory/libmemory.a ../../src/libfail.a gui/libgui.a \
+           cpu/libcpu.a memory/libmemory.a gui/libgui.a \
            @DISASM_VAR@ @INSTRUMENT_VAR@ $(BX_OBJS) \
            $(SIMX86_OBJS) @FPU_VAR@ @GDBSTUB_VAR@ @PLUGIN_VAR@
 	$(DLLTOOL) --export-all-symbols --output-def bochs.def \
 		$(BX_OBJS) $(SIMX86_OBJS) \
-		@IODEV_LIB_VAR@ cpu/libcpu.a memory/libmemory.a ../../src/libfail.a gui/libgui.a \
+		@IODEV_LIB_VAR@ cpu/libcpu.a memory/libmemory.a gui/libgui.a \
 		@DEBUGGER_VAR@ @DISASM_VAR@ @INSTRUMENT_VAR@ @PLUGIN_VAR@ \
 		@GDBSTUB_VAR@ @FPU_VAR@
 	$(DLLTOOL) --dllname bochs.exe --def bochs.def --output-lib dllexports.a
 	$(DLLTOOL) --dllname bochs.exe --output-exp bochs.exp --def bochs.def
 	$(CXX) -o bochs.exe $(CXXFLAGS) $(LDFLAGS) -export-dynamic \
 	    $(BX_OBJS) bochs.exp $(SIMX86_OBJS) \
-		@IODEV_LIB_VAR@ cpu/libcpu.a memory/libmemory.a ../../src/libfail.a gui/libgui.a \
+		@IODEV_LIB_VAR@ cpu/libcpu.a memory/libmemory.a gui/libgui.a \
 		@DEBUGGER_VAR@ @DISASM_VAR@ @INSTRUMENT_VAR@ @PLUGIN_VAR@ \
 		@GDBSTUB_VAR@ @FPU_VAR@ \
 		$(GUI_LINK_OPTS) \

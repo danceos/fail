@@ -26,13 +26,13 @@ if [ -n "$1" ]; then cd "$1"; fi
 [ ! -e client.sh ] && cp -v $SCRIPTDIR/client.sh .
 [ ! -e multiple-clients.sh ] && cp -v $SCRIPTDIR/multiple-clients.sh .
 
-# add bochs binary if it doesn't exist
-if [ -e bochs ]
+# add fail-client binary if it doesn't exist
+if [ -e fail-client ]
 then
-	echo 'Info: Using local "bochs" binary.' >&2
+	echo 'Info: Using local "fail-client" binary.' >&2
 else
-	cp -v $(which bochs) .
-	strip bochs
+	cp -v $(which fail-client) .
+	strip fail-client
 fi
 
 # sync everything to experiment hosts

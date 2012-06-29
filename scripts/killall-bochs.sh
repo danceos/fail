@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# killall-bochs.sh
+# killall-fail.sh
 # Kills all remaining FailBochs instances on $FAIL_EXPERIMENT_HOSTS.
 #
 # Prerequisites:

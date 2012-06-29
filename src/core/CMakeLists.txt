@@ -1,11 +1,10 @@
 ### Add Boost and Threads
 find_package(Boost 1.42 COMPONENTS thread REQUIRED)
-find_package(Threads)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ### Setup doxygen documentation 
-# TODO: put into helpers.cmake
+# TODO: put into helpers.cmake (?)
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
 # Using a .in file means we can use CMake to insert project settings

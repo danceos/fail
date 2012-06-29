@@ -9,7 +9,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#include "comm/msg/FailControlMessage.pb.h"
+#include "comm/FailControlMessage.pb.h"
 #include "comm/SocketComm.hpp"
 #include "JobServer.hpp"
 #include "Minion.hpp"
