@@ -1,8 +1,10 @@
 # cmake 2.6 might suffice, but we don't test it (even Debian stable has 2.8.2)
 cmake_minimum_required(VERSION 2.8.2)
-# system cmake modules take precedence over those in CMAKE_MODULE_PATH
-# (makes cmake 2.8.7 happy)
-cmake_policy(SET CMP0017 NEW)
+if("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
+  # system cmake modules take precedence over those in CMAKE_MODULE_PATH
+  # (makes cmake 2.8.4 and newer)
+  cmake_policy(SET CMP0017 NEW)
+endif("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
 
 PROJECT(Fail*)
 
