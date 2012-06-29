@@ -20,6 +20,10 @@
 
 #include "l4sys.pb.h"
 
+// FIXME libudis86 test -- remove me
+#include <udis86.h>
+void foo() { ud_t x; ud_init(&x); }
+
 using namespace std;
 using namespace fail;
 

@@ -27,7 +27,11 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 
 ## Build library
 add_library(${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
-target_link_libraries(${EXPERIMENT_NAME} udis86)
+
+find_package(LibUdis86 REQUIRED)
+include_directories(${LIBUDIS86_INCLUDE_DIRS})
+link_directories(${LIBUDIS86_LINK_DIRS})
+target_link_libraries(${EXPERIMENT_NAME} ${LIBUDIS86_LIBRARIES})
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
