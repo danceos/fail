@@ -188,12 +188,12 @@ libfailbochs.a: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
 		@IODEV_LIB_VAR@ @DEBUGGER_VAR@ cpu/libcpu.a memory/libmemory.a gui/libgui.a \
 		@DISASM_VAR@ @INSTRUMENT_VAR@ @PLUGIN_VAR@ \
 		@GDBSTUB_VAR@ @FPU_VAR@
-	echo	@NONPLUGIN_GUI_LINK_OPTS@ \
-		$(MCH_LINK_FLAGS) \
-		$(SIMX86_LINK_FLAGS) \
-		$(READLINE_LIB) \
-		$(EXTRA_LINK_OPTS) \
-		$(LIBS)
+	#echo	@NONPLUGIN_GUI_LINK_OPTS@ \
+	#	$(MCH_LINK_FLAGS) \
+	#	$(SIMX86_LINK_FLAGS) \
+	#	$(READLINE_LIB) \
+	#	$(EXTRA_LINK_OPTS) \
+	#	$(LIBS)
 
 bochs@EXE@: @IODEV_LIB_VAR@ @DEBUGGER_VAR@ \
            cpu/libcpu.a memory/libmemory.a gui/libgui.a \
