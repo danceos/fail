@@ -91,14 +91,15 @@ if(BUILD_BOCHS)
     COMMENT "[${PROJECT_NAME}] Cleaning all up (all-clean in bochs)"
   )
   
-  add_custom_target(bochsinstall
-    COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" install
-    COMMENT "[${PROJECT_NAME}] Installing Bochs ..."
-  )
-
-  add_custom_target(bochsuninstall
-    COMMAND +make -C ${bochs_src_dir} uninstall
-    COMMENT "[${PROJECT_NAME}] Uninstalling Bochs ..."
-  )
+  # these don't work, because we don't build a bochs binary anymore:
+  #add_custom_target(bochsinstall
+  #  COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" install
+  #  COMMENT "[${PROJECT_NAME}] Installing Bochs ..."
+  #)
+  #
+  #add_custom_target(bochsuninstall
+  #  COMMAND +make -C ${bochs_src_dir} uninstall
+  #  COMMENT "[${PROJECT_NAME}] Uninstalling Bochs ..."
+  #)
 
 endif(BUILD_BOCHS)
