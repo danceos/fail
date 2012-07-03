@@ -19,7 +19,7 @@
 using namespace std;
 using namespace fail;
 
-char const * const trace_filename = "trace.pb";
+char const * const trace_filename = "trace.tc";
 char const * const results_filename = "chksumoostubs.csv";
 
 // equivalence class type: addr, [i1, i2]

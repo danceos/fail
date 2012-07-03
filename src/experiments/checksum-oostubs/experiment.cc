@@ -21,6 +21,8 @@
 
 #include "ecc_region.hpp"
 
+#define LOCAL 0
+
 using namespace std;
 using namespace fail;
 
@@ -73,7 +75,7 @@ bool ChecksumOOStuBSExperiment::run()
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	char const *tracefile = "trace.pb";
+	char const *tracefile = "trace.tc";
 	ofstream of(tracefile);
 	tp.setTraceFile(&of);
 
