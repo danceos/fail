@@ -141,9 +141,9 @@ bool ChecksumOOStuBSExperiment::run()
 	}
 #else
 	// XXX debug
-	param.msg.set_instr_offset(1000);
+	param.msg.set_instr_offset(305595);
 	//param.msg.set_instr_address(12345);
-	param.msg.set_mem_addr(0x00103bdc);
+	param.msg.set_mem_addr(1105228);
 #endif
 
 	int id = param.getWorkloadID();
