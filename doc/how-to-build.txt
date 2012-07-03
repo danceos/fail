@@ -2,13 +2,11 @@
 Additional libraries/packages/tools needed for Fail*:
 =========================================================================================
 
-Required anyway:
+Required for Fail*:
 **********************************************************************
  - libprotobuf-dev
- - libpthread
  - libpcl1-dev
- - libboost-dev
- - libboost-all-dev (or at least libboost-thread-dev)
+ - libboost-thread-dev
  - protobuf-compiler
  - cmake
  - cmake-curses-gui
@@ -16,6 +14,11 @@ Required anyway:
    obtained from http://www.aspectc.org; nightlies can be downloaded from
    http://akut.aspectc.org
 
+Required for the Bochs simulator backend:
+**********************************************************************
+ - libpthread
+ - Probably more, depending on, e.g., the GUI you configure (X11 ->
+   libxrandr-dev)
 
 For distribution/parallelization:
 **********************************************************************
@@ -25,9 +28,14 @@ For distribution/parallelization:
 
 32-bit FailBochs on x86_64 Linux machines:
 **********************************************************************
- - libc6-i386 + all libraries listed by 
-     $ ldd bochs|awk '{print $3}'
-   in ~/bochslibs (client.sh will add these to LD_LIBRARY_PATH)
+ - Create a "bochslibs" directory and fill it with all necessary libraries from
+   your build machine:
+     $ mkdir bochslibs
+     $ cp -v $(ldd fail-client|awk '{print $3}'|egrep -v '\(|lib(pthread|selinux|c.so.)|^$') bochslibs/
+ - Copy this directory to ~/bochslibs on all machines lacking these libraries
+   (this may also be the case for i386 machines you cannot install library
+   packages on yourself).  client.sh will add ~/bochslibs to LD_LIBRARY_PATH if
+   it exists.
 
 =========================================================================================
 Compiling, building and modifying: Simulators and Fail*
@@ -44,18 +52,23 @@ For the first time:
       $ find -name CMakeCache.txt | xargs rm
  3. Create out of source build directory (${BUILD_DIR}, see also "fail-structure.txt"):
       $ mkdir build
+    Note that currently this build directory must be located somewhere below
+    the fail/ directory, as generated .ah files in there will not be included
+    in the compile process otherwise.
  4. Enter out-of-source build directory.  All generated files end up there.
       $ cd build
  5. Generate CMake environment. 
       $ cmake ..
  6. Setup build configuration by opening the CMake configuration tool
       $ ccmake .
-    Select "BUILD_BOCHS" or "BUILD_OVP".  Select an experiment to enable by naming its
-    "experiments/" subdirectory under "EXPERIMENTS_ACTIVATED".  Configure Fail* features
-    you need for this experiment by enabling "CONFIG_*" options.  Press 'c', 'g' to
-    regenerate the build system.  (Alternatively use 
+    Select "BUILD_BOCHS" or "BUILD_OVP".  Select an experiment to enable by
+    naming its "experiments/" subdirectory under "EXPERIMENTS_ACTIVATED".
+    Configure Fail* features you need for this experiment by enabling
+    "CONFIG_*" options.  Press 'c', 'g' to regenerate the build system.
+    (Alternatively use 
       $ cmake-gui .
-    for a Qt GUI.)  To enable a Debug build, choose "Debug" as the build type.
+    for a Qt GUI.)  To enable a Debug build, choose "Debug" as the build type,
+    otherwise choose "Release".
  7. Additionally make sure Bochs is at least configured (see below).
 
 
@@ -64,13 +77,11 @@ After changes to Fail* code:
 Prerequisite, if you're building with Bochs: configure Bochs (see below).
 Compile (in ${BUILD_DIR}, optionally "add -jN" for parallel building):
   $ make
-CMake will build all Fail* libraries, merge them into a libfail.a and put it into
-"${FAIL_DIR}/src".  (As the current Bochs Makefile expects it there.)  The static
-library contains all core components and activated experiments/plugings.
-You may use the shell script
+CMake will build all Fail* libraries and link them with the simulator backend
+library to a binary called "fail-client".  You may use the shell script
   $ ${FAIL_DIR}/scripts/rebuild-bochs.sh [-]
-to speed up repetitive tasks regarding Fail/Bochs builds.  This script contains a
-concise documentation on itself.
+to speed up repetitive tasks regarding Fail/Bochs builds.  This script contains
+a concise documentation on itself.
 
 
 Add new Fail* sources to build chain:
@@ -99,7 +110,7 @@ to be compiled previously:
   $ cd src/core/doc/latex; make
 
 
-Building Bochs:
+Building FailBochs:
 **********************************************************************
 
 For the first time:
@@ -122,20 +133,16 @@ For the first time:
     FIXME: Remove more redundant flags/libraries
 
 
-After changes to Bochs code or Bochs-affecting aspects:
+After changes to Bochs code:
 ------------------------------------------------------------
- - Compiling: The make call from the make-ag++.sh is now invokable by calling
-   (still in ${BUILD_DIR}, optionally adding -jN for parallel building):
-     $ cd ../build %% FIXME: involviert make bochs (im build-Ver.) wirklich make-ag++.sh?
-     $ make bochs
-   (Of course, this requires a configured Bochs/Fail*.)
- - Cleaning up: The former make all-clean is now invokable by
+ - Just re-run "make" in ${BUILD_DIR}, or call "scripts/rebuild-bochs.sh -".
+   The latter automatically runs "make install" after rebuilding fail-client
+   (and probably the experiment's campaign server).
+ - Cleaning up (forcing a complete rebuild of libfailbochs.a next time):
      $ make bochsallclean
- - Installing: For installing the bochs executable (former "make install")
-     $ make bochsinstall
-   (See "make help" for a target listing.)
- - Note: You may use scripts/rebuild-bochs.sh to speed up repetitive tasks regarding
-   Fail/Bochs builds.  This script contains a concise documentation on itself.
+   This is especially necessary if you changed a Bochs-affecting aspect header
+   (.ah), as the build system does not know about Bochs sources depending on
+   certain aspects.
 
 
 Debug build:
@@ -143,6 +150,8 @@ Debug build:
 Configure Bochs to use debugging-related compiler flags (expects to be in ${BUILD_DIR}):
   $ cd ../simulator/bochs
   $ CFLAGS="-g -O0" CXXFLAGS="-g -O0" ./configure --prefix=... ... (see above)
+You might additionally want to configure the rest of Fail* into debug mode by
+setting CMAKE_BUILD_TYPE to "Debug" (ccmake, see above).
 
 
 Profiling-based optimization build:
