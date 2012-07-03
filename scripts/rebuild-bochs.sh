@@ -29,6 +29,7 @@ fi
 
 #export PATH=/fs/staff/hsc/bin/ccache:$PATH
 
-nice make -j$FAIL_BUILD_PARALLEL fail-client 2>&1 | $(dirname $0)/colorize.pl 2>&1
+nice make -j$FAIL_BUILD_PARALLEL 2>&1 | $(dirname $0)/colorize.pl 2>&1
+nice make install
 # no need to use Bochs' own installation mechanism
 #nice make -j$FAIL_BUILD_PARALLEL bochsinstall

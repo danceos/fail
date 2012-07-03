@@ -29,3 +29,4 @@ add_library(${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 ## This is the example's campaign server distributing experiment parameters
 #add_executable(${EXPERIMENT_NAME}-server main.cc)
 #target_link_libraries(${EXPERIMENT_NAME}-server ${EXPERIMENT_NAME} fail ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})   
+#install(TARGETS ${EXPERIMENT_NAME}-server RUNTIME DESTINATION bin)

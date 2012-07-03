@@ -79,6 +79,7 @@ if(BUILD_BOCHS)
   include_directories(${PROJECT_SOURCE_DIR}/src/core ${CMAKE_BINARY_DIR}/src/core)
   add_executable(fail-client "${bochs_src_dir}/libfailbochs.a")
   target_link_libraries(fail-client "${bochs_src_dir}/libfailbochs.a" fail ${bochs_library_dependencies})
+  install(TARGETS fail-client RUNTIME DESTINATION bin)
   
   # a few Bochs-specific passthrough targets:
   add_custom_target(bochsclean
