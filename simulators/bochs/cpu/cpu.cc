@@ -134,7 +134,7 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
     }
 // DanceOS
 #ifdef DANCEOS_RESTORE
-    else if(fail::restore_bochs_request) {
+    if (fail::restore_bochs_request) {
 	  return;
     }
 #endif

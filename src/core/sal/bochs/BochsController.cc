@@ -151,6 +151,7 @@ void BochsController::save(const std::string& path)
 		// TODO: (Non-)Verbose-Mode? Log-level? Maybe better: use return value to indicate failure?
 	
 	save_bochs_request = true;
+	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
 	m_CurrFlow = m_Flows.getCurrent();
 	m_Flows.resume();
@@ -166,6 +167,7 @@ void BochsController::restore(const std::string& path)
 {
 	clearEvents();
 	restore_bochs_request = true;
+	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
 	m_CurrFlow = m_Flows.getCurrent();
 	m_Flows.resume();
