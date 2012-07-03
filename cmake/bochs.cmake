@@ -71,7 +71,7 @@ if(BUILD_BOCHS)
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
 
   add_custom_command(OUTPUT "${bochs_src_dir}/libfailbochs.a"
-    COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" libfailbochs.a
+    COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core ${CMAKE_AGPP_FLAGS} --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" libfailbochs.a
     COMMENT "[${PROJECT_NAME}] Building libfailbochs"
   )
 
