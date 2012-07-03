@@ -183,6 +183,7 @@ void BochsController::reboot()
 {
 	clearEvents();
 	reboot_bochs_request = true;
+	BX_CPU(0)->async_event |= 1;
 	m_CurrFlow = m_Flows.getCurrent();
 	m_Flows.resume();
 }
@@ -197,6 +198,7 @@ void BochsController::fireInterrupt(unsigned irq)
 {
 	interrupt_injection_request = true;
 	interrupt_to_fire = irq;
+	// FIXME needed?  BX_CPU(0)->async_event |= 1;
 	m_CurrFlow = m_Flows.getCurrent();
 	m_Flows.resume();
 }
