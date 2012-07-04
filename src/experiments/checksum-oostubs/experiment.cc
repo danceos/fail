@@ -191,6 +191,7 @@ bool ChecksumOOStuBSExperiment::run()
 
 				// wait for bp
 				simulator.waitAny();
+				//TODO: why wait here? it seems that something went completely wrong?
 			}
 		}
 
