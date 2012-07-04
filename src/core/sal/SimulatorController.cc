@@ -158,7 +158,7 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 void SimulatorController::onTrapEvent(unsigned trapNum)
 {
 	EventManager::iterator it = m_EvList.begin();
-	while(it != m_EvList.end()) { // check for active events
+	while (it != m_EvList.end()) { // check for active events
 		BaseEvent* pev = *it;
 		TrapEvent* pte = dynamic_cast<TrapEvent*>(pev);
 		if (!pte || !pte->isMatching(trapNum)) {

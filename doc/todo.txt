@@ -39,7 +39,16 @@ Abstraktionen:
    -> Modifikationen an FAIL* sind damit leichter zu verifizieren
 
 Events:
- - 
+ - Aktuelle Events sind viel mehr "Interests", die erst bei Auslösung zu
+   einem "Event" werden (-> semantische Ungenauigkeit)
+    -> benenne Events um ("Interests"?)
+    -> Erstelle neue Klassenhierarchie, die den "Informationsanteil" der "Events"
+       repräsentiert. Diese kapseln dann die Informationen in den Events und
+       werden zudem intern im Fail*-Framework verwendet (genauer: kommuniziert).
+    Hintergrund: Umstrukturierung des Event-Managements, damit es performanter
+    wird. Dazu werden Aspekte für die Performanz-Verbesserung pro zeitkritischem Typ
+    eingewoben. Dabei soll auf eine "search"-Methode zurückgegriffen werden, mit
+    der in den typspezifischen Containern gesucht werden kann. [...]
 
 Parallelisierung:
  - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
@@ -90,7 +99,7 @@ Effizienz:
  - Queue-Suche optimieren (Hashes, Sortierung, ...)?
  - boolean/Counter für Events (um Durchlaufen der Queue zu verhindern)?
  - Dynamic AspectC++ ausprobieren
- - Löschliste in EventList via Hashing implementieren (o.Ä.)?
+ - Löschliste in EventManager via Hashing implementieren (o.Ä.)?
 
 Buildsystem:
  - (mittelfristig) in cmake nur wirklich Build-spezifische Dinge konfigurieren

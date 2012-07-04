@@ -121,7 +121,7 @@ input parameters for the experiment execution, e.g. instruction pointer, registe
 numbers, ...). We call such "experiment data" the parameter sets. The so called "campaign"
 is responsible for managing the parameter sets (i.e., the data to be used by the experiment
 flows), inquired by the clients. As a consequence, the campaign is running on the server-
-side and the experiment flow are running on the (distributed) clients.
+side and the experiment flows are running on the (distributed) clients.
 First of all, the Fail* instances (and other required files, e.g. saved state) are
 distributed to the clients. In the second step the campaign(-server) is started, preparing
 its parameter sets in order to be able to answer the requests from the clients. (Once
