@@ -93,8 +93,9 @@ public:
 	 */
 	void remove(BaseEvent* ev);
 	/**
-	 * Behaves like remove(BaseEvent) and additionally updates the provided
-	 * iteration.
+	 * Behaves like remove(BaseEvent*) and additionally updates the provided
+	 * iterator.
+	 * @param it the iterator pointing to the Event object to be removed
 	 * @return the updated iterator which will point to the next element
 	 */
 	iterator remove(iterator it);
@@ -102,6 +103,9 @@ private:
 	/**
 	 * Internal implementation of remove(iterator it) that allows
 	 * to skip the delete-list.
+	 * @param it the iterator pointing to the Event object to be removed
+	 * @param skip_deletelist \c true to skip the deletion of the Event object
+	 *        or \false to behave like \c remove(iterator)
 	 * @return the updated iterator which will point to the next element
 	 */
 	iterator m_remove(iterator it, bool skip_deletelist);
@@ -115,6 +119,7 @@ public:
 	 * [X|1|2| ... |n]
 	 *  ^
 	 * \endcode
+	 * @return iterator to the beginning
 	 */
 	iterator begin() { return (m_BufferList.begin()); }
 	/**
@@ -126,6 +131,7 @@ public:
 	 * [1|2| ... |n]X
 	 *              ^
 	 * \endcode
+	 * @return iterator to the end
 	 */
 	iterator end() { return (m_BufferList.end()); }
 	/**
