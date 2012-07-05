@@ -22,6 +22,7 @@
 
 // Fail configuration
 #cmakedefine CONFIG_BOCHS_NON_VERBOSE
+#cmakedefine CONFIG_BOCHS_NO_ABORT
 #cmakedefine CONFIG_SUPPRESS_INTERRUPTS
 #cmakedefine CONFIG_FIRE_INTERRUPTS
 #cmakedefine CONFIG_DISABLE_KEYB_INTERRUPTS
