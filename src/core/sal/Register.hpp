@@ -257,7 +257,7 @@ public:
 	 */
 	virtual address_t getInstructionPointer() = 0;
 	/**
-	 * Retruns the top address of the stack.
+	 * Returns the top address of the stack.
 	 * @return the starting address of the stack
 	 */
 	virtual address_t getStackPointer() = 0;
