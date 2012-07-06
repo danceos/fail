@@ -25,63 +25,56 @@ using namespace fail;
 #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
 
-bool ChecksumOOStuBSExperiment::run()
+bool VEZSExperiment::run()
 {
 	Logger log("VEZS-Example", false);
-	BPSingleEvent bp;
 
 	log << "startup" << endl;
+	BPSingleEvent bp;
+#if 1
+	// STEP 1: run until interesting function starts, and save state
+	bp.setWatchInstructionPointer(OOSTUBS_FUNC_ENTRY);
+	simulator.addEventAndWait(&bp);
+	log << "test function entry reached, saving state" << endl;
+	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or " << simulator.getRegisterManager().getInstructionPointer() << endl;
+	simulator.save("vezs.state");
+#endif
+#if 0
 
-	bp.setWatchInstructionPointer(ANY_ADDR);
-	bp.setCounter(OOSTUBS_NUMINSTR);
+	int bit_offset = 2;	
+	for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
 
-	//simulator.addEvent(&bp);
-	//	BPSingleEvent ev_count(ANY_ADDR);
-	//	simulator.addEvent(&ev_count);
+		// STEP 3: The actual experiment.
+		log << "restoring state" << endl;
+		simulator.restore("vezs.state");
 
-	for (int i = 0; i < 400; ++i) { // more than 400 will be very slow (500 is max)
-
-		// XXX debug
-		int instr_offset = 1000;
-
-		// reaching finish() could happen before OR after FI
-		BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
-		simulator.addEvent(&func_finish);
-		bool finish_reached = false;
+		log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
 
 		bp.setWatchInstructionPointer(ANY_ADDR);
-		bp.setCounter(instr_offset);
-		simulator.addEvent(&bp);
-
-		// finish() before FI?
-		if (simulator.waitAny() == &func_finish) {
-			finish_reached = true;
-			log << "experiment reached finish() before FI" << endl;
-
-			// wait for bp
-			simulator.waitAny();
+		for (int count = 0; count < instr_offset; ++count) {
+			simulator.addEventAndWait(&bp);
 		}
-
-
-		// --- fault injection ---
-		//byte_t newdata = data ^ (1 << bit_offset);
-		//mm.setByte(mem_addr, newdata);
-		// note at what IP we did it
+	
+	
+		int32_t data = simulator.getRegisterManager().getRegister(RID_CAX)->getData();
+		// The INJECTION:
+		int32_t newdata = data ^ (1<<bit_offset);
+		simulator.getRegisterManager().getRegister(RID_CAX)->setData(newdata);
+		 
 		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
-		log << "fault injected @ ip " << injection_ip << endl;
-
+		log << "inject @ ip " << injection_ip
+	    	<< " (offset " << dec << instr_offset << ")"
+	    	<< " bit " << bit_offset << ": 0x"
+	    	<< hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
+	
 		// --- aftermath ---
 		// possible outcomes:
 		// - trap, "crash"
 		// - jump outside text segment
-		// - (XXX unaligned jump inside text segment)
-		// - (XXX weird instructions?)
-		// - (XXX results displayed?)
 		// - reaches THE END
 		// - error detected, stop
 		// additional info:
 		// - #loop iterations before/after FI
-		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
 		TrapEvent ev_trap(ANY_TRAP);
@@ -98,23 +91,14 @@ bool ChecksumOOStuBSExperiment::run()
 
 		// remaining instructions until "normal" ending
 		BPSingleEvent ev_end(ANY_ADDR);
-		ev_end.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
+		ev_end.setCounter(OOSTUBS_NUMINSTR - instr_offset);
 		simulator.addEvent(&ev_end);
 
 		// Start simulator and wait for any result
 		BaseEvent* ev = simulator.waitAny();
 
-		// Do we reach finish() while waiting for ev_trap/ev_done?
-		if (ev == &func_finish) {
-			finish_reached = true;
-			log << "experiment reached finish()" << endl;
-
-			// wait for ev_trap/ev_done
-			ev = simulator.waitAny();
-		}
-
 		// record latest IP regardless of result
-		//simulator.getRegisterManager().getInstructionPointer();
+		injection_ip =  simulator.getRegisterManager().getInstructionPointer();
 
 
 		if (ev == &ev_end) {
@@ -128,11 +112,13 @@ bool ChecksumOOStuBSExperiment::run()
 		} else {
 			log << "Result WTF?" << endl;
 		}
+		log << "@ ip 0x" << hex << injection_ip << endl;
 		// explicitly remove all events before we leave their scope
 		// FIXME event destructors should remove them from the queues
 		simulator.clearEvents();
-	}
+}
 
+#endif
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();
 }

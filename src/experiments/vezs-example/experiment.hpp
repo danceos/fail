@@ -4,10 +4,10 @@
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 
-class ChecksumOOStuBSExperiment : public fail::ExperimentFlow {
+class VEZSExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
-	ChecksumOOStuBSExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
+	VEZSExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
 	bool run();
 };
 
