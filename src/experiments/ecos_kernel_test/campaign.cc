@@ -12,8 +12,6 @@
 #include "util/ProtoStream.hpp"
 #include "util/MemoryMap.hpp"
 
-#include "ecc_region.hpp"
-
 #include "../plugins/tracing/TracingPlugin.hpp"
 
 //#define PRUNING_DEBUG_OUTPUT
@@ -23,6 +21,29 @@ using namespace fail;
 
 char const * const trace_filename = "trace.tc";
 char const * const results_filename = "ecos_kernel_test.csv";
+char const * const mm_filename = "memory_map.txt"; //TODO: sync with experiment.cc
+
+bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * const filename) {
+	ifstream file(filename);
+	if (!file.is_open()) {
+		cout << "failed to open " << filename << endl;
+		return false;
+	}
+
+	string buf;
+	stringstream ss(ios::in);
+	unsigned guest_addr, guest_len;
+	unsigned count = 0;
+
+	while (getline(file, buf)) {
+		ss.str(buf);
+		ss >> guest_addr >> guest_len;
+		mm.add(guest_addr, guest_len);
+		count++;
+	}
+	file.close();
+	return (count > 0);
+}
 
 // equivalence class type: addr, [i1, i2]
 // addr: byte to inject a bit-flip into
@@ -60,9 +81,7 @@ bool EcosKernelTestCampaign::run()
 
 	// a map of addresses of ECC protected objects
 	MemoryMap mm;
-	for (unsigned i = 0; i < sizeof(memoryMap)/sizeof(*memoryMap); ++i) {
-		mm.add(memoryMap[i][0], memoryMap[i][1]);
-	}
+	EcosKernelTestCampaign::readMemoryMap(mm, mm_filename);
 
 	// set of equivalence classes that need one (rather: eight, one for
 	// each bit in that byte) experiment to determine them all
