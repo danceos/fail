@@ -19,7 +19,7 @@
 using namespace std;
 using namespace fail;
 
-char const * const trace_filename = "trace.tc";
+char const * const trace_filename = "trace.tc"; //TODO: sync with experiment.cc
 char const * const results_filename = "ecos_kernel_test.csv";
 char const * const mm_filename = "memory_map.txt"; //TODO: sync with experiment.cc
 
@@ -31,17 +31,17 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 	}
 
 	string buf;
-	stringstream ss(ios::in);
 	unsigned guest_addr, guest_len;
 	unsigned count = 0;
 
 	while (getline(file, buf)) {
-		ss.str(buf);
+		stringstream ss(buf, ios::in);
 		ss >> guest_addr >> guest_len;
 		mm.add(guest_addr, guest_len);
 		count++;
 	}
 	file.close();
+	assert(count > 0);
 	return (count > 0);
 }
 

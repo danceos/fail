@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "util/Logger.hpp"
+
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "campaign.hpp"
@@ -22,6 +22,8 @@
 
 #define LOCAL 0
 
+#define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+
 using namespace std;
 using namespace fail;
 
@@ -33,170 +35,173 @@ using namespace fail;
 
 
 char const * const mm_filename = "memory_map.txt";
+char const *statename = "ecos_kernel_test.state";
 
-bool EcosKernelTestExperiment::run()
-{
-	char const *statename = "ecos_kernel_test.state";
-	Logger log("eCos Kernel Test", false);
+#if PREREQUISITES
+bool EcosKernelTestExperiment::retrieveGuestAddresses() {
+	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
+
+	// workaround for 00002808875p[BIOS ] >>PANIC<< Keyboard error:21
+	BPSingleEvent bp;
+	bp.setWatchInstructionPointer(ANY_ADDR);
+	simulator.addEventAndWait(&bp);
+
+	GuestEvent g;
+	simulator.addEvent(&g);
+
+	// 10000us = 500000 instructions
+	TimerEvent record_timeout(50000000); //TODO: how long to wait?
+	simulator.addEvent(&record_timeout);
+
+	// memory map serialization
+	ofstream mm(mm_filename, ios::out | ios::app);
+	if (!mm.is_open()) {
+		log << "failed to open " << mm_filename << endl;
+		return false;
+	}
+
+	string *str = new string; // buffer for guest events
+	unsigned number_of_guest_events = 0;
+
+	while (simulator.waitAny() != &record_timeout) {
+		simulator.addEvent(&g);
+		str->push_back(g.getData());
+		if (g.getData() == '\t') {
+			// addr complete?
+			//cout << "full: " << *str << "sub: " << str->substr(str->find_last_of('x') - 1) << endl;
+			// interpret the string obtained by the guest events as address in hex
+			unsigned guest_addr;
+			stringstream converter(str->substr(str->find_last_of('x') + 1));
+			converter >> hex >> guest_addr;
+			mm << guest_addr << '\t';
+			str->clear();
+		} else if (g.getData() == '\n') {
+			// len complete?
+			// interpret the string obtained by the guest events as length in decimal
+			unsigned guest_len;
+			stringstream converter(*str);
+			converter >> dec >> guest_len;
+			mm << guest_len << '\n';
+			str->clear();
+			number_of_guest_events++;
+		}
+	}
+	assert(number_of_guest_events > 0);
+	log << "Record timeout reached: created memory map (" << number_of_guest_events << " entries)" << endl;
+	delete str;
+
+	// close serialized mm
+	mm.flush();
+	mm.close();
+
+	// clean up simulator
+	simulator.clearEvents();
+	return true;
+}
+
+bool EcosKernelTestExperiment::establishState() {
+	log << "STEP 1: run until interesting function starts, and save state" << endl;
+
+	GuestEvent g;
+
+	while (true) {
+		simulator.addEventAndWait(&g);
+		if(g.getData() == 'Q') {
+		  log << "Guest system triggered: " << g.getData() << endl;
+		  break;
+		}
+	}
+
+	BPSingleEvent bp;
+	bp.setWatchInstructionPointer(ECOS_FUNC_ENTRY);
+	simulator.addEventAndWait(&bp);
+	log << "test function entry reached, saving state" << endl;
+	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
+	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
+	simulator.save(statename);
+	assert(bp.getTriggerInstructionPointer() == ECOS_FUNC_ENTRY);
+	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
+
+	// clean up simulator
+	simulator.clearEvents();
+	return true;
+}
+
+bool EcosKernelTestExperiment::performTrace() {
+	log << "STEP 2: record trace for fault-space pruning" << endl;
+
+	log << "restoring state" << endl;
+	simulator.restore(statename);
+	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
+
+	log << "enabling tracing" << endl;
+	TracingPlugin tp;
+
+	// restrict memory access logging to injection target
+	MemoryMap mm;
+	EcosKernelTestCampaign::readMemoryMap(mm, mm_filename);
+
+	tp.restrictMemoryAddresses(&mm);
+
+	// record trace
+	char const *tracefile = "trace.tc";
+	ofstream of(tracefile);
+	tp.setTraceFile(&of);
+	// this must be done *after* configuring the plugin:
+	simulator.addFlow(&tp);
+
+	BPSingleEvent bp;
+#if 1
+	// trace WEATHER_NUMITER_TRACING measurement loop iterations
+	// -> calibration
+	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
+	//bp.setCounter(WEATHER_NUMITER_TRACING); // single event, only
+#else
+	// FIXME this doesn't work properly: trace is one instruction too short as
+	//       tp is removed before all events were delivered
+	// trace WEATHER_NUMINSTR_TRACING instructions
+	// -> campaign-ready traces with identical lengths
+	bp.setWatchInstructionPointer(ANY_ADDR);
+	bp.setCounter(OOSTUBS_NUMINSTR);
+#endif
+	simulator.addEvent(&bp);
+	BPSingleEvent ev_count(ANY_ADDR);
+	simulator.addEvent(&ev_count);
+
+	// count instructions
+	// FIXME add SAL functionality for this?
+	int instr_counter = 0;
+	while (simulator.waitAny() == &ev_count) {
+		++instr_counter;
+		simulator.addEvent(&ev_count);
+	}
+
+	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
+	//TODO: safe this value for experiment STEP 3
+
+	simulator.removeFlow(&tp);
+
+	// serialize trace to file
+	if (of.fail()) {
+		log << "failed to write " << tracefile << endl;
+		simulator.clearEvents(this);
+		return false;
+	}
+	of.close();
+	log << "trace written to " << tracefile << endl;
+	
+	// clean up simulator
+	simulator.clearEvents();
+	return true;
+}
+
+#else // !PREREQUISITES
+bool EcosKernelTestExperiment::faultInjection() {
+	log << "STEP 3: The actual experiment." << endl;
+
 	BPSingleEvent bp;
 	
-	log << "startup" << endl;
-
-	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
-	{
-		// workaround for 00002808875p[BIOS ] >>PANIC<< Keyboard error:21
-		bp.setWatchInstructionPointer(ANY_ADDR);
-		simulator.addEventAndWait(&bp);
-
-		GuestEvent g;
-		simulator.addEvent(&g);
-
-		// 10000us = 500000 instructions
-		TimerEvent record_timeout(50000000); //TODO: how long to wait?
-		simulator.addEvent(&record_timeout);
-
-		// memory map serialization
-		ofstream mm(mm_filename, ios::out | ios::app);
-		if (!mm.is_open()) {
-			log << "failed to open " << mm_filename << endl;
-			return false;
-		}
-
-		string *str = new string; // buffer for guest events
-		unsigned number_of_guest_events = 0;
-
-		while (simulator.waitAny() != &record_timeout) {
-			simulator.addEvent(&g);
-			str->push_back(g.getData());
-
-			if (g.getData() == '\t') {
-				// addr complete?
-				//cout << "full: " << *str << "sub: " << str->substr(str->find_last_of('x') - 1) << endl;
-				// interpret the string obtained by the guest events as address in hex
-				unsigned guest_addr;
-				stringstream converter(str->substr(str->find_last_of('x') + 1));
-				converter >> hex >> guest_addr;
-				mm << guest_addr << '\t';
-				str->clear();
-			} else if (g.getData() == '\n') {
-				// len complete?
-				// interpret the string obtained by the guest events as length in decimal
-				unsigned guest_len;
-				stringstream converter(*str);
-				converter >> dec >> guest_len;
-				mm << guest_len << '\n';
-				str->clear();
-				number_of_guest_events++;
-			}
-		}
-		assert(number_of_guest_events > 0);
-		cout << "Record timeout reached: created memory map (" << number_of_guest_events << " entries)" << endl;
-		delete str;
-
-		// close serialized mm
-		mm.flush();
-		mm.close();
-
-		// clean up simulator and reboot the guest system
-		simulator.clearEvents();
-		log << "rebooting ..." << endl;
-		simulator.reboot();
-	}
-
-	log << "STEP 1: run until interesting function starts, and save state" << endl;
-	{
-		GuestEvent g;
-
-		while (true) {
-			simulator.addEventAndWait(&g);
-			if(g.getData() == 'Q') {
-			  cout << "Guest system triggered: " << g.getData() << endl;
-			  break;
-			}
-		}
-
-		bp.setWatchInstructionPointer(ECOS_FUNC_ENTRY);
-		simulator.addEventAndWait(&bp);
-		log << "test function entry reached, saving state" << endl;
-		log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
-		//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
-		simulator.save(statename);
-		assert(bp.getTriggerInstructionPointer() == ECOS_FUNC_ENTRY);
-		assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
-
-		// clean up simulator and reboot the guest system
-		simulator.clearEvents();
-		log << "rebooting ..." << endl;
-		simulator.reboot();
-	}
-
-	log << "STEP 2: record trace for fault-space pruning" << endl;
-	{
-		log << "restoring state" << endl;
-		simulator.restore(statename);
-		log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
-		assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
-
-		log << "enabling tracing" << endl;
-		TracingPlugin tp;
-
-		// restrict memory access logging to injection target
-		MemoryMap mm;
-		EcosKernelTestCampaign::readMemoryMap(mm, mm_filename);
-
-		tp.restrictMemoryAddresses(&mm);
-
-		// record trace
-		char const *tracefile = "trace.tc";
-		ofstream of(tracefile);
-		tp.setTraceFile(&of);
-
-		// this must be done *after* configuring the plugin:
-		simulator.addFlow(&tp);
-
-#if 1
-		// trace WEATHER_NUMITER_TRACING measurement loop iterations
-		// -> calibration
-		bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
-		//bp.setCounter(WEATHER_NUMITER_TRACING); // single event, only
-#else
-		// FIXME this doesn't work properly: trace is one instruction too short as
-		//       tp is removed before all events were delivered
-		// trace WEATHER_NUMINSTR_TRACING instructions
-		// -> campaign-ready traces with identical lengths
-		bp.setWatchInstructionPointer(ANY_ADDR);
-		bp.setCounter(OOSTUBS_NUMINSTR);
-#endif
-		simulator.addEvent(&bp);
-		BPSingleEvent ev_count(ANY_ADDR);
-		simulator.addEvent(&ev_count);
-
-		// count instructions
-		// FIXME add SAL functionality for this?
-		int instr_counter = 0;
-		while (simulator.waitAny() == &ev_count) {
-			++instr_counter;
-			simulator.addEvent(&ev_count);
-		}
-
-		log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
-		//TODO: safe this value for experiment STEP 3
-	
-
-		simulator.removeFlow(&tp);
-
-		// serialize trace to file
-		if (of.fail()) {
-			log << "failed to write " << tracefile << endl;
-			simulator.clearEvents(this);
-			return false;
-		}
-		of.close();
-		log << "trace written to " << tracefile << endl;
-	}
-	
-#if 0
-	// STEP 3: The actual experiment.
 #if !LOCAL
 	for (int i = 0; i < 400; ++i) { // more than 400 will be very slow (500 is max)
 #endif
@@ -431,8 +436,37 @@ bool EcosKernelTestExperiment::run()
 #if !LOCAL
 	}
 #endif
+}
+#endif // PREREQUISITES
 
-#endif
+bool EcosKernelTestExperiment::run()
+{
+	log << "startup" << endl;
+
+	#if PREREQUISITES
+	// step 0
+	if(retrieveGuestAddresses()) {
+		log << "STEP 0 finished: rebooting ..." << endl;
+		simulator.reboot();
+	} else { return false; }
+
+	// step 1
+	if(establishState()) {
+		log << "STEP 1 finished: rebooting ..." << endl;
+		simulator.reboot();
+	} else { return false; }
+
+	// step 2
+	if(performTrace()) {
+		log << "STEP 2 finished: terminating ..." << endl;
+	} else { return false; }
+
+	#else // !PREREQUISITES
+	// step 3
+	faultInjection();
+	#endif // PREREQUISITES
+
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();
+	return true;
 }
