@@ -3,8 +3,6 @@
 
 namespace fail {
 
-event_id_t BaseEvent::m_Counter = 0;
-
 bool TroubleEvent::isMatching(unsigned troubleNum) const
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {

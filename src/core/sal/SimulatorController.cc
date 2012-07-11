@@ -6,16 +6,16 @@ namespace fail {
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
 
-event_id_t SimulatorController::addEvent(BaseEvent* ev)
+bool SimulatorController::addEvent(BaseEvent* ev)
 {
 	assert(ev != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
-	event_id_t ret = m_EvList.add(ev, m_Flows.getCurrent());
+	m_EvList.add(ev, m_Flows.getCurrent());
 	// Call the common postprocessing function:
 	if (!ev->onEventAddition()) { // If the return value signals "false"...,
 		m_EvList.remove(ev); // ...skip the addition
-		ret = INVALID_EVENT;
+		return false;
 	}
-	return ret;
+	return true;
 }
 
 BaseEvent* SimulatorController::waitAny(void)

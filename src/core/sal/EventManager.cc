@@ -33,7 +33,7 @@ void EventManager::clearCaches()
 	m_Io_cache.clear();
 }
 
-event_id_t EventManager::add(BaseEvent* ev, ExperimentFlow* pExp)
+void EventManager::add(BaseEvent* ev, ExperimentFlow* pExp)
 {
 	assert(ev != NULL && "FATAL ERROR: Event (of base type BaseEvent*) cannot be NULL!");
 	// a zero counter does not make sense
@@ -42,7 +42,6 @@ event_id_t EventManager::add(BaseEvent* ev, ExperimentFlow* pExp)
 
 	addToCaches(ev);
 	m_BufferList.push_back(ev);
-	return ev->getId();
 }
 
 void EventManager::remove(BaseEvent* ev)
@@ -144,16 +143,6 @@ void EventManager::remove(ExperimentFlow* flow)
 EventManager::~EventManager()
 {
 	// nothing to do here yet
-}
-
-BaseEvent* EventManager::getEventFromId(event_id_t id)
-{
-	// Loop through all events:
-	for (bufferlist_t::iterator it = m_BufferList.begin();
-	     it != m_BufferList.end(); it++)
-		if ((*it)->getId() == id)
-			return *it;
-	return NULL; // Nothing found.
 }
 
 EventManager::iterator EventManager::makeActive(iterator it)

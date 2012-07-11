@@ -190,10 +190,9 @@ public:
 	 * Add event ev to the event management. This causes the event to be
 	 * active.
 	 * @param ev the event pointer to be added for the current flow
-	 * @return the id of the event used to identify the object on occurrence;
-	 *         -1 is returned on errors
+	 * @return \c true if the event has been added successfully, \c false otherwise
 	 */
-	event_id_t addEvent(BaseEvent* ev);
+	bool addEvent(BaseEvent* ev);
 	/**
 	 * Removes the event with the specified id.
 	 * @param ev the pointer of the event-object to be removed; if \a ev is
