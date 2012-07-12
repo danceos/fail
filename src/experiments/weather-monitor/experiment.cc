@@ -14,8 +14,8 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/bochs/BochsEvents.hpp"
-#include "sal/Event.hpp"
+#include "sal/bochs/BochsListener.hpp"
+#include "sal/Listener.hpp"
 
 // you need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -37,21 +37,21 @@ bool WeatherMonitorExperiment::run()
 {
 	char const *statename = "bochs.state" WEATHER_SUFFIX;
 	Logger log("Weathermonitor", false);
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	
 	log << "startup" << endl;
 
 #if 1
 	// STEP 0: record memory map with vptr addresses
-	GuestEvent g;
+	GuestListener g;
 	while (true) {
-		simulator.addEventAndWait(&g);
+		simulator.addListenerAndResume(&g);
 		cout << g.getData() << flush;
 	}
 #elif 0
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(WEATHER_FUNC_MAIN);
-	simulator.addEventAndWait(&bp);
+	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	simulator.save(statename);
@@ -96,16 +96,16 @@ bool WeatherMonitorExperiment::run()
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(WEATHER_NUMINSTR_TRACING);
 #endif
-	simulator.addEvent(&bp);
-	BPSingleEvent ev_count(ANY_ADDR);
-	simulator.addEvent(&ev_count);
+	simulator.addListener(&bp);
+	BPSingleListener ev_count(ANY_ADDR);
+	simulator.addListener(&ev_count);
 
 	// count instructions
 	// FIXME add SAL functionality for this?
 	int instr_counter = 0;
-	while (simulator.waitAny() == &ev_count) {
+	while (simulator.resume() == &ev_count) {
 		++instr_counter;
-		simulator.addEvent(&ev_count);
+		simulator.addListener(&ev_count);
 	}
 
 	log << dec << "tracing finished after " << instr_counter
@@ -115,7 +115,7 @@ bool WeatherMonitorExperiment::run()
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
-		simulator.clearEvents(this); // cleanup
+		simulator.clearListeners(this); // cleanup
 		return false;
 	}
 	of.close();
@@ -124,14 +124,14 @@ bool WeatherMonitorExperiment::run()
 	// wait another WEATHER_NUMITER_AFTER measurement loop iterations
 	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
 	bp.setCounter(WEATHER_NUMITER_AFTER);
-	simulator.addEvent(&bp);
+	simulator.addListener(&bp);
 
 	// count instructions
 	// FIXME add SAL functionality for this?
 	instr_counter = 0;
-	while (simulator.waitAny() == &ev_count) {
+	while (simulator.resume() == &ev_count) {
 		++instr_counter;
-		simulator.addEvent(&ev_count);
+		simulator.addListener(&ev_count);
 	}
 
 	log << dec << "experiment finished after " << instr_counter
@@ -184,15 +184,15 @@ bool WeatherMonitorExperiment::run()
 */
 
 		// this marks THE END
-		BPSingleEvent ev_end(ANY_ADDR);
+		BPSingleListener ev_end(ANY_ADDR);
 		ev_end.setCounter(WEATHER_NUMINSTR_TRACING + WEATHER_NUMINSTR_AFTER);
-		simulator.addEvent(&ev_end);
+		simulator.addListener(&ev_end);
 
 		// count loop iterations by counting wait_begin() calls
 		// FIXME would be nice to have a callback API for this as this needs to
 		//       be done "in parallel"
-		BPSingleEvent ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
-		simulator.addEvent(&ev_wait_begin);
+		BPSingleListener ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
+		simulator.addListener(&ev_wait_begin);
 		int count_loop_iter_before = 0;
 
 		// no need to wait if offset is 0
@@ -200,12 +200,12 @@ bool WeatherMonitorExperiment::run()
 			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(ANY_ADDR);
 			bp.setCounter(instr_offset);
-			simulator.addEvent(&bp);
+			simulator.addListener(&bp);
 
 			// count loop iterations until FI
-			while (simulator.waitAny() == &ev_wait_begin) {
+			while (simulator.resume() == &ev_wait_begin) {
 				++count_loop_iter_before;
-				simulator.addEvent(&ev_wait_begin);
+				simulator.addListener(&ev_wait_begin);
 			}
 		}
 
@@ -232,7 +232,7 @@ bool WeatherMonitorExperiment::run()
 			result->set_details(ss.str());
 			result->set_iter_after_fi(0);
 
-			simulator.clearEvents();
+			simulator.clearListeners();
 			continue;
 		}
 
@@ -250,20 +250,20 @@ bool WeatherMonitorExperiment::run()
 		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
-		TrapEvent ev_trap(ANY_TRAP);
-		simulator.addEvent(&ev_trap);
+		TrapListener ev_trap(ANY_TRAP);
+		simulator.addListener(&ev_trap);
 		// jump outside text segment
-		BPRangeEvent ev_below_text(ANY_ADDR, WEATHER_TEXT_START - 1);
-		BPRangeEvent ev_beyond_text(WEATHER_TEXT_END + 1, ANY_ADDR);
-		simulator.addEvent(&ev_below_text);
-		simulator.addEvent(&ev_beyond_text);
+		BPRangeListener ev_below_text(ANY_ADDR, WEATHER_TEXT_START - 1);
+		BPRangeListener ev_beyond_text(WEATHER_TEXT_END + 1, ANY_ADDR);
+		simulator.addListener(&ev_below_text);
+		simulator.addListener(&ev_beyond_text);
 		// error detected
-		BPSingleEvent ev_detected(WEATHER_FUNC_VPTR_PANIC);
-		simulator.addEvent(&ev_detected);
+		BPSingleListener ev_detected(WEATHER_FUNC_VPTR_PANIC);
+		simulator.addListener(&ev_detected);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(10000);
-		simulator.addEvent(&ev_timeout);
+		TimerListener ev_timeout(10000);
+		simulator.addListener(&ev_timeout);
 
 #if LOCAL && 0
 		// XXX debug
@@ -275,13 +275,13 @@ bool WeatherMonitorExperiment::run()
 		simulator.addFlow(&tp);
 #endif
 
-		BaseEvent* ev;
+		BaseListener* ev;
 
 		// count loop iterations
 		int count_loop_iter_after = 0;
-		while ((ev = simulator.waitAny()) == &ev_wait_begin) {
+		while ((ev = simulator.resume()) == &ev_wait_begin) {
 			++count_loop_iter_after;
-			simulator.addEvent(&ev_wait_begin);
+			simulator.addListener(&ev_wait_begin);
 		}
 		result->set_iter_after_fi(count_loop_iter_after);
 

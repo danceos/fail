@@ -21,7 +21,7 @@ bool TracingTest::run()
 #if 0
 	// STEP 1: run until interesting function starts, and save state
 	BPSingleEvent breakpoint(0x00101658);
-	simulator.addEventAndWait(&breakpoint);
+	simulator.addEventAndResume(&breakpoint);
 	cout << "[TracingTest] main() reached, saving" << endl;
 
 	simulator.save("state");
@@ -43,7 +43,7 @@ bool TracingTest::run()
 	simulator.addEvent(&timeout);
 
 	InterruptEvent ie(ANY_INTERRUPT);
-	while (simulator.addEventAndWait(&ie) != &timeout) {
+	while (simulator.addEventAndResume(&ie) != &timeout) {
 		cout << "INTERRUPT #" << ie.getTriggerNumber() << "\n";
 	}
 

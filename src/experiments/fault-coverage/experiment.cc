@@ -38,11 +38,11 @@ bool FaultCoverageExperiment::run()
 	// set breakpoint at start address of the function to be analyzed ("observed");
 	// wait until instruction pointer reaches that address
 	cout << "[FaultCoverageExperiment] Setting up experiment. Allowing to start now." << endl;
-	BPSingleEvent ev_func_start(INST_ADDR_FUNC_START);
-	simulator.addEvent(&ev_func_start);
+	BPSingleListener ev_func_start(INST_ADDR_FUNC_START);
+	simulator.addListener(&ev_func_start);
 
 	cout << "[FaultCoverageExperiment] Waiting for function start address..." << endl;
-	while (simulator.waitAny() != &ev_func_start)
+	while (simulator.resume() != &ev_func_start)
 		;
 
 	// store current state
@@ -63,7 +63,7 @@ bool FaultCoverageExperiment::run()
 			// loop over all instruction addresses of observed function
 			for (int instr = 0; ; ++instr) {
 				// clear event queues
-				simulator.clearEvents();
+				simulator.clearListeners();
 
 				// restore previously saved simulator state
 				cout << "[FaultCoverageExperiment] Restoring previous simulator state..."; cout.flush();
@@ -71,19 +71,19 @@ bool FaultCoverageExperiment::run()
 				cout << "done!" << endl;
 
 				// breakpoint at function exit
-				BPSingleEvent ev_func_end(INST_ADDR_FUNC_END);
-				simulator.addEvent(&ev_func_end);
+				BPSingleListener ev_func_end(INST_ADDR_FUNC_END);
+				simulator.addListener(&ev_func_end);
 
 				// no need to continue simulation if we want to
 				// inject *now*
 				if (instr > 0) {
 					// breakpoint $instr instructions in the future
-					BPSingleEvent ev_instr_reached(ANY_ADDR);
+					BPSingleListener ev_instr_reached(ANY_ADDR);
 					ev_instr_reached.setCounter(instr);
-					simulator.addEvent(&ev_instr_reached);
+					simulator.addListener(&ev_instr_reached);
 
 					// if we reach the exit first, this round is done
-					if (simulator.waitAny() == &ev_func_end)
+					if (simulator.resume() == &ev_func_end)
 						break;
 				}
 
@@ -93,14 +93,14 @@ bool FaultCoverageExperiment::run()
 				pReg->setData(data); // write back data to register
 
 				// catch traps and timeout
-				TrapEvent ev_trap; // any traps
-				simulator.addEvent(&ev_trap);
-				BPSingleEvent ev_timeout(ANY_ADDR);
+				TrapListener ev_trap; // any traps
+				simulator.addListener(&ev_trap);
+				BPSingleListener ev_timeout(ANY_ADDR);
 				ev_timeout.setCounter(1000);
-				simulator.addEvent(&ev_timeout);
+				simulator.addListener(&ev_timeout);
 
 				// wait for function exit, trap or timeout
-				BaseEvent* ev = simulator.waitAny();
+				BaseListener* ev = simulator.resume();
 				if (ev == &ev_func_end) {
 					// log result
 				  #if BX_SUPPORT_X86_64
@@ -130,6 +130,6 @@ bool FaultCoverageExperiment::run()
 		}
 	}
 
-	simulator.clearEvents(this);
+	simulator.clearListeners(this);
 	return true;
 }

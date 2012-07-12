@@ -13,8 +13,8 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/bochs/BochsEvents.hpp"
-#include "sal/Event.hpp"
+#include "sal/bochs/BochsListener.hpp"
+#include "sal/Listener.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -36,21 +36,21 @@ bool ChecksumOOStuBSExperiment::run()
 {
 	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	
 	log << "startup" << endl;
 
 #if 0
 	// STEP 0: record memory map with addresses of "interesting" objects
-	GuestEvent g;
+	GuestListener g;
 	while (true) {
-		simulator.addEventAndWait(&g);
+		simulator.addListenerAndResume(&g);
 		cout << g.getData() << flush;
 	}
 #elif 0
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(OOSTUBS_FUNC_ENTRY);
-	simulator.addEventAndWait(&bp);
+	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
@@ -95,16 +95,16 @@ bool ChecksumOOStuBSExperiment::run()
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(OOSTUBS_NUMINSTR);
 #endif
-	simulator.addEvent(&bp);
-	BPSingleEvent ev_count(ANY_ADDR);
-	simulator.addEvent(&ev_count);
+	simulator.addListener(&bp);
+	BPSingleListener ev_count(ANY_ADDR);
+	simulator.addListener(&ev_count);
 
 	// count instructions
 	// FIXME add SAL functionality for this?
 	int instr_counter = 0;
-	while (simulator.waitAny() == &ev_count) {
+	while (simulator.resume() == &ev_count) {
 		++instr_counter;
-		simulator.addEvent(&ev_count);
+		simulator.addListener(&ev_count);
 	}
 
 	log << dec << "tracing finished after " << instr_counter  << endl;
@@ -120,7 +120,7 @@ bool ChecksumOOStuBSExperiment::run()
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
-		simulator.clearEvents(this);
+		simulator.clearListeners(this);
 		return false;
 	}
 	of.close();
@@ -173,8 +173,8 @@ bool ChecksumOOStuBSExperiment::run()
 */
 
 		// reaching finish() could happen before OR after FI
-		BPSingleEvent func_finish(OOSTUBS_FUNC_FINISH);
-		simulator.addEvent(&func_finish);
+		BPSingleListener func_finish(OOSTUBS_FUNC_FINISH);
+		simulator.addListener(&func_finish);
 		bool finish_reached = false;
 
 		// no need to wait if offset is 0
@@ -182,15 +182,15 @@ bool ChecksumOOStuBSExperiment::run()
 			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(ANY_ADDR);
 			bp.setCounter(instr_offset);
-			simulator.addEvent(&bp);
+			simulator.addListener(&bp);
 
 			// finish() before FI?
-			if (simulator.waitAny() == &func_finish) {
+			if (simulator.resume() == &func_finish) {
 				finish_reached = true;
 				log << "experiment reached finish() before FI" << endl;
 
 				// wait for bp
-				simulator.waitAny();
+				simulator.resume();
 				//TODO: why wait here? it seems that something went completely wrong?
 			}
 		}
@@ -216,7 +216,7 @@ bool ChecksumOOStuBSExperiment::run()
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
 
-			simulator.clearEvents();
+			simulator.clearListeners();
 			continue;
 		}
 
@@ -234,22 +234,22 @@ bool ChecksumOOStuBSExperiment::run()
 		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
-		TrapEvent ev_trap(ANY_TRAP);
-		simulator.addEvent(&ev_trap);
+		TrapListener ev_trap(ANY_TRAP);
+		simulator.addListener(&ev_trap);
 		// jump outside text segment
-		BPRangeEvent ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
-		BPRangeEvent ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
-		simulator.addEvent(&ev_below_text);
-		simulator.addEvent(&ev_beyond_text);
+		BPRangeListener ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
+		BPRangeListener ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
+		simulator.addListener(&ev_below_text);
+		simulator.addListener(&ev_beyond_text);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(1000000); // 50,000,000 instructions !!
-		simulator.addEvent(&ev_timeout);
+		TimerListener ev_timeout(1000000); // 50,000,000 instructions !!
+		simulator.addListener(&ev_timeout);
 
 		// remaining instructions until "normal" ending
-		BPSingleEvent ev_end(ANY_ADDR);
+		BPSingleListener ev_end(ANY_ADDR);
 		ev_end.setCounter(OOSTUBS_NUMINSTR + OOSTUBS_RECOVERYINSTR - instr_offset);
-		simulator.addEvent(&ev_end);
+		simulator.addListener(&ev_end);
 
 #if LOCAL && 0
 		// XXX debug
@@ -261,7 +261,7 @@ bool ChecksumOOStuBSExperiment::run()
 		simulator.addFlow(&tp);
 #endif
 
-		BaseEvent* ev = simulator.waitAny();
+		BaseListener* ev = simulator.resume();
 
 		// Do we reach finish() while waiting for ev_trap/ev_done?
 		if (ev == &func_finish) {
@@ -269,7 +269,7 @@ bool ChecksumOOStuBSExperiment::run()
 			log << "experiment reached finish()" << endl;
 
 			// wait for ev_trap/ev_done
-			ev = simulator.waitAny();
+			ev = simulator.resume();
 		}
 
 		// record latest IP regardless of result
@@ -307,12 +307,12 @@ bool ChecksumOOStuBSExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
 		// explicitly remove all events before we leave their scope
 		// FIXME event destructors should remove them from the queues
-		simulator.clearEvents();
+		simulator.clearListeners();
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {

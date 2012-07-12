@@ -28,7 +28,7 @@ private:
 	 * @param clear_output if true, the output logged so far is deleted, thus the buffer is reset (cleared)
 	 * @returns the event returned by waitAny, as long as it did not log output
 	 */
-	fail::BaseEvent* waitIOOrOther(bool clear_output);
+	fail::BaseListener* waitIOOrOther(bool clear_output);
 	/**
 	 * Calculates the address where Bochs will read the current instruction from.
 	 * This code is copied from various Bochs methods and should be reviewed as

@@ -25,7 +25,7 @@ public:
 	void coroutine_entry()
 	{
 		run();
-		simulator.clearEvents(this); // remove residual events
+		simulator.clearListeners(this); // remove residual events
 	}
 };
 

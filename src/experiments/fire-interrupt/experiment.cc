@@ -12,7 +12,7 @@
 
 #include "experiment.hpp"
 #include "sal/SALInst.hpp"
-#include "sal/Event.hpp"
+#include "sal/Listener.hpp"
 #include "util/Logger.hpp"
 #include "config/FailConfig.hpp"
 
@@ -33,8 +33,8 @@ bool FireInterruptExperiment::run()
     while (true) {
 		int j = 0;
 		for (j = 0; j <= 100; j++) {
-			BPSingleEvent mainbp(0x1045f5);
-			simulator.addEventAndWait(&mainbp);
+			BPSingleListener mainbp(0x1045f5);
+			simulator.addListenerAndResume(&mainbp);
 		}
 		simulator.fireInterrupt(1);
 	}
@@ -42,6 +42,6 @@ bool FireInterruptExperiment::run()
 	simulator.dbgEnableInstrPtrOutput(500);
 #endif
 
-	simulator.clearEvents(this);
+	simulator.clearListeners(this);
 	return true;
 }

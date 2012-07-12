@@ -8,7 +8,7 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/Event.hpp"
+#include "sal/Listener.hpp"
 #include "config/FailConfig.hpp"
 
 #if COOL_FAULTSPACE_PRUNING
@@ -30,14 +30,14 @@ using namespace fail;
 bool CoolChecksumExperiment::run()
 {
 	Logger log("CoolChecksum", false);
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	
 	log << "startup" << endl;
 
 #if 1
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(COOL_ECC_FUNC_ENTRY);
-	simulator.addEventAndWait(&bp);
+	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or " << simulator.getRegisterManager().getInstructionPointer() << endl;
 	log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(COOL_ECC_ERROR_CORRECTED)) << endl;
@@ -74,7 +74,7 @@ bool CoolChecksumExperiment::run()
 	int count;
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	for (count = 0; bp.getTriggerInstructionPointer() != COOL_ECC_CALCDONE; ++count) {
-		simulator.addEventAndWait(&bp);
+		simulator.addListenerAndResume(&bp);
 		// log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
 	}
 	log << "test function calculation position reached after " << dec << count << " instructions" << endl;
@@ -87,7 +87,7 @@ bool CoolChecksumExperiment::run()
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write trace.pb" << endl;
-		simulator.clearEvents(this);
+		simulator.clearListeners(this);
 		return false;
 	}
 	of.close();
@@ -120,7 +120,7 @@ bool CoolChecksumExperiment::run()
 	// trace
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	for (int count = 0; count < instr_offset; ++count) {
-		simulator.addEventAndWait(&bp);
+		simulator.addListenerAndResume(&bp);
 	}
 
 	// inject
@@ -147,21 +147,21 @@ bool CoolChecksumExperiment::run()
 		param.msg.set_resultdata(injection_ip);
 		param.msg.set_details(ss.str());
 
-		simulator.clearEvents();
+		simulator.clearListeners();
 		m_jc.sendResult(param);
 		continue;
 	}
 
 	// aftermath
-	BPSingleEvent ev_done(COOL_ECC_CALCDONE);
-	simulator.addEvent(&ev_done);
-	BPSingleEvent ev_timeout(ANY_ADDR);
+	BPSingleListener ev_done(COOL_ECC_CALCDONE);
+	simulator.addListener(&ev_done);
+	BPSingleListener ev_timeout(ANY_ADDR);
 	ev_timeout.setCounter(COOL_ECC_NUMINSTR + 3000);
-	simulator.addEvent(&ev_timeout);
-	TrapEvent ev_trap(ANY_TRAP);
-	simulator.addEvent(&ev_trap);
+	simulator.addListener(&ev_timeout);
+	TrapListener ev_trap(ANY_TRAP);
+	simulator.addListener(&ev_trap);
 
-	BaseEvent* ev = simulator.waitAny();
+	BaseListener* ev = simulator.resume();
 	if (ev == &ev_done) {
 		Register* pRegRes = simulator.getRegisterManager().getRegister(RID_CDX);
 		int32_t data = pRegRes->getData();
@@ -182,10 +182,10 @@ bool CoolChecksumExperiment::run()
 		param.msg.set_resultdata(simulator.getRegisterManager().getInstructionPointer());
 
 		stringstream ss;
-		ss << "eventid " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+		ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_details(ss.str());
 	}
-	simulator.clearEvents();
+	simulator.clearListeners();
 	int32_t error_corrected = simulator.getMemoryManager().getByte(COOL_ECC_ERROR_CORRECTED);
 	param.msg.set_error_corrected(error_corrected);
 	m_jc.sendResult(param);
@@ -196,6 +196,6 @@ bool CoolChecksumExperiment::run()
 	simulator.terminate();
 #endif
 	// simulator continues to run
-	simulator.clearEvents(this);
+	simulator.clearListeners(this);
 	return true;
 }

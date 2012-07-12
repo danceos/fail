@@ -4,7 +4,7 @@
 #include "experiment.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/Event.hpp"
+#include "sal/Listener.hpp"
 #include "util/Logger.hpp"
 #include "config/FailConfig.hpp"
 
@@ -24,8 +24,8 @@ bool HSCSimpleExperiment::run()
 	// do funny things here...
 #if 1
     // STEP 1
-	BPSingleEvent mainbp(0x00003c34);
-	simulator.addEventAndWait(&mainbp);
+	BPSingleListener mainbp(0x00003c34);
+	simulator.addListenerAndResume(&mainbp);
 	log << "breakpoint reached, saving" << endl;
 	simulator.save("hello.state");
 #elif 0
@@ -35,20 +35,20 @@ bool HSCSimpleExperiment::run()
 	log << "restored!" << endl;
 
 	log << "waiting for last square() instruction" << endl;
-	BPSingleEvent breakpoint(0x3c9e); // square(x) ret instruction
-	simulator.addEventAndWait(&breakpoint);
+	BPSingleListener breakpoint(0x3c9e); // square(x) ret instruction
+	simulator.addListenerAndResume(&breakpoint);
 	log << "injecting hellish fault" << endl;
 	// RID_CAX is the RAX register in 64 bit mode and EAX in 32 bit mode:
 	simulator.getRegisterManager().getRegister(RID_CAX)->setData(666);
 	log << "waiting for last main() instruction" << endl;
 	breakpoint.setWatchInstructionPointer(0x3c92);
-	simulator.addEventAndWait(&breakpoint);
+	simulator.addListenerAndResume(&breakpoint);
 
 	log << "reached" << endl;
 
-	simulator.addEventAndWait(&breakpoint);
+	simulator.addListenerAndResume(&breakpoint);
 #endif
 
-	simulator.clearEvents(this);
+	simulator.clearListeners(this);
 	return true;
 }

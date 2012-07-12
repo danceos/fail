@@ -15,7 +15,7 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/Event.hpp"
+#include "sal/Listener.hpp"
 #include "config/FailConfig.hpp"
 
 #include "l4sys.pb.h"
@@ -67,15 +67,15 @@ string L4SysExperiment::sanitised(const string &in_str) {
 	return result;
 }
 
-BaseEvent* L4SysExperiment::waitIOOrOther(bool clear_output) {
-	IOPortEvent ev_ioport(0x3F8, true);
-	BaseEvent* ev = NULL;
+BaseListener* L4SysExperiment::waitIOOrOther(bool clear_output) {
+	IOPortListener ev_ioport(0x3F8, true);
+	BaseListener* ev = NULL;
 	if (clear_output)
 		output.clear();
 	while (true) {
-		simulator.addEvent(&ev_ioport);
-		ev = simulator.waitAny();
-		simulator.removeEvent(&ev_ioport);
+		simulator.addListener(&ev_ioport);
+		ev = simulator.resume();
+		simulator.removeListener(&ev_ioport);
 		if (ev == &ev_ioport) {
 			output += ev_ioport.getData();
 		} else {
@@ -153,10 +153,10 @@ void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest,
 	memcpy(dest, src, sizeof(bxInstruction_c));
 
 	// execute the faulty instruction, then return
-	BPSingleEvent singlestepping_event(ANY_ADDR, L4SYS_ADDRESS_SPACE);
-	simulator.addEvent(&singlestepping_event);
+	BPSingleListener singlestepping_event(ANY_ADDR, L4SYS_ADDRESS_SPACE);
+	simulator.addListener(&singlestepping_event);
 	waitIOOrOther(false);
-	simulator.removeEvent(&singlestepping_event);
+	simulator.removeListener(&singlestepping_event);
 
 	//restore the old instruction
 	memcpy(dest, &old_instr, sizeof(bxInstruction_c));
@@ -164,7 +164,7 @@ void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest,
 
 bool L4SysExperiment::run() {
 	Logger log("L4Sys", false);
-	BPSingleEvent bp(0, L4SYS_ADDRESS_SPACE);
+	BPSingleListener bp(0, L4SYS_ADDRESS_SPACE);
 	srand(time(NULL));
 
 	log << "startup" << endl;
@@ -173,7 +173,7 @@ bool L4SysExperiment::run() {
 	// STEP 1: run until interesting function starts, and save state
 	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1) {
 		bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
-		simulator.addEventAndWait(&bp);
+		simulator.addListenerAndResume(&bp);
 
 		log << "test function entry reached, saving state" << endl;
 		log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or "
@@ -205,7 +205,7 @@ bool L4SysExperiment::run() {
 
 		map<address_t, unsigned> times_called_map;
 		while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
-			simulator.addEventAndWait(&bp);
+			simulator.addListenerAndResume(&bp);
 			//short sanity check
 			address_t curr_addr = bp.getTriggerInstructionPointer();
 			assert(
@@ -258,8 +258,8 @@ bool L4SysExperiment::run() {
 		ofstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 		bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
 		bp.setCounter(L4SYS_ITERATION_COUNT);
-		simulator.addEvent(&bp);
-		BaseEvent* ev = waitIOOrOther(true);
+		simulator.addListener(&bp);
+		BaseListener* ev = waitIOOrOther(true);
 		if (ev == &bp) {
 			golden_run.assign(output.c_str());
 			golden_run_file << output.c_str();
@@ -271,7 +271,7 @@ bool L4SysExperiment::run() {
 			golden_run_file.close();
 			simulator.terminate(10);
 		}
-		simulator.clearEvents();
+		simulator.clearListeners();
 		bp.setCounter(1);
 		log << "saving output generated during normal execution" << endl;
 		golden_run_file.close();
@@ -307,7 +307,7 @@ bool L4SysExperiment::run() {
 
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(instr_offset);
-	simulator.addEvent(&bp);
+	simulator.addListener(&bp);
 	//and log the output
 	waitIOOrOther(true);
 
@@ -328,7 +328,7 @@ bool L4SysExperiment::run() {
 		param.msg.set_resultdata(injection_ip);
 		param.msg.set_details(ss.str());
 
-		simulator.clearEvents();
+		simulator.clearListeners();
 		m_jc.sendResult(param);
 		simulator.terminate(20);
 	}
@@ -464,10 +464,10 @@ bool L4SysExperiment::run() {
 				}
 
 				// execute the instruction
-				BPSingleEvent execute_single_instr(ANY_INSTR, L4SYS_ADDRESS_SPACE);
-				simulator.addEvent(&execute_single_instr);
+				BPSingleListener execute_single_instr(ANY_INSTR, L4SYS_ADDRESS_SPACE);
+				simulator.addListener(&execute_single_instr);
 				waitIOOrOther(false);
-				simulator.removeEvent(&execute_single_instr);
+				simulator.removeListener(&execute_single_instr);
 
 				// restore
 				if (rnd > 0) {
@@ -492,24 +492,24 @@ bool L4SysExperiment::run() {
 	}
 
 	// aftermath
-	BPSingleEvent ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
+	BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
 	ev_done.setCounter(L4SYS_ITERATION_COUNT);
-	simulator.addEvent(&ev_done);
+	simulator.addListener(&ev_done);
 	const unsigned instr_run = L4SYS_ITERATION_COUNT * L4SYS_NUMINSTR;
-	BPSingleEvent ev_timeout(ANY_ADDR, L4SYS_ADDRESS_SPACE);
+	BPSingleListener ev_timeout(ANY_ADDR, L4SYS_ADDRESS_SPACE);
 	ev_timeout.setCounter(instr_run + 3000);
-	simulator.addEvent(&ev_timeout);
-	TrapEvent ev_trap(ANY_TRAP);
+	simulator.addListener(&ev_timeout);
+	TrapListener ev_trap(ANY_TRAP);
 	//one trap for each 150 instructions justifies an exception
 	ev_trap.setCounter(instr_run / 150);
-	simulator.addEvent(&ev_trap);
-	InterruptEvent ev_intr(ANY_INTERRUPT);
+	simulator.addListener(&ev_trap);
+	InterruptListener ev_intr(ANY_INTERRUPT);
 	//one interrupt for each 100 instructions justifies an exception (timeout mostly)
 	ev_intr.setCounter(instr_run / 100);
-	simulator.addEvent(&ev_intr);
+	simulator.addListener(&ev_intr);
 
 	//do not discard output recorded so far
-	BaseEvent *ev = waitIOOrOther(false);
+	BaseListener *ev = waitIOOrOther(false);
 
 	/* copying a string object that contains control sequences
 	 * unfortunately does not work with the library I am using,
@@ -558,7 +558,7 @@ bool L4SysExperiment::run() {
 		param.msg.set_details(ss.str());
 	}
 
-	simulator.clearEvents();
+	simulator.clearListeners();
 	m_jc.sendResult(param);
 
 #ifdef HEADLESS_EXPERIMENT
