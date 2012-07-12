@@ -7,9 +7,9 @@
 #include <vector>
 
 #include "efw/CoroutineManager.hpp"
-#include "EventManager.hpp"
+#include "ListenerManager.hpp"
 #include "SALConfig.hpp"
-#include "Event.hpp"
+#include "Listener.hpp"
 
 namespace fail {
 
@@ -23,23 +23,22 @@ class MemoryManager;
  *
  * \brief The abstract interface for controlling simulators and
  *        accessing experiment data/flows (as part of the "Simulator
- *        Abstraction Layer".
+ *        Abstraction Layer", SAL for short).
  *
  * This class manages (1..N) experiments and provides access to the underlying
- * simulator/debugger system. Experiments can enlist arbritrary events
- * (Breakpoint, Memory access, Traps, etc.). The SimulatorController then
+ * simulator/debugger system. Experiments can enlist arbritrary listeners
+ * (Breakpoint, Memory access, Traps, etc.). The \c SimulatorController then
  * activates the specific experiment There are further methods to read/write
  * registers and memory, and control the SUT (save/restore/reset).
  */
 class SimulatorController {
 protected:
-	EventManager m_EvList; //!< storage where events are being buffered
+	ListenerManager m_LstList; //!< storage where listeners are being buffered
 	CoroutineManager m_Flows; //!< managed experiment flows
 	RegisterManager *m_Regs; //!< access to cpu register
 	MemoryManager *m_Mem; //!< access to memory pool
-	//! list of suppressed interrupts
-	std::vector<unsigned> m_SuppressedInterrupts;
-	friend class EventManager; //!< "outsources" the event management
+	std::vector<unsigned> m_SuppressedInterrupts; //!< list of suppressed interrupts
+	friend class ListenerManager; //!< "outsources" the listener management
 public:
 	SimulatorController()
 		: m_Regs(NULL), m_Mem(NULL) { }
@@ -60,17 +59,17 @@ public:
 	 */
 	void initExperiments();
 	/* ********************************************************************
-	 * Standard Event Handler API
+	 * Standard Listener Handler API
 	 * ********************************************************************/
 	/**
-	 * Breakpoint event handler. This routine needs to be called in the
-	 * simulator specific backend each time a breakpoint event occurs.
-	 * @param instrPtr the instruction pointer of the breakpoint event
+	 * Breakpoint listener handler. This routine needs to be called in the
+	 * simulator specific backend each time a breakpoint listener occurs.
+	 * @param instrPtr the instruction pointer of the breakpoint listener
 	 * @param address_space the address space it should occur in
 	 */
-	void onBreakpointEvent(address_t instrPtr, address_t address_space);
+	void onBreakpointListener(address_t instrPtr, address_t address_space);
 	/**
-	 * Memory access event handler (read/write).
+	 * Memory access listener handler (read/write).
 	 * @param addr the accessed memory address
 	 * @param len the length of the accessed memory
 	 * @param is_write \c true if memory is written, \c false if read
@@ -79,32 +78,31 @@ public:
 	 * 
 	 * FIXME: should instrPtr be part of this interface?
 	 */
-	void onMemoryAccessEvent(address_t addr, size_t len,
-							 bool is_write, address_t instrPtr);
+	void onMemoryAccessListener(address_t addr, size_t len, bool is_write, address_t instrPtr);
 	/**
-	 * Interrupt event handler.
+	 * Interrupt listener handler.
 	 * @param interruptNum the interrupt-type id
 	 * @param nmi nmi-value from guest-system
 	 */
-	void onInterruptEvent(unsigned interruptNum, bool nmi);
+	void onInterruptListener(unsigned interruptNum, bool nmi);
 	/**
-	 * Trap event handler.
+	 * Trap listener handler.
 	 * @param trapNum the trap-type id
 	 */
-	void onTrapEvent(unsigned trapNum);
+	void onTrapListener(unsigned trapNum);
 	/**
 	 * Guest system communication handler.
 	 * @param data the "message" from the guest system
-	 * @param port the port of the event
+	 * @param port the port of the listener
 	 */
-	void onGuestSystemEvent(char data, unsigned port);
+	void onGuestSystemListener(char data, unsigned port);
 	/**
 	 * (Conditional) Jump-instruction handler.
 	 * @param flagTriggered \c true if the jump was triggered due to a
 	 *        specific FLAG (zero/carry/sign/overflow/parity flag)
 	 * @param opcode the opcode of the conrecete jump instruction
 	 */
-	void onJumpEvent(bool flagTriggered, unsigned opcode);
+	void onJumpListener(bool flagTriggered, unsigned opcode);
 	/* ********************************************************************
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/
@@ -115,7 +113,7 @@ public:
 	virtual void save(const std::string& path) = 0;
 	/**
 	 * Restore simulator state.  Implicitly discards all previously
-	 * registered events.
+	 * registered listeners.
 	 * @param path Location to previously saved state information
 	 */
 	virtual void restore(const std::string& path) = 0;
@@ -144,20 +142,18 @@ public:
 	/**
 	 * Remove a Interrupt from the list of suppressed.
 	 * @param interruptNum the interrupt-type id
-	 * @return \c true if sucessfully removed, \c false otherwise (not
-	 *         found)
+	 * @return \c true if sucessfully removed, \c false otherwise (not found)
 	 */
 	bool removeSuppressedInterrupt(unsigned interruptNum);
 	/**
 	 * Returns the (constant) initialized register manager.
 	 * @return a reference to the register manager
 	 */
-	RegisterManager& getRegisterManager() { return (*m_Regs); }
-	const RegisterManager& getRegisterManager() const { return (*m_Regs); }
+	RegisterManager& getRegisterManager() { return *m_Regs; }
+	const RegisterManager& getRegisterManager() const { return *m_Regs; }
 	/**
 	 * Sets the register manager.
-	 * @param pReg the new register manager (or a concrete derived class of
-	 *        RegisterManager)
+	 * @param pReg the new register manager (or a concrete derived class of \c RegisterManager)
 	 */
 	void setRegisterManager(RegisterManager* pReg) { m_Regs = pReg; }
 	/**
@@ -165,74 +161,72 @@ public:
 	 * @return a reference to the memory manager
 	 */
 	MemoryManager& getMemoryManager() { return (*m_Mem); }
-	const MemoryManager& getMemoryManager() const { return (*m_Mem); }
+	const MemoryManager& getMemoryManager() const { return *m_Mem; }
 	/**
 	 * Sets the memory manager.
 	 * @param pMem a new concrete memory manager
 	 */
 	void setMemoryManager(MemoryManager* pMem) { m_Mem = pMem; }
 	/* ********************************************************************
-	 * Experiment-Flow & Event Management API:
+	 * Experiment-Flow & Listener Management API:
 	 * ********************************************************************/
 	/**
-	 * Adds the specified experiment or plugin and creates a coroutine to
-	 * run it in.
+	 * Adds the specified experiment or plugin and creates a coroutine to run it in.
 	 * @param flow the experiment flow object to be added
 	 */
 	void addFlow(ExperimentFlow* flow);
 	/**
 	 * Removes the specified experiment or plugin and destroys its coroutine
-	 * and all associated events.
+	 * and all associated listeners.
 	 * @param flow the experiment flow object to be removed
 	 */
 	void removeFlow(ExperimentFlow* flow);
 	/**
-	 * Add event ev to the event management. This causes the event to be
-	 * active.
-	 * @param ev the event pointer to be added for the current flow
-	 * @return \c true if the event has been added successfully, \c false otherwise
+	 * Add listener \c li to the listener management. This causes the listener to be active.
+	 * @param li the listener pointer to be added for the current flow
+	 * @return \c true if the listener has been added successfully, \c false otherwise
 	 */
-	bool addEvent(BaseEvent* ev);
+	bool addListener(BaseListener* li);
 	/**
-	 * Removes the event with the specified id.
-	 * @param ev the pointer of the event-object to be removed; if \a ev is
-	 *        equal to \c NULL all events (for all experiments) will be
-	 *        removed
+	 * Removes the listener with the specified pointer \c li.
+	 * @param li the pointer of the listener-object to be removed; if \c li is
+	 *        equal to \c NULL, all listeners (for all experiments) will be removed
 	 */
-	void removeEvent(BaseEvent* ev) { m_EvList.remove(ev); }
+	void removeListener(BaseListener* li) { m_LstList.remove(li); }
 	/**
-	 * Removes all previously added events for all experiments.  To
+	 * Removes all previously added listeners for all experiments.  To
 	 * restrict this to a specific experiment flow, pass a pointer to it.
+	 * @param flow a ptr to a specific experiment flow whose listeners should
+	 *        be removed; if \c flow is \c NULL, all listeners will be removed
 	 */
-	void clearEvents(ExperimentFlow *flow = 0) { m_EvList.remove(flow); }
+	void clearListeners(ExperimentFlow *flow = 0) { m_LstList.remove(flow); }
 	/**
-	 * Waits on any events which have been added to the event management. If
-	 * one of those events occour, waitAny() will return the id of that event.
-	 * @return the previously occurred event, or \c NULL if there are no
-	 *         events to wait for
+	 * Switches the control flow to the simulator and waits on any listeners
+	 * which have been added to the listener management. If one of those listeners
+	 * occurs, resume() will return the pointer of that listener.
+	 * @return the previously occurred listener, or \c NULL if there are no
+	 *         listeners to wait for
 	 */
-	BaseEvent* waitAny();
+	BaseListener* resume();
 	/**
-	 * Add event \a ev to the global buffer and wait for it (combines
-	 * \c addEvent() and \c waitAny()).
-	 * @param ev the event pointer to be added
-	 * @return the pointer of the occurred event (it is not guaranteed that
-	 *         this pointer will be equal to ev)
-	 *
-	 * FIXME: Rename to make clear this returns when *any* event occurs
+	 * Add listener \a ev to the global buffer and continues the simulation
+	 * (combines \c addListener() and \c resume()).
+	 * @param li the listener pointer to be added
+	 * @return the pointer of the occurred listener (it is not guaranteed that
+	 *         this pointer will be equal to li)
 	 */
-	BaseEvent* addEventAndWait(BaseEvent* ev);
+	BaseListener* addListenerAndResume(BaseListener* li);
 	/**
-	 * Checks whether any experiment flow has events in the event-list.
-	 * @return \c true if there are still events, or \c false otherwise
+	 * Checks whether any experiment flow has listeners in the listener-list.
+	 * @return \c true if there are still listeners, or \c false otherwise
 	 */
-	bool hasEvents() const { return getEventCount() > 0; }
+	bool hasListeners() const { return getListenerCount() > 0; }
 	/**
-	 * Determines the number of (stored) events in the event-list which have
+	 * Determines the number of (stored) listeners in the listener-list which have
 	 * not been triggered so far.
-	 * @return the actual number of events
+	 * @return the actual number of listeners
 	 */
-	unsigned getEventCount() const { return m_EvList.getEventCount(); }
+	unsigned getListenerCount() const { return m_LstList.getListenerCount(); }
 };
 
 } // end-of-namespace: fail

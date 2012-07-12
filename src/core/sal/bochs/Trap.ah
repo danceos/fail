@@ -15,9 +15,9 @@ aspect Trap {
 
 	advice execution (exception_method()) : before ()
 	{
-		fail::simulator.onTrapEvent(*(tjp->arg<0>()));
+		fail::simulator.onTrapListener(*(tjp->arg<0>()));
 		// TODO: There are some different types of exceptions at cpu.h (line 265-281)
-		//       Which kind of a trap are these types?
+		//       Which kind of traps are these types?
 	}
 };
 

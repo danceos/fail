@@ -84,12 +84,12 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 //	cerr << "instrPtr: 0x" << hex << instrPtr << " SP: 0x" << hex << m_Regs->getStackPointer() \
 //		 << " R0: 0x" << hex << r0 << " ST: 0x" << hex << st  << endl;
 
-	// Check for active breakpoint-events:
-	EventManager::iterator it = m_EvList.begin();
+	// Check for active breakpoint-Listeners:
+	ListenerManager::iterator it = m_EvList.begin();
 	while (it != m_EvList.end()) {
 		// FIXME: Performance verbessern (dazu muss entsprechend auch die Speicherung
-		// in EventManager(.cc|.hpp) angepasst bzw. verbessert werden).
-		BPSingleEvent* pEvBreakpt = dynamic_cast<BPSingleEvent*>(*it);
+		// in ListenerManager(.cc|.hpp) angepasst bzw. verbessert werden).
+		BPSingleListener* pEvBreakpt = dynamic_cast<BPSingleListener*>(*it);
 		if (pEvBreakpt && (instrPtr == pEvBreakpt->getWatchInstructionPointer() ||
 		    pEvBreakpt->getWatchInstructionPointer() == ANY_ADDR)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
@@ -98,7 +98,7 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 			// makeActive()):
 			continue; // -> skip iterator increment
 		}
-		BPRangeEvent* pEvRange = dynamic_cast<BPRangeEvent*>(*it);
+		BPRangeListener* pEvRange = dynamic_cast<BPRangeListener*>(*it);
 		if (pEvRange && pEvRange->isMatching(instrPtr)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = m_EvList.makeActive(it);
@@ -106,7 +106,7 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 		}
 		it++;
 	}
-	m_EvList.fireActiveEvents();
+	m_EvList.fireActiveListeners();
 }
 
 void OVPController::save(const string& path)

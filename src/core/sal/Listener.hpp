@@ -1,5 +1,5 @@
-#ifndef __EVENT_HPP__
-  #define __EVENT_HPP__
+#ifndef __LISTENER_HPP__
+  #define __LISTENER_HPP__
 
 #include <ctime>
 #include <string>
@@ -14,7 +14,7 @@ namespace fail {
 
 class ExperimentFlow;
 
-//! address wildcard (e.g. for BPEvent's)
+//! address wildcard (e.g. for BPListener's)
 const address_t       ANY_ADDR = static_cast<address_t>(-1);
 //! instruction wildcard
 const unsigned       ANY_INSTR = static_cast<unsigned>(-1);
@@ -24,58 +24,59 @@ const unsigned        ANY_TRAP = static_cast<unsigned>(-1);
 const unsigned   ANY_INTERRUPT = static_cast<unsigned>(-1);
 
 /**
- * \class BaseEvent
- * This is the base class for all event types.
+ * \class BaseListener
+ * This is the base class for all listener types.
  */
-class BaseEvent {
+class BaseListener {
 protected:
-	time_t m_tStamp; //!< time stamp of event
-	unsigned int m_OccCounter; //!< event fires when 0 is reached
+	time_t m_tStamp; //!< time stamp of listener
+	unsigned int m_OccCounter; //!< listener fires when 0 is reached
 	unsigned int m_OccCounterInit; //!< initial value for m_OccCounter
-	ExperimentFlow* m_Parent; //!< this event belongs to experiment m_Parent
+	ExperimentFlow* m_Parent; //!< this listener belongs to experiment m_Parent
 public:
-	BaseEvent() : m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
+	BaseListener() : m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
 	{ updateTime(); }
-	virtual ~BaseEvent() { }
+	virtual ~BaseListener() { }
 	/**
-	 * This method is called when an experiment flow adds a new event by
-	 * calling \c simulator.addEvent(pev) or \c simulator.addEventAndWait(pev).
-	 * More specifically, the event will be added to the event-list first
-	 * (buffer-list, to be precise) and then this event handler is called.
+	 * This method is called when an experiment flow adds a new listener by
+	 * calling \c simulator.addListener() or \c simulator.addListenerAndResume().
+	 * More specifically, the listener will be added to the listener manager first
+	 * (buffer-list, to be precise) and then this listener handler is called.
 	 * @return You should return \c true to continue and \c false to prevent
-	 *         the addition of the event \a pev, yielding an error in the
-	 *         experiment flow (i.e. \c INVALID_EVENT is returned).
+	 *         the addition of the listener \c this, yielding an error in the
+	 *         experiment flow (i.e., \c false is returned).
 	 */
-	virtual bool onEventAddition() { return true; }
+	virtual bool onAddition() { return true; }
 	/**
-	 * This method is called when an experiment flow removes an event from
-	 * the event-management by calling \c removeEvent(prev), \c clearEvents()
-	 * or by deleting a complete flow (\c removeFlow). More specifically, this
-	 * event handler will be called *before* the event is actually deleted.
+	 * This method is called when an experiment flow removes an listener from
+	 * the listener-management by calling \c removeListener(), \c clearListeners()
+	 * or by deleting a complete flow (\c removeFlow()). More specifically, this
+	 * listener handler will be called *before* the listener is actually deleted.
 	 */
-	virtual void onEventDeletion() { }
+	virtual void onDeletion() { }
 	/**
-	 * This method is called when an previously added event is about to be
-	 * triggered by the simulator-backend. More specifically, this event handler
-	 * will be called *before* the event is actually triggered, i.e. before the
+	 * This method is called when an previously added listener is about to be
+	 * triggered by the simulator-backend. More specifically, this listener handler
+	 * will be called *before* the listener is actually triggered, i.e. before the
 	 * corresponding coroutine is toggled.
 	 */
-	virtual void onEventTrigger() { }
+	virtual void onTrigger() { }
+	// TODO: Hier noch ne neue Methode oder reicht es, die Semantik von onTrigger umzudef.?
 	/**
-	 * Retrieves the time stamp of this event. The time stamp is set when
-	 * the event gets created, id est the constructor is called. The meaning
-	 * of this value depends on the actual event type.
+	 * Retrieves the time stamp of this listener. The time stamp is set when
+	 * the listener gets created, i.e. the constructor is called. The meaning
+	 * of this value depends on the actual listener type.
 	 * @return the time stamp
 	 */
 	std::time_t getTime() const { return (m_tStamp); }
 	/**
-	 * Decreases the event counter by one. When this counter reaches zero, the
-	 * event will be triggered.
+	 * Decreases the listener counter by one. When this counter reaches zero, the
+	 * listener will be triggered.
 	 */
 	void decreaseCounter() { --m_OccCounter; }
 	/**
-	 * Sets the event counter to the specified value (default is one).
-	 * @param val the new counter value
+	 * Sets the listener counter to the specified value.
+	 * @param val the new counter value (default is 1)
 	 */
 	void setCounter(unsigned int val = 1) { m_OccCounter = m_OccCounterInit = val; }
 	/**
@@ -84,56 +85,56 @@ public:
 	 */
 	unsigned int getCounter() const { return (m_OccCounter); }
 	/**
-	 * Resets the event counter to its default value, or the last
-	 * value that was set through setCounter().
+	 * Resets the listener counter to its default value, or the last
+	 * value that was set through \c setCounter().
 	 */
 	void resetCounter() { m_OccCounter = m_OccCounterInit; }
 	/**
-	 * Sets the time stamp for this event to the current system time.
+	 * Sets the time stamp for this listener to the current system time.
 	 */
 	void updateTime() { time(&m_tStamp); }
 	/**
-	 * Returns the parent experiment of this event (context).
-	 * If the event was created temporarily or wasn't linked to a context,
+	 * Returns the parent experiment of this listener (context).
+	 * If the listener was created temporarily or wasn't linked to a context,
 	 * the return value is \c NULL (unknown identity).
 	 */
 	ExperimentFlow* getParent() const { return (m_Parent); }
 	/**
-	 * Sets the parent (context) of this event. The default context
+	 * Sets the parent (context) of this listener. The default context
 	 * is \c NULL (unknown identity).
 	 */
 	void setParent(ExperimentFlow* pFlow) { m_Parent = pFlow; }
 };
 // ----------------------------------------------------------------------------
-// Specialized events:
+// Specialized listeners:
 //
 
 /**
- * \class BEvent
- * A Breakpoint event to observe instruction changes within a given address space.
+ * \class BListener
+ * A Breakpoint listener to observe instruction changes within a given address space.
  */
-class BPEvent : virtual public BaseEvent {
+class BPListener : virtual public BaseListener {
 private:
 	address_t m_CR3;
 	address_t m_TriggerInstrPtr;
 public:
 	/**
-	 * Creates a new breakpoint event. The range information is specific to
+	 * Creates a new breakpoint listener. The range information is specific to
 	 * the subclasses.
 	 * @param address_space the address space to be oberserved, given as the
-	 *        content of a CR3 register. The event will not be triggered unless
+	 *        content of a CR3 register. The listener will not be triggered unless
 	 *        \a ip is part of the given address space.
 	 *        ANY_ADDR can be used as a placeholder to allow debugging
 	 *        in a random address space.
 	 */
-	BPEvent(address_t address_space = ANY_ADDR)
+	BPListener(address_t address_space = ANY_ADDR)
 		: m_CR3(address_space), m_TriggerInstrPtr(ANY_ADDR) { }
 	/**
-	 * Returns the address space register of this event.
+	 * Returns the address space register of this listener.
 	 */
 	address_t getCR3() const { return m_CR3; }
 	/**
-	 * Sets the address space register for this event.
+	 * Sets the address space register for this listener.
 	 */
 	void setCR3(address_t iptr) { m_CR3 = iptr; }
 	/**
@@ -145,96 +146,108 @@ public:
 	 */
 	virtual bool isMatching(address_t addr = 0, address_t address_space = ANY_ADDR) const = 0;
 	/**
-	 * Returns the instruction pointer that triggered this event.
+	 * Returns the instruction pointer that triggered this listener.
 	 */
 	address_t getTriggerInstructionPointer() const { return m_TriggerInstrPtr; }
 	/**
-	 * Sets the instruction pointer that triggered this event.  Should not
+	 * Sets the instruction pointer that triggered this listener.  Should not
 	 * be used by experiment code.
 	 */
 	void setTriggerInstructionPointer(address_t iptr) { m_TriggerInstrPtr = iptr; }
 };
 
 /**
- * \class BPSingleEvent
- * A Breakpoint event to observe specific instruction pointers.
+ * \class BPSingleListener
+ * A Breakpoint listener to observe specific instruction pointers.
  */
-class BPSingleEvent : virtual public BPEvent {
+class BPSingleListener : virtual public BPListener {
 private:
 	address_t m_WatchInstrPtr;
 public:
-	/**
-	 * Creates a new breakpoint event.
+	/** 
+	 * Creates a new breakpoint listener.
 	 * @param ip the instruction pointer of the breakpoint. If the control
 	 *        flow reaches this address and its counter value is zero, the
-	 *        event will be triggered. \a eip can be set to the ANY_ADDR
-	 *        wildcard to allow arbitrary addresses.
+	 *        listener will be triggered. \a eip can be set to the ANY_ADDR
+	 *        wildcard to allow arbitrary addresses. Defaults to 0.
 	 * @param address_space the address space to be oberserved, given as the
-	 *        content of a CR3 register. The event will not be triggered unless
-	 *        \a ip is part of the given address space.
+	 *        content of a CR3 register. The listener will not be triggered unless
+	 *        \a ip is part of the given address space. Defaults to \c ANY_ADDR.
 	 *        Here, too, ANY_ADDR is a placeholder to allow debugging
 	 *        in a random address space.
 	 */
-	BPSingleEvent(address_t ip = 0, address_t address_space = ANY_ADDR)
-		: BPEvent(address_space), m_WatchInstrPtr(ip) { }
+	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
+		: BPListener(address_space), m_WatchInstrPtr(ip) { }
 	/**
-	 * Returns the instruction pointer this event waits for.
+	 * Returns the instruction pointer this listener waits for.
+	 * @return the instruction pointer specified in the constructor or by
+	 *         calling \c setWatchInstructionPointer()
 	 */
 	address_t getWatchInstructionPointer() const
 	{ return m_WatchInstrPtr; }
 	/**
-	 * Sets the instruction pointer this event waits for.
+	 * Sets the instruction pointer this listener waits for.
+	 * @param iptr the new instruction ptr to wait for
 	 */
 	void setWatchInstructionPointer(address_t iptr)
 	{ m_WatchInstrPtr = iptr; }
 	/**
 	 * Checks whether a given address is matching.
+	 * @param addr address to check
+	 * @param address_space address space information
+	 * @return \c true if address is within the range, \c false otherwise
 	 */
 	bool isMatching(address_t addr, address_t address_space) const;
 };
 
 /**
- * \class BPRangeEvent
- * A event type to observe ranges of instruction pointers.
+ * \class BPRangeListener
+ * A listener type to observe ranges of instruction pointers.
  */
-class BPRangeEvent : virtual public BPEvent {
+class BPRangeListener : virtual public BPListener {
 private:
 	address_t m_WatchStartAddr;
 	address_t m_WatchEndAddr;
 public:
 	/**
-	 * Creates a new breakpoint-range event.  The range's ends are both
+	 * Creates a new breakpoint-range listener.  The range's ends are both
 	 * inclusive, i.e. an address matches if start <= addr <= end.
 	 * ANY_ADDR denotes the lower respectively the upper end of the address
 	 * space.
 	 */
-	BPRangeEvent(address_t start = 0, address_t end = 0, address_t address_space = ANY_ADDR)
-		: BPEvent(address_space), m_WatchStartAddr(start), m_WatchEndAddr(end)
+	BPRangeListener(address_t start = 0, address_t end = 0, address_t address_space = ANY_ADDR)
+		: BPListener(address_space), m_WatchStartAddr(start), m_WatchEndAddr(end)
 		  { }
 	/**
-	 * Returns the instruction pointer watch range of this event.
+	 * Returns the instruction pointer watch range of this listener.
+	 * @return the listerner's range
 	 */
 	std::pair<address_t, address_t> getWatchInstructionPointerRange() const
 	{ return std::make_pair(m_WatchStartAddr, m_WatchEndAddr); }
 	/**
 	 * Sets the instruction pointer watch range.  Both ends of the range
 	 * may be ANY_ADDR (cf. constructor).
+	 * @param start the (inclusive) lower bound, or \c ANY_ADDR
+	 * @param end the (inclusive) upper bound, or \c ANY_ADDR
 	 */
-	void setWatchInstructionPointerRange(address_t start,
-										 address_t end);
+	void setWatchInstructionPointerRange(address_t start, address_t end);
 	/**
 	 * Checks whether a given address is within the range.
+	 * @param addr address to check
+	 * @param address_space address space information
+	 * @return \c true if address is within the range (represented by
+	 *         \c this), \c false otherwise
 	 */
 	bool isMatching(address_t addr, address_t address_space) const;
 };
 
 /**
- * \class MemAccessEvent
+ * \class MemAccessListener
  * Observes memory read/write accesses.
  * FIXME? currently >8-bit accesses only match if their lowest address is being watched
  *        (e.g., a 32-bit write to 0x4 also accesses 0x7, but this cannot be matched)
  */
-class MemAccessEvent : virtual public BaseEvent {
+class MemAccessListener : virtual public BaseListener {
 public:
 	enum accessType_t {
 		MEM_UNKNOWN   = 0x0,
@@ -250,7 +263,7 @@ private:
 	 * (MEM_READ || MEM_WRITE || MEM_READWRITE).
 	 */
 	accessType_t m_WatchType;
-	//! Specific guest system address that actually triggered the event.
+	//! Specific guest system address that actually triggered the listener.
 	address_t m_TriggerAddr;
 	//! Width of the memory access (# bytes).
 	size_t m_TriggerWidth;
@@ -259,11 +272,11 @@ private:
 	//! Memory access type at m_TriggerAddr.
 	accessType_t m_AccessType;
 public:
-	MemAccessEvent(accessType_t watchtype = MEM_READWRITE)
+	MemAccessListener(accessType_t watchtype = MEM_READWRITE)
 		: m_WatchAddr(ANY_ADDR), m_WatchType(watchtype),
 		  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
 		  m_AccessType(MEM_UNKNOWN) { }
-	MemAccessEvent(address_t addr, 
+	MemAccessListener(address_t addr, 
 				   accessType_t watchtype = MEM_READWRITE)
 		: m_WatchAddr(addr), m_WatchType(watchtype),
 		  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
@@ -282,21 +295,21 @@ public:
 	bool isMatching(address_t addr, accessType_t accesstype) const;
 	/**
 	 * Returns the specific memory address that actually triggered the
-	 * event.
+	 * listener.
 	 */
-	address_t getTriggerAddress() const { return (m_TriggerAddr); }
+	address_t getTriggerAddress() const { return m_TriggerAddr; }
 	/**
-	 * Sets the specific memory address that actually triggered the event.
+	 * Sets the specific memory address that actually triggered the listener.
 	 * Should not be used by experiment code.
 	 */
 	void setTriggerAddress(address_t addr) { m_TriggerAddr = addr; }
 	/**
 	 * Returns the specific memory address that actually triggered the
-	 * event.
+	 * listener.
 	 */
-	size_t getTriggerWidth() const { return (m_TriggerWidth); }
+	size_t getTriggerWidth() const { return m_TriggerWidth; }
 	/**
-	 * Sets the specific memory address that actually triggered the event.
+	 * Sets the specific memory address that actually triggered the listener.
 	 * Should not be used by experiment code.
 	 */
 	void setTriggerWidth(size_t width) { m_TriggerWidth = width; }
@@ -304,64 +317,62 @@ public:
 	 * Returns the address of the instruction causing this memory
 	 * access.
 	 */
-	address_t getTriggerInstructionPointer() const
-	{ return (m_TriggerIP); }
+	address_t getTriggerInstructionPointer() const { return m_TriggerIP; }
 	/**
 	 * Sets the address of the instruction causing this memory
 	 * access.  Should not be used by experiment code.
 	 */
-	void setTriggerInstructionPointer(address_t addr)
-	{ m_TriggerIP = addr; }
+	void setTriggerInstructionPointer(address_t addr) { m_TriggerIP = addr; }
 	/**
 	 * Returns type (MEM_READ || MEM_WRITE) of the memory access that
-	 * triggered this event.
+	 * triggered this listener.
 	 */
-	accessType_t getTriggerAccessType() const { return (m_AccessType); }
+	accessType_t getTriggerAccessType() const { return m_AccessType; }
 	/**
-	 * Sets type of the memory access that triggered this event.  Should
+	 * Sets type of the memory access that triggered this listener.  Should
 	 * not be used by experiment code.
 	 */
 	void setTriggerAccessType(accessType_t type) { m_AccessType = type; }
 	/**
 	 * Returns memory access types (MEM_READ || MEM_WRITE || MEM_READWRITE)
-	 * this event watches.  Should not be used by experiment code.
+	 * this listener watches.  Should not be used by experiment code.
 	 */
-	accessType_t getWatchAccessType() const { return (m_WatchType); }
+	accessType_t getWatchAccessType() const { return m_WatchType; }
 };
 
 /**
- * \class MemReadEvent
+ * \class MemReadListener
  * Observes memory read accesses.
  */
-class MemReadEvent : virtual public MemAccessEvent {
+class MemReadListener : virtual public MemAccessListener {
 public:
-	MemReadEvent()
-		: MemAccessEvent(MEM_READ) { }
-	MemReadEvent(address_t addr)
-		: MemAccessEvent(addr, MEM_READ) { }
+	MemReadListener()
+		: MemAccessListener(MEM_READ) { }
+	MemReadListener(address_t addr)
+		: MemAccessListener(addr, MEM_READ) { }
 };
 
 /**
- * \class MemWriteEvent
+ * \class MemWriteListener
  * Observes memory write accesses.
  */
-class MemWriteEvent : virtual public MemAccessEvent {
+class MemWriteListener : virtual public MemAccessListener {
 public:
-	MemWriteEvent()
-		: MemAccessEvent(MEM_READ) { }
-	MemWriteEvent(address_t addr)
-		: MemAccessEvent(addr, MEM_WRITE) { }
+	MemWriteListener()
+		: MemAccessListener(MEM_READ) { }
+	MemWriteListener(address_t addr)
+		: MemAccessListener(addr, MEM_WRITE) { }
 };
 
 /**
- * \class TroubleEvent
+ * \class TroubleListener
  * Observes interrupt/trap activties.
  */
-class TroubleEvent : virtual public BaseEvent {
+class TroubleListener : virtual public BaseListener {
 private:
 	/**
 	 * Specific guest system interrupt/trap number that actually
-	 * trigger the event.
+	 * trigger the listener.
 	 */
 	int m_TriggerNumber;
 	/**
@@ -370,8 +381,8 @@ private:
 	 */
 	std::vector<unsigned> m_WatchNumbers;
 public:
-	TroubleEvent() : m_TriggerNumber (-1) { }
-	TroubleEvent(unsigned troubleNumber)
+	TroubleListener() : m_TriggerNumber (-1) { }
+	TroubleListener(unsigned troubleNumber)
 		: m_TriggerNumber(-1) 
 	{ addWatchNumber(troubleNumber); }
 	/**
@@ -393,39 +404,39 @@ public:
 	 * Returns the list of observed numbers
 	 * @return a copy of the list which contains all observed numbers 
 	 */
-	std::vector<unsigned> getWatchNumbers() { return (m_WatchNumbers); }
+	std::vector<unsigned> getWatchNumbers() { return m_WatchNumbers; }
 	/**
 	* Checks whether a given interrupt-/trap-number is matching.
 	*/
 	bool isMatching(unsigned troubleNum) const;
 	/**
 	* Sets the specific interrupt-/trap-number that actually triggered
-	* the event. Should not be used by experiment code.
+	* the listener. Should not be used by experiment code.
 	*/
 	void setTriggerNumber(unsigned troubleNum)
 	{ m_TriggerNumber = troubleNum; } 
 	/**
 	* Returns the specific interrupt-/trap-number that actually triggered
-	* the event.
+	* the listener.
 	*/
-	unsigned getTriggerNumber() { return (m_TriggerNumber); }
+	unsigned getTriggerNumber() { return m_TriggerNumber; }
 };
 
 /**
- * \class InterruptEvent
+ * \class InterruptListener
  * Observes interrupts of the guest system.
  */
-class InterruptEvent : virtual public TroubleEvent {
+class InterruptListener : virtual public TroubleListener {
 private:
 	bool m_IsNMI; //!< non maskable interrupt flag
 public:
-	InterruptEvent() : m_IsNMI(false) { }
-	InterruptEvent(unsigned interrupt) : m_IsNMI(false)
+	InterruptListener() : m_IsNMI(false) { }
+	InterruptListener(unsigned interrupt) : m_IsNMI(false)
 	{  addWatchNumber(interrupt); }                                                      
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 */
-	bool isNMI() { return (m_IsNMI); }
+	bool isNMI() { return m_IsNMI; }
 	/**
 	 * Sets the interrupt type (non maskable or not).
 	 */
@@ -433,29 +444,29 @@ public:
 };
 
 /**
- * \class TrapEvent
+ * \class TrapListener
  * Observes traps of the guest system.
  */
-class TrapEvent : virtual public TroubleEvent {
+class TrapListener : virtual public TroubleListener {
 public:
-	TrapEvent() { }
-	TrapEvent(unsigned trap) { addWatchNumber(trap); }
+	TrapListener() { }
+	TrapListener(unsigned trap) { addWatchNumber(trap); }
 };
 
 /**
- * \class GuestEvent
+ * \class GuestListener
  * Used to receive data from the guest system.
  */
-class GuestEvent : virtual public BaseEvent {
+class GuestListener : virtual public BaseListener {
 private:
 	char m_Data;
 	unsigned m_Port;
 public:
-	GuestEvent() : m_Data(0), m_Port(0) { }
+	GuestListener() : m_Data(0), m_Port(0) { }
 	/**
 	 * Returns the data, transmitted by the guest system.
 	 */
-	char getData() const { return (m_Data); }
+	char getData() const { return m_Data; }
 	/**
 	 * Sets the data which had been transmitted by the guest system.
 	 */
@@ -463,7 +474,7 @@ public:
 	/**
 	 * Returns the data length, transmitted by the guest system.
 	 */
-	unsigned getPort() const { return (m_Port); }
+	unsigned getPort() const { return m_Port; }
 	/**
 	 * Sets the data length which had been transmitted by the guest system.
 	 */
@@ -471,52 +482,52 @@ public:
 };
 
 /**
- * \class IOPortEvent
+ * \class IOPortListener
  * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
  */
-class IOPortEvent : virtual public BaseEvent {
+class IOPortListener : virtual public BaseListener {
 private:
 	unsigned char  m_Data;
 	unsigned m_Port;
 	bool m_Out;
 public:
 	/**
-	 * Initialises an IOPortEvent
+	 * Initialises an IOPortListener
 	 *
-	 * @param port the port the event ist listening on
-	 * @param out Defines the direction of the event.
+	 * @param port the port the listener ist listening on
+	 * @param out Defines the direction of the listener.
 	 * \arg \c true Output on the given port is captured.
 	 * \arg \c false Input on the given port is captured.
 	 */
-	IOPortEvent(unsigned port, bool out) : m_Data(0), m_Port(port), m_Out(out) { }
+	IOPortListener(unsigned port, bool out) : m_Data(0), m_Port(port), m_Out(out) { }
 	/**
 	 * Returns the data sent to the specified port
 	 */
-	unsigned char getData() const { return (m_Data); }
+	unsigned char getData() const { return m_Data; }
 	/**
 	 * Sets the data which had been transmitted.
 	 */
 	void setData(unsigned char data) { m_Data = data; }
 	/**
-	 * Retrieves the port which this event is bound to.
+	 * Retrieves the port which this listener is bound to.
 	 */
-	unsigned getPort() const { return (m_Port); }
+	unsigned getPort() const { return m_Port; }
 	/**
-	 * Sets the port which this event is bound to.
+	 * Sets the port which this listener is bound to.
 	 */
 	void setPort(unsigned port) { m_Port = port; }
 	/**
 	* Checks whether a given port number is matching.
-	* @param p The port number an I/O event occured on
+	* @param p The port number an I/O listener occured on
 	* @param out True if the communication was outbound, false otherwise
 	*/
-	bool isMatching(unsigned p, bool out) const { return ( out = isOutEvent() && p == getPort()); }
+	bool isMatching(unsigned p, bool out) const { return ( out = isOutListener() && p == getPort()); }
 	/**
-	 * Tells you if this event is capturing outbound communication (inbound if false)
+	 * Tells you if this listener is capturing outbound communication (inbound if false)
 	 */
-	bool isOutEvent() const { return m_Out; }
+	bool isOutListener() const { return m_Out; }
 	/**
-	 * Change the event direction.
+	 * Change the listener direction.
 	 * \arg \c true Output on the given port is captured.
 	 * \arg \c false Input on the given port is captured.
 	 */
@@ -524,36 +535,36 @@ public:
 };
 
 /**
- * \class JumpEvent
- * JumpEvents are used to observe conditional jumps (if...else if...else).
+ * \class JumpListener
+ * JumpListeners are used to observe conditional jumps (if...else if...else).
  */
-class JumpEvent : virtual public BaseEvent {
+class JumpListener : virtual public BaseListener {
 private:
 	unsigned m_Opcode;
 	bool m_FlagTriggered;
 public:
 	/**
-	 * Constructs a new event object.
+	 * Constructs a new listener object.
 	 * @param parent the parent object
 	 * @param opcode the opcode of the jump-instruction to be observed
 	 *        or ANY_INSTR to match all jump-instructions
 	 */
-	JumpEvent(unsigned opcode = ANY_INSTR)
+	JumpListener(unsigned opcode = ANY_INSTR)
 		: m_Opcode(opcode), m_FlagTriggered(false) { }
 	/**
 	 * Retrieves the opcode of the jump-instruction.
 	 */
-	unsigned getOpcode() const { return (m_Opcode); }
+	unsigned getOpcode() const { return m_Opcode; }
 	/**
-	 * Returns \c true, if the event was triggered due to specific register
+	 * Returns \c true, if the listener was triggered due to specific register
 	 * content, \c false otherwise.
 	 */
-	bool isRegisterTriggered() { return (!m_FlagTriggered); }
+	bool isRegisterTriggered() { return !m_FlagTriggered; }
 	/**
-	 * Returns \c true, of the event was triggered due to specific FLAG
+	 * Returns \c true, of the listener was triggered due to specific FLAG
 	 * state, \c false otherwise. This is the common case.
 	 */
-	bool isFlagTriggered() { return (m_FlagTriggered); }
+	bool isFlagTriggered() { return m_FlagTriggered; }
 	/**
 	 * Sets the requestet jump-instruction opcode.
 	 */
@@ -561,36 +572,35 @@ public:
 	/**
 	 * Sets the trigger flag.
 	 */
-	void setFlagTriggered(bool flagTriggered)
-	{ m_FlagTriggered = flagTriggered; }
+	void setFlagTriggered(bool flagTriggered) { m_FlagTriggered = flagTriggered; }
 };
 
 /**
- * \class GenericTimerEvent
- * This event type is used to create timeouts within in an experiment.
+ * \class GenericTimerListener
+ * This listener type is used to create timeouts within in an experiment.
  *
  * Depending on your simulator backend, a concrete class needs to be derived
- * from \c GenericTimerEvent. \c onEventAddition should be used to register and
- * \c onEventDeletion to unregister the timer. \c onEventTrigger can be used to
+ * from \c GenericTimerListener. \c onListenerAddition should be used to register and
+ * \c onListenerDeletion to unregister the timer. \c onListenerTrigger can be used to
  * re-register the timer if a repetitive timer is requested and the back-
  * end doesn't support such timer types natively.
  */
-class GenericTimerEvent : public BaseEvent {
+class GenericTimerListener : public BaseListener {
 protected:
 	unsigned m_Timeout; //!< timeout interval in milliseconds
 	timer_id_t m_Id; //!< internal timer id (sim-specific)
 	bool m_Once; //!< \c true, if the timer should be triggered only once, \c false otherwise
 public:
 	/**
-	 * Creates a new timer event. This can be used to implement a timeout-
+	 * Creates a new timer listener. This can be used to implement a timeout-
 	 * mechanism in the experiment-flow. The timer starts automatically when
 	 * added to the simulator backend.
 	 * @param timeout the time intervall in milliseconds (ms)
-	 * @see SimulatorController::addEvent
+	 * @see SimulatorController::addListener
 	 */
-	GenericTimerEvent(unsigned timeout)
+	GenericTimerListener(unsigned timeout)
 		: m_Timeout(timeout), m_Id(-1) { }
-	~GenericTimerEvent() { }
+	~GenericTimerListener() { }
 	/**
 	 * Retrieves the internal timer id. Maybe useful for debug output.
 	 * @return the timer id
@@ -610,4 +620,4 @@ public:
 
 } // end-of-namespace: fail
 
-#endif // __EVENT_HPP__
+#endif // __LISTENER_HPP__

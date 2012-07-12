@@ -21,7 +21,7 @@ aspect IOPortCom {
 	{
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
-		fail::simulator.onIOPortEvent(rAL, rDX, true);
+		fail::simulator.onIOPortListener(rAL, rDX, true);
 	}
 
 	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX(...)";
@@ -30,7 +30,7 @@ aspect IOPortCom {
 	{
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
-		fail::simulator.onIOPortEvent(rAL, rDX, false);
+		fail::simulator.onIOPortListener(rAL, rDX, false);
 	}
 };
 

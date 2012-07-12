@@ -6,26 +6,26 @@ namespace fail {
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
 
-bool SimulatorController::addEvent(BaseEvent* ev)
+bool SimulatorController::addListener(BaseListener* li)
 {
-	assert(ev != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
-	m_EvList.add(ev, m_Flows.getCurrent());
+	assert(li != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+	m_LstList.add(li, m_Flows.getCurrent());
 	// Call the common postprocessing function:
-	if (!ev->onEventAddition()) { // If the return value signals "false"...,
-		m_EvList.remove(ev); // ...skip the addition
+	if (!li->onAddition()) { // If the return value signals "false"...,
+		m_LstList.remove(li); // ...skip the addition
 		return false;
 	}
 	return true;
 }
 
-BaseEvent* SimulatorController::waitAny(void)
+BaseListener* SimulatorController::resume(void)
 {
-	if (!hasEvents())
+	if (!hasListeners())
 		return NULL;
 	m_Flows.resume();
-	assert(m_EvList.getLastFired() != NULL &&
+	assert(m_LstList.getLastFired() != NULL &&
 		   "FATAL ERROR: getLastFired() expected to be non-NULL!");
-	return m_EvList.getLastFired();
+	return m_LstList.getLastFired();
 }
 
 void SimulatorController::startup()
@@ -43,47 +43,47 @@ void SimulatorController::initExperiments()
 	/* empty. */
 }
 
-void SimulatorController::onBreakpointEvent(address_t instrPtr, address_t address_space)
+void SimulatorController::onBreakpointListener(address_t instrPtr, address_t address_space)
 {
 	assert(false &&
-	"FIXME: SimulatorController::onBreakpointEvent() has not been tested before");
+	"FIXME: SimulatorController::onBreakpointListener() has not been tested before");
 	// FIXME: Improve performance!
 
-	// Loop through all events of type BP*Event:
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) {
-		BaseEvent* pev = *it;
-		BPSingleEvent* pbp; BPRangeEvent* pbpr;
-		if ((pbp = dynamic_cast<BPSingleEvent*>(pev)) && pbp->isMatching(instrPtr, address_space)) {
+	// Loop through all events of type BP*Listener:
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) {
+		BaseListener* pev = *it;
+		BPSingleListener* pbp; BPRangeListener* pbpr;
+		if ((pbp = dynamic_cast<BPSingleListener*>(pev)) && pbp->isMatching(instrPtr, address_space)) {
 			 pbp->setTriggerInstructionPointer(instrPtr);
-			it = m_EvList.makeActive(it);
+			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
-		} else if ((pbpr = dynamic_cast<BPRangeEvent*>(pev)) &&
+		} else if ((pbpr = dynamic_cast<BPRangeListener*>(pev)) &&
 		           pbpr->isMatching(instrPtr, address_space)) {
 			pbpr->setTriggerInstructionPointer(instrPtr);
-			it = m_EvList.makeActive(it);
+			it = m_LstList.makeActive(it);
 			continue; // dito
 		}
 		++it;
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
+void SimulatorController::onMemoryAccessListener(address_t addr, size_t len,
                                               bool is_write, address_t instrPtr)
 {
 	// FIXME: Improve performance!
-	MemAccessEvent::accessType_t accesstype =
-		is_write ? MemAccessEvent::MEM_WRITE
-		         : MemAccessEvent::MEM_READ;
+	MemAccessListener::accessType_t accesstype =
+		is_write ? MemAccessListener::MEM_WRITE
+		         : MemAccessListener::MEM_READ;
 
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) { // check for active events
-		BaseEvent* pev = *it;
-		MemAccessEvent* ev = dynamic_cast<MemAccessEvent*>(pev);
-		// Is this a MemAccessEvent? Correct access type?
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) { // check for active events
+		BaseListener* pev = *it;
+		MemAccessListener* ev = dynamic_cast<MemAccessListener*>(pev);
+		// Is this a MemAccessListener? Correct access type?
 		if (!ev || !ev->isMatching(addr, accesstype)) {
 			++it;
 			continue; // skip event activation
@@ -92,26 +92,26 @@ void SimulatorController::onMemoryAccessEvent(address_t addr, size_t len,
 		ev->setTriggerWidth(len);
 		ev->setTriggerInstructionPointer(instrPtr);
 		ev->setTriggerAccessType(accesstype);
-		it = m_EvList.makeActive(it);
+		it = m_LstList.makeActive(it);
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onInterruptEvent(unsigned interruptNum, bool nmi)
+void SimulatorController::onInterruptListener(unsigned interruptNum, bool nmi)
 {
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) { // check for active events 
-		BaseEvent* pev = *it;
-		InterruptEvent* pie = dynamic_cast<InterruptEvent*>(pev);
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) { // check for active events 
+		BaseListener* pev = *it;
+		InterruptListener* pie = dynamic_cast<InterruptListener*>(pev);
 		if (!pie || !pie->isMatching(interruptNum)) {
 			++it;
 			continue; // skip event activation
 		}
 		pie->setTriggerNumber(interruptNum);
 		pie->setNMI(nmi);
-		it = m_EvList.makeActive(it);
+		it = m_LstList.makeActive(it);
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
 bool SimulatorController::isSuppressedInterrupt(unsigned interruptNum)
@@ -155,53 +155,53 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 	return false;
 }
 
-void SimulatorController::onTrapEvent(unsigned trapNum)
+void SimulatorController::onTrapListener(unsigned trapNum)
 {
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) { // check for active events
-		BaseEvent* pev = *it;
-		TrapEvent* pte = dynamic_cast<TrapEvent*>(pev);
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) { // check for active events
+		BaseListener* pev = *it;
+		TrapListener* pte = dynamic_cast<TrapListener*>(pev);
 		if (!pte || !pte->isMatching(trapNum)) {
 			++it;
 			continue; // skip event activation
 		}
 		pte->setTriggerNumber(trapNum);
-		it = m_EvList.makeActive(it);
+		it = m_LstList.makeActive(it);
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onGuestSystemEvent(char data, unsigned port)
+void SimulatorController::onGuestSystemListener(char data, unsigned port)
 {
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) { // check for active events
-		BaseEvent* pev = *it;
-		GuestEvent* pge = dynamic_cast<GuestEvent*>(pev);
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) { // check for active events
+		BaseListener* pev = *it;
+		GuestListener* pge = dynamic_cast<GuestListener*>(pev);
 		if (pge != NULL) {
 			pge->setData(data);
 			pge->setPort(port);
-			it = m_EvList.makeActive(it);
+			it = m_LstList.makeActive(it);
 			continue; // dito.
 		}
 		++it;
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onJumpEvent(bool flagTriggered, unsigned opcode)
+void SimulatorController::onJumpListener(bool flagTriggered, unsigned opcode)
 {
-	EventManager::iterator it = m_EvList.begin();
-	while (it != m_EvList.end()) { // check for active events
-		JumpEvent* pje = dynamic_cast<JumpEvent*>(*it);
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) { // check for active events
+		JumpListener* pje = dynamic_cast<JumpListener*>(*it);
 		if (pje != NULL) {
 			pje->setOpcode(opcode);
 			pje->setFlagTriggered(flagTriggered);
-			it = m_EvList.makeActive(it);
+			it = m_LstList.makeActive(it);
 			continue; // dito.
 		}
 		++it;
 	}
-	m_EvList.fireActiveEvents();
+	m_LstList.triggerActiveListeners();
 }
 
 void SimulatorController::addFlow(ExperimentFlow* flow)
@@ -215,15 +215,15 @@ void SimulatorController::addFlow(ExperimentFlow* flow)
 void SimulatorController::removeFlow(ExperimentFlow* flow)
 {
 	// remove all remaining events of this flow
-	clearEvents(flow);
+	clearListeners(flow);
 	// remove coroutine
 	m_Flows.remove(flow);
 }
 
-BaseEvent* SimulatorController::addEventAndWait(BaseEvent* ev)
+BaseListener* SimulatorController::addListenerAndResume(BaseListener* li)
 {
-	addEvent(ev);
-	return waitAny();
+	addListener(li);
+	return resume();
 }
 
 void SimulatorController::terminate(int exCode)

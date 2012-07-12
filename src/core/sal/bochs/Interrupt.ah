@@ -28,9 +28,9 @@ aspect Interrupt {
 		unsigned vector = *(tjp->arg<0>());
 		unsigned type = *(tjp->arg<1>());
 		if (type == BX_EXTERNAL_INTERRUPT)
-			fail::simulator.onInterruptEvent(vector, false);
+			fail::simulator.onInterruptListener(vector, false);
 		else if (type == BX_NMI)
-			fail::simulator.onInterruptEvent(vector, true);
+			fail::simulator.onInterruptListener(vector, true);
 	}
 };
 

@@ -8,10 +8,10 @@
 #include <string.h>
 
 #include "FailBochsGlobals.hpp"
-#include "BochsEvents.hpp"
+#include "BochsListener.hpp"
 
 #include "../SimulatorController.hpp"
-#include "../Event.hpp"
+#include "../Listener.hpp"
 
 #include "bochs.h"
 #include "cpu/cpu.h"
@@ -40,7 +40,7 @@ public:
 	BochsController();
 	~BochsController();
 	/* ********************************************************************
-	 * Standard Event Handler API:
+	 * Standard Listener Handler API:
 	 * ********************************************************************/
 	/**
 	 * Instruction pointer modification handler. This method is called (from
@@ -57,20 +57,20 @@ public:
 	 * @param port the port it was transmitted on
 	 * @param out true if the I/O traffic has been outbound, false otherwise
 	 */
-	void onIOPortEvent(unsigned char data, unsigned port, bool out);
+	void onIOPortListener(unsigned char data, unsigned port, bool out);
 	/**
-	 * Static internal event handler for TimerEvents. This static function is
+	 * Static internal handler for TimerListeners. This static function is
 	 * called when a previously registered (Bochs) timer triggers. This function
-	 * searches for the provided TimerEvent object within the EventManager and
-	 * fires such an event by calling \c fireActiveEvents().
-	 * @param thisPtr a pointer to the TimerEvent-object triggered
+	 * searches for the provided TimerListener object within the ListenerManager and
+	 * fires such an event by calling \c triggerActiveListeners().
+	 * @param thisPtr a pointer to the TimerListener-object triggered
 	 * 
 	 * FIXME: Due to Bochs internal timer and ips-configuration related stuff,
 	 *        the simulator sometimes panics with "keyboard error:21" (see line
-	 *        1777 in bios/rombios.c, function keyboard_init()) if a TimerEvent
+	 *        1777 in bios/rombios.c, function keyboard_init()) if a TimerListener
 	 *        is added *before* the bios has been loaded and initialized. To
-	 *        reproduce this error, try adding a \c TimerEvent as the initial step
-	 *        in your experiment code and wait for it (\c addEventAndWait()).
+	 *        reproduce this error, try adding a \c TimerListener as the initial step
+	 *        in your experiment code and wait for it (\c addListenerAndResume()).
 	 */
 	static void onTimerTrigger(void *thisPtr);
 	/* ********************************************************************
@@ -86,7 +86,7 @@ public:
 	 */
 	void saveDone();
 	/**
-	 * Restore simulator state. Clears all Events.
+	 * Restore simulator state. Clears all Listeners.
 	 * @param path Location to previously saved state information
 	 */
 	void restore(const std::string& path);
@@ -95,7 +95,7 @@ public:
 	 */
 	void restoreDone();
 	/**
-	 * Reboot simulator. Clears all Events.
+	 * Reboot simulator. Clears all Listeners.
 	 */
 	void reboot();
 	/**

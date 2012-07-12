@@ -60,7 +60,7 @@ aspect Jump {
 	advice execution (defJumpInstructions()) : around()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		fail::simulator.onJumpEvent(true, pInstr->getIaOpcode());
+		fail::simulator.onJumpListener(true, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 		if(pThis == NULL)
@@ -77,7 +77,7 @@ aspect Jump {
 		// Step-1: Modify one or more of the fxxxFlag according to the error you want to inject
 		//         (using pThis->set_XX(new_val))
 		// Step-2: Call tjp->proceed();
-		// Step-3: Eventually, unwind the changes of Step-1
+		// Step-3: Listenerually, unwind the changes of Step-1
 		//
 
 		// Example:
@@ -109,7 +109,7 @@ aspect Jump {
 	advice execution (regJumpInstructions()) : around ()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		fail::simulator.onJumpEvent(false, pInstr->getIaOpcode());
+		fail::simulator.onJumpListener(false, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 

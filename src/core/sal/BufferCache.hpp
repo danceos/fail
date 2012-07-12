@@ -6,7 +6,7 @@
 
 namespace fail {
 
-class EventManager;
+class ListenerManager;
 
 /**
  * \class BufferCache
@@ -14,19 +14,19 @@ class EventManager;
  * \brief A simple dynamic array
  *
  * This class is intended to serve as a kind of cache for the
- * untyped and therefore quite slow event handling mechanism of Fail*.
+ * untyped and therefore quite slow listener handling mechanism of Fail*.
  */
 template<class T>
 class BufferCache {
 public:
 	/**
-	 * The list type inherent to this class. Like bufferlist_t in EventManager.hpp,
+	 * The list type inherent to this class. Like bufferlist_t in ListenerManager.hpp,
 	 * but dynamically typed.
 	 */
 	typedef std::list<T> cachelist_t;
 	/**
 	 * The iterator of this class used to loop through the list of
-	 * added events. To retrieve an iterator to the first element, call
+	 * added listeners. To retrieve an iterator to the first element, call
 	 * begin(). end() returns the iterator, pointing after the last element.
 	 * (This behaviour equals the STL iterator in C++.)
 	 */
@@ -79,14 +79,14 @@ public:
 	 */
 	inline iterator end() { return m_Buffer.end(); }
 	/**
-	 * Acts as a replacement for EventManager::makeActive, manipulating
-	 * the buffer cache exclusively. EventManager::fireActiveEvents needs
-	 * to be called to fire the active events (see there).
-	 * This method is declared as a friend method in EventManager.
-	 * @param idx the index of the event to trigger
+	 * Acts as a replacement for ListenerManager::makeActive, manipulating
+	 * the buffer cache exclusively. ListenerManager::triggerActiveListeners needs
+	 * to be called to fire the active listeners (see there).
+	 * This method is declared as a friend method in ListenerManager.
+	 * @param idx the index of the listener to trigger
 	 * @returns an updated index which can be used to update a loop counter
 	 */
-	iterator makeActive(EventManager &ev_list, iterator idx);
+	iterator makeActive(ListenerManager &ev_list, iterator idx);
 };
 
 } // end-of-namespace: fail

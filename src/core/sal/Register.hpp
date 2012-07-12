@@ -55,12 +55,12 @@ public:
 	 * Returns the (fixed) type of this register.
 	 * @return the type of this register
 	 */
-	RegisterType getType() const { return (m_Type); }
+	RegisterType getType() const { return m_Type; }
 	/**
 	 * Returns the (fixed) width of this register.
 	 * @return the width in bits
 	 */
-	regwidth_t getWidth() const { return (m_Width); }
+	regwidth_t getWidth() const { return m_Width; }
 	/**
 	 * Returns the data referenced by this register. In a concrete
 	 * derived class this method has to be defined appropriately.
@@ -81,7 +81,7 @@ public:
 	 * Retrieves the register name.
 	 * @return the textual register description
 	 */
-	const std::string& getName() const { return (m_Name); }
+	const std::string& getName() const { return m_Name; }
 	/**
 	 * Retrieves the unique index within it's assigned register set.
 	 * If the register has not been assigned, \c (size_t)-1 will be
@@ -89,18 +89,18 @@ public:
 	 * @return the register index or -1 if not assigned
 	 * @see isAssigned()
 	 */
-	size_t getIndex() const { return (m_Index); }
+	size_t getIndex() const { return m_Index; }
 	/**
 	 * Checks whether this register has already been assigned. On
 	 * creation the register isn't initially assigned.
 	 * @return \c true if assigned, \c false otherwise
 	 */
-	bool isAssigned() const { return (m_Assigned); }
+	bool isAssigned() const { return m_Assigned; }
 	/**
 	 * Returns the unique id of this register.
 	 * @return the unique id
 	 */
-	unsigned int getId() const { return (m_Id); }
+	unsigned int getId() const { return m_Id; }
 };
 
 /**
@@ -132,7 +132,7 @@ public:
 	 *  ^
 	 * \endcode
 	 */
-	iterator begin() { return (m_Regs.begin()); }
+	iterator begin() { return m_Regs.begin(); }
 	/**
 	 * Returns an iterator to the end of the interal data structure.
 	 * \code
@@ -140,7 +140,7 @@ public:
 	 *              ^
 	 * \endcode
 	 */
-	iterator end() { return (m_Regs.end()); }
+	iterator end() { return m_Regs.end(); }
 	/**
 	 * Constructs a new register set with type \a containerType.
 	 * @param containerType the type of registers which should be stored
@@ -152,12 +152,12 @@ public:
 	 * Returns the type of this set.
 	 * @return the type
 	 */
-	RegisterType getType() const { return (m_Type); }
+	RegisterType getType() const { return m_Type; }
 	/**
 	 * Gets the number of registers of this set.
 	 * @return the number of registers
 	 */
-	size_t count() const { return (m_Regs.size()); }
+	size_t count() const { return m_Regs.size(); }
 	/**
 	 * Retrieves the \a i-th register within this set.
 	 * @return a pointer to the \a i-th register; if \a i is invalid, an
@@ -169,7 +169,7 @@ public:
 	 * @return a pointer to the first register (if existing -- otherwise an
 	 *         assertion is thrown)
 	 */
-	virtual Register* first() { return (getRegister(0)); }
+	virtual Register* first() { return getRegister(0); }
 };
 
 /**
@@ -197,7 +197,7 @@ public:
 	 *  ^
 	 * \endcode
 	 */
-	iterator begin() { return (m_Registers.begin()); }
+	iterator begin() { return m_Registers.begin(); }
 	/**
 	 * Returns an iterator to the end of the interal data structure.
 	 * \code
@@ -205,7 +205,7 @@ public:
 	 *              ^
 	 * \endcode
 	 */
-	iterator end() { return (m_Registers.end()); }
+	iterator end() { return m_Registers.end(); }
 
 	RegisterManager() { }
 	~RegisterManager() { clear(); }
@@ -218,7 +218,7 @@ public:
 	 * Retrieves the number of managed homogeneous register sets.
 	 * @return the number of sets
 	 */
-	virtual size_t subsetCount() const { return (m_Subsets.size()); }
+	virtual size_t subsetCount() const { return m_Subsets.size(); }
 	/**
 	 * Gets the \a i-th register set.
 	 * @param i the index of the set to be returned

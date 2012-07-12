@@ -1,9 +1,9 @@
-#include "Event.hpp"
+#include "Listener.hpp"
 #include "SALInst.hpp"
 
 namespace fail {
 
-bool TroubleEvent::isMatching(unsigned troubleNum) const
+bool TroubleListener::isMatching(unsigned troubleNum) const
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
 		if (m_WatchNumbers[i] == troubleNum ||
@@ -13,7 +13,7 @@ bool TroubleEvent::isMatching(unsigned troubleNum) const
 	return false;
 }
 
-bool TroubleEvent::removeWatchNumber(unsigned troubleNum) 
+bool TroubleListener::removeWatchNumber(unsigned troubleNum) 
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
 		if (m_WatchNumbers[i] == troubleNum) {
@@ -24,7 +24,7 @@ bool TroubleEvent::removeWatchNumber(unsigned troubleNum)
 	return false;
 }
 
-bool TroubleEvent::addWatchNumber(unsigned troubleNumber) 
+bool TroubleListener::addWatchNumber(unsigned troubleNumber) 
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
 		if (m_WatchNumbers[i] == troubleNumber)
@@ -34,7 +34,7 @@ bool TroubleEvent::addWatchNumber(unsigned troubleNumber)
 	return true;
 }
 
-bool MemAccessEvent::isMatching(address_t addr, accessType_t accesstype) const
+bool MemAccessListener::isMatching(address_t addr, accessType_t accesstype) const
 {
 	if (!(m_WatchType & accesstype))
 		return false;
@@ -44,20 +44,20 @@ bool MemAccessEvent::isMatching(address_t addr, accessType_t accesstype) const
 	return true;
 }
 
-bool BPEvent::aspaceIsMatching(address_t aspace) const
+bool BPListener::aspaceIsMatching(address_t aspace) const
 {
 	if (m_CR3 == ANY_ADDR || m_CR3 == aspace)
 		return true;
 	return false;
 }
 
-void BPRangeEvent::setWatchInstructionPointerRange(address_t start, address_t end)
+void BPRangeListener::setWatchInstructionPointerRange(address_t start, address_t end)
 {
 	m_WatchStartAddr = start;
 	m_WatchEndAddr = end;
 }
 
-bool BPRangeEvent::isMatching(address_t addr, address_t aspace) const
+bool BPRangeListener::isMatching(address_t addr, address_t aspace) const
 {
 	if (!aspaceIsMatching(aspace))
 		return false;
@@ -67,7 +67,7 @@ bool BPRangeEvent::isMatching(address_t addr, address_t aspace) const
 	return true;
 }
 
-bool BPSingleEvent::isMatching(address_t addr, address_t aspace) const
+bool BPSingleListener::isMatching(address_t addr, address_t aspace) const
 {
 	if (aspaceIsMatching(aspace)) {
 		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr)

@@ -101,13 +101,13 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	m_CacheEntry = cache_entry;
 	bool do_fire = false;
 	// Check for active breakpoint-events:
-	bp_cache_t &buffer_cache = m_EvList.getBPBuffer();
+	bp_cache_t &buffer_cache = m_LstList.getBPBuffer();
 	bp_cache_t::iterator it = buffer_cache.begin();
 	while (it != buffer_cache.end()) {
-		BPEvent* pEvBreakpt = *it;
+		BPListener* pEvBreakpt = *it;
 		if (pEvBreakpt->isMatching(instrPtr, address_space)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = buffer_cache.makeActive(m_EvList, it);
+			it = buffer_cache.makeActive(m_LstList, it);
 			do_fire = true;
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
@@ -116,28 +116,28 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		it++;
 	}
 	if (do_fire)
-		m_EvList.fireActiveEvents();
-	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
+		m_LstList.triggerActiveListeners();
+	// Note: SimulatorController::onBreakpointListener will not be invoked in this
 	//       implementation.
 }
 
-void BochsController::onIOPortEvent(unsigned char data, unsigned port, bool out) {
+void BochsController::onIOPortListener(unsigned char data, unsigned port, bool out) {
 	// Check for active breakpoint-events:
-	io_cache_t &buffer_cache = m_EvList.getIOBuffer();
+	io_cache_t &buffer_cache = m_LstList.getIOBuffer();
 	io_cache_t::iterator it = buffer_cache.begin();
 	while (it != buffer_cache.end()) {
-		IOPortEvent* pIOPt = (*it);
+		IOPortListener* pIOPt = (*it);
 		if (pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
-			it = buffer_cache.makeActive(m_EvList, it);
+			it = buffer_cache.makeActive(m_LstList, it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
 		}
 		it++;
 	}
-	m_EvList.fireActiveEvents();
-	// Note: SimulatorController::onBreakpointEvent will not be invoked in this
+	m_LstList.triggerActiveListeners();
+	// Note: SimulatorController::onBreakpointListener will not be invoked in this
 	//       implementation.
 }
 
@@ -165,7 +165,7 @@ void BochsController::saveDone()
 
 void BochsController::restore(const std::string& path)
 {
-	clearEvents();
+	clearListeners();
 	restore_bochs_request = true;
 	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
@@ -181,7 +181,7 @@ void BochsController::restoreDone()
 
 void BochsController::reboot()
 {
-	clearEvents();
+	clearListeners();
 	reboot_bochs_request = true;
 	BX_CPU(0)->async_event |= 1;
 	m_CurrFlow = m_Flows.getCurrent();
@@ -213,16 +213,16 @@ void BochsController::onTimerTrigger(void* thisPtr)
 {
 	// FIXME: The timer logic can be modified to use only one timer in Bochs.
 	//        (For now, this suffices.)
-	TimerEvent* pTmEv = static_cast<TimerEvent*>(thisPtr);
-	// Check for a matching TimerEvent. (In fact, we are only
-	// interessted in the iterator pointing at pTmEv.):
-	EventManager::iterator it = std::find(simulator.m_EvList.begin(),
-											simulator.m_EvList.end(), pTmEv);
-	// TODO: This has O(|m_EvList|) time complexity. We can further improve this
-	//       by creating a method such that makeActive(pTmEv) works as well,
+	TimerListener* pli = static_cast<TimerListener*>(thisPtr);
+	// Check for a matching TimerListener. (In fact, we are only
+	// interessted in the iterator pointing at pli.)
+	ListenerManager::iterator it = std::find(simulator.m_LstList.begin(),
+											simulator.m_LstList.end(), pli);
+	// TODO: This has O(|m_LstList|) time complexity. We can further improve this
+	//       by creating a method such that makeActive(pli) works as well,
 	//       reducing the time complexity to O(1).
-	simulator.m_EvList.makeActive(it);
-	simulator.m_EvList.fireActiveEvents();
+	simulator.m_LstList.makeActive(it);
+	simulator.m_LstList.triggerActiveListeners();
 }
 
 const std::string& BochsController::getMnemonic() const

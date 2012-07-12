@@ -13,7 +13,7 @@
 aspect Breakpoints {
 	pointcut cpuLoop() = "void defineCPULoopJoinPoint(...)";
 
-	advice execution (cpuLoop()) : after () // Event source: "instruction pointer"
+	advice execution (cpuLoop()) : after () // event source: "instruction pointer"
 	{
 		// Points to the cpu class: "this" if BX_USE_CPU_SMF == 0,
 		// BX_CPU(0) otherwise

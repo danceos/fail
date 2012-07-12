@@ -1,19 +1,19 @@
 if(BUILD_BOCHS)
 	set(SRCS
 		BufferCache.cc
-		Event.cc
-		EventManager.cc
+		Listener.cc
+		ListenerManager.cc
 		Memory.cc
 		Register.cc
 		SimulatorController.cc
 		bochs/BochsController.cc
-		bochs/BochsEvents.cc
+		bochs/BochsListener.cc
 	)
 else()
 	set(SRCS
 		BufferCache.cc
-		Event.cc
-		EventManager.cc
+		Listener.cc
+		ListenerManager.cc
 		Memory.cc
 		Register.cc
 		SimulatorController.cc

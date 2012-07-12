@@ -19,12 +19,12 @@
 aspect GuestSysCom {
 	pointcut outInstructions() = "% ...::bx_cpu_c::OUT_DX%(...)";
 
-	advice execution (outInstructions()) : after () // Event source: "guest system"
+	advice execution (outInstructions()) : after () // Listener source: "guest system"
 	{
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
 		if (rDX == BOCHS_COM_PORT)
-			fail::simulator.onGuestSystemEvent((char)rAL, rDX);
+			fail::simulator.onGuestSystemListener((char)rAL, rDX);
 	}
 };
 

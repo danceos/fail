@@ -7,7 +7,7 @@
 #include <string>
 
 #include "../SimulatorController.hpp"
-#include "../Event.hpp"
+#include "../Listener.hpp"
 #include "../Register.hpp"
 #include "ovp/OVPPlatform.hpp"
 
