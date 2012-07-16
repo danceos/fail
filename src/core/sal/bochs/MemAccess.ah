@@ -129,7 +129,9 @@ aspect MemAccess {
 
 	advice execution (read_methods_RMW()) : before ()
 	{
+#if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
 		rmw_address = *(tjp->arg<1>());
+#endif
 #ifdef CONFIG_EVENT_MEMREAD
 		fail::simulator.onMemoryAccess(
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
