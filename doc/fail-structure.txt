@@ -6,7 +6,7 @@ The folders are nested as follow:
 **********************************************************************
 fail:  Fail* parent directory, containing all source & configuration files (${FAIL_DIR})
 |-cmake:  CMake-related configuration files (e.g. compiler-flags, dependencies, ...)
-|-doc:  Fail*-Framework documentation (e.g., diagrams, how-to's, ...)
+|-doc:  Fail*-Framework documentation (e.g., diagrams, howtos, ...)
 |-deprecated:  temporal and old (source) files, which will probably be deleted
 |-scripts:  python/shell scripts for Fail*-compilation and experiment distribution
 |-simulators:  parent directory of simulators supported by Fail* (may still be WIP)

@@ -14,7 +14,7 @@ namespace fail {
 
 class ExperimentFlow;
 
-//! address wildcard (e.g. for BPListener's)
+//! address wildcard (e.g. for BPListeners)
 const address_t       ANY_ADDR = static_cast<address_t>(-1);
 //! instruction wildcard
 const unsigned       ANY_INSTR = static_cast<unsigned>(-1);
@@ -220,7 +220,7 @@ public:
 		  { }
 	/**
 	 * Returns the instruction pointer watch range of this listener.
-	 * @return the listerner's range
+	 * @return the listener's range
 	 */
 	std::pair<address_t, address_t> getWatchInstructionPointerRange() const
 	{ return std::make_pair(m_WatchStartAddr, m_WatchEndAddr); }

@@ -34,7 +34,7 @@ based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
          pass: action=ignore
      - If you need a quick-and-dirty way to pass data from the guest system to the
        outside world, and you don't want to write an experiment utilizing
-       GuestEvents, you can use the "port e9 hack" that prints all outb's to port
+       GuestEvents, you can use the "port e9 hack" that prints all outbs to port
        0xe9 to the console:
          port_e9_hack: enabled=1
      - Determinism:  (Fail)Bochs is deterministic regarding timer interrupts,
