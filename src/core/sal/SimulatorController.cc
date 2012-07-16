@@ -84,7 +84,7 @@ void SimulatorController::onMemoryAccessListener(address_t addr, size_t len,
 		BaseListener* pev = *it;
 		MemAccessListener* ev = dynamic_cast<MemAccessListener*>(pev);
 		// Is this a MemAccessListener? Correct access type?
-		if (!ev || !ev->isMatching(addr, accesstype)) {
+		if (!ev || !ev->isMatching(addr, len, accesstype)) {
 			++it;
 			continue; // skip event activation
 		}

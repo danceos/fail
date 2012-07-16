@@ -244,8 +244,6 @@ public:
 /**
  * \class MemAccessListener
  * Observes memory read/write accesses.
- * FIXME? currently >8-bit accesses only match if their lowest address is being watched
- *        (e.g., a 32-bit write to 0x4 also accesses 0x7, but this cannot be matched)
  */
 class MemAccessListener : virtual public BaseListener {
 public:
@@ -256,14 +254,16 @@ public:
 		MEM_READWRITE = 0x3
 	};
 private:
-	//! Specific guest system address to watch, or ANY_ADDR.
+	//! Specific physical guest system address to watch, or ANY_ADDR.
 	address_t m_WatchAddr;
+	//! Width of the memory area being watched (# bytes).
+	size_t m_WatchWidth;
 	/**
 	 * Memory access type we want to watch
 	 * (MEM_READ || MEM_WRITE || MEM_READWRITE).
 	 */
 	accessType_t m_WatchType;
-	//! Specific guest system address that actually triggered the listener.
+	//! Specific physical guest system address that actually triggered the listener.
 	address_t m_TriggerAddr;
 	//! Width of the memory access (# bytes).
 	size_t m_TriggerWidth;
@@ -273,64 +273,71 @@ private:
 	accessType_t m_AccessType;
 public:
 	MemAccessListener(accessType_t watchtype = MEM_READWRITE)
-		: m_WatchAddr(ANY_ADDR), m_WatchType(watchtype),
+		: m_WatchAddr(ANY_ADDR), m_WatchWidth(1), m_WatchType(watchtype),
 		  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
 		  m_AccessType(MEM_UNKNOWN) { }
 	MemAccessListener(address_t addr, 
 				   accessType_t watchtype = MEM_READWRITE)
-		: m_WatchAddr(addr), m_WatchType(watchtype),
+		: m_WatchAddr(addr), m_WatchWidth(1), m_WatchType(watchtype),
 		  m_TriggerAddr(ANY_ADDR), m_TriggerIP(ANY_ADDR),
 		  m_AccessType(MEM_UNKNOWN) { }
 	/**
-	 * Returns the memory address to be observed.
+	 * Returns the physical memory address to be observed.
 	 */
 	address_t getWatchAddress() const { return m_WatchAddr; }
 	/**
-	 * Sets the memory address to be observed.  (Wildcard: ANY_ADDR)
+	 * Sets the physical memory address to be observed.  (Wildcard: ANY_ADDR)
 	 */
 	void setWatchAddress(address_t addr) { m_WatchAddr = addr; }
 	/**
-	 * Checks whether a given address is matching.
+	 * Returns the width of the memory area being watched.
 	 */
-	bool isMatching(address_t addr, accessType_t accesstype) const;
+	size_t getWatchWidth() const { return m_WatchWidth; }
 	/**
-	 * Returns the specific memory address that actually triggered the
+	 * Sets the width of the memory area being watched (defaults to 1).
+	 */
+	void setWatchWidth(size_t width) { m_WatchWidth = width; }
+	/**
+	 * Checks whether a given physical memory access is matching.
+	 */
+	bool isMatching(address_t addr, size_t width, accessType_t accesstype) const;
+	/**
+	 * Returns the specific physical memory address that actually triggered the
 	 * listener.
 	 */
 	address_t getTriggerAddress() const { return m_TriggerAddr; }
 	/**
-	 * Sets the specific memory address that actually triggered the listener.
-	 * Should not be used by experiment code.
+	 * Sets the specific physical memory address that actually triggered the
+	 * listener.  Should not be used by experiment code.
 	 */
 	void setTriggerAddress(address_t addr) { m_TriggerAddr = addr; }
 	/**
-	 * Returns the specific memory address that actually triggered the
+	 * Returns the width (in bytes) of the memory access that triggered this
 	 * listener.
 	 */
 	size_t getTriggerWidth() const { return m_TriggerWidth; }
 	/**
-	 * Sets the specific memory address that actually triggered the listener.
-	 * Should not be used by experiment code.
+	 * Sets the width (in bytes) of the memory access that triggered this
+	 * listener.  Should not be used by experiment code.
 	 */
 	void setTriggerWidth(size_t width) { m_TriggerWidth = width; }
 	/**
-	 * Returns the address of the instruction causing this memory
-	 * access.
+	 * Returns the address of the instruction causing this memory access.
 	 */
 	address_t getTriggerInstructionPointer() const { return m_TriggerIP; }
 	/**
-	 * Sets the address of the instruction causing this memory
-	 * access.  Should not be used by experiment code.
+	 * Sets the address of the instruction causing this memory access.  Should
+	 * not be used by experiment code.
 	 */
 	void setTriggerInstructionPointer(address_t addr) { m_TriggerIP = addr; }
 	/**
-	 * Returns type (MEM_READ || MEM_WRITE) of the memory access that
-	 * triggered this listener.
+	 * Returns type (MEM_READ || MEM_WRITE) of the memory access that triggered
+	 * this listener.
 	 */
 	accessType_t getTriggerAccessType() const { return m_AccessType; }
 	/**
-	 * Sets type of the memory access that triggered this listener.  Should
-	 * not be used by experiment code.
+	 * Sets type of the memory access that triggered this listener.  Should not
+	 * be used by experiment code.
 	 */
 	void setTriggerAccessType(accessType_t type) { m_AccessType = type; }
 	/**
