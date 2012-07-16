@@ -43,10 +43,10 @@ void SimulatorController::initExperiments()
 	/* empty. */
 }
 
-void SimulatorController::onBreakpointListener(address_t instrPtr, address_t address_space)
+void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_space)
 {
 	assert(false &&
-	"FIXME: SimulatorController::onBreakpointListener() has not been tested before");
+	"FIXME: SimulatorController::onBreakpoint() has not been tested before");
 	// FIXME: Improve performance!
 
 	// Loop through all events of type BP*Listener:
@@ -71,8 +71,8 @@ void SimulatorController::onBreakpointListener(address_t instrPtr, address_t add
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onMemoryAccessListener(address_t addr, size_t len,
-                                              bool is_write, address_t instrPtr)
+void SimulatorController::onMemoryAccess(address_t addr, size_t len,
+                                         bool is_write, address_t instrPtr)
 {
 	// FIXME: Improve performance!
 	MemAccessListener::accessType_t accesstype =
@@ -97,7 +97,7 @@ void SimulatorController::onMemoryAccessListener(address_t addr, size_t len,
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onInterruptListener(unsigned interruptNum, bool nmi)
+void SimulatorController::onInterrupt(unsigned interruptNum, bool nmi)
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active events 
@@ -155,7 +155,7 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 	return false;
 }
 
-void SimulatorController::onTrapListener(unsigned trapNum)
+void SimulatorController::onTrap(unsigned trapNum)
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active events
@@ -171,7 +171,7 @@ void SimulatorController::onTrapListener(unsigned trapNum)
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onGuestSystemListener(char data, unsigned port)
+void SimulatorController::onGuestSystem(char data, unsigned port)
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active events
@@ -188,7 +188,7 @@ void SimulatorController::onGuestSystemListener(char data, unsigned port)
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onJumpListener(bool flagTriggered, unsigned opcode)
+void SimulatorController::onJump(bool flagTriggered, unsigned opcode)
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active events

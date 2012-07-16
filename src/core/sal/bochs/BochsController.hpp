@@ -57,7 +57,7 @@ public:
 	 * @param port the port it was transmitted on
 	 * @param out true if the I/O traffic has been outbound, false otherwise
 	 */
-	void onIOPortListener(unsigned char data, unsigned port, bool out);
+	void onIOPort(unsigned char data, unsigned port, bool out);
 	/**
 	 * Static internal handler for TimerListeners. This static function is
 	 * called when a previously registered (Bochs) timer triggers. This function

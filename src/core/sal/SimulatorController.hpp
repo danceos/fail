@@ -59,17 +59,17 @@ public:
 	 */
 	void initExperiments();
 	/* ********************************************************************
-	 * Standard Listener Handler API
+	 * Standard Event Handler API
 	 * ********************************************************************/
 	/**
-	 * Breakpoint listener handler. This routine needs to be called in the
-	 * simulator specific backend each time a breakpoint listener occurs.
-	 * @param instrPtr the instruction pointer of the breakpoint listener
+	 * Breakpoint handler. This routine needs to be called in the simulator
+	 * specific backend each time a breakpoint occurs.
+	 * @param instrPtr the instruction pointer of the breakpoint
 	 * @param address_space the address space it should occur in
 	 */
-	void onBreakpointListener(address_t instrPtr, address_t address_space);
+	void onBreakpoint(address_t instrPtr, address_t address_space);
 	/**
-	 * Memory access listener handler (read/write).
+	 * Memory access handler (read/write).
 	 * @param addr the accessed memory address
 	 * @param len the length of the accessed memory
 	 * @param is_write \c true if memory is written, \c false if read
@@ -78,31 +78,31 @@ public:
 	 * 
 	 * FIXME: should instrPtr be part of this interface?
 	 */
-	void onMemoryAccessListener(address_t addr, size_t len, bool is_write, address_t instrPtr);
+	void onMemoryAccess(address_t addr, size_t len, bool is_write, address_t instrPtr);
 	/**
-	 * Interrupt listener handler.
+	 * Interrupt handler.
 	 * @param interruptNum the interrupt-type id
 	 * @param nmi nmi-value from guest-system
 	 */
-	void onInterruptListener(unsigned interruptNum, bool nmi);
+	void onInterrupt(unsigned interruptNum, bool nmi);
 	/**
-	 * Trap listener handler.
+	 * Trap handler.
 	 * @param trapNum the trap-type id
 	 */
-	void onTrapListener(unsigned trapNum);
+	void onTrap(unsigned trapNum);
 	/**
 	 * Guest system communication handler.
 	 * @param data the "message" from the guest system
-	 * @param port the port of the listener
+	 * @param port the port used for communications
 	 */
-	void onGuestSystemListener(char data, unsigned port);
+	void onGuestSystem(char data, unsigned port);
 	/**
 	 * (Conditional) Jump-instruction handler.
 	 * @param flagTriggered \c true if the jump was triggered due to a
 	 *        specific FLAG (zero/carry/sign/overflow/parity flag)
 	 * @param opcode the opcode of the conrecete jump instruction
 	 */
-	void onJumpListener(bool flagTriggered, unsigned opcode);
+	void onJump(bool flagTriggered, unsigned opcode);
 	/* ********************************************************************
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/

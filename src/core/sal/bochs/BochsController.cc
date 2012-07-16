@@ -117,11 +117,11 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 	}
 	if (do_fire)
 		m_LstList.triggerActiveListeners();
-	// Note: SimulatorController::onBreakpointListener will not be invoked in this
+	// Note: SimulatorController::onBreakpoint will not be invoked in this
 	//       implementation.
 }
 
-void BochsController::onIOPortListener(unsigned char data, unsigned port, bool out) {
+void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 	// Check for active breakpoint-events:
 	io_cache_t &buffer_cache = m_LstList.getIOBuffer();
 	io_cache_t::iterator it = buffer_cache.begin();
@@ -137,7 +137,7 @@ void BochsController::onIOPortListener(unsigned char data, unsigned port, bool o
 		it++;
 	}
 	m_LstList.triggerActiveListeners();
-	// Note: SimulatorController::onBreakpointListener will not be invoked in this
+	// Note: SimulatorController::onBreakpoint will not be invoked in this
 	//       implementation.
 }
 

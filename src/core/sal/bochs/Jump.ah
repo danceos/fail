@@ -60,7 +60,7 @@ aspect Jump {
 	advice execution (defJumpInstructions()) : around()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		fail::simulator.onJumpListener(true, pInstr->getIaOpcode());
+		fail::simulator.onJump(true, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 		if(pThis == NULL)
@@ -109,7 +109,7 @@ aspect Jump {
 	advice execution (regJumpInstructions()) : around ()
 	{
 		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
-		fail::simulator.onJumpListener(false, pInstr->getIaOpcode());
+		fail::simulator.onJump(false, pInstr->getIaOpcode());
 /*
 		JoinPoint::That* pThis = tjp->that();
 
