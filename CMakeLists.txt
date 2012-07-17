@@ -27,13 +27,17 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(compilerconfig)
 
 #### #OPTION to configure Bochs/OVP ####
-OPTION(BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
-OPTION(BUILD_BOCHS  "Build Bochs Variant?" ON)
+OPTION( BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
+OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
+OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
 
 if(BUILD_BOCHS)
   ## add necessary additional header search paths.
   #add_definitions(-I${CMAKE_SOURCE_DIR}/simulators/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/simulators/bochs)
   include_directories(simulators/bochs/instrument/stubs simulators/bochs)
+elseif(BUILD_GEM5)
+  include_directories(simulators/gem5/src simulators/gem5/build/ARM)
+  add_definitions(-std=c++0x)
 elseif(BUILD_OVP)
   add_subdirectory(simulators/ovp)
 endif(BUILD_BOCHS)
@@ -55,6 +59,7 @@ add_subdirectory(src)
 #### Backend-related build system stuff
 include(bochs)
 include(ovp)
+include(gem5)
 
 ## Just for testing:
 ## Invoking bochs build via external project

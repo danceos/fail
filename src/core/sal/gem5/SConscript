@@ -1,0 +1,9 @@
+Import('*')
+
+if env['TARGET_ISA'] == 'no':
+    Return()
+
+env.Append(CPPPATH=Dir('../../../../../src/core/'))
+env.Append(CPPPATH=Dir('../../../../../build/src/core/'))
+
+Source('faildev.cc')

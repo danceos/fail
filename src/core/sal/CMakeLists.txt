@@ -9,7 +9,7 @@ if(BUILD_BOCHS)
 		bochs/BochsController.cc
 		bochs/BochsListener.cc
 	)
-else()
+elseif(BUILD_OVP)
 	set(SRCS
 		BufferCache.cc
 		Listener.cc
@@ -18,6 +18,16 @@ else()
 		Register.cc
 		SimulatorController.cc
 		${VARIANT}/OVPController.cc
+	)
+elseif(BUILD_GEM5)
+	set(SRCS
+		BufferCache.cc
+		Listener.cc
+		ListenerManager.cc
+		Memory.cc
+		Register.cc
+		SimulatorController.cc
+		gem5/Gem5Controller.cc
 	)
 endif(BUILD_BOCHS)
 

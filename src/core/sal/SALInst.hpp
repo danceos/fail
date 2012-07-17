@@ -26,6 +26,17 @@ extern ConcreteSimulatorController simulator; //!< the global simulator-controll
 
 }
 
+#elif defined BUILD_GEM5
+
+#include "gem5/Gem5Controller.hpp"
+
+namespace fail {
+
+typedef Gem5Controller ConcreteSimulatorController; //!< concrete simulator (type)
+extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
+
+}
+
 #else
 #error SAL Instance not defined
 #endif

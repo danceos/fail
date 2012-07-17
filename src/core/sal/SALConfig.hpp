@@ -10,6 +10,8 @@
   #include "bochs/BochsConfig.hpp"
 #elif defined BUILD_OVP
   #include "ovp/OVPConfig.hpp"
+#elif defined BUILD_GEM5
+  #include "gem5/Gem5Config.hpp"
 #else
   #error SAL Config Target not defined
 #endif

@@ -137,7 +137,7 @@ void JobServer::run()
 	saddr.sin_addr.s_addr = htons(INADDR_ANY);
  
 	/* bind to port */
-	if (bind(s, (struct sockaddr*) &saddr, sizeof(saddr)) == -1) {
+	if (::bind(s, (struct sockaddr*) &saddr, sizeof(saddr)) == -1) {
 		perror("bind");
 		// TODO: Log-level?
 		return;

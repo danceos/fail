@@ -3,5 +3,6 @@
 
 #cmakedefine BUILD_OVP
 #cmakedefine BUILD_BOCHS
+#cmakedefine BUILD_GEM5
 
 #endif // __VARIANT_CONFIG_HPP__
