@@ -30,10 +30,10 @@ public:
 	 * 
 	 * @param port the port the listener is listening on
 	 * @param out Defines the direction of the listener.
-	 * \arg \c true Output on the given port is captured.
+	 * \arg \c true Output on the given port is captured. This is default.
 	 * \arg \c false Input on the given port is captured.
 	 */
-	SerialOutput(unsigned port, bool out) : m_out(out), m_port(port) { }
+	SerialOutput(unsigned port, bool out = true) : m_out(out), m_port(port) { }
 	bool run();
 	/**
 	 * Resets the output variable which contains the traffic of
