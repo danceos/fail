@@ -19,6 +19,14 @@ Required for the Bochs simulator backend:
  - libpthread
  - Probably more, depending on, e.g., the GUI you configure (X11 ->
    libxrandr-dev)
+   
+Required for the gem5 simulator backend:
+**********************************************************************
+ - SCons
+ - SWIG
+ - zlib
+ - m4
+ - python-dev
 
 For distribution/parallelization:
 **********************************************************************
@@ -193,3 +201,23 @@ For the first time:
     /fs/proj/compiler/codesourcery-arm-eabi (DO, ios/kos)
 TODO: Source setup.sh, setupImperas ...
 TODO: Fix Hard-coded paths
+
+Building gem5:
+**********************************************************************
+
+For the first time:
+------------------------------------------------------------
+ 1. Change to the gem5 simulator directory (expects to be in ${FAIL_DIR}):
+      $ cd simulators/gem5
+ 2. Get the gem5 sourcecode from the stable repository (Mercurial needed)
+      $ hg clone http://repo.gem5.org/gem5-stable ./
+
+Optimized build:
+------------------------------------------------------------
+      $ cd ../simulator/gem5
+      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.fast
+
+Debug build:
+------------------------------------------------------------
+      $ cd ../simulator/gem5
+      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.debug

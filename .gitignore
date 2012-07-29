@@ -25,3 +25,5 @@ bochs/libtool
 bochs/ltdlconf.h
 
 !bochs/plex86/kernel/freebsd/Makefile
+
+simulators/gem5/*
