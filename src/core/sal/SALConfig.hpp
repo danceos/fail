@@ -24,7 +24,22 @@ typedef uint32_t         regwidth_t;  //!< type of register width [bits]
 typedef register_data_t  regdata_t;   //!< type of register data
 typedef timer_t          timer_id_t;  //!< type of timer IDs
 
-extern const address_t ADDR_INV; //!< invalid address flag (defined in Memory.cc)
+// The following flags are defined in SALConfig.cc.
+
+// FIXME: The flags should be initialized based on simulator-specific values!
+
+//! invalid address flag (e.g. for memory address ptrs)
+extern const address_t   ADDR_INV;
+//! address wildcard (e.g. for breakpoint listeners)
+extern const address_t   ANY_ADDR;
+//! instruction wildcard (e.g. for jump listeners)
+extern const unsigned    ANY_INSTR;
+//! trap wildcard
+extern const unsigned    ANY_TRAP;
+//! interrupt wildcard
+extern const unsigned    ANY_INTERRUPT;
+//! invalid timer id (e.g. for timer listeners)
+extern const timer_id_t  INVALID_TIMER;
 
 } // end-of-namespace: fail
 

@@ -3,7 +3,7 @@ if(BUILD_BOCHS)
 		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
-		Memory.cc
+		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
 		bochs/BochsController.cc
@@ -14,7 +14,7 @@ elseif(BUILD_OVP)
 		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
-		Memory.cc
+		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
 		${VARIANT}/OVPController.cc
@@ -24,7 +24,7 @@ elseif(BUILD_GEM5)
 		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
-		Memory.cc
+		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
 		gem5/Gem5Controller.cc

@@ -75,9 +75,9 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
                                          bool is_write, address_t instrPtr)
 {
 	// FIXME: Improve performance!
-	MemAccessListener::accessType_t accesstype =
-		is_write ? MemAccessListener::MEM_WRITE
-		         : MemAccessListener::MEM_READ;
+	MemAccessEvent::access_type_t accesstype =
+		is_write ? MemAccessEvent::MEM_WRITE
+		         : MemAccessEvent::MEM_READ;
 
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active events

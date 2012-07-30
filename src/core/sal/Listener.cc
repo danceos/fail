@@ -34,13 +34,13 @@ bool TroubleListener::addWatchNumber(unsigned troubleNumber)
 	return true;
 }
 
-bool MemAccessListener::isMatching(address_t addr, size_t width, accessType_t accesstype) const
+bool MemAccessListener::isMatching(address_t addr, size_t width,
+                                   MemAccessEvent::access_type_t accesstype) const
 {
 	if (!(m_WatchType & accesstype)) {
 		return false;
 	} else if (m_WatchAddr != ANY_ADDR
-	        && (m_WatchAddr >= addr + width
-		     || m_WatchAddr + m_WatchWidth <= addr)) {
+	           && (m_WatchAddr >= addr + width || m_WatchAddr + m_WatchWidth <= addr)) {
 		return false;
 	}
 	return true;
