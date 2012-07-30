@@ -72,7 +72,7 @@ BochsController::BochsController()
 
 BochsController::~BochsController()
 {
-	for(RegisterManager::iterator it = m_Regs->begin(); it != m_Regs->end(); it++)
+	for (RegisterManager::iterator it = m_Regs->begin(); it != m_Regs->end(); it++)
 			delete (*it); // free the memory, allocated in the constructor
 	m_Regs->clear();
 	delete m_Regs;

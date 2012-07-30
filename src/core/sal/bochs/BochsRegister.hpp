@@ -74,7 +74,7 @@ enum GPRegisterId {
 	RID_R8, RID_R9, RID_R10, RID_R11, RID_R12, RID_R13, RID_R14, RID_R15,
  #else // 32 bit register id's:
 	RID_EAX = 0, RID_ECX, RID_EDX, RID_EBX, RID_ESP, RID_EBP, RID_ESI, RID_EDI,
- #endif
+ #endif // common register id's (independent of the current register width):
     RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI,
     RID_LAST_GP_ID
 };
