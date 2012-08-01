@@ -1,6 +1,8 @@
 #ifndef __GEM5_CONTROLLER_HPP__
   #define __GEM5_CONTROLLER_HPP__
 
+#include <string>
+
 #include "../SimulatorController.hpp"
 
 namespace fail {

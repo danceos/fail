@@ -6,4 +6,11 @@ if env['TARGET_ISA'] == 'no':
 env.Append(CPPPATH=Dir('../../../../../src/core/'))
 env.Append(CPPPATH=Dir('../../../../../build/src/core/'))
 
-Source('faildev.cc')
+env.Append(LIBPATH=Dir('../../../../../build/lib/'))
+#env.Append(LIBS=['fail', 'sal', 'comm', 'cpn', 'efw', 'util', 'pthread'])
+env.Append(LIBS=['fail'])
+
+
+SimObject('FailGem5Device.py')
+Source('FailGem5Device.cc')
+DebugFlag('Fail')
