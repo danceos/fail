@@ -14,8 +14,8 @@ namespace fail {
 
 /**
  * \class BaseEvent
- * This is the base class for all event types. It just encapsulates the
- * information reported by the simulator-backend when triggering an "event".
+ * This is the base class for all event types.  It encapsulates the information
+ * about an event reported by the simulator backend.
  */
 class BaseEvent {
 public:
@@ -28,7 +28,7 @@ public:
 
 /**
  * \class BPEvent
- * A Breakpoint event to observe instruction changes within a given address space.
+ * A breakpoint, i.e. a specific instruction address, was reached.
  */
 class BPEvent : virtual public BaseEvent {
 protected:
@@ -54,9 +54,8 @@ public:
 
 /**
  * \class MemAccessEvent
- * Observes memory read/write accesses.
- * FIXME? currently >8-bit accesses only match if their lowest address is being watched
- *        (e.g., a 32-bit write to 0x4 also accesses 0x7, but this cannot be matched)
+ * A read/write memory access to a physical address with a specific width was
+ * observed.
  */
 class MemAccessEvent : virtual public BaseEvent {
 public:
@@ -67,7 +66,7 @@ public:
 		MEM_READWRITE = 0x3  //!< read and write access flag
 	};
 private:
-	//! Specific guest system *memory* address that actually triggered the event.
+	//! Specific physical guest system *memory* address that actually triggered the event.
 	address_t m_TriggerAddr;
 	//! Width of the memory access (# bytes).
 	size_t m_TriggerWidth;
@@ -140,7 +139,8 @@ public:
 
 /**
  * \class TroubleEvent
- * Observes interrupt/trap activties.
+ * An interrupt or trap was observed.
+ * FIXME: Naming.  Interrupts are not exactly "trouble".
  */
 class TroubleEvent : virtual public BaseEvent {
 private:
@@ -167,7 +167,7 @@ public:
 	 * @param triggerNum system and type specific number identifying the requested
 	 *        "trouble-type"
 	 */
-	void setTriggerNumber(unsigned triggerNum) { m_TriggerNumber = triggerNum; } 
+	void setTriggerNumber(unsigned triggerNum) { m_TriggerNumber = triggerNum; }
 	/**
 	 * Returns the specific interrupt-/trap-number that actually triggered the event.
 	 * @return the trigger number
@@ -177,7 +177,7 @@ public:
 
 /**
  * \class InterruptEvent
- * Observes interrupts of the guest system.
+ * An interrupt was observed.
  */
 class InterruptEvent : virtual public TroubleEvent {
 private:
@@ -192,7 +192,7 @@ public:
 	 * Creates a new \c InterruptEvent.
 	 * @param nmi the new NMI (non maskable interrupt) flag state
 	 */
-	InterruptEvent(bool nmi) : m_IsNMI(nmi) { }                                                      
+	InterruptEvent(bool nmi) : m_IsNMI(nmi) { }
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 * @return \c true if NMI flag is set, \c false otherwise
@@ -207,7 +207,7 @@ public:
 
 /**
  * \class GuestEvent
- * Used to receive data from the guest system.
+ * The guest system emitted explicit guest->experiment communication.
  */
 // FIXME: cf. GuestListener
 class GuestEvent : virtual public BaseEvent {
@@ -259,7 +259,7 @@ public:
 
 /**
  * \class JumpEvent
- * JumpEvents are used to observe conditional jumps (if...else if...else).
+ * A conditional jump instruction is about to execute.
  */
 class JumpEvent : virtual public BaseEvent {
 private:
