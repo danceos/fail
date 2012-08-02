@@ -19,7 +19,7 @@ Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
 
 Bochs:
  - Bug: Nach save() ist momentan hinterher der Instruction-Pointer eins weiter,
-   womit nicht unbedingt zu rechnen ist.
+   womit nicht unbedingt zu rechnen ist. (rh)
   -> Workaround?  save() ruft implizit restore() ...
  - bei BX_PANIC nicht einfach weitermachen, sondern dem Experiment
    signalisieren, dass der Simulator gepanict hat?
@@ -88,7 +88,7 @@ Parallelisierung:
      * Problem 1: hilft nicht, wenn der Client gerade neu gestartet wurde
      * Problem 2: wenn das viele Clients tun, landen sehr viele unbearbeitete
        Jobs in der Aktiv-Queue auf dem Server
- - mehrere Jobs auf einmal übertragen -> weniger Kommunikationsvorgänge
+ - mehrere Jobs auf einmal übertragen -> weniger Kommunikationsvorgänge (rh)
    * adaptiv: clientseitig erst nur einen anfordern, Laufzeit messen, die
      folgenden Male immer so viele anfordern, dass (geschätzt) z.B. mindestens
      60s zwischen zwei Kommunikationsvorgängen liegen (mit oberem Limit für
@@ -102,7 +102,7 @@ Implementierungsdetails:
    siehe BochsController::save) vereinheitlichen, evtl. zusätzlich via
    (Non-)Verbose-Mode(s)
    -> "Ausgabesystem", "Logger"
- - einfache, Linux-spezifische Wallclock-Zeitmessung ähnlich boost::timer v2
+ - einfache, Linux-spezifische Wallclock-Zeitmessung ähnlich boost::timer v2 (rh)
    * Start, Ende, einfache Stringkonvertierung/Ausgabe
 
 Effizienz:
