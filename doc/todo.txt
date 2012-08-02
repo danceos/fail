@@ -6,7 +6,6 @@ Verrückte Ideen
    abgeschalteten Interrupts])
    * lösbar als Callback-"Experimente", die selbst Events auslösen?
    * Synthese komplexerer Events
- - Events fuer besondere Instruktionen (HLT?)
  - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
    GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
    Backend-Architektur (welche Register gibt es, wie breit ist der
@@ -19,36 +18,39 @@ FailBochs-Bausteine TODO
 Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
 
 Bochs:
- - Determinismus: Wie kann für Mikroexperimente sichergestellt werden, dass
-   externe Ereignisse (Timer, Eingang von Netzwerkpaketen, ...) reproduzierbar
-   zum selben Zeitpunkt eintreffen? (rh)
-   - Interrupts teilweise oder komplett sperren
-   - optional: Interrupts auslösen
+ - Bug: Nach save() ist momentan hinterher der Instruction-Pointer eins weiter,
+   womit nicht unbedingt zu rechnen ist.
+  -> Workaround?  save() ruft implizit restore() ...
+ - bei BX_PANIC nicht einfach weitermachen, sondern dem Experiment
+   signalisieren, dass der Simulator gepanict hat?
 
 Abstraktionen:
- - Traces: geeignet kapseln, in einer Sequenz von protobuf-Nachrichten statt
-   einer großen rausschreiben/laden (rh)
  - Endianness?
  - Merkmalmodell von Implementierungsdetails trennen (hsc)
-   -> automatische Konfigurierung anhand Experimentauswahl
-   -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
- - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
-   Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
-   -> "Fehlerinjektion" ist das ja nicht immer
+  -> automatische Konfigurierung anhand Experimentauswahl
+  -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
  - (Allgemeine) Testfälle / Regression-Tests
-   -> Modifikationen an FAIL* sind damit leichter zu verifizieren
+  -> Modifikationen an FAIL* sind damit leichter zu verifizieren
+ - Abstraktionen für Funktionsparameter und -rückgabewerte
+ - API zum Übersetzen von Adressen (virtuell [-> linear] -> physikalisch)
+  -> ggf. nur noch physikalische (oder virtuelle?) Adressen für diverse
+     Listener?
+ - SingleBitflipFaultspacePruning kapseln (hsc)
 
-Events:
- - Aktuelle Events sind viel mehr "Interests", die erst bei Auslösung zu
-   einem "Event" werden (-> semantische Ungenauigkeit)
-    -> benenne Events um ("Interests"?)
-    -> Erstelle neue Klassenhierarchie, die den "Informationsanteil" der "Events"
-       repräsentiert. Diese kapseln dann die Informationen in den Events und
-       werden zudem intern im Fail*-Framework verwendet (genauer: kommuniziert).
-    Hintergrund: Umstrukturierung des Event-Managements, damit es performanter
-    wird. Dazu werden Aspekte für die Performanz-Verbesserung pro zeitkritischem Typ
-    eingewoben. Dabei soll auf eine "search"-Methode zurückgegriffen werden, mit
-    der in den typspezifischen Containern gesucht werden kann. [...]
+Events/Listener:
+ - Umstrukturierung des Event-Managements, damit es performanter wird. Dazu
+   werden Aspekte für die Performanz-Verbesserung pro zeitkritischem Typ
+   eingewoben. Dabei soll auf eine "search"-Methode zurückgegriffen werden, mit
+   der in den typspezifischen Containern gesucht werden kann. [...]
+ - Listener-Callback-Funktionalität einführen: von spezifischem Listener
+   ableiten, trigger() überschreiben
+ - Listener alternativ beliebig lange aktiv lassen (statt sie jedes mal neu
+   registrieren zu müssen, wenn einer gefeuert hat)
+ - Bug? Wenn z.B. das Tracing-Plugin aktiv ist, ist nicht klar, ob ein
+   bestimmtes Ereignis zuerst diesem, oder dem laufenden Experiment zugestellt
+   wird; je nach Reihenfolge sieht der rausgeschriebene Trace anders aus
+  -> explizites "stell mal alle übrigen Events zu, bevor es mit mir weitergeht"
+     im SimulatorController?
 
 Parallelisierung:
  - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
@@ -86,6 +88,13 @@ Parallelisierung:
      * Problem 1: hilft nicht, wenn der Client gerade neu gestartet wurde
      * Problem 2: wenn das viele Clients tun, landen sehr viele unbearbeitete
        Jobs in der Aktiv-Queue auf dem Server
+ - mehrere Jobs auf einmal übertragen -> weniger Kommunikationsvorgänge
+   * adaptiv: clientseitig erst nur einen anfordern, Laufzeit messen, die
+     folgenden Male immer so viele anfordern, dass (geschätzt) z.B. mindestens
+     60s zwischen zwei Kommunikationsvorgängen liegen (mit oberem Limit für
+     Anzahl Jobs)
+   -> dann müsste man sich über die ganzen serverseitigen Engpässe gar keine
+      Gedanken machen
 
 Implementierungsdetails:
  - einheitliche Fehlerbehandlung
@@ -93,6 +102,8 @@ Implementierungsdetails:
    siehe BochsController::save) vereinheitlichen, evtl. zusätzlich via
    (Non-)Verbose-Mode(s)
    -> "Ausgabesystem", "Logger"
+ - einfache, Linux-spezifische Wallclock-Zeitmessung ähnlich boost::timer v2
+   * Start, Ende, einfache Stringkonvertierung/Ausgabe
 
 Effizienz:
  - getrennte Queues?
@@ -106,11 +117,21 @@ Buildsystem:
    (verwendeter Compiler, Installationsverzeichnis, ...), den Rest in einem
    brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
    Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
-   * Bochs / OVP sind Alternativen, nicht beide anschaltbar (?)
+   * Bochs / OVP / Gem5 sind Alternativen, nicht beide anschaltbar
+  -> Cmake-Combo-Box (ggf. noch an anderen Stellen einsetzbar)
+     http://www.kitware.com/blog/home/post/82
  - Hinzufügen eines neuen Experiments konkreter dokumentieren (how-to-build.txt?)
+ - "Aktivieren" von Aspekten muss anders implementiert werden:
+   * Momentan ist es nicht möglich, dass mehrere Build-Verzeichnisse (mit
+     Aspekten darin) nebeneinander existieren, da ag++ alle Unterverzeichnisse
+     von fail/ nach Aspektheadern durchsucht.
+  -> stattdessen (in Cmake) eine globale Liste von aktiven Aspektheadern
+     pflegen und diese per ag++-Flag "-a" aktivieren.
+  -> ggf. instantiate-foo-experiment.ah nicht mehr generieren (hässlicher, und
+     dann unnötiger Hack)
 
 Dokumentation:
- - Änderungen im Klassendiagramm nachziehen (hsc)
+ - Änderungen im Klassendiagramm nachziehen
  
 Erledigt:
  - alle Events mit Zähler versehen, so dass sie erst bei Erreichen der 0 feuern
@@ -175,6 +196,22 @@ Erledigt:
  - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben (ab)
  - Namespace Confusion: aufräumen (ab)
  - Verzeichnisstruktur umstrukturieren und aufräumen (ab)
+ - Determinismus: Wie kann für Mikroexperimente sichergestellt werden, dass
+   externe Ereignisse (Timer, Eingang von Netzwerkpaketen, ...) reproduzierbar
+   zum selben Zeitpunkt eintreffen? (rh)
+   - Interrupts teilweise oder komplett sperren
+   - optional: Interrupts auslösen
+ - Traces: geeignet kapseln, in einer Sequenz von protobuf-Nachrichten statt
+   einer großen rausschreiben/laden (rh)
+ - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
+   Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
+   -> "Fehlerinjektion" ist das ja nicht immer
+ - Aktuelle Events sind viel mehr "Listener", die auf eine ganze Klasse von
+   Ereignissen warten (semantische Ungenauigkeit)
+    -> benenne Events um ("Listener")
+    -> Erstelle neue Klassenhierarchie, die den "Informationsanteil" der "Events"
+       repräsentiert. Diese kapseln dann die Informationen in den Events und
+       werden zudem intern im Fail*-Framework verwendet (genauer: kommuniziert).
 
 ==========================================================================================
 Theorie TODO
