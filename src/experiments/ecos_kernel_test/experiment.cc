@@ -14,8 +14,8 @@
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/bochs/BochsRegister.hpp"
-#include "sal/bochs/BochsEvents.hpp"
-#include "sal/Event.hpp"
+#include "sal/bochs/BochsListener.hpp"
+#include "sal/Listener.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -42,16 +42,16 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
 	// workaround for 00002808875p[BIOS ] >>PANIC<< Keyboard error:21
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	bp.setWatchInstructionPointer(ANY_ADDR);
-	simulator.addEventAndWait(&bp);
+	simulator.addListenerAndResume(&bp);
 
-	GuestEvent g;
-	simulator.addEvent(&g);
+	GuestListener g;
+	simulator.addListener(&g);
 
 	// 10000us = 500000 instructions
-	TimerEvent record_timeout(50000000); //TODO: how long to wait?
-	simulator.addEvent(&record_timeout);
+	TimerListener record_timeout(50000000); //TODO: how long to wait?
+	simulator.addListener(&record_timeout);
 
 	// memory map serialization
 	ofstream mm(mm_filename, ios::out | ios::app);
@@ -60,16 +60,16 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 		return false;
 	}
 
-	string *str = new string; // buffer for guest events
+	string *str = new string; // buffer for guest listeners
 	unsigned number_of_guest_events = 0;
 
-	while (simulator.waitAny() != &record_timeout) {
-		simulator.addEvent(&g);
+	while (simulator.resume() != &record_timeout) {
+		simulator.addListener(&g);
 		str->push_back(g.getData());
 		if (g.getData() == '\t') {
 			// addr complete?
 			//cout << "full: " << *str << "sub: " << str->substr(str->find_last_of('x') - 1) << endl;
-			// interpret the string obtained by the guest events as address in hex
+			// interpret the string obtained by the guest listeners as address in hex
 			unsigned guest_addr;
 			stringstream converter(str->substr(str->find_last_of('x') + 1));
 			converter >> hex >> guest_addr;
@@ -77,7 +77,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 			str->clear();
 		} else if (g.getData() == '\n') {
 			// len complete?
-			// interpret the string obtained by the guest events as length in decimal
+			// interpret the string obtained by the guest listeners as length in decimal
 			unsigned guest_len;
 			stringstream converter(*str);
 			converter >> dec >> guest_len;
@@ -95,26 +95,26 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	mm.close();
 
 	// clean up simulator
-	simulator.clearEvents();
+	simulator.clearListeners();
 	return true;
 }
 
 bool EcosKernelTestExperiment::establishState() {
 	log << "STEP 1: run until interesting function starts, and save state" << endl;
 
-	GuestEvent g;
+	GuestListener g;
 
 	while (true) {
-		simulator.addEventAndWait(&g);
+		simulator.addListenerAndResume(&g);
 		if(g.getData() == 'Q') {
 		  log << "Guest system triggered: " << g.getData() << endl;
 		  break;
 		}
 	}
 
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	bp.setWatchInstructionPointer(ECOS_FUNC_ENTRY);
-	simulator.addEventAndWait(&bp);
+	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
@@ -123,7 +123,7 @@ bool EcosKernelTestExperiment::establishState() {
 	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
 
 	// clean up simulator
-	simulator.clearEvents();
+	simulator.clearListeners();
 	return true;
 }
 
@@ -151,7 +151,7 @@ bool EcosKernelTestExperiment::performTrace() {
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
-	BPSingleEvent bp;
+	BPSingleListener bp;
 #if 1
 	// trace WEATHER_NUMITER_TRACING measurement loop iterations
 	// -> calibration
@@ -165,16 +165,16 @@ bool EcosKernelTestExperiment::performTrace() {
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(OOSTUBS_NUMINSTR);
 #endif
-	simulator.addEvent(&bp);
-	BPSingleEvent ev_count(ANY_ADDR);
-	simulator.addEvent(&ev_count);
+	simulator.addListener(&bp);
+	BPSingleListener ev_count(ANY_ADDR);
+	simulator.addListener(&ev_count);
 
 	// count instructions
 	// FIXME add SAL functionality for this?
 	int instr_counter = 0;
-	while (simulator.waitAny() == &ev_count) {
+	while (simulator.resume() == &ev_count) {
 		++instr_counter;
-		simulator.addEvent(&ev_count);
+		simulator.addListener(&ev_count);
 	}
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
@@ -185,14 +185,14 @@ bool EcosKernelTestExperiment::performTrace() {
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
-		simulator.clearEvents(this);
+		simulator.clearListeners(this);
 		return false;
 	}
 	of.close();
 	log << "trace written to " << tracefile << endl;
 	
 	// clean up simulator
-	simulator.clearEvents();
+	simulator.clearListeners();
 	return true;
 }
 
@@ -200,7 +200,7 @@ bool EcosKernelTestExperiment::performTrace() {
 bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
-	BPSingleEvent bp;
+	BPSingleListener bp;
 	
 #if !LOCAL
 	for (int i = 0; i < 400; ++i) { // more than 400 will be very slow (500 is max)
@@ -247,8 +247,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 */
 
 		// reaching finish() could happen before OR after FI
-		BPSingleEvent func_finish(ECOS_FUNC_FINISH);
-		simulator.addEvent(&func_finish);
+		BPSingleListener func_finish(ECOS_FUNC_FINISH);
+		simulator.addListener(&func_finish);
 		bool finish_reached = false;
 
 		// no need to wait if offset is 0
@@ -256,15 +256,15 @@ bool EcosKernelTestExperiment::faultInjection() {
 			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(ANY_ADDR);
 			bp.setCounter(instr_offset);
-			simulator.addEvent(&bp);
+			simulator.addListener(&bp);
 
 			// finish() before FI?
-			if (simulator.waitAny() == &func_finish) {
+			if (simulator.resume() == &func_finish) {
 				finish_reached = true;
 				log << "experiment reached finish() before FI" << endl;
 
 				// wait for bp
-				simulator.waitAny();
+				simulator.resume();
 				//TODO: why wait here? it seems that something went completely wrong?
 			}
 		}
@@ -290,7 +290,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
 
-			simulator.clearEvents();
+			simulator.clearListeners();
 			continue;
 		}
 
@@ -308,26 +308,26 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
-		TrapEvent ev_trap(ANY_TRAP);
-		simulator.addEvent(&ev_trap);
+		TrapListener ev_trap(ANY_TRAP);
+		simulator.addListener(&ev_trap);
 		// jump outside text segment
-		BPRangeEvent ev_below_text(ANY_ADDR, ECOS_TEXT_START - 1);
-		BPRangeEvent ev_beyond_text(ECOS_TEXT_END + 1, ANY_ADDR);
-		simulator.addEvent(&ev_below_text);
-		simulator.addEvent(&ev_beyond_text);
+		BPRangeListener ev_below_text(ANY_ADDR, ECOS_TEXT_START - 1);
+		BPRangeListener ev_beyond_text(ECOS_TEXT_END + 1, ANY_ADDR);
+		simulator.addListener(&ev_below_text);
+		simulator.addListener(&ev_beyond_text);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(500000);
-		simulator.addEvent(&ev_timeout);
+		TimerListener ev_timeout(500000);
+		simulator.addListener(&ev_timeout);
 
 		// remaining instructions until "normal" ending
-		BPSingleEvent ev_end(ANY_ADDR);
+		BPSingleListener ev_end(ANY_ADDR);
 		ev_end.setCounter(ECOS_NUMINSTR + ECOS_RECOVERYINSTR - instr_offset);
-		simulator.addEvent(&ev_end);
+		simulator.addListener(&ev_end);
 		
 		// eCos' test output function, which will show if the test PASSed or FAILed
-		BPSingleEvent func_test_output(ECOS_FUNC_TEST_OUTPUT);
-		simulator.addEvent(&func_test_output);
+		BPSingleListener func_test_output(ECOS_FUNC_TEST_OUTPUT);
+		simulator.addListener(&func_test_output);
 
 #if LOCAL && 0
 		// XXX debug
@@ -339,7 +339,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addFlow(&tp);
 #endif
 
-		BaseEvent* ev = simulator.waitAny();
+		BaseListener* ev = simulator.resume();
 
 		bool ecos_test_passed = false;
 		bool ecos_test_failed = false;
@@ -376,7 +376,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 			}
 
 			// wait for ev_trap/ev_done
-			ev = simulator.waitAny();
+			ev = simulator.resume();
 		}
 
 		// record latest IP regardless of result
@@ -417,12 +417,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
 		// explicitly remove all events before we leave their scope
 		// FIXME event destructors should remove them from the queues
-		simulator.clearEvents();
+		simulator.clearListeners();
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
