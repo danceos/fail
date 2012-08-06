@@ -55,7 +55,7 @@ bool TracingPlugin::run()
 			if (m_os)
 				*m_os << hex << "[Tracing] MEM "
 				      << ((ev_mem.getTriggerAccessType() &
-				           MemAccessListener::MEM_READ) ? "R " : "W ")
+				           MemAccessEvent::MEM_READ) ? "R " : "W ")
 				      << addr << " width " << width << " IP " << ip << "\n";
 			if (m_protoStreamFile) {
 				Trace_Event e;
@@ -63,7 +63,7 @@ bool TracingPlugin::run()
 				e.set_memaddr(addr);
 				e.set_width(width);
 				e.set_accesstype(
-				  (ev_mem.getTriggerAccessType() & MemAccessListener::MEM_READ) ?
+				  (ev_mem.getTriggerAccessType() & MemAccessEvent::MEM_READ) ?
 				  e.READ : e.WRITE);
 				ps->writeMessage(&e);
 			}
