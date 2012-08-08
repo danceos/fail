@@ -35,7 +35,8 @@ using namespace fail;
 
 
 char const * const mm_filename = "memory_map.txt";
-char const *statename = "ecos_kernel_test.state";
+char const * const statename = "ecos_kernel_test.state";
+char const * const traceinfo_name = "trace_info.txt";
 
 #if PREREQUISITES
 bool EcosKernelTestExperiment::retrieveGuestAddresses() {
@@ -200,7 +201,9 @@ bool EcosKernelTestExperiment::performTrace() {
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ]" << endl;
-	//TODO: safe these values for experiment STEP 3
+
+	// save these values for experiment STEP 3
+	EcosKernelTestCampaign::writeTraceInfo(instr_counter, lowest_addr, highest_addr);
 
 	simulator.removeFlow(&tp);
 
@@ -221,6 +224,10 @@ bool EcosKernelTestExperiment::performTrace() {
 #else // !PREREQUISITES
 bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
+
+	// read trace info
+	unsigned instr_counter, lowest_addr, highest_addr;
+	EcosKernelTestCampaign::readTraceInfo(instr_counter, lowest_addr, highest_addr);
 
 	BPSingleListener bp;
 	
@@ -338,12 +345,14 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// 10000us = 500000 instructions
 		TimerListener ev_timeout(500000);
 		simulator.addListener(&ev_timeout);
-		//TODO: if ev_timeout would depend on ECOS_NUMINSTR, ev_end would not be needed!
-		//      --> (ECOS_NUMINSTR + ECOS_RECOVERYINSTR) * factor?
+		//TODO: if ev_timeout would depend on instr_counter, ev_end would not be needed!
+		//      --> (instr_counter + ECOS_RECOVERYINSTR) * factor?
 
 		// remaining instructions until "normal" ending
+		// number of instructions that are executed additionally for error corrections
+		enum { ECOS_RECOVERYINSTR = 0x2000 }; // (this is a rough guess ... TODO)
 		BPSingleListener ev_end(ANY_ADDR);
-		ev_end.setCounter(ECOS_NUMINSTR + ECOS_RECOVERYINSTR - instr_offset);
+		ev_end.setCounter(instr_counter + ECOS_RECOVERYINSTR - instr_offset);
 		simulator.addListener(&ev_end);
 		
 		// eCos' test output function, which will show if the test PASSed or FAILed

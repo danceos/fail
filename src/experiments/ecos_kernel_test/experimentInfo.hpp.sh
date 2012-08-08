@@ -32,11 +32,6 @@ cat <<EOF
 // nm -C $(basename $1)|fgrep _etext
 #define ECOS_TEXT_END				0x`addrof $1 _etext`
 
-// number of instructions the target executes under non-error conditions from ENTRY to FINISH:
-#define ECOS_NUMINSTR	71618
-// number of instructions that are executed additionally for error corrections
-// (this is a rough guess ... TODO)
-#define ECOS_RECOVERYINSTR	0x2000
 EOF
 }
 

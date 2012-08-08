@@ -22,6 +22,7 @@ using namespace fail;
 char const * const trace_filename = "trace.tc"; //TODO: sync with experiment.cc
 char const * const results_filename = "ecos_kernel_test.csv";
 char const * const mm_filename = "memory_map.txt"; //TODO: sync with experiment.cc
+char const * const traceinfo_name = "trace_info.txt";
 
 bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * const filename) {
 	ifstream file(filename);
@@ -43,6 +44,48 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 	file.close();
 	assert(count > 0);
 	return (count > 0);
+}
+
+bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned lowest_addr, unsigned highest_addr) {
+	ofstream ti(traceinfo_name, ios::out | ios::app);
+	if (!ti.is_open()) {
+		cout << "failed to open " << traceinfo_name << endl;
+		return false;
+	}
+	ti << instr_counter << endl << lowest_addr << endl << highest_addr << endl;
+	ti.flush();
+	ti.close();
+	return true;
+}
+
+bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &lowest_addr, unsigned &highest_addr) {
+	ifstream file(traceinfo_name);
+	if (!file.is_open()) {
+		cout << "failed to open " << traceinfo_name << endl;
+		return false;
+	}
+
+	string buf;
+	unsigned count = 0;
+
+	while (getline(file, buf)) {
+		stringstream ss(buf, ios::in);
+		switch(count) {
+			case 0:
+				ss >> instr_counter;
+				break;
+			case 1:
+				ss >> lowest_addr;
+				break;
+			case 2:
+				ss >> highest_addr;
+				break;
+		}
+		count++;
+	}
+	file.close();
+	assert(count == 3);
+	return (count == 3);
 }
 
 // equivalence class type: addr, [i1, i2]
@@ -78,6 +121,10 @@ bool EcosKernelTestCampaign::run()
 		return false;
 	}
 	ProtoIStream ps(&tracef);
+
+	// read trace info
+	unsigned instr_counter, lowest_addr, highest_addr;
+	EcosKernelTestCampaign::readTraceInfo(instr_counter, lowest_addr, highest_addr);
 
 	// a map of addresses of ECC protected objects
 	MemoryMap mm;
@@ -210,10 +257,10 @@ bool EcosKernelTestCampaign::run()
 	// map for keeping one "open" EC for every address
 	map<address_t, equivalence_class> open_ecs;
 	// experiment count
-	int count = 0;
+	unsigned count = 0;
 
 	// instruction counter within trace
-	int instr = 0;
+	unsigned instr = 0;
 
 	// fill open_ecs with one EC for every address
 	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
@@ -225,7 +272,7 @@ bool EcosKernelTestCampaign::run()
 
 	Trace_Event ev;
 	// for every event in the trace ...
-	while (ps.getNext(&ev) && instr < ECOS_NUMINSTR) {
+	while (ps.getNext(&ev) && instr < instr_counter) {
 		// instruction events just get counted
 		if (!ev.has_memaddr()) {
 			// new instruction
