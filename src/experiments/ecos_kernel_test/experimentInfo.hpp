@@ -4,11 +4,11 @@
 
 // user-specified start-function address:
 // nm -C thread1.elf|fgrep cyg_start
-#define ECOS_FUNC_ENTRY 			0x0000406c
+#define ECOS_FUNC_ENTRY 			0x0000409c
 // cyg_test_exit address
-#define ECOS_FUNC_FINISH 			0x00005eb0
+#define ECOS_FUNC_FINISH 			0x00005f0c
 // cyg_test_output address
-#define ECOS_FUNC_TEST_OUTPUT		0x00005eb8
+#define ECOS_FUNC_TEST_OUTPUT		0x00005f14
 // the variable that's increased if ECC corrects an error:
 #define ECOS_ERROR_CORRECTED		0x99999999
 
@@ -17,12 +17,7 @@
 #define ECOS_TEXT_START				0x00003000
 // text end:
 // nm -C thread1.elf|fgrep _etext
-#define ECOS_TEXT_END				0x00013c9e
+#define ECOS_TEXT_END				0x0001627a
 
-// number of instructions the target executes under non-error conditions from ENTRY to FINISH:
-#define ECOS_NUMINSTR	71618
-// number of instructions that are executed additionally for error corrections
-// (this is a rough guess ... TODO)
-#define ECOS_RECOVERYINSTR	0x2000
 
 
