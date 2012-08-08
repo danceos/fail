@@ -31,7 +31,8 @@ message EcosKernelTestProtoMsg {
 			OUTSIDE = 3;
 			DETECTED = 4;
 			TIMEOUT = 5;
-			UNKNOWN = 6;
+			MEMORYACCESS = 6;
+			UNKNOWN = 7;
 		}
 		required ResultType resulttype = 2;
 

@@ -336,11 +336,21 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// catch traps as "extraordinary" ending
 		TrapListener ev_trap(ANY_TRAP);
 		simulator.addListener(&ev_trap);
+
 		// jump outside text segment
 		BPRangeListener ev_below_text(ANY_ADDR, ECOS_TEXT_START - 1);
 		BPRangeListener ev_beyond_text(ECOS_TEXT_END + 1, ANY_ADDR);
 		simulator.addListener(&ev_below_text);
 		simulator.addListener(&ev_beyond_text);
+
+		// memory access outside of bound determined in the golden run [lowest_addr, highest_addr]
+		MemAccessListener ev_mem_low(0x0, MemAccessEvent::MEM_READWRITE);
+		ev_mem_low.setWatchWidth(lowest_addr - 2); //TODO FIXME: why - 2?
+		MemAccessListener ev_mem_high(highest_addr + 2, MemAccessEvent::MEM_READWRITE);
+		ev_mem_high.setWatchWidth(0xFFFFFFFFU - (highest_addr + 2));
+		simulator.addListener(&ev_mem_low);
+		simulator.addListener(&ev_mem_high);
+
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
 		TimerListener ev_timeout(500000);
@@ -428,6 +438,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);
+		} else if (ev == &ev_mem_low || ev == &ev_mem_high) {
+			log << "Result MEMORYACCESS" << endl;
+			result->set_resulttype(result->MEMORYACCESS);
 		} else if (ev == &ev_trap) {
 			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 			result->set_resulttype(result->TRAP);
