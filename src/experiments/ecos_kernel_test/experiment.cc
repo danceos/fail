@@ -159,34 +159,48 @@ bool EcosKernelTestExperiment::performTrace() {
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
+	// again, run until 'ECOS_FUNC_FINISH' is reached
 	BPSingleListener bp;
-#if 1
-	// trace WEATHER_NUMITER_TRACING measurement loop iterations
-	// -> calibration
 	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
-	//bp.setCounter(WEATHER_NUMITER_TRACING); // single event, only
-#else
-	// FIXME this doesn't work properly: trace is one instruction too short as
-	//       tp is removed before all events were delivered
-	// trace WEATHER_NUMINSTR_TRACING instructions
-	// -> campaign-ready traces with identical lengths
-	bp.setWatchInstructionPointer(ANY_ADDR);
-	bp.setCounter(OOSTUBS_NUMINSTR);
-#endif
 	simulator.addListener(&bp);
+
+	// on the way, count instructions // FIXME add SAL functionality for this?
 	BPSingleListener ev_count(ANY_ADDR);
 	simulator.addListener(&ev_count);
+	unsigned instr_counter = 0;
 
-	// count instructions
-	// FIXME add SAL functionality for this?
-	int instr_counter = 0;
-	while (simulator.resume() == &ev_count) {
-		++instr_counter;
-		simulator.addListener(&ev_count);
+	// on the way, record lowest and highest memory address accessed
+	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
+	simulator.addListener(&ev_mem);
+	unsigned lowest_addr = 0;
+	unsigned highest_addr = 0;
+
+	// do the job, 'till the end
+	BaseListener* ev = simulator.resume();
+	while(ev != &bp) {
+		if(ev == &ev_count) {
+			++instr_counter;
+			simulator.addListener(&ev_count);
+		}
+		else if(ev == &ev_mem) {
+			unsigned trigger_addr = ev_mem.getTriggerAddress();
+			if( (lowest_addr == 0) && (highest_addr == 0) ) {
+				lowest_addr = highest_addr = trigger_addr;
+			}
+			else if(trigger_addr > highest_addr){
+				highest_addr = trigger_addr;
+			}
+			else if(trigger_addr < lowest_addr){
+				lowest_addr = trigger_addr;
+			}
+			simulator.addListener(&ev_mem);
+		}
+		ev = simulator.resume();
 	}
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
-	//TODO: safe this value for experiment STEP 3
+	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ]" << endl;
+	//TODO: safe these values for experiment STEP 3
 
 	simulator.removeFlow(&tp);
 
