@@ -22,7 +22,7 @@
 
 #define LOCAL 0
 
-#define PREREQUISITES 1 // 1: do step 0-2 ; 0: do step 3
+#define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
 
 using namespace std;
 using namespace fail;
@@ -271,7 +271,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// reaching finish() could happen before OR after FI
 		BPSingleListener func_finish(ECOS_FUNC_FINISH);
 		simulator.addListener(&func_finish);
-		bool finish_reached = false;
 
 		// no need to wait if offset is 0
 		if (instr_offset > 0) {
@@ -282,12 +281,10 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 			// finish() before FI?
 			if (simulator.resume() == &func_finish) {
-				finish_reached = true;
 				log << "experiment reached finish() before FI" << endl;
 
 				// wait for bp
 				simulator.resume();
-				//TODO: why wait here? it seems that something went completely wrong?
 			}
 		}
 
@@ -341,6 +338,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// 10000us = 500000 instructions
 		TimerListener ev_timeout(500000);
 		simulator.addListener(&ev_timeout);
+		//TODO: if ev_timeout would depend on ECOS_NUMINSTR, ev_end would not be needed!
+		//      --> (ECOS_NUMINSTR + ECOS_RECOVERYINSTR) * factor?
 
 		// remaining instructions until "normal" ending
 		BPSingleListener ev_end(ANY_ADDR);
@@ -361,40 +360,35 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addFlow(&tp);
 #endif
 
-		BaseListener* ev = simulator.resume();
-
+		// the outcome of ecos' test case
 		bool ecos_test_passed = false;
 		bool ecos_test_failed = false;
 
-		while ( (ev == &func_test_output) || (ev == &func_finish) ) {
-			// Do we reach finish() while waiting for ev_trap/ev_done?
-			if (ev == &func_finish) {
-				finish_reached = true;
-				log << "experiment reached finish()" << endl;
-			}
-			else if(ev == &func_test_output) {
-				// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
-				address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
-				int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
-				
-				log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
-				
-				/*
-				typedef enum {
-					CYGNUM_TEST_FAIL,
-					CYGNUM_TEST_PASS,
-					CYGNUM_TEST_EXIT,
-					CYGNUM_TEST_INFO,
-					CYGNUM_TEST_GDBCMD,
-					CYGNUM_TEST_NA
-				} Cyg_test_code;
-				*/				
-				
-				if (cyg_test_output_argument == 0) {
-					ecos_test_failed = true;
-				} else if (cyg_test_output_argument == 1) {
-					ecos_test_passed = true;
-				}
+		BaseListener* ev = simulator.resume();
+
+		// wait until doing no more test_output
+		while (ev == &func_test_output) {
+			// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
+			address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
+			int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
+
+			log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
+
+			/*
+			typedef enum {
+				CYGNUM_TEST_FAIL,
+				CYGNUM_TEST_PASS,
+				CYGNUM_TEST_EXIT,
+				CYGNUM_TEST_INFO,
+				CYGNUM_TEST_GDBCMD,
+				CYGNUM_TEST_NA
+			} Cyg_test_code;
+			*/
+
+			if (cyg_test_output_argument == 0) {
+				ecos_test_failed = true;
+			} else if (cyg_test_output_argument == 1) {
+				ecos_test_passed = true;
 			}
 
 			// wait for ev_trap/ev_done
@@ -404,24 +398,22 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// record latest IP regardless of result
 		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
 
-		// record finish_reached and error_corrected regardless of result
-		result->set_finish_reached(finish_reached);
+		// record error_corrected regardless of result
 		int32_t error_corrected = simulator.getMemoryManager().getByte(ECOS_ERROR_CORRECTED);
 		result->set_error_corrected(error_corrected);
 		
 		// record ecos_test_result
-		if (ecos_test_failed) {
-			result->set_ecos_test_result(result->FAIL);
-		} else if (ecos_test_passed) {
+		if (ecos_test_passed && !ecos_test_failed) {
 			result->set_ecos_test_result(result->PASS);
 		} else {
 			result->set_ecos_test_result(result->FAIL);
 		}
 
-		if (ev == &ev_end) {
-			log << dec << "Result FINISHED" << endl;
+		if (ev == &func_finish) {
+			// do we reach finish?
+			log << "experiment finished ordinarily" << endl;
 			result->set_resulttype(result->FINISHED);
-		} else if (ev == &ev_timeout) {
+		} else if (ev == &ev_timeout || ev == &ev_end) {
 			log << "Result TIMEOUT" << endl;
 			result->set_resulttype(result->TIMEOUT);
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {

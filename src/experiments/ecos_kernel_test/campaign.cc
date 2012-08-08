@@ -374,7 +374,7 @@ bool EcosKernelTestCampaign::run()
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
 	// CSV header
-	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tecos_test_result\tfinish_reached\tlatest_ip\terror_corrected\tdetails" << endl;
+	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tecos_test_result\tlatest_ip\terror_corrected\tdetails" << endl;
 
 	// store no-effect "experiment" results
 	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
@@ -388,7 +388,6 @@ bool EcosKernelTestCampaign::run()
 		 << "8\t" // ... and is 8 bits wide
 		 << "1\t"
 		 << "1\t" // dummy value (PASS): we didn't do any real experiments
-		 << "1\t"
 		 << "99\t" // dummy value: we didn't do any real experiments
 		 << "0\t\n";
 	}
@@ -433,7 +432,6 @@ bool EcosKernelTestCampaign::run()
 			 << "1\t" // 1 bit wide
 			 << res->msg.result(idx).resulttype() << "\t"
 			 << res->msg.result(idx).ecos_test_result() << "\t"
-			 << res->msg.result(idx).finish_reached() << "\t"
 			 << res->msg.result(idx).latest_ip() << "\t"
 			 << res->msg.result(idx).error_corrected() << "\t"
 			 << res->msg.result(idx).details() << "\n";

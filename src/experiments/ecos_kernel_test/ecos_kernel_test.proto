@@ -45,9 +45,6 @@ message EcosKernelTestProtoMsg {
 		}
 		required EcosTestResultType ecos_test_result = 4;
 
-		// was finish() ever reached?
-		optional bool finish_reached = 5;
-
 		// did ECC correct the fault?
 		optional int32 error_corrected = 6;
 
