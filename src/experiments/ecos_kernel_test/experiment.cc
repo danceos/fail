@@ -22,7 +22,7 @@
 
 #define LOCAL 0
 
-#define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+#define PREREQUISITES 1 // 1: do step 0-2 ; 0: do step 3
 
 using namespace std;
 using namespace fail;
@@ -42,16 +42,16 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
 	// workaround for 00002808875p[BIOS ] >>PANIC<< Keyboard error:21
+	// *** If the first listener is a TimerListener, FailBochs panics. ***
+	// *** Therefore, just wait one instruction before using a timer. ***
+	// BPSingleListener bp;
+	// bp.setWatchInstructionPointer(ANY_ADDR);
+	// simulator.addListenerAndResume(&bp);
+
+	// run until 'ECOS_FUNC_FINISH' is reached
 	BPSingleListener bp;
-	bp.setWatchInstructionPointer(ANY_ADDR);
-	simulator.addListenerAndResume(&bp);
-
-	GuestListener g;
-	simulator.addListener(&g);
-
-	// 10000us = 500000 instructions
-	TimerListener record_timeout(50000000); //TODO: how long to wait?
-	simulator.addListener(&record_timeout);
+	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
+	simulator.addListener(&bp);
 
 	// memory map serialization
 	ofstream mm(mm_filename, ios::out | ios::app);
@@ -60,12 +60,11 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 		return false;
 	}
 
-	string *str = new string; // buffer for guest listeners
+	GuestListener g;
+	string *str = new string; // buffer for guest listeners' data
 	unsigned number_of_guest_events = 0;
 
-	while (simulator.resume() != &record_timeout) {
-		simulator.addListener(&g);
-		str->push_back(g.getData());
+	while (simulator.addListenerAndResume(&g) == &g) {
 		if (g.getData() == '\t') {
 			// addr complete?
 			//cout << "full: " << *str << "sub: " << str->substr(str->find_last_of('x') - 1) << endl;
@@ -84,15 +83,24 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 			mm << guest_len << '\n';
 			str->clear();
 			number_of_guest_events++;
+		} else if (g.getData() == 'Q') {
+			// ignore, see STEP 1
+		} else {
+			str->push_back(g.getData());
 		}
 	}
 	assert(number_of_guest_events > 0);
-	log << "Record timeout reached: created memory map (" << number_of_guest_events << " entries)" << endl;
+	log << "Breakpoint at 'ECOS_FUNC_FINISH' reached: created memory map (" << number_of_guest_events << " entries)" << endl;
 	delete str;
 
 	// close serialized mm
 	mm.flush();
 	mm.close();
+
+	// workaround for 00291674339e[CPU0 ] prefetch: EIP [00010000] > CS.limit [0000ffff]
+	// *** just wait some time here *** //FIXME
+	TimerListener record_timeout(1);
+	simulator.addListenerAndResume(&record_timeout);
 
 	// clean up simulator
 	simulator.clearListeners();
