@@ -22,7 +22,9 @@
 
 #define LOCAL 0
 
-#define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+#ifndef PREREQUISITES
+  #define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+#endif
 
 using namespace std;
 using namespace fail;
