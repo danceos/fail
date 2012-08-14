@@ -46,19 +46,19 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 	return (count > 0);
 }
 
-bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned lowest_addr, unsigned highest_addr) {
+bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr) {
 	ofstream ti(traceinfo_name, ios::out | ios::app);
 	if (!ti.is_open()) {
 		cout << "failed to open " << traceinfo_name << endl;
 		return false;
 	}
-	ti << instr_counter << endl << lowest_addr << endl << highest_addr << endl;
+	ti << instr_counter << endl << timeout << endl << lowest_addr << endl << highest_addr << endl;
 	ti.flush();
 	ti.close();
 	return true;
 }
 
-bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &lowest_addr, unsigned &highest_addr) {
+bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr) {
 	ifstream file(traceinfo_name);
 	if (!file.is_open()) {
 		cout << "failed to open " << traceinfo_name << endl;
@@ -75,9 +75,12 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &lo
 				ss >> instr_counter;
 				break;
 			case 1:
-				ss >> lowest_addr;
+				ss >> timeout;
 				break;
 			case 2:
+				ss >> lowest_addr;
+				break;
+			case 3:
 				ss >> highest_addr;
 				break;
 		}
@@ -123,8 +126,8 @@ bool EcosKernelTestCampaign::run()
 	ProtoIStream ps(&tracef);
 
 	// read trace info
-	unsigned instr_counter, lowest_addr, highest_addr;
-	EcosKernelTestCampaign::readTraceInfo(instr_counter, lowest_addr, highest_addr);
+	unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
+	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
 
 	// a map of addresses of ECC protected objects
 	MemoryMap mm;

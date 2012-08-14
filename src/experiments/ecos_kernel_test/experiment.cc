@@ -98,6 +98,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	}
 	assert(number_of_guest_events > 0);
 	//log << "Breakpoint at 'ECOS_FUNC_FINISH' reached: created memory map (" << number_of_guest_events << " entries)" << endl;
+	//TODO: check if ECOS_FUNC_FINISH was reached!!!
 	log << "Record timeout reached: created memory map (" << number_of_guest_events << " entries)" << endl;
 	delete str;
 
@@ -177,6 +178,14 @@ bool EcosKernelTestExperiment::performTrace() {
 	simulator.addListener(&ev_count);
 	unsigned instr_counter = 0;
 
+	// on the way, count elapsed time
+	TimerListener time_step(10000); //TODO: granularity?
+	//elapsed_time.setCounter(0xFFFFFFFFU); // not working for TimerListener
+	simulator.addListener(&time_step);
+	unsigned elapsed_time = 1; // always run 1 step
+	// just increase elapsed_time counter by 1, which serves as time for ECC recovery algorithm
+	++elapsed_time; // (this is a rough guess ... TODO)
+
 	// on the way, record lowest and highest memory address accessed
 	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
 	simulator.addListener(&ev_mem);
@@ -187,8 +196,18 @@ bool EcosKernelTestExperiment::performTrace() {
 	BaseListener* ev = simulator.resume();
 	while(ev != &bp) {
 		if(ev == &ev_count) {
-			++instr_counter;
+			if(instr_counter++ == 0xFFFFFFFFU) {
+				log << "ERROR: instr_counter overflowed" << endl;
+				return false;
+			}
 			simulator.addListener(&ev_count);
+		}
+		else if(ev == &time_step) {
+			if(elapsed_time++ == 0xFFFFFFFFU) {
+				log << "ERROR: elapsed_time overflowed" << endl;
+				return false;
+			}
+			simulator.addListener(&time_step);
 		}
 		else if(ev == &ev_mem) {
 			unsigned trigger_addr = ev_mem.getTriggerAddress();
@@ -206,11 +225,19 @@ bool EcosKernelTestExperiment::performTrace() {
 		ev = simulator.resume();
 	}
 
+	unsigned long long estimated_timeout_overflow_check = ((unsigned long long)elapsed_time) * time_step.getTimeout();
+	if(estimated_timeout_overflow_check > 0xFFFFFFFFU) {
+		log << "Timeout estimation overflowed" << endl;
+		return false;
+	}
+	unsigned estimated_timeout = (unsigned)estimated_timeout_overflow_check;
+
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ]" << endl;
+	log << dec << "elapsed time: " << estimated_timeout << " [TimerListener units]" << endl;
 
 	// save these values for experiment STEP 3
-	EcosKernelTestCampaign::writeTraceInfo(instr_counter, lowest_addr, highest_addr);
+	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
 
 	simulator.removeFlow(&tp);
 
@@ -233,8 +260,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
 	// read trace info
-	unsigned instr_counter, lowest_addr, highest_addr;
-	EcosKernelTestCampaign::readTraceInfo(instr_counter, lowest_addr, highest_addr);
+	unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
+	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
 
 	BPSingleListener bp;
 	
@@ -359,18 +386,14 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addListener(&ev_mem_high);
 
 		// timeout (e.g., stuck in a HLT instruction)
-		// 10000us = 500000 instructions
-		TimerListener ev_timeout(500000);
+		TimerListener ev_timeout(estimated_timeout);
 		simulator.addListener(&ev_timeout);
-		//TODO: if ev_timeout would depend on instr_counter, ev_end would not be needed!
-		//      --> (instr_counter + ECOS_RECOVERYINSTR) * factor?
 
 		// remaining instructions until "normal" ending
 		// number of instructions that are executed additionally for error corrections
-		enum { ECOS_RECOVERYINSTR = 0x2000 }; // (this is a rough guess ... TODO)
-		BPSingleListener ev_end(ANY_ADDR);
-		ev_end.setCounter(instr_counter + ECOS_RECOVERYINSTR - instr_offset);
-		simulator.addListener(&ev_end);
+		//BPSingleListener ev_end(ANY_ADDR);
+		//ev_end.setCounter(instr_counter - instr_offset + ECOS_RECOVERYINSTR);
+		//simulator.addListener(&ev_end);
 		
 		// eCos' test output function, which will show if the test PASSed or FAILed
 		BPSingleListener func_test_output(ECOS_FUNC_TEST_OUTPUT);
@@ -429,7 +452,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		result->set_error_corrected(error_corrected);
 		
 		// record ecos_test_result
-		if (ecos_test_passed && !ecos_test_failed) {
+		if ( (ecos_test_passed == true) && (ecos_test_failed == false) ) {
 			result->set_ecos_test_result(result->PASS);
 		} else {
 			result->set_ecos_test_result(result->FAIL);
@@ -439,7 +462,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 			// do we reach finish?
 			log << "experiment finished ordinarily" << endl;
 			result->set_resulttype(result->FINISHED);
-		} else if (ev == &ev_timeout || ev == &ev_end) {
+		} else if (ev == &ev_timeout /*|| ev == &ev_end*/) {
 			log << "Result TIMEOUT" << endl;
 			result->set_resulttype(result->TIMEOUT);
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
