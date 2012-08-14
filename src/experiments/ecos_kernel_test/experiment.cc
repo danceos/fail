@@ -417,6 +417,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 		// wait until doing no more test_output
 		while (ev == &func_test_output) {
+			// re-add this listener
+			simulator.addListener(&func_test_output);
+
 			// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
 			address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
 			int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
@@ -454,8 +457,10 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// record ecos_test_result
 		if ( (ecos_test_passed == true) && (ecos_test_failed == false) ) {
 			result->set_ecos_test_result(result->PASS);
+			log << "Ecos Test PASS" << endl;
 		} else {
 			result->set_ecos_test_result(result->FAIL);
+			log << "Ecos Test FAIL" << endl;
 		}
 
 		if (ev == &func_finish) {
