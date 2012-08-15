@@ -129,7 +129,8 @@ bool ChecksumOOStuBSExperiment::run()
 #elif 1
 	// STEP 3: The actual experiment.
 #if !LOCAL
-	for (int i = 0; i < 400; ++i) { // more than 400 will be very slow (500 is max)
+	for (int i = 0; i < 50; ++i) { // only do 50 sequential experiments, to prevent swapping
+	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
 #endif
 
 	// get an experiment parameter set
