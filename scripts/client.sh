@@ -18,6 +18,30 @@ fi
 
 while [ ! -e stop ]
 do
+	# fiws fairness (don't use this host while someone else is logged in)
+	# since these pool computers are used by students
+	# NOTE: this will only work if fail-client terminates from time to time
+	# TODO: only on Mo-Fr/20h-6h and Sa-So/24h ?
+	if [[ $(uname -n) == fiws[1-2][0-9][0-9] ]]; then
+		FIWS_FREE=0
+		while [ "$FIWS_FREE" -eq 0 ]; do
+			if [ -e stop ]; then
+				#repeated exit condition from above
+				exit 0
+			fi
+			FIWS_FREE=1
+			for user in $(users); do
+				if [[ "$user" != `whoami` ]]; then
+					# someone else uses this host, don't do any experiments
+					FIWS_FREE=0
+				fi
+			done
+			if [ "$FIWS_FREE" -eq 0 ]; then
+				sleep 300
+			fi
+		done
+	fi
+
 	#nice -n 19 ./bochs -q 2>&1 | tee log.$$.txt | fgrep Result
 	#nice -n 18 ./bochs -q 2>&1 | fgrep Result
 	nice -n 18 ./fail-client -q >/dev/null 2>&1
