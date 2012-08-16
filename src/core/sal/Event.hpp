@@ -197,7 +197,7 @@ public:
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 * @return \c true if NMI flag is set, \c false otherwise
 	 */
-	bool isNMI() { return m_IsNMI; }
+	bool isNMI() const { return m_IsNMI; }
 	/**
 	 * Sets the interrupt type (non maskable or not).
 	 * @param nmi the new NMI (non maskable interrupt) flag state

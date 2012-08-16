@@ -383,6 +383,7 @@ public:
 	 * @return a copy of the list which contains all observed numbers 
 	 */
 	std::vector<unsigned> getWatchNumbers() { return m_WatchNumbers; }
+	// FIXME: Any reason for returning a *copy* of the vector? (-> overhead!)
 	/**
 	* Checks whether a given interrupt-/trap-number is matching.
 	*/
@@ -412,7 +413,7 @@ public:
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 */
-	bool isNMI() { return m_Data.isNMI(); }
+	bool isNMI() const { return m_Data.isNMI(); }
 	/**
 	 * Sets the interrupt type (non maskable or not).
 	 */

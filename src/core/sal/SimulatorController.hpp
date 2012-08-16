@@ -28,7 +28,7 @@ class MemoryManager;
  * This class manages (1..N) experiments and provides access to the underlying
  * simulator/debugger system. Experiments can enlist arbritrary listeners
  * (Breakpoint, Memory access, Traps, etc.). The \c SimulatorController then
- * activates the specific experiment There are further methods to read/write
+ * activates the specific experiment. There are further methods to read/write
  * registers and memory, and control the SUT (save/restore/reset).
  */
 class SimulatorController {
@@ -160,7 +160,7 @@ public:
 	 * Returns the (constant) initialized memory manager.
 	 * @return a reference to the memory manager
 	 */
-	MemoryManager& getMemoryManager() { return (*m_Mem); }
+	MemoryManager& getMemoryManager() { return *m_Mem; }
 	const MemoryManager& getMemoryManager() const { return *m_Mem; }
 	/**
 	 * Sets the memory manager.

@@ -138,7 +138,7 @@ public:
 	inline bxICacheEntry_c *getICacheEntry() const { return m_CacheEntry; }
 	/**
 	 * Retrieves the current CPU context
-	 * @return a pointer to a BX_CPU_C object
+	 * @return a pointer to a \c BX_CPU_C object
 	 */
 	inline BX_CPU_C *getCPUContext() const { return m_CPUContext; }
 private:

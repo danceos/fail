@@ -1,5 +1,6 @@
 #include "SimulatorController.hpp"
 #include "SALInst.hpp"
+#include "Event.hpp"
 
 namespace fail {
 
@@ -49,7 +50,7 @@ void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_spa
 	"FIXME: SimulatorController::onBreakpoint() has not been tested before");
 	// FIXME: Improve performance!
 
-	// Loop through all events of type BP*Listener:
+	// Loop through all listeners of type BP*Listener:
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) {
 		BaseListener* pev = *it;
@@ -80,13 +81,13 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
 		         : MemAccessEvent::MEM_READ;
 
 	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) { // check for active events
+	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		MemAccessListener* ev = dynamic_cast<MemAccessListener*>(pev);
 		// Is this a MemAccessListener? Correct access type?
 		if (!ev || !ev->isMatching(addr, len, accesstype)) {
 			++it;
-			continue; // skip event activation
+			continue; // skip listener activation
 		}
 		ev->setTriggerAddress(addr);
 		ev->setTriggerWidth(len);
@@ -100,12 +101,12 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
 void SimulatorController::onInterrupt(unsigned interruptNum, bool nmi)
 {
 	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) { // check for active events 
+	while (it != m_LstList.end()) { // check for active listeners 
 		BaseListener* pev = *it;
 		InterruptListener* pie = dynamic_cast<InterruptListener*>(pev);
 		if (!pie || !pie->isMatching(interruptNum)) {
 			++it;
-			continue; // skip event activation
+			continue; // skip listener activation
 		}
 		pie->setTriggerNumber(interruptNum);
 		pie->setNMI(nmi);
@@ -158,12 +159,12 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 void SimulatorController::onTrap(unsigned trapNum)
 {
 	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) { // check for active events
+	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		TrapListener* pte = dynamic_cast<TrapListener*>(pev);
 		if (!pte || !pte->isMatching(trapNum)) {
 			++it;
-			continue; // skip event activation
+			continue; // skip listener activation
 		}
 		pte->setTriggerNumber(trapNum);
 		it = m_LstList.makeActive(it);
@@ -174,7 +175,7 @@ void SimulatorController::onTrap(unsigned trapNum)
 void SimulatorController::onGuestSystem(char data, unsigned port)
 {
 	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) { // check for active events
+	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		GuestListener* pge = dynamic_cast<GuestListener*>(pev);
 		if (pge != NULL) {
@@ -191,7 +192,7 @@ void SimulatorController::onGuestSystem(char data, unsigned port)
 void SimulatorController::onJump(bool flagTriggered, unsigned opcode)
 {
 	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) { // check for active events
+	while (it != m_LstList.end()) { // check for active listeners
 		JumpListener* pje = dynamic_cast<JumpListener*>(*it);
 		if (pje != NULL) {
 			pje->setOpcode(opcode);
@@ -214,7 +215,7 @@ void SimulatorController::addFlow(ExperimentFlow* flow)
 
 void SimulatorController::removeFlow(ExperimentFlow* flow)
 {
-	// remove all remaining events of this flow
+	// remove all remaining listeners of this flow
 	clearListeners(flow);
 	// remove coroutine
 	m_Flows.remove(flow);
