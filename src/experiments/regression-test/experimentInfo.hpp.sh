@@ -18,9 +18,11 @@ function alldefs() {
 cat <<EOF
 // loop_done() address:
 // nm -C $(basename $1)|fgrep loop_done
-#define REGRESSION_FUNC_LOOP_DONE			0x`addrof $1 loop_done`
+#define REGRESSION_FUNC_LOOP_DONE		0x`addrof $1 loop_done`
 #define REGRESSION_FUNC_MTEST_READ		0x`addrof $1 mtest_read`
 #define REGRESSION_FUNC_MTEST_WRITE		0x`addrof $1 mtest_write`
+#define REGRESSION_FUNC_TRAP		0x`addrof $1 trap_test`
+#define REGRESSION_FUNC_JUMP		0x`addrof $1 jump_test`
 EOF
 }
 
