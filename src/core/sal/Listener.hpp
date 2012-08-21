@@ -543,7 +543,7 @@ public:
 	 */
 	bool isFlagTriggered() const { return m_Data.isFlagTriggered(); }
 	/**
-	 * Sets the requestet jump-instruction opcode.
+	 * Sets the requested jump-instruction opcode.
 	 */
 	void setOpcode(unsigned oc) { m_Data.setTriggerOpcode(oc); }
 	/**
