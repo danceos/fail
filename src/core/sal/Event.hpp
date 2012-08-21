@@ -292,7 +292,7 @@ public:
 	/**
 	 * Sets the requestet jump-instruction opcode.
 	 */
-	void setTriggerOpcode(unsigned oc) { oc = m_OpcodeTrigger; }
+	void setTriggerOpcode(unsigned oc) { m_OpcodeTrigger = oc; }
 	/**
 	 * Sets the trigger flag.
 	 */
