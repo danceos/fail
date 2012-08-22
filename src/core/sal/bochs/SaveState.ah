@@ -3,6 +3,7 @@
 
 #include "config/FailConfig.hpp"
 
+#ifdef BUILD_BOCHS
 #ifdef CONFIG_SR_SAVE
 
 #include "bochs.h"
@@ -29,5 +30,6 @@ aspect SaveState {
 };
 
 #endif // CONFIG_SR_SAVE
+#endif // BUILD_BOCHS
 
 #endif // _SAVE_STATE_AH__

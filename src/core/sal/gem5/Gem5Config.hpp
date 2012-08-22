@@ -7,14 +7,14 @@
   #define __GEM5_CONFIG_HPP__
 
 #include "base/types.hh"
-#include "arch/arm/registers.hh"
+//#include "arch/arm/registers.hh"
 
 namespace fail {
 
 typedef Addr guest_address_t; //!< the guest memory address type
 // TODO: Set Host Address Type
 typedef void*     host_address_t;  //!< the host memory address type
-typedef ArmISA::AnyReg   register_data_t; //!< register data type (32 bit)
+typedef uint64_t   register_data_t; //!< register data type (gem5 always uses 64 bit for registers)
 typedef int        timer_t;         //!< type of timer IDs
 
 } // end-of-namespace: fail

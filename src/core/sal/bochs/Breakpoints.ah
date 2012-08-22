@@ -3,6 +3,7 @@
 
 #include "config/FailConfig.hpp"
 
+#ifdef BUILD_BOCHS
 #ifdef CONFIG_EVENT_BREAKPOINTS
 
 #include "bochs.h"
@@ -28,5 +29,6 @@ aspect Breakpoints {
 };
 
 #endif // CONFIG_EVENT_BREAKPOINTS
+#endif // BUILD_BOCHS
 
 #endif // __BREAKPOINTS_AH__

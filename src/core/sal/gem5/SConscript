@@ -7,8 +7,7 @@ env.Append(CPPPATH=Dir('../../../../../src/core/'))
 env.Append(CPPPATH=Dir('../../../../../build/src/core/'))
 
 env.Append(LIBPATH=Dir('../../../../../build/lib/'))
-#env.Append(LIBS=['fail', 'sal', 'comm', 'cpn', 'efw', 'util', 'pthread'])
-env.Append(LIBS=['fail'])
+env.Append(LIBS=['sal', 'comm', 'cpn', 'efw', 'util', 'pcl', 'hsc-simple'])
 
 
 SimObject('FailGem5Device.py')
