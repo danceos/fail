@@ -30,7 +30,7 @@ public:
  * \class BPEvent
  * A breakpoint, i.e. a specific instruction address, was reached.
  */
-class BPEvent : virtual public BaseEvent {
+class BPEvent : public BaseEvent {
 protected:
 	address_t m_TriggerInstrPtr; //!< the address which triggered the event
 public:
@@ -57,7 +57,7 @@ public:
  * A read/write memory access to a physical address with a specific width was
  * observed.
  */
-class MemAccessEvent : virtual public BaseEvent {
+class MemAccessEvent : public BaseEvent {
 public:
 	enum access_type_t {
 		MEM_UNKNOWN   = 0x0, //!< internal initialization flag, indicating an uninitialized state
@@ -142,7 +142,7 @@ public:
  * An interrupt or trap was observed.
  * FIXME: Naming.  Interrupts are not exactly "trouble".
  */
-class TroubleEvent : virtual public BaseEvent {
+class TroubleEvent : public BaseEvent {
 private:
 	/**
 	 * Specific guest system interrupt/trap number that actually
@@ -179,7 +179,7 @@ public:
  * \class InterruptEvent
  * An interrupt was observed.
  */
-class InterruptEvent : virtual public TroubleEvent {
+class InterruptEvent : public TroubleEvent {
 private:
 	bool m_IsNMI; //!< non maskable interrupt flag
 public:
@@ -210,7 +210,7 @@ public:
  * The guest system emitted explicit guest->experiment communication.
  */
 // FIXME: cf. GuestListener
-class GuestEvent : virtual public BaseEvent {
+class GuestEvent : public BaseEvent {
 private:
 	char m_Data; //!< guest event data
 	unsigned m_Port; //!< communication port
@@ -238,7 +238,7 @@ public:
  * \class IOPortEvent
  * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
  */
-class IOPortEvent : virtual public BaseEvent {
+class IOPortEvent : public BaseEvent {
 private:
 	unsigned char m_Data;
 public:
@@ -261,7 +261,7 @@ public:
  * \class JumpEvent
  * A conditional jump instruction is about to execute.
  */
-class JumpEvent : virtual public BaseEvent {
+class JumpEvent : public BaseEvent {
 private:
 	unsigned m_OpcodeTrigger;
 	bool m_FlagTriggered;

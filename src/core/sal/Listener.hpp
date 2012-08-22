@@ -109,7 +109,7 @@ public:
  * \class BListener
  * A Breakpoint listener to observe instruction changes within a given address space.
  */
-class BPListener : virtual public BaseListener {
+class BPListener : public BaseListener {
 private:
 	BPEvent m_Data;
 	address_t m_CR3;
@@ -156,7 +156,7 @@ public:
  * \class BPSingleListener
  * A Breakpoint listener to observe specific instruction pointers.
  */
-class BPSingleListener : virtual public BPListener {
+class BPSingleListener : public BPListener {
 private:
 	address_t m_WatchInstrPtr;
 public:
@@ -198,7 +198,7 @@ public:
  * \class BPRangeListener
  * A listener type to observe ranges of instruction pointers.
  */
-class BPRangeListener : virtual public BPListener {
+class BPRangeListener : public BPListener {
 private:
 	address_t m_WatchStartAddr;
 	address_t m_WatchEndAddr;
@@ -238,7 +238,7 @@ public:
  * \class MemAccessListener
  * Observes memory read/write accesses.
  */
-class MemAccessListener : virtual public BaseListener {
+class MemAccessListener : public BaseListener {
 private:
 	//! Specific physical guest system address to watch, or ANY_ADDR.
 	address_t m_WatchAddr;
@@ -328,7 +328,7 @@ public:
  * \class MemReadListener
  * Observes memory read accesses.
  */
-class MemReadListener : virtual public MemAccessListener {
+class MemReadListener : public MemAccessListener {
 public:
 	MemReadListener()
 		: MemAccessListener(MemAccessEvent::MEM_READ) { }
@@ -340,7 +340,7 @@ public:
  * \class MemWriteListener
  * Observes memory write accesses.
  */
-class MemWriteListener : virtual public MemAccessListener {
+class MemWriteListener : public MemAccessListener {
 public:
 	MemWriteListener()
 		: MemAccessListener(MemAccessEvent::MEM_READ) { }
@@ -352,7 +352,7 @@ public:
  * \class TroubleListener
  * Observes interrupt/trap activties.
  */
-class TroubleListener : virtual public BaseListener {
+class TroubleListener : public BaseListener {
 private:
 	TroubleEvent m_Data; //!< event related data, e.g. trap number
 	/**
@@ -404,7 +404,7 @@ public:
  * \class InterruptListener
  * Observes interrupts of the guest system.
  */
-class InterruptListener : virtual public TroubleListener {
+class InterruptListener : public TroubleListener {
 private:
 	InterruptEvent m_Data; //!< event related data, e.g. NMI flag
 public:
@@ -424,7 +424,7 @@ public:
  * \class TrapListener
  * Observes traps of the guest system.
  */
-class TrapListener : virtual public TroubleListener {
+class TrapListener : public TroubleListener {
 public:
 	TrapListener() { }
 	TrapListener(unsigned trap) { addWatchNumber(trap); }
@@ -437,7 +437,7 @@ public:
 // FIXME: This is not a "clean design" ... IOPortListener looks much like a copy of this class.
 //        Additionaly, the port is fixed (at least in Bochs) but can be modified using setPort
 //        (effectless for now).
-class GuestListener : virtual public BaseListener {
+class GuestListener : public BaseListener {
 private:
 	GuestEvent m_Data;
 public:
@@ -464,7 +464,7 @@ public:
  * \class IOPortListener
  * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
  */
-class IOPortListener : virtual public BaseListener {
+class IOPortListener : public BaseListener {
 private:
 	IOPortEvent m_Data;
 	unsigned m_Port;
@@ -518,7 +518,7 @@ public:
  * \class JumpListener
  * JumpListeners are used to observe conditional jumps (if...else if...else).
  */
-class JumpListener : virtual public BaseListener {
+class JumpListener : public BaseListener {
 private:
 	JumpEvent m_Data;
 public:
