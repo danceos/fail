@@ -88,17 +88,12 @@ void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream*
 }
 #endif // DEBUG
 
-void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_space,
-		BX_CPU_C *context, bxICacheEntry_c *cache_entry)
+void BochsController::onBreakpoint(address_t instrPtr, address_t address_space)
 {
 #ifdef DEBUG
 	if (m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
 		(*m_pDest) << "0x" << std::hex << instrPtr;
 #endif
-	assert(context != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-	m_CPUContext = context;
-	assert(cache_entry != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-	m_CacheEntry = cache_entry;
 	bool do_fire = false;
 	// Check for active breakpoint-events:
 	bp_cache_t &buffer_cache = m_LstList.getBPBuffer();
@@ -119,6 +114,14 @@ void BochsController::onInstrPtrChanged(address_t instrPtr, address_t address_sp
 		m_LstList.triggerActiveListeners();
 	// Note: SimulatorController::onBreakpoint will not be invoked in this
 	//       implementation.
+}
+
+void BochsController::updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cacheEntry)
+{
+	assert(context != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
+	assert(cacheEntry != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
+	m_CPUContext = context;
+	m_CacheEntry = cacheEntry;
 }
 
 void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {

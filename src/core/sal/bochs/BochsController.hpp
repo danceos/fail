@@ -30,6 +30,8 @@ class ExperimentFlow;
 class BochsController : public SimulatorController {
 private:
 	ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
+	BX_CPU_C *m_CPUContext; //!< Additional information that is passed on occurence of a BPEvent
+	bxICacheEntry_c *m_CacheEntry; //!< dito.
   #ifdef DEBUG
 	unsigned m_Regularity; //! regularity of instruction ptr output
 	unsigned m_Counter; //! current instr-ptr counter
@@ -43,13 +45,19 @@ public:
 	 * Standard Listener Handler API:
 	 * ********************************************************************/
 	/**
-	 * Instruction pointer modification handler. This method is called (from
-	 * the Breakpoints aspect) every time when the Bochs-internal IP changes.
+	 * Instruction pointer modification handler implementing the onBreakpoint
+	 * handler of the SimulatorController. This method is called (from
+	 * the Breakpoints aspect) every time the Bochs-internal IP changes.
+	 * The handler itself evaluates if a breakpoint event needs to be triggered.
+	 * This handler needs to implement the breakpoint-mechanism in an indirect
+	 * fashion because the Bochs simulator doesn't support breakpoints explicitly.
+	 * To match the interface specified by the simulator class, we need to provide
+	 * the two members \c m_CPUContext and \c m_CacheEntry. The elements are
+	 * being set before the handler is called (see \c updateBPEventInfo()).
 	 * @param instrPtr the new instruction pointer
 	 * @param address_space the address space the CPU is currently in
 	 */
-	void onInstrPtrChanged(address_t instrPtr, address_t address_space, BX_CPU_C *context,
-	                       bxICacheEntry_c *cache_entry);
+	void onBreakpoint(address_t instrPtr, address_t address_space);
 	/**
 	 * I/O port communication handler. This method is called (from
 	 * the IOPortCom aspect) every time when Bochs performs a port I/O operation.
@@ -141,9 +149,13 @@ public:
 	 * @return a pointer to a \c BX_CPU_C object
 	 */
 	inline BX_CPU_C *getCPUContext() const { return m_CPUContext; }
-private:
-	BX_CPU_C *m_CPUContext;
-	bxICacheEntry_c *m_CacheEntry;
+	/**
+	 * Updates the internal BPEvent data. See \c BochsController::onBreakpoint
+	 * for further information. This method should only be called from the breakpoint aspect.
+	 * @param context the CPU context object ptr (Bochs internal=
+	 * @param cacheEntry the Bochs internal CPU cache entry ptr
+	 */
+	void updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cacheEntry);
 };
 
 } // end-of-namespace: fail
