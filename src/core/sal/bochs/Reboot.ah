@@ -9,9 +9,9 @@
 #include "../SALInst.hpp"
 
 aspect Reboot {
-	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
+	pointcut reboot_trigger()  = "void bx_pc_system_c::tick%(...)";
 
-	advice execution (cpuLoop()) : after ()
+	advice execution (reboot_trigger()) : before ()
 	{
 		if (!fail::reboot_bochs_request) {
 			return;
