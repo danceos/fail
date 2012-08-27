@@ -3,11 +3,21 @@ Import('*')
 if env['TARGET_ISA'] == 'no':
     Return()
 
-env.Append(CPPPATH=Dir('../../../../../src/core/'))
-env.Append(CPPPATH=Dir('../../../../../build/src/core/'))
+env.Prepend(CPPPATH=Dir('../../../../../src/core/'))
+env.Prepend(CPPPATH=Dir('../../../../../build/src/core/'))
 
-env.Append(LIBPATH=Dir('../../../../../build/lib/'))
-env.Append(LIBS=['sal', 'comm', 'cpn', 'efw', 'util', 'pcl', 'hsc-simple'])
+env.Prepend(LIBPATH=Dir('../../../../../build/lib/'))
+gStaticLibs = ['-lsal', '-lhsc-simple', '-lcomm', '-lcpn', '-lefw', '-lutil', '-lpcl']
+
+if (len(gStaticLibs)>0):
+	linkFlags = ['-Wl,--start-group']
+	linkFlags = linkFlags+gStaticLibs
+	linkFlags = linkFlags+['-Wl,--end-group']
+
+	env['GEN_LIB_BUILD_STATIC'] = linkFlags
+
+	env.Append(SHLINKCOM = ' $GEN_LIB_BUILD_STATIC')
+	env.Append(LINKCOM = ' $GEN_LIB_BUILD_STATIC')
 
 
 SimObject('FailGem5Device.py')
