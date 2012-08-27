@@ -124,7 +124,7 @@ public:
 	 *        in a random address space.
 	 */
 	BPListener(address_t address_space = ANY_ADDR)
-		: m_Data(address_space), m_CR3(ANY_ADDR) { }
+		: m_Data(address_space, ANY_ADDR), m_CR3(ANY_ADDR) { }
 	/**
 	 * Returns the address space register of this listener.
 	 */

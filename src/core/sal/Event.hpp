@@ -33,13 +33,15 @@ public:
 class BPEvent : public BaseEvent {
 protected:
 	address_t m_TriggerInstrPtr; //!< the address which triggered the event
+	address_t m_CR3; //!< the content of the cr3 reg
 public:
 	/**
 	 * Creates a new breakpoint event. The range information is specific to
 	 * the subclasses.
 	 * @param trigger the triggering address of the breakpoint event
+	 * @param cr3 the address space of this event, given as the content of a CR3 register.
 	 */
-	BPEvent(address_t trigger) : m_TriggerInstrPtr(trigger) { }
+	BPEvent(address_t trigger, address_t cr3) : m_TriggerInstrPtr(trigger), m_CR3(cr3) { }
 	/**
 	 * Returns the instruction pointer that triggered this event.
 	 * @return triggering IP
@@ -50,6 +52,14 @@ public:
 	 * @param iptr new IP which caused this event
 	 */
 	void setTriggerInstructionPointer(address_t iptr) { m_TriggerInstrPtr = iptr; }
+	/**
+	 * Returns the address space register of this event.
+	 */
+	address_t getCR3() const { return m_CR3; }
+	/**
+	 * Sets the address space register for this event.
+	 */
+	void setCR3(address_t iptr) { m_CR3 = iptr; }
 };
 
 /**
