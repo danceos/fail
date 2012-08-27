@@ -136,13 +136,11 @@ bool SimulatorController::addSuppressedInterrupt(unsigned interruptNum)
 	if (isSuppressedInterrupt(interruptNum+32))
 		return false; // already added: nothing to do here
 		
-	if (interruptNum == ANY_INTERRUPT) {
+	if (interruptNum == ANY_INTERRUPT)
 		m_SuppressedInterrupts.push_back(interruptNum);
-		return true;
-	} else {
+	else
 		m_SuppressedInterrupts.push_back(interruptNum+32);
-		return true;
-	}
+	return true;
 }
 
 bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
