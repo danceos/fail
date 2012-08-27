@@ -3,7 +3,7 @@
 
 #include "experiment.hpp"
 #include "sal/SALInst.hpp"
-//#include "sal/bochs/BochsRegister.hpp"
+#include "sal/bochs/BochsRegister.hpp"
 #include "sal/Listener.hpp"
 #include "util/Logger.hpp"
 #include "config/FailConfig.hpp"
