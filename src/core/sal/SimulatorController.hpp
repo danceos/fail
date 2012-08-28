@@ -202,10 +202,10 @@ public:
 	void clearListeners(ExperimentFlow *flow = 0) { m_LstList.remove(flow); }
 	/**
 	 * Switches the control flow to the simulator and waits on any listeners
-	 * which have been added to the listener management. If one of those listeners
-	 * occurs, resume() will return the pointer of that listener.
-	 * @return the previously occurred listener, or \c NULL if there are no
-	 *         listeners to wait for
+	 * which have been added to the listener management.  If one of those listeners
+	 * occurs, resume() will return the pointer of that listener.  If there are
+	 * no more active listeners for this experiment, resume() never returns.
+	 * @return the previously occurred listener
 	 */
 	BaseListener* resume();
 	/**

@@ -21,8 +21,6 @@ bool SimulatorController::addListener(BaseListener* li)
 
 BaseListener* SimulatorController::resume(void)
 {
-	if (!hasListeners())
-		return NULL;
 	m_Flows.resume();
 	assert(m_LstList.getLastFired() != NULL &&
 		   "FATAL ERROR: getLastFired() expected to be non-NULL!");
