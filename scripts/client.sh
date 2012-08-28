@@ -42,12 +42,19 @@ do
 		done
 	fi
 
-	#nice -n 19 ./bochs -q 2>&1 | tee log.$$.txt | fgrep Result
-	#nice -n 18 ./bochs -q 2>&1 | fgrep Result
-	nice -n 18 ./fail-client -q >/dev/null 2>&1
-	if [ $? -eq 1 ]
-	then
-		break
+	# only start a client if at least 500 MiB is available
+	FREE_MEM=$(free -m | grep "buffers/cache:" | awk '{print $4}')
+	if [ $FREE_MEM -lt "500" ]; then
+		# waiting for free memory. sleep 1-60s and retry.
+		sleep $(($RANDOM / (32768 / 60) + 1))
+	else
+		#nice -n 19 ./bochs -q 2>&1 | tee log.$$.txt | fgrep Result
+		#nice -n 18 ./bochs -q 2>&1 | fgrep Result
+		nice -n 18 ./fail-client -q >/dev/null 2>&1
+		if [ $? -eq 1 ]
+		then
+			break
+		fi
 	fi
 done
 echo DONE
