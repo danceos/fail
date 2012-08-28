@@ -44,8 +44,7 @@ SESSION=fail-client.$$
 PROCESSORS=$(fgrep processor /proc/cpuinfo|wc -l)
 if [ -z "$1" ]
 then
-	NWIN=$(($PROCESSORS+1))
-	#NWIN=$(($NWIN*2))
+	NWIN=$PROCESSORS
 else
 	NWIN=$1
 fi
