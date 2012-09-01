@@ -164,19 +164,16 @@ void JobServer::run()
 		// Spawn a thread for further communication,
 		// and add this thread to a list threads
 		// We can limit the generation of threads here.
-		if (m_threadlist.size() < m_maxThreads) {
-			th = new boost::thread(CommThread(cs, *this));
-			m_threadlist.push_back(th);
-		} else {
+		if (m_threadlist.size() >= m_maxThreads) {
 			// Run over list with a timed_join,
 			// removing finished threads.
 			do {
 				m_threadlist.remove_if(timed_join_successful(m_threadtimeout));
 			} while(m_threadlist.size() == m_maxThreads);
+		}
 			// Start new thread	
 			th = new boost::thread(CommThread(cs, *this));
 			m_threadlist.push_back(th);
-		}
 		
 	}
 	close(s);

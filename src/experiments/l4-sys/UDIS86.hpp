@@ -1,5 +1,3 @@
-#if 0
-		// temporarily disabled to make the code in the repository compile - will soon be fixed
 #ifndef __UDIS86_HPP__
   #define __UDIS86_HPP__
 
@@ -19,8 +17,11 @@ class Udis86
 {
 private:
 	ud_t ud_obj; //<! the ud object of udis86
+	unsigned char *udis_instr; //<! the instruction buffer for UDIs86
+	size_t udis_instr_size; //<! the size of the instruction buffer
 public:
-	Udis86(const unsigned char *instr, size_t size);
+	Udis86(const unsigned char *instr, size_t size, fail::address_t ip);
+	~Udis86();
 	/**
 	 * retrieves the private ud structure of udis86
 	 * @returns a reference pointer to a ud_t variable
@@ -41,4 +42,3 @@ public:
 };
 
 #endif // __UDIS86_HPP__
-#endif

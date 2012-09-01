@@ -1,22 +1,26 @@
-#if 0
-		// temporarily disabled to make the code in the repository compile - will soon be fixed
 #include "sal/bochs/BochsController.hpp"
 #include "UDIS86.hpp"
 
 using namespace fail;
 
-Udis86::Udis86(const unsigned char *instr, size_t size) {
+Udis86::Udis86(const unsigned char *instr, size_t size, address_t ip) {
 	// initialise the buffer
-	unsigned char *udis_instr = static_cast<unsigned char*>(malloc(size));
-	memcpy(udis_instr, instr, size);
+	udis_instr_size = size;
+	udis_instr = static_cast<unsigned char*>(malloc(udis_instr_size));
+	memcpy(udis_instr, instr, udis_instr_size);
 
 	// initialise the internal data structure
 	memset(&ud_obj, 0, sizeof(ud_t));
 	ud_init(&ud_obj);
+	ud_set_mode(&ud_obj, 32);
+	ud_set_syntax(&ud_obj, UD_SYN_ATT);
+	ud_set_pc(&ud_obj, ip);
 
 	// assign the buffer to the data structure
-	ud_set_input_buffer(&ud_obj, udis_instr, size);
+	ud_set_input_buffer(&ud_obj, udis_instr, udis_instr_size);
+}
 
+Udis86::~Udis86() {
 	// free the buffer
 	free(udis_instr);
 }
@@ -60,4 +64,3 @@ GPRegisterId Udis86::udisGPRToFailBochsGPR(ud_type_t udisReg) {
 	}
 #undef REG_CASE
 }
-#endif

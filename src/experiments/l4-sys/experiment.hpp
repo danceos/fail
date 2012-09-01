@@ -59,15 +59,13 @@ private:
 	 */
 	void logInjection(fail::Logger &log, const L4SysExperimentData &param);
 	/**
-	 * May be obsolete. Not supplying docu until I am sure whether I need to
+	 * May be obsolete. Not supplying doc until I am sure whether I need to
 	 */
 	void readFromFileToVector(std::ifstream &file, std::vector<struct __trace_instr_type> &instr_list);
 	/**
-	 * Overwrites one Bochs instruction with another.
-	 * @param dest the instruction to copy to
-	 * @param src the instruction to copy from
+	 * Proceeds by one single instruction.
 	 */
-	void changeBochsInstruction(bxInstruction_c *dest, bxInstruction_c *src);
+	void singleStep();
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__

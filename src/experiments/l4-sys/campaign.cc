@@ -11,10 +11,11 @@ using namespace std;
 using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
-const char *l4sys_output_strings[] = { "Unknown", "Done", "Timeout", "Trap", "Interrupt", "Wrong output", "Error" };
+const char *l4sys_output_result_strings[] = { "Unknown", "Done", "Timeout", "Trap", "Interrupt", "Wrong output", "Error" };
+const char *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "Instr Flip", "ALU Instr Flip" };
 
+#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_result_strings[L4SysProtoMsg::OUTPUT];
 std::string L4SysCampaign::output_result(L4SysProtoMsg_ResultType res) {
-#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_strings[L4SysProtoMsg::OUTPUT];
 	switch (res) {
 	OUTPUT_CASE(DONE);
 	OUTPUT_CASE(TIMEOUT);
@@ -23,10 +24,22 @@ std::string L4SysCampaign::output_result(L4SysProtoMsg_ResultType res) {
 	OUTPUT_CASE(WRONG);
 	OUTPUT_CASE(UNKNOWN);
 	default:
-		return l4sys_output_strings[0];
+		return l4sys_output_result_strings[0];
 	}
-#undef OUTPUT_CASE
 }
+#undef OUTPUT_CASE
+#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_experiment_strings[L4SysProtoMsg::OUTPUT];
+std::string L4SysCampaign::output_experiment(L4SysProtoMsg_ExperimentType res) {
+	switch (res) {
+	OUTPUT_CASE(GPRFLIP)
+	OUTPUT_CASE(RATFLIP)
+	OUTPUT_CASE(IDCFLIP)
+	OUTPUT_CASE(ALUINSTR)
+	default:
+		return l4sys_output_experiment_strings[0];
+	}
+}
+#undef OUTPUT_CASE
 
 bool L4SysCampaign::run() {
 	Logger log("L4SysCampaign");
@@ -48,17 +61,46 @@ bool L4SysCampaign::run() {
 
 	int count = 0;
 	srand(time(NULL));
-	for (int i = 0; i < 3000; ++i) {
+	for (int i = 0; i < 25; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.RATFLIP);
-		d->msg.set_instr_offset(rand() % L4SYS_NUMINSTR);
-		// 15 bytes (120 bits) are the longest instruction Bochs still executes
-		int bit_offset = rand() % 120;
+		d->msg.set_exp_type(d->msg.GPRFLIP);
+		// modify for a random instruction
+		int instr_offset = rand() % L4SYS_NUMINSTR;
+		d->msg.set_instr_offset(instr_offset);
+		// modify a random bit
+		int bit_offset = rand() % 32;
 		d->msg.set_bit_offset(bit_offset);
 
 		campaignmanager.addParam(d);
 		++count;
 	}
+#if 0
+	for (int i = 0; i < 1000; ++i) {
+		L4SysExperimentData *d = new L4SysExperimentData;
+		d->msg.set_exp_type(d->msg.RATFLIP);
+		// modify for a random instruction
+		int instr_offset = rand() % L4SYS_NUMINSTR;
+		d->msg.set_instr_offset(instr_offset);
+		// this value is not required for this experiment, so set it to an arbitrary value
+		d->msg.set_bit_offset(0);
+
+		campaignmanager.addParam(d);
+		++count;
+	}
+	for (int i = 0; i < 1000; ++i) {
+		L4SysExperimentData *d = new L4SysExperimentData;
+		d->msg.set_exp_type(d->msg.IDCFLIP);
+		// modify for a random instruction
+		int instr_offset = rand() % L4SYS_NUMINSTR;
+		d->msg.set_instr_offset(instr_offset);
+		// modify a random bit - Bochs supports at most 15 bytes of instruction
+		int bit_offset = rand() % 125;
+		d->msg.set_bit_offset(bit_offset);
+
+		campaignmanager.addParam(d);
+		++count;
+	}
+#endif
 	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
@@ -66,12 +108,12 @@ bool L4SysCampaign::run() {
 	L4SysExperimentData *res;
 	int rescount = 0;
 	results
-			<< "injection_ip,instr_offset,injection_bit,resulttype,resultdata,output,details"
+			<< "exp_type,injection_ip,instr_offset,injection_bit,resulttype,resultdata,output,details"
 			<< endl;
 	while ((res = static_cast<L4SysExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
-		results << hex << res->msg.injection_ip() << "," << dec
+		results << output_experiment(res->msg.exp_type()) << "," << hex << res->msg.injection_ip() << "," << dec
 				<< res->msg.instr_offset() << "," << res->msg.bit_offset()
 				<< "," << output_result(res->msg.resulttype()) << ","
 				<< res->msg.resultdata();

@@ -56,7 +56,8 @@ string L4SysExperiment::sanitised(const string &in_str) {
 	for (int idx = 0; idx < in_str_size; idx++) {
 		char cur_char = in_str[idx];
 		unsigned cur_char_value = static_cast<unsigned>(cur_char);
-		if (cur_char_value < 0x20 || cur_char_value > 0x7E) {
+		// also exclude the delimiter (',')
+		if (cur_char_value < 0x20 || cur_char_value > 0x7E || cur_char_value == ',') {
 			char str_nr[5];
 			sprintf(str_nr, "\\%03o", cur_char_value);
 			result += str_nr;
@@ -145,21 +146,11 @@ void L4SysExperiment::readFromFileToVector(std::ifstream &file,
 	file.close();
 }
 
-void L4SysExperiment::changeBochsInstruction(bxInstruction_c *dest,
-		bxInstruction_c *src) {
-	// backup the current and insert the faulty instruction
-	bxInstruction_c old_instr;
-	memcpy(&old_instr, dest, sizeof(bxInstruction_c));
-	memcpy(dest, src, sizeof(bxInstruction_c));
-
-	// execute the faulty instruction, then return
+void L4SysExperiment::singleStep() {
 	BPSingleListener singlestepping_event(ANY_ADDR, L4SYS_ADDRESS_SPACE);
 	simulator.addListener(&singlestepping_event);
 	waitIOOrOther(false);
 	simulator.removeListener(&singlestepping_event);
-
-	//restore the old instruction
-	memcpy(dest, &old_instr, sizeof(bxInstruction_c));
 }
 
 bool L4SysExperiment::run() {
@@ -183,6 +174,31 @@ bool L4SysExperiment::run() {
 	}
 
 	// STEP 2: determine instructions executed
+#ifdef PREPARE_EXPERIMENT
+	log << "restoring state" << endl;
+	simulator.restore(L4SYS_STATE_FOLDER);
+	log << "EIP = " << hex
+	<< simulator.getRegisterManager().getInstructionPointer()
+	<< endl;
+
+	// make sure the timer interrupt doesn't disturb us
+	simulator.addSuppressedInterrupt(0);
+
+	int count;
+	int ul = 0, kernel = 0;
+	bp.setWatchInstructionPointer(ANY_ADDR);
+	for (count = 0; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
+		simulator.addListenerAndResume(&bp);
+		if(bp.getTriggerInstructionPointer() < 0xC0000000) {
+			ul++;
+		} else {
+			kernel++;
+		}
+		// log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+	}
+	log << "test function calculation position reached after " << dec << count << " instructions; "
+			<< "ul: " << ul << ", kernel: " << kernel << endl;
+#else
 #if 0
 	// the files currently get too big.
 	/* I do not really have a clever idea to solve this.
@@ -197,7 +213,7 @@ bool L4SysExperiment::run() {
 		<< endl;
 
 		// make sure the timer interrupt doesn't disturb us
-		simulator.addSuppressedInterrupt(32);
+		simulator.addSuppressedInterrupt(0);
 
 		ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::out | ios::binary);
 		ofstream alu_instr_file(L4SYS_ALU_INSTRUCTIONS, ios::out | ios::binary);
@@ -253,7 +269,7 @@ bool L4SysExperiment::run() {
 				<< endl;
 
 		// make sure the timer interrupt doesn't disturb us
-		simulator.addSuppressedInterrupt(32);
+		simulator.addSuppressedInterrupt(0);
 
 		ofstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 		bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
@@ -306,7 +322,7 @@ bool L4SysExperiment::run() {
 	int exp_type = param.msg.exp_type();
 
 	bp.setWatchInstructionPointer(ANY_ADDR);
-	bp.setCounter(instr_offset);
+	bp.setCounter(instr_offset + 1);
 	simulator.addListener(&bp);
 	//and log the output
 	waitIOOrOther(true);
@@ -350,7 +366,7 @@ bool L4SysExperiment::run() {
 		// this is a twisted one
 
 		// initial definitions
-		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
+		bxICacheEntry_c *cache_entry = simulator.getCPUContext()->getICacheEntry();
 		unsigned length_in_bits = cache_entry->i->ilen() << 3;
 
 		// get the instruction in plain text in inject the error there
@@ -380,15 +396,22 @@ bool L4SysExperiment::run() {
 				&bochs_instr);
 
 		// inject it
-		changeBochsInstruction(cache_entry->i, &bochs_instr);
+		// backup the current and insert the faulty instruction
+		bxInstruction_c old_instr;
+		memcpy(&old_instr, cache_entry->i, sizeof(bxInstruction_c));
+		memcpy(cache_entry->i, &bochs_instr, sizeof(bxInstruction_c));
+
+		// execute the faulty instruction, then return
+		singleStep();
+
+		//restore the old instruction
+		memcpy(cache_entry->i, &old_instr, sizeof(bxInstruction_c));
 
 		// do the logging
 		logInjection(log, param);
 	} else if (exp_type == param.msg.RATFLIP) {
-#if 0
-		// temporarily disabled to make the code in the repository compile - will soon be fixed
-		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
-		Udis86 udis(calculateInstructionAddress(), cache_entry->i->ilen());
+		bxICacheEntry_c *cache_entry = simulator.getCPUContext()->getICacheEntry();
+		Udis86 udis(calculateInstructionAddress(), cache_entry->i->ilen(), injection_ip);
 		if (udis.fetchNextInstruction()) {
 			ud_t _ud = udis.getCurrentState();
 
@@ -422,7 +445,12 @@ bool L4SysExperiment::run() {
 			}
 
 			ud_type_t which;
-			unsigned rnd = random() % opcount;
+			unsigned rnd;
+			if(opcount == 0)
+				rnd = 0;
+			else
+				rnd = rand() % opcount;
+
 			if (operands[rnd] > RAT_IDX_OFFSET) {
 				which = _ud.operand[operands[rnd] - RAT_IDX_OFFSET].index;
 			} else {
@@ -464,30 +492,23 @@ bool L4SysExperiment::run() {
 				}
 
 				// execute the instruction
-				BPSingleListener execute_single_instr(ANY_INSTR, L4SYS_ADDRESS_SPACE);
-				simulator.addListener(&execute_single_instr);
-				waitIOOrOther(false);
-				simulator.removeListener(&execute_single_instr);
+				singleStep();
 
 				// restore
-				if (rnd > 0) {
-					// restore input register
-					rm.getRegister(bochs_reg)->setData(data);
-				} else if (rnd == 0) {
+				if (rnd == 0) {
 					// output register - do the fault injection here
 					if(exchg_reg >= 0) {
 						// write the result into the wrong local register
 						regdata_t newdata = rm.getRegister(bochs_reg)->getData();
 						rm.getRegister(exchg_reg)->setData(newdata);
 					}
-					// restore the value of the actual output register
-					// in reality, it would never have been overwritten
-					rm.getRegister(bochs_reg)->setData(data);
 				}
+				// restore the actual value of the register
+				// in reality, it would never have been overwritten
+				rm.getRegister(bochs_reg)->setData(data);
 			}
 
 		}
-#endif
 	} else if (exp_type == param.msg.ALUINSTR) {
 	}
 
@@ -560,7 +581,7 @@ bool L4SysExperiment::run() {
 
 	simulator.clearListeners();
 	m_jc.sendResult(param);
-
+#endif
 #ifdef HEADLESS_EXPERIMENT
 	simulator.terminate(0);
 #endif
