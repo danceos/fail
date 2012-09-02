@@ -153,7 +153,7 @@ void JobServer::run()
 	// TODO: Log-level?
 #ifndef __puma
 	boost::thread* th;
-	while(!m_finish){
+	while (!m_finish){
 		// Accept connection 
 		int cs = accept(s, (struct sockaddr*)&clientaddr, &clen);
 		if (cs == -1) {
@@ -169,12 +169,11 @@ void JobServer::run()
 			// removing finished threads.
 			do {
 				m_threadlist.remove_if(timed_join_successful(m_threadtimeout));
-			} while(m_threadlist.size() == m_maxThreads);
+			} while (m_threadlist.size() == m_maxThreads);
 		}
-			// Start new thread	
-			th = new boost::thread(CommThread(cs, *this));
-			m_threadlist.push_back(th);
-		
+		// Start new thread	
+		th = new boost::thread(CommThread(cs, *this));
+		m_threadlist.push_back(th);
 	}
 	close(s);
 	// when all undone Jobs are distributed  -> call a timed_join on all spawned
