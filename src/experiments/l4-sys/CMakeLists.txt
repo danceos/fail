@@ -10,6 +10,7 @@ set(MY_PROTOS
 )
 
 set(MY_CAMPAIGN_SRCS
+	aluinstr.hpp
 	experiment.hpp
 	experiment.cc
 	campaign.hpp

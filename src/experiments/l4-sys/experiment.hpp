@@ -6,8 +6,7 @@
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
-// not implemented yet
-// #include "aluinstr.hpp"
+#include "aluinstr.hpp"
 
 class L4SysExperimentData;
 

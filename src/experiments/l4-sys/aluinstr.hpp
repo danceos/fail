@@ -1,12 +1,14 @@
 #ifndef __L4SYS_ALUINSTR_HPP__
   #define __L4SYS_ALUINSTR_HPP__
 
+#if 0
 /**
  * Forward declaration of the Bochs instruction decode table.
  * This is necessary because, inconveniently, it is not declared in a header file.
  */
 #include "cpu/fetchdecode.h"
 static const BxOpcodeInfo_t *BxOpcodeInfo32;
+#endif
 
 /**
  * Trying to order X86 ALU instructions.
@@ -54,7 +56,10 @@ struct BochsALUInstr {
 	Bit8u opcode;
 	/**
 	 * the reg part of the modr/m field (known as nnn in bxInstruction_c)
-	 * A value of 8 or higher marks this field unused.
+	 * it is used to
+	 *   a) further subdivide the functionality of a given opcode
+	 *   b) specify a register the instruction is supposed to use
+	 * In this class, a value of 8 or higher marks this field unused.
 	 */
 	Bit8u reg;
 	/**
@@ -63,7 +68,7 @@ struct BochsALUInstr {
 	 * to their opcode. It is necessary to store this separately for
 	 * several reasons, one being the ability to separate
 	 * ALU input latch faults from ALU instruction latch faults.
-	 * A value of 8 or higher marks this field unused.
+	 * In this class, a value of 8 or higher marks this field unused.
 	 */
 	Bit8u opcodeRegisterOffset;
 	/**
@@ -141,90 +146,77 @@ const BochsALUInstr aluInstructions [] = {
 #undef SHIFTOPS
 	/* --- \\\ SHIFT OPERATIONS /// --- */
 
-	/**
-	 *
-	 * The remaining instructions, roughly ordered,
-	 * in the form of a (probably obsolete) experiment method
-	 *	/**
-	 * Assigns a given opcode a class of ALU instructions
-	 * @param opcode the opcode to examine
-	 * @returns an enum AluClass object
+	/* --- /// BINARY OPERATIONS \\\ --- */
 
-	X86AluClass isALUInstruction(unsigned opcode);
-	 *
-	 * X86AluClass L4SysExperiment::isALUInstruction(unsigned opcode) {
-	switch (opcode) {
-	case BX_IA_ADC_EbGb:
-	case BX_IA_ADC_EdGd:
-	case BX_IA_ADC_EwGw:
-	case BX_IA_ADD_EbGb:
-	case BX_IA_ADD_EdGd:
-	case BX_IA_ADD_EwGw:
-	case BX_IA_AND_EbGb:
-	case BX_IA_AND_EdGd:
-	case BX_IA_AND_EwGw:
-	case BX_IA_CMP_EbGb:
-	case BX_IA_CMP_EdGd:
-	case BX_IA_CMP_EwGw:
-	case BX_IA_OR_EbGb:
-	case BX_IA_OR_EdGd:
-	case BX_IA_OR_EwGw:
-	case BX_IA_SBB_EbGb:
-	case BX_IA_SBB_EdGd:
-	case BX_IA_SBB_EwGw:
-	case BX_IA_SUB_EbGb:
-	case BX_IA_SUB_EdGd:
-	case BX_IA_SUB_EwGw:
-	case BX_IA_XOR_EbGb:
-	case BX_IA_XOR_EdGd:
-	case BX_IA_XOR_EwGw:
-	case BX_IA_ADC_ALIb:
-	case BX_IA_ADC_AXIw:
-	case BX_IA_ADC_EAXId:
-	case BX_IA_ADD_EbIb:
-	case BX_IA_OR_EbIb:
-	case BX_IA_ADC_EbIb:
-	case BX_IA_SBB_EbIb:
-	case BX_IA_AND_EbIb:
-	case BX_IA_SUB_EbIb:
-	case BX_IA_XOR_EbIb:
-	case BX_IA_CMP_EbIb:
-	case BX_IA_ADD_EwIw:
-	case BX_IA_OR_EwIw:
-	case BX_IA_ADC_EwIw:
-	case BX_IA_SBB_EwIw:
-	case BX_IA_AND_EwIw:
-	case BX_IA_SUB_EwIw:
-	case BX_IA_XOR_EwIw:
-	case BX_IA_CMP_EwIw:
-	case BX_IA_ADD_EdId:
-	case BX_IA_OR_EdId:
-	case BX_IA_ADC_EdId:
-	case BX_IA_SBB_EdId:
-	case BX_IA_AND_EdId:
-	case BX_IA_SUB_EdId:
-	case BX_IA_XOR_EdId:
-	case BX_IA_CMP_EdId:
-	case BX_IA_ADC_GbEb:
-	case BX_IA_ADC_GwEw:
-	case BX_IA_ADC_GdEd:
-	case BX_IA_ADD_ALIb:
-	case BX_IA_ADD_AXIw:
-	case BX_IA_ADD_EAXId:
-	case BX_IA_ADD_GbEb:
-	case BX_IA_ADD_GwEw:
-	case BX_IA_ADD_GdEd:
-	case BX_IA_AND_ALIb:
-	case BX_IA_AND_AXIw:
-	case BX_IA_AND_EAXId:
-	case BX_IA_AND_GbEb:
-	case BX_IA_AND_GwEw:
-	case BX_IA_AND_GdEd:
-	default:
-		return ALU_UNDEF;
-	}
-}
-	 *
-	 */
+	// reg, immediate
+
+	// a macro to reduce copy-paste overhead
+#define BINOPS(IACODE, OPCODE8, OPCODE16) \
+		{ BX_IA_##IACODE##_ALIb, OPCODE8, 8, 8, ALU_IMM8_REG }, \
+		{ BX_IA_##IACODE##_AXIw, OPCODE16, 8, 8, ALU_IMM16_REG }, \
+		{ BX_IA_##IACODE##_EAXId, OPCODE16, 8, 8, ALU_IMM32_REG }
+
+	// register ax, immediate
+	BINOPS(ADC, 0x14, 0x15),
+	BINOPS(ADD, 0x04, 0x05),
+	BINOPS(AND, 0x24, 0x25),
+	BINOPS(CMP, 0x3C, 0x3D),
+	BINOPS(OR, 0x0C, 0x0D),
+	BINOPS(SBB, 0x1C, 0x1D),
+	BINOPS(SUB, 0x2C, 0x2D),
+	BINOPS(XOR, 0x34, 0x35),
+#undef BINOPS
+
+	// a macro to reduce copy-paste overhead
+#define BINOPS(IACODE, OPCODE8, OPCODE16) \
+		{ BX_IA_##IACODE##_EbGb, OPCODE8, 7, 8, ALU_IMM8_RM8 }, \
+		{ BX_IA_##IACODE##_EwGw, OPCODE16, 7, 8, ALU_IMM16_RM16 }, \
+		{ BX_IA_##IACODE##_EdGd, OPCODE16, 7, 8, ALU_IMM32_RM32 }
+	// r/m, arbitrary register
+	BINOPS(ADC, 0x10, 0x11),
+	BINOPS(ADD, 0x00, 0x01),
+	BINOPS(AND, 0x20, 0x21),
+	BINOPS(CMP, 0x38, 0x39),
+	BINOPS(OR, 0x08, 0x09),
+	BINOPS(SBB, 0x18, 0x19),
+	BINOPS(SUB, 0x28, 0x29),
+	BINOPS(XOR, 0x30, 0x31),
+#undef BINOPS
+
+#define BINOPS(IACODE, OPCODE8, OPCODE16) \
+		{ BX_IA_##IACODE##_GbEb, OPCODE8, 7, 8, ALU_IMM8_RM8 }, \
+		{ BX_IA_##IACODE##_GwEw, OPCODE16, 7, 8, ALU_IMM16_RM16 }, \
+		{ BX_IA_##IACODE##_GdEd, OPCODE16, 7, 8, ALU_IMM32_RM32 }
+	// arbitrary register, r/m
+	BINOPS(ADC, 0x12, 0x13),
+	BINOPS(ADD, 0x02, 0x03),
+	BINOPS(AND, 0x22, 0x23),
+	BINOPS(CMP, 0x3a, 0x3b),
+	BINOPS(OR, 0x0a, 0x0b),
+	BINOPS(SBB, 0x1a, 0x1b),
+	BINOPS(SUB, 0x2a, 0x2b),
+	BINOPS(XOR, 0x32, 0x33),
+#undef BINOPS
+
+	// a macro to reduce copy-paste overhead
+#define BINOPS(OPCODE, WDE, WDI, CLASS) \
+		{ BX_IA_ADC_E##WDE##I##WDI, OPCODE, 2, 8, CLASS }, \
+		{ BX_IA_ADD_E##WDE##I##WDI, OPCODE, 0, 8, CLASS }, \
+		{ BX_IA_AND_E##WDE##I##WDI, OPCODE, 4, 8, CLASS }, \
+		{ BX_IA_CMP_E##WDE##I##WDI, OPCODE, 7, 8, CLASS }, \
+		{ BX_IA_OR_E##WDE##I##WDI, OPCODE, 1, 8, CLASS }, \
+		{ BX_IA_SBB_E##WDE##I##WDI, OPCODE, 3, 8, CLASS }, \
+		{ BX_IA_SUB_E##WDE##I##WDI, OPCODE, 5, 8, CLASS }, \
+		{ BX_IA_XOR_E##WDE##I##WDI, OPCODE, 6, 8, CLASS }
+
+	BINOPS(80, b, b, ALU_IMM8_RM8),
+	BINOPS(81, w, w, ALU_IMM16_RM16),
+	BINOPS(81, d, d, ALU_IMM32_RM32),
+	BINOPS(83, w, w, ALU_IMM8_RM16),
+	BINOPS(83, d, d, ALU_IMM8_RM32),
+#undef BINOPS
+
+	/* --- \\\ BINARY OPERATIONS /// --- */
 };
+
 #endif // __L4SYS_ALUINSTR_HPP__

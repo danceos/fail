@@ -63,7 +63,7 @@ bool L4SysCampaign::run() {
 	srand(time(NULL));
 	for (int i = 0; i < 25; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.GPRFLIP);
+		d->msg.set_exp_type(d->msg.IDCFLIP);
 		// modify for a random instruction
 		int instr_offset = rand() % L4SYS_NUMINSTR;
 		d->msg.set_instr_offset(instr_offset);

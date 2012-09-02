@@ -20,10 +20,6 @@
 
 #include "l4sys.pb.h"
 
-// FIXME libudis86 test -- remove me
-#include <udis86.h>
-void foo() { ud_t x; ud_init(&x); }
-
 using namespace std;
 using namespace fail;
 
@@ -160,34 +156,24 @@ bool L4SysExperiment::run() {
 
 	log << "startup" << endl;
 
-	struct stat teststruct;
+#if PREPARATION_STEP == 1
 	// STEP 1: run until interesting function starts, and save state
-	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1) {
-		bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
-		simulator.addListenerAndResume(&bp);
+	bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
+	simulator.addListenerAndResume(&bp);
 
-		log << "test function entry reached, saving state" << endl;
-		log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or "
-				<< simulator.getRegisterManager().getInstructionPointer()
-				<< endl;
-		simulator.save(L4SYS_STATE_FOLDER);
-	}
-
+	log << "test function entry reached, saving state" << endl;
+	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or "
+			<< simulator.getRegisterManager().getInstructionPointer()
+			<< endl;
+	simulator.save(L4SYS_STATE_FOLDER);
+#elif PREPARATION_STEP == 2
 	// STEP 2: determine instructions executed
-#ifdef PREPARE_EXPERIMENT
-	log << "restoring state" << endl;
-	simulator.restore(L4SYS_STATE_FOLDER);
-	log << "EIP = " << hex
-	<< simulator.getRegisterManager().getInstructionPointer()
-	<< endl;
 
-	// make sure the timer interrupt doesn't disturb us
-	simulator.addSuppressedInterrupt(0);
-
-	int count;
-	int ul = 0, kernel = 0;
+	// count the first instruction which has already been executed
+	int count = 1;
+	int ul = 1, kernel = 0;
 	bp.setWatchInstructionPointer(ANY_ADDR);
-	for (count = 0; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
+	for (; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
 		simulator.addListenerAndResume(&bp);
 		if(bp.getTriggerInstructionPointer() < 0xC0000000) {
 			ul++;
@@ -198,7 +184,35 @@ bool L4SysExperiment::run() {
 	}
 	log << "test function calculation position reached after " << dec << count << " instructions; "
 			<< "ul: " << ul << ", kernel: " << kernel << endl;
-#else
+#elif PREPARATION_STEP == 3
+	// STEP 3: determine the output of a "golden run"
+	log << "restoring state" << endl;
+	simulator.restore(L4SYS_STATE_FOLDER);
+	log << "EIP = " << hex
+			<< simulator.getRegisterManager().getInstructionPointer()
+			<< endl;
+
+	ofstream golden_run_file(L4SYS_CORRECT_OUTPUT);
+	bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
+	bp.setCounter(L4SYS_ITERATION_COUNT);
+	simulator.addListener(&bp);
+	BaseListener* ev = waitIOOrOther(true);
+	if (ev == &bp) {
+		golden_run.assign(output.c_str());
+		golden_run_file << output.c_str();
+		log << "Output successfully logged!" << endl;
+	} else {
+		log
+				<< "Obviously, there is some trouble with the events registered - aborting simulation!"
+				<< endl;
+		golden_run_file.close();
+		simulator.terminate(10);
+	}
+	simulator.clearListeners();
+	bp.setCounter(1);
+	log << "saving output generated during normal execution" << endl;
+	golden_run_file.close();
+
 #if 0
 	// the files currently get too big.
 	/* I do not really have a clever idea to solve this.
@@ -260,38 +274,13 @@ bool L4SysExperiment::run() {
 	}
 #endif
 
-	// STEP 3: determine the output of a "golden run"
-	if (stat(L4SYS_CORRECT_OUTPUT, &teststruct) == -1) {
-		log << "restoring state" << endl;
-		simulator.restore(L4SYS_STATE_FOLDER);
-		log << "EIP = " << hex
-				<< simulator.getRegisterManager().getInstructionPointer()
-				<< endl;
-
-		// make sure the timer interrupt doesn't disturb us
-		simulator.addSuppressedInterrupt(0);
-
-		ofstream golden_run_file(L4SYS_CORRECT_OUTPUT);
-		bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
-		bp.setCounter(L4SYS_ITERATION_COUNT);
-		simulator.addListener(&bp);
-		BaseListener* ev = waitIOOrOther(true);
-		if (ev == &bp) {
-			golden_run.assign(output.c_str());
-			golden_run_file << output.c_str();
-			log << "Output successfully logged!" << endl;
-		} else {
-			log
-					<< "Obviously, there is some trouble with the events registered - aborting simulation!"
-					<< endl;
-			golden_run_file.close();
-			simulator.terminate(10);
-		}
-		simulator.clearListeners();
-		bp.setCounter(1);
-		log << "saving output generated during normal execution" << endl;
-		golden_run_file.close();
-	} else {
+#elif PREPARATION_STEP == 0
+	// LAST STEP: The actual experiment.
+	struct stat teststruct;
+	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1 || stat(L4SYS_CORRECT_OUTPUT, &teststruct) == -1) {
+		log << "Important data missing - call \"prepare\" first." << endl;
+		simulator.terminate(1);
+	}
 		ifstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 
 		golden_run.reserve(teststruct.st_size);
@@ -303,9 +292,7 @@ bool L4SysExperiment::run() {
 
 		//the generated output probably has a similar length
 		output.reserve(teststruct.st_size);
-	}
 
-	// STEP 4: The actual experiment.
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
 
@@ -366,7 +353,7 @@ bool L4SysExperiment::run() {
 		// this is a twisted one
 
 		// initial definitions
-		bxICacheEntry_c *cache_entry = simulator.getCPUContext()->getICacheEntry();
+		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
 		unsigned length_in_bits = cache_entry->i->ilen() << 3;
 
 		// get the instruction in plain text in inject the error there

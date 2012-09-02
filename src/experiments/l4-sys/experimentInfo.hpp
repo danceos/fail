@@ -6,9 +6,10 @@
 
 // the bounds of the program
 #define L4SYS_ADDRESS_SPACE		0x203d000
-#define L4SYS_FUNC_ENTRY		0x1000400
-#define L4SYS_FUNC_EXIT			0x10005b0
-#define L4SYS_NUMINSTR			56052774
+#define L4SYS_FUNC_ENTRY		0x10025ca
+#define L4SYS_FUNC_EXIT			0x1002810
+#define L4SYS_NUMINSTR			83084798
+// kernel: 3599694, userland: 79485104
 
 #define L4SYS_ITERATION_COUNT	1
 
@@ -20,6 +21,8 @@
 
 // flags
 #define HEADLESS_EXPERIMENT
-//#define PREPARE_EXPERIMENT
+// 0 - preparation complete
+// >0 - next step to execute
+#define PREPARATION_STEP		3
 
 #endif // __EXPERIMENT_INFO_HPP__
