@@ -44,21 +44,9 @@ char const * const traceinfo_name = "trace_info.txt";
 bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
-	// workaround for 00002808875p[BIOS ] >>PANIC<< Keyboard error:21
-	// *** If the first listener is a TimerListener, FailBochs panics. ***
-	// *** Therefore, just wait one instruction before using a timer. ***
+	// run until 'ECOS_FUNC_FINISH' is reached
 	BPSingleListener bp;
-	bp.setWatchInstructionPointer(ANY_ADDR);
-	simulator.addListenerAndResume(&bp);
-
-	// run until 'ECOS_FUNC_FINISH' is reached //FIXME: [CPU0 ] prefetch: EIP [00010000] > CS.limit [0000ffff]
-	//BPSingleListener bp;
-	//bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
-	//simulator.addListener(&bp);
-
-	// 10000us = 500000 instructions
-	TimerListener record_timeout(50000000); //TODO: how long to wait?
-	simulator.addListener(&record_timeout);
+	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
 
 	// memory map serialization
 	ofstream mm(mm_filename, ios::out | ios::app);
@@ -91,25 +79,20 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 			str->clear();
 			number_of_guest_events++;
 		} else if (g.getData() == 'Q') {
-			// ignore, see STEP 1
+			// when the guest system triggers the guest event 'Q',
+			// we can assume that we are in protected mode
+			simulator.addListener(&bp);
 		} else {
 			str->push_back(g.getData());
 		}
 	}
 	assert(number_of_guest_events > 0);
-	//log << "Breakpoint at 'ECOS_FUNC_FINISH' reached: created memory map (" << number_of_guest_events << " entries)" << endl;
-	//TODO: check if ECOS_FUNC_FINISH was reached!!!
-	log << "Record timeout reached: created memory map (" << number_of_guest_events << " entries)" << endl;
+	log << "Breakpoint at 'ECOS_FUNC_FINISH' reached: created memory map (" << number_of_guest_events << " entries)" << endl;
 	delete str;
 
 	// close serialized mm
 	mm.flush();
 	mm.close();
-
-	// workaround for 00291674339e[CPU0 ] prefetch: EIP [00010000] > CS.limit [0000ffff]
-	// *** just wait some time here *** //FIXME
-	//TimerListener record_timeout(10000);
-	//simulator.addListenerAndResume(&record_timeout);
 
 	// clean up simulator
 	simulator.clearListeners();
