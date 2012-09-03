@@ -87,8 +87,8 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 		count++;
 	}
 	file.close();
-	assert(count == 3);
-	return (count == 3);
+	assert(count == 4);
+	return (count == 4);
 }
 
 // equivalence class type: addr, [i1, i2]
