@@ -31,7 +31,7 @@ private:
 
 	FailControlMessage_Command tryToGetExperimentData(ExperimentData& exp);
 public:
-	JobClient(const std::string& server = "localhost", int port = 1111);
+	JobClient(const std::string& server = SERVER_COMM_HOSTNAME, int port = SERVER_COMM_TCP_PORT);
 	/**
 	* Receive experiment data set from (remote) JobServer
 	* The caller (experiment developer) is responsible for

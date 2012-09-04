@@ -7,7 +7,6 @@
 class CoolChecksumExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
-	CoolChecksumExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
 	bool run();
 };
 

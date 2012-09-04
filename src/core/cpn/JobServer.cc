@@ -130,7 +130,7 @@ void JobServer::run()
 		return;
 	}
 	
-	/* IPv4, Port: 1111, accept all  IP adresses  */
+	/* IPv4, bind to all interfaces */
 	struct sockaddr_in saddr;
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(m_port);

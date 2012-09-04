@@ -7,7 +7,6 @@
 class WeatherMonitorExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
-	WeatherMonitorExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
 	bool run();
 };
 

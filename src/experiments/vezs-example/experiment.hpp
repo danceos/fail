@@ -7,7 +7,6 @@
 class VEZSExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
-	VEZSExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
 	bool run();
 };
 

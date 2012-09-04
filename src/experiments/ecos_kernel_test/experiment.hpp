@@ -8,7 +8,7 @@ class EcosKernelTestExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 	fail::Logger log;
 public:
-	EcosKernelTestExperiment() : m_jc("ios.cs.tu-dortmund.de"), log("eCos Kernel Test", false) {}
+	EcosKernelTestExperiment() : log("eCos Kernel Test", false) {}
 	bool run();
 
 	bool retrieveGuestAddresses(); // step 0

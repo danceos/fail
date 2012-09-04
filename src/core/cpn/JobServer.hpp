@@ -72,7 +72,7 @@ private:
 	void sendWork(int sockfd);
 
 public:	
-	JobServer(int port = 1111) : m_port(port), m_finish(false), m_noMoreExps(false),
+	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
 		m_maxThreads(128), m_threadtimeout(0)
 	{ 
 #ifndef __puma

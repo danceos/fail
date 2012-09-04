@@ -19,11 +19,13 @@ OPTION(CONFIG_SUPPRESS_INTERRUPTS       "Target backend: Suppress interrupts" OF
 OPTION(CONFIG_FIRE_INTERRUPTS           "Target backend: Fire interrupts" OFF)
 OPTION(CONFIG_DISABLE_KEYB_INTERRUPTS   "Target backend: Suppress keyboard interrupts" OFF)
 OPTION(SERVER_PERFORMANCE_MEASURE       "Performance measurement in job-server" OFF)
-SET(SERVER_PERF_LOG_PATH        "perf.log" CACHE STRING "A file name for storing the server's performance log (CSV)")
-SET(SERVER_PERF_STEPPING_SEC    "1"        CACHE STRING "Stepping of performance measurements in seconds")
-SET(CLIENT_RAND_BACKOFF_TSTART  "3"        CACHE STRING "Lower limit of client's backoff phase in seconds")
-SET(CLIENT_RAND_BACKOFF_TEND    "8"        CACHE STRING "Upper limit of client's backoff phase in seconds")
-SET(CLIENT_RETRY_COUNT          "3"        CACHE STRING "Client's number of reconnect retries")
+SET(SERVER_COMM_HOSTNAME        "localhost"  CACHE STRING "Job-server hostname or IP")
+SET(SERVER_COMM_TCP_PORT        "1111"       CACHE STRING "Job-server TCP port")
+SET(SERVER_PERF_LOG_PATH        "perf.log"   CACHE STRING "A file name for storing the server's performance log (CSV)")
+SET(SERVER_PERF_STEPPING_SEC    "1"          CACHE STRING "Stepping of performance measurements in seconds")
+SET(CLIENT_RAND_BACKOFF_TSTART  "3"          CACHE STRING "Lower limit of client's backoff phase in seconds")
+SET(CLIENT_RAND_BACKOFF_TEND    "8"          CACHE STRING "Upper limit of client's backoff phase in seconds")
+SET(CLIENT_RETRY_COUNT          "3"          CACHE STRING "Client's number of reconnect retries")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FailConfig.hpp.in
                ${CMAKE_CURRENT_BINARY_DIR}/FailConfig.hpp)

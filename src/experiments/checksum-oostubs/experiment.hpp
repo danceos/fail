@@ -7,7 +7,6 @@
 class ChecksumOOStuBSExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
-	ChecksumOOStuBSExperiment() : m_jc("ios.cs.tu-dortmund.de") {}
 	bool run();
 };
 
