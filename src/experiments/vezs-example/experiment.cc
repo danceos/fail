@@ -6,15 +6,18 @@
 #include <unistd.h>
 
 #include "util/Logger.hpp"
+
+#include "util/ElfReader.hpp"
+
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
-#include "sal/bochs/BochsRegister.hpp"
-#include "sal/bochs/BochsListener.hpp"
 #include "sal/Listener.hpp"
 
+#include "sal/bochs/BochsRegister.hpp"
+#include "sal/bochs/BochsListener.hpp"
 
 using namespace std;
 using namespace fail;
@@ -28,16 +31,19 @@ using namespace fail;
 bool VEZSExperiment::run()
 {
 	Logger log("VEZS-Example", false);
-
-	log << "startup" << endl;
-	BPSingleEvent bp;
+	ElfReader elf("./system");
+	log << elf.getAddressByName("main") << endl;
+  	
+	BPSingleListener bp;
 #if 1
 	// STEP 1: run until interesting function starts, and save state
-	bp.setWatchInstructionPointer(OOSTUBS_FUNC_ENTRY);
-	simulator.addEventAndWait(&bp);
-	log << "test function entry reached, saving state" << endl;
+	bp.setWatchInstructionPointer(elf.getAddressByName("main"));
+	if(simulator.addListenerAndResume(&bp) == &bp){
+		log << "test function entry reached, saving state" << endl;
+	}
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or " << simulator.getRegisterManager().getInstructionPointer() << endl;
-	simulator.save("vezs.state");
+	simulator.terminate();
+	//simulator.save("vezs.state");
 #endif
 #if 0
 
@@ -52,7 +58,7 @@ bool VEZSExperiment::run()
 
 		bp.setWatchInstructionPointer(ANY_ADDR);
 		for (int count = 0; count < instr_offset; ++count) {
-			simulator.addEventAndWait(&bp);
+			simulator.addListenerAndResume(&bp);
 		}
 	
 	
@@ -77,25 +83,25 @@ bool VEZSExperiment::run()
 		// - #loop iterations before/after FI
 
 		// catch traps as "extraordinary" ending
-		TrapListener ev_trap(ANY_TRAP);
-		simulator.addListener(&ev_trap);
+		TrapEvent ev_trap(ANY_TRAP);
+		simulator.addEvent(&ev_trap);
 		// jump outside text segment
-		BPRangeListener ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
-		BPRangeListener ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
-		simulator.addListener(&ev_below_text);
-		simulator.addListener(&ev_beyond_text);
+		BPRangeEvent ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
+		BPRangeEvent ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
+		simulator.addEvent(&ev_below_text);
+		simulator.addEvent(&ev_beyond_text);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerListener ev_timeout(1000000); // 50,000,000 instructions !!
-		simulator.addListener(&ev_timeout);
+		TimerEvent ev_timeout(1000000); // 50,000,000 instructions !!
+		simulator.addEvent(&ev_timeout);
 
 		// remaining instructions until "normal" ending
-		BPSingleListener ev_end(ANY_ADDR);
+		BPSingleEvent ev_end(ANY_ADDR);
 		ev_end.setCounter(OOSTUBS_NUMINSTR - instr_offset);
-		simulator.addListener(&ev_end);
+		simulator.addEvent(&ev_end);
 
 		// Start simulator and wait for any result
-		BaseListener* ev = simulator.resume();
+		BaseEvent* ev = simulator.waitAny();
 
 		// record latest IP regardless of result
 		injection_ip =  simulator.getRegisterManager().getInstructionPointer();
@@ -115,7 +121,7 @@ bool VEZSExperiment::run()
 		log << "@ ip 0x" << hex << injection_ip << endl;
 		// explicitly remove all events before we leave their scope
 		// FIXME event destructors should remove them from the queues
-		simulator.clearListeners();
+		simulator.clearEvents();
 }
 
 #endif
