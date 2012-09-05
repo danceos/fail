@@ -172,7 +172,7 @@ bool EcosKernelTestExperiment::performTrace() {
 	// on the way, record lowest and highest memory address accessed
 	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
 	simulator.addListener(&ev_mem);
-	unsigned lowest_addr = 0;
+	unsigned lowest_addr = 0xFFFFFFFFUL;
 	unsigned highest_addr = 0;
 
 	// do the job, 'till the end
@@ -193,15 +193,14 @@ bool EcosKernelTestExperiment::performTrace() {
 			simulator.addListener(&time_step);
 		}
 		else if(ev == &ev_mem) {
-			unsigned trigger_addr = ev_mem.getTriggerAddress();
-			if( (lowest_addr == 0) && (highest_addr == 0) ) {
-				lowest_addr = highest_addr = trigger_addr;
+			unsigned lo = ev_mem.getTriggerAddress();
+			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
+
+			if(hi > highest_addr) {
+				highest_addr = hi;
 			}
-			else if(trigger_addr > highest_addr){
-				highest_addr = trigger_addr;
-			}
-			else if(trigger_addr < lowest_addr){
-				lowest_addr = trigger_addr;
+			if(lo < lowest_addr) {
+				lowest_addr = lo;
 			}
 			simulator.addListener(&ev_mem);
 		}
@@ -363,9 +362,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 		// memory access outside of bound determined in the golden run [lowest_addr, highest_addr]
 		MemAccessListener ev_mem_low(0x0, MemAccessEvent::MEM_READWRITE);
-		ev_mem_low.setWatchWidth(lowest_addr - 2); //TODO FIXME: why - 2?
-		MemAccessListener ev_mem_high(highest_addr + 2, MemAccessEvent::MEM_READWRITE);
-		ev_mem_high.setWatchWidth(0xFFFFFFFFU - (highest_addr + 2));
+		ev_mem_low.setWatchWidth(lowest_addr);
+		MemAccessListener ev_mem_high(highest_addr + 1, MemAccessEvent::MEM_READWRITE);
+		ev_mem_high.setWatchWidth(0xFFFFFFFFU - (highest_addr + 1));
 		simulator.addListener(&ev_mem_low);
 		simulator.addListener(&ev_mem_high);
 
