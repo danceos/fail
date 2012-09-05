@@ -25,7 +25,7 @@ using namespace fail;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-    !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) || \
+    !defined(CONFIG_SR_SAVE) || \
     !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_IOPORT) || \
     !defined(CONFIG_EVENT_INTERRUPT)
 #error This experiment needs: breakpoints, suppressed-interrupts, traps, I/O port and interrupt events, \

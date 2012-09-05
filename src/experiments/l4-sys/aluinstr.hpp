@@ -22,9 +22,6 @@ enum X86AluClass {
 	ALU_RM8,
 	ALU_RM16,
 	ALU_RM32,
-	ALU_RM8_ONE,
-	ALU_RM16_ONE,
-	ALU_RM32_ONE,
 	ALU_REG,
 	ALU_IMM8_REG,
 	ALU_IMM16_REG,
@@ -55,7 +52,7 @@ struct BochsALUInstr {
      */
 	Bit8u opcode;
 	/**
-	 * the reg part of the modr/m field (known as nnn in bxInstruction_c)
+	 * the reg part of the modr/m field (known as "nnn" in bxInstruction_c)
 	 * it is used to
 	 *   a) further subdivide the functionality of a given opcode
 	 *   b) specify a register the instruction is supposed to use
@@ -65,9 +62,7 @@ struct BochsALUInstr {
 	/**
 	 * the register offset of the instruction byte of this instruction
 	 * Some x86 instructions, like INC register, add a register offset
-	 * to their opcode. It is necessary to store this separately for
-	 * several reasons, one being the ability to separate
-	 * ALU input latch faults from ALU instruction latch faults.
+	 * to their opcode. This offset is stored as "rm" in bxInstruction_c.
 	 * In this class, a value of 8 or higher marks this field unused.
 	 */
 	Bit8u opcodeRegisterOffset;
@@ -130,9 +125,9 @@ const BochsALUInstr aluInstructions [] = {
 		{ BX_IA_SHR_E##WD, OPCODE, 5, 8, CLASS }
 
 	// first shifting by one bit
-	SHIFTOPS(0xD0, b, ALU_RM8_ONE),
-	SHIFTOPS(0xD1, w, ALU_RM16_ONE),
-	SHIFTOPS(0xD1, d, ALU_RM32_ONE),
+	SHIFTOPS(0xD0, b, ALU_RM8),
+	SHIFTOPS(0xD1, w, ALU_RM16),
+	SHIFTOPS(0xD1, d, ALU_RM32),
 
 	// then shifting by CL bits
 	SHIFTOPS(0xD2, b, ALU_REG_RM8),
@@ -148,15 +143,12 @@ const BochsALUInstr aluInstructions [] = {
 
 	/* --- /// BINARY OPERATIONS \\\ --- */
 
-	// reg, immediate
-
-	// a macro to reduce copy-paste overhead
+	// register ax, immediate
 #define BINOPS(IACODE, OPCODE8, OPCODE16) \
 		{ BX_IA_##IACODE##_ALIb, OPCODE8, 8, 8, ALU_IMM8_REG }, \
 		{ BX_IA_##IACODE##_AXIw, OPCODE16, 8, 8, ALU_IMM16_REG }, \
 		{ BX_IA_##IACODE##_EAXId, OPCODE16, 8, 8, ALU_IMM32_REG }
 
-	// register ax, immediate
 	BINOPS(ADC, 0x14, 0x15),
 	BINOPS(ADD, 0x04, 0x05),
 	BINOPS(AND, 0x24, 0x25),
@@ -167,38 +159,7 @@ const BochsALUInstr aluInstructions [] = {
 	BINOPS(XOR, 0x34, 0x35),
 #undef BINOPS
 
-	// a macro to reduce copy-paste overhead
-#define BINOPS(IACODE, OPCODE8, OPCODE16) \
-		{ BX_IA_##IACODE##_EbGb, OPCODE8, 7, 8, ALU_IMM8_RM8 }, \
-		{ BX_IA_##IACODE##_EwGw, OPCODE16, 7, 8, ALU_IMM16_RM16 }, \
-		{ BX_IA_##IACODE##_EdGd, OPCODE16, 7, 8, ALU_IMM32_RM32 }
-	// r/m, arbitrary register
-	BINOPS(ADC, 0x10, 0x11),
-	BINOPS(ADD, 0x00, 0x01),
-	BINOPS(AND, 0x20, 0x21),
-	BINOPS(CMP, 0x38, 0x39),
-	BINOPS(OR, 0x08, 0x09),
-	BINOPS(SBB, 0x18, 0x19),
-	BINOPS(SUB, 0x28, 0x29),
-	BINOPS(XOR, 0x30, 0x31),
-#undef BINOPS
-
-#define BINOPS(IACODE, OPCODE8, OPCODE16) \
-		{ BX_IA_##IACODE##_GbEb, OPCODE8, 7, 8, ALU_IMM8_RM8 }, \
-		{ BX_IA_##IACODE##_GwEw, OPCODE16, 7, 8, ALU_IMM16_RM16 }, \
-		{ BX_IA_##IACODE##_GdEd, OPCODE16, 7, 8, ALU_IMM32_RM32 }
-	// arbitrary register, r/m
-	BINOPS(ADC, 0x12, 0x13),
-	BINOPS(ADD, 0x02, 0x03),
-	BINOPS(AND, 0x22, 0x23),
-	BINOPS(CMP, 0x3a, 0x3b),
-	BINOPS(OR, 0x0a, 0x0b),
-	BINOPS(SBB, 0x1a, 0x1b),
-	BINOPS(SUB, 0x2a, 0x2b),
-	BINOPS(XOR, 0x32, 0x33),
-#undef BINOPS
-
-	// a macro to reduce copy-paste overhead
+	// r/m, immediate
 #define BINOPS(OPCODE, WDE, WDI, CLASS) \
 		{ BX_IA_ADC_E##WDE##I##WDI, OPCODE, 2, 8, CLASS }, \
 		{ BX_IA_ADD_E##WDE##I##WDI, OPCODE, 0, 8, CLASS }, \
@@ -209,11 +170,43 @@ const BochsALUInstr aluInstructions [] = {
 		{ BX_IA_SUB_E##WDE##I##WDI, OPCODE, 5, 8, CLASS }, \
 		{ BX_IA_XOR_E##WDE##I##WDI, OPCODE, 6, 8, CLASS }
 
-	BINOPS(80, b, b, ALU_IMM8_RM8),
-	BINOPS(81, w, w, ALU_IMM16_RM16),
-	BINOPS(81, d, d, ALU_IMM32_RM32),
-	BINOPS(83, w, w, ALU_IMM8_RM16),
-	BINOPS(83, d, d, ALU_IMM8_RM32),
+	BINOPS(0x80, b, b, ALU_IMM8_RM8),
+	BINOPS(0x81, w, w, ALU_IMM16_RM16),
+	BINOPS(0x81, d, d, ALU_IMM32_RM32),
+	BINOPS(0x83, w, w, ALU_IMM8_RM16),
+	BINOPS(0x83, d, d, ALU_IMM8_RM32),
+#undef BINOPS
+
+	// r/m, arbitrary register
+#define BINOPS(IACODE, OPCODE8, OPCODE16) \
+		{ BX_IA_##IACODE##_EbGb, OPCODE8, 7, 8, ALU_REG_RM8 }, \
+		{ BX_IA_##IACODE##_EwGw, OPCODE16, 7, 8, ALU_REG_RM16 }, \
+		{ BX_IA_##IACODE##_EdGd, OPCODE16, 7, 8, ALU_REG_RM32 }
+
+	BINOPS(ADC, 0x10, 0x11),
+	BINOPS(ADD, 0x00, 0x01),
+	BINOPS(AND, 0x20, 0x21),
+	BINOPS(CMP, 0x38, 0x39),
+	BINOPS(OR, 0x08, 0x09),
+	BINOPS(SBB, 0x18, 0x19),
+	BINOPS(SUB, 0x28, 0x29),
+	BINOPS(XOR, 0x30, 0x31),
+#undef BINOPS
+
+	// arbitrary register, r/m
+#define BINOPS(IACODE, OPCODE8, OPCODE16) \
+		{ BX_IA_##IACODE##_GbEb, OPCODE8, 7, 8, ALU_REG_RM8 }, \
+		{ BX_IA_##IACODE##_GwEw, OPCODE16, 7, 8, ALU_REG_RM16 }, \
+		{ BX_IA_##IACODE##_GdEd, OPCODE16, 7, 8, ALU_REG_RM32 }
+
+	BINOPS(ADC, 0x12, 0x13),
+	BINOPS(ADD, 0x02, 0x03),
+	BINOPS(AND, 0x22, 0x23),
+	BINOPS(CMP, 0x3a, 0x3b),
+	BINOPS(OR, 0x0a, 0x0b),
+	BINOPS(SBB, 0x1a, 0x1b),
+	BINOPS(SUB, 0x2a, 0x2b),
+	BINOPS(XOR, 0x32, 0x33),
 #undef BINOPS
 
 	/* --- \\\ BINARY OPERATIONS /// --- */
