@@ -1,4 +1,8 @@
 set(SRCS
+  ElfReader.cc
+  ElfReader.hpp
+  elfinfo/elfinfo.cc
+  elfinfo/elfinfo.h
 	Logger.cc
 	Logger.hpp
 	MemoryMap.hpp

@@ -1,0 +1,11 @@
+-=|elfinfo|=-
+This Tool is essentially a ELF file parser, similar to eu-readelf, but have 
+a subset of functionality. This doesn't need libelf.
+
+How to
+======
+1) run make to compile 
+2) run make install to install(su user)
+3) at command line type elfinfo , it shows you a usage message
+
+
