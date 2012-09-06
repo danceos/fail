@@ -1,0 +1,12 @@
+This file documents ideas/wishes especially from a Fail* *user* perspective.
+
+ - Recurring Fail* API usage patterns in experiment/campaign implementations
+   (that could be implemented in a reusable way, e.g. in a library that sits
+   between the Fail* API and the experiment)
+   * Fault-space pruning (FIXME elaborate)
+   * Preparation vs. final experiment steps -> cmake-driven, automatically
+     build 2 fail-client binaries? (FIXME elaborate)
+   * ...
+
+ - Campaign distribution: More foolproof host CPU load/local users/RAM usage
+   examination
