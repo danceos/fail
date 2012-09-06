@@ -45,7 +45,7 @@ bool VEZSExperiment::run()
 	simulator.terminate();
 	//simulator.save("vezs.state");
 #endif
-#if 0
+#if 1
 
 	int bit_offset = 2;	
 	for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
@@ -96,9 +96,9 @@ bool VEZSExperiment::run()
 		simulator.addEvent(&ev_timeout);
 
 		// remaining instructions until "normal" ending
-		BPSingleEvent ev_end(ANY_ADDR);
+		BPSingleListener ev_end(ANY_ADDR);
 		ev_end.setCounter(OOSTUBS_NUMINSTR - instr_offset);
-		simulator.addEvent(&ev_end);
+		simulator.addListener(&ev_end);
 
 		// Start simulator and wait for any result
 		BaseEvent* ev = simulator.waitAny();
@@ -121,7 +121,7 @@ bool VEZSExperiment::run()
 		log << "@ ip 0x" << hex << injection_ip << endl;
 		// explicitly remove all events before we leave their scope
 		// FIXME event destructors should remove them from the queues
-		simulator.clearEvents();
+		simulator.clearListeners();
 }
 
 #endif
