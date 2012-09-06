@@ -1,6 +1,7 @@
 #ifndef __BREAKPOINTS_AH__
   #define __BREAKPOINTS_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
 #ifdef BUILD_BOCHS

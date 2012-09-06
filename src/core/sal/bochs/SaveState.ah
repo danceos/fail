@@ -1,6 +1,7 @@
 #ifndef _SAVE_STATE_AH__
   #define _SAVE_STATE_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
 #ifdef BUILD_BOCHS
