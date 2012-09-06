@@ -83,17 +83,17 @@ bool VEZSExperiment::run()
 		// - #loop iterations before/after FI
 
 		// catch traps as "extraordinary" ending
-		TrapEvent ev_trap(ANY_TRAP);
-		simulator.addEvent(&ev_trap);
+		TroubleListener ev_trap(ANY_TRAP);
+		simulator.addListener(&ev_trap);
 		// jump outside text segment
-		BPRangeEvent ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
-		BPRangeEvent ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
-		simulator.addEvent(&ev_below_text);
-		simulator.addEvent(&ev_beyond_text);
+		BPRangeListener ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
+		BPRangeListener ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
+		simulator.addListener(&ev_below_text);
+		simulator.addListener(&ev_beyond_text);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
-		TimerEvent ev_timeout(1000000); // 50,000,000 instructions !!
-		simulator.addEvent(&ev_timeout);
+		GenericTimerListener ev_timeout(1000000); // 50,000,000 instructions !!
+		simulator.addListener(&ev_timeout);
 
 		// remaining instructions until "normal" ending
 		BPSingleListener ev_end(ANY_ADDR);
@@ -101,7 +101,7 @@ bool VEZSExperiment::run()
 		simulator.addListener(&ev_end);
 
 		// Start simulator and wait for any result
-		BaseEvent* ev = simulator.waitAny();
+		BaseListener* ev = simulator.resume();
 
 		// record latest IP regardless of result
 		injection_ip =  simulator.getRegisterManager().getInstructionPointer();
@@ -126,5 +126,5 @@ bool VEZSExperiment::run()
 
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
-	simulator.terminate();
+	simulator.resume();
 }
