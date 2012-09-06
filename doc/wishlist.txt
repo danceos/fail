@@ -10,3 +10,5 @@ This file documents ideas/wishes especially from a Fail* *user* perspective.
 
  - Campaign distribution: More foolproof host CPU load/local users/RAM usage
    examination
+
+ - Merge Guest- and IOListeners
