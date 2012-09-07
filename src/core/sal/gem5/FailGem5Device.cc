@@ -7,7 +7,7 @@ FailGem5Device::FailGem5Device(Params *p)
 	: BasicPioDevice(p)
 {
 	pioSize = 0x60;
-	DPRINTF(Fail, "Fail startup()\n");
+
 	fail::simulator.startup();
 }
 
