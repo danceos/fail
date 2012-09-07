@@ -1,11 +1,11 @@
-#ifndef __BOCHS_EVENTS_HPP__
-  #define __BOCHS_EVENTS_HPP__
+#ifndef __BOCHS_LISTENER_HPP__
+  #define __BOCHS_LISTENER_HPP__
 
 #include "../Listener.hpp"
 
-#include "BochsController.hpp"
-
 namespace fail {
+
+typedef GenericBPSingleListener BPSingleListener;
 
 /**
  * \class TimerListener
@@ -75,4 +75,4 @@ public:
 
 } // end-of-namespace: fail
 
-#endif // __BOCHS_EVENTS_HPP__
+#endif // __BOCHS_LISTENER_HPP__

@@ -28,6 +28,8 @@ elseif(BUILD_GEM5)
 		Register.cc
 		SimulatorController.cc
 		gem5/Gem5Controller.cc
+		gem5/Gem5Listener.cc
+		gem5/Gem5PCEvent.cc
 	)
 endif(BUILD_BOCHS)
 

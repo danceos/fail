@@ -69,7 +69,7 @@ bool BPRangeListener::isMatching(address_t addr, address_t aspace) const
 	return true;
 }
 
-bool BPSingleListener::isMatching(address_t addr, address_t aspace) const
+bool GenericBPSingleListener::isMatching(address_t addr, address_t aspace) const
 {
 	if (aspaceIsMatching(aspace)) {
 		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == addr)

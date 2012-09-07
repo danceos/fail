@@ -1,6 +1,7 @@
 #include "ElfReader.hpp"
 #include "elfinfo/elfinfo.h"
 #include <stdio.h>
+#include <cstdlib>
 
 namespace fail {
 

@@ -156,8 +156,8 @@ public:
  * \class BPSingleListener
  * A Breakpoint listener to observe specific instruction pointers.
  */
-class BPSingleListener : public BPListener {
-private:
+class GenericBPSingleListener : public BPListener {
+protected:
 	address_t m_WatchInstrPtr;
 public:
 	/** 
@@ -172,7 +172,7 @@ public:
 	 *        Here, too, ANY_ADDR is a placeholder to allow debugging
 	 *        in a random address space.
 	 */
-	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
+	GenericBPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
 		: BPListener(address_space), m_WatchInstrPtr(ip) { }
 	/**
 	 * Returns the instruction pointer this listener waits for.
@@ -594,5 +594,15 @@ public:
 };
 
 } // end-of-namespace: fail
+
+#if defined BUILD_BOCHS
+  #include "bochs/BochsListener.hpp"
+#elif defined BUILD_OVP
+//  #include "ovp/OVPListener.hpp"
+#elif defined BUILD_GEM5
+  #include "gem5/Gem5Listener.hpp"
+#else
+  #error SAL Config Target not defined
+#endif
 
 #endif // __LISTENER_HPP__
