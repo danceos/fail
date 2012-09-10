@@ -35,15 +35,16 @@ bool VEZSExperiment::run()
 	log << elf.getAddressByName("main") << endl;
   	
 	BPSingleListener bp;
-#if 1
+#if 0
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(elf.getAddressByName("main"));
 	if(simulator.addListenerAndResume(&bp) == &bp){
 		log << "test function entry reached, saving state" << endl;
 	}
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or " << simulator.getRegisterManager().getInstructionPointer() << endl;
-	simulator.terminate();
-	//simulator.save("vezs.state");
+	//simulator.terminate();
+	simulator.save("vezs.state");
+  simulator.terminate();
 #endif
 #if 1
 
@@ -126,5 +127,5 @@ bool VEZSExperiment::run()
 
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
-	simulator.resume();
+	simulator.terminate();
 }
