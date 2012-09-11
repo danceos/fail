@@ -7,8 +7,6 @@
 
 namespace fail {
 
-extern int interrupt_to_fire;
-
 class Gem5Controller : public SimulatorController {
 public:
 	void onBreakpoint(address_t instrPtr, address_t address_space);

@@ -16,7 +16,6 @@ std::string  sr_path          = "";
 
 bx_bool reboot_bochs_request        = false;
 bx_bool interrupt_injection_request = false;
-int     interrupt_to_fire           = -1;
 
 BochsController::BochsController()
 	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager()),

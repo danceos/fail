@@ -8,8 +8,6 @@
 
 namespace fail {
 
-int     interrupt_to_fire           = -1;
-
 void Gem5Controller::save(const std::string &path)
 {
 	// Takes a snapshot in the m5out dir

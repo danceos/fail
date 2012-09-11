@@ -229,6 +229,9 @@ public:
 	unsigned getListenerCount() const { return m_LstList.getListenerCount(); }
 };
 
+// FIXME (see SimulatorController.cc): Weird, homeless global variable
+extern int interrupt_to_fire;
+
 } // end-of-namespace: fail
 
 #endif // __SIMULATOR_CONTROLLER_HPP__

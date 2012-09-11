@@ -6,6 +6,8 @@ namespace fail {
 
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
+// FIXME: Bochs specific?  If not, at least get rid of this global variable.
+int interrupt_to_fire = -1;
 
 bool SimulatorController::addListener(BaseListener* li)
 {

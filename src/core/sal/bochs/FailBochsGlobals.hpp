@@ -15,7 +15,6 @@ namespace fail {
 
 extern bx_bool reboot_bochs_request;
 extern bx_bool interrupt_injection_request;
-extern int interrupt_to_fire;
 
 } // end-of-namespace: fail
 
