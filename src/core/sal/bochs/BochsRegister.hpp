@@ -190,7 +190,7 @@ public:
 };
 
 /**
- * \class BochsRegister
+ * \class BochsRegisterManager
  * Bochs-specific implementation of the RegisterManager.
  */
 class BochsRegisterManager : public RegisterManager {
@@ -204,7 +204,7 @@ public:
 		return static_cast<address_t>(getSetOfType(RT_PC)->first()->getData());
 	}
 	/**
-	 * Retruns the top address of the stack.
+	 * Returns the top address of the stack.
 	 * @return the starting address of the stack
 	 */
 	address_t getStackPointer()
