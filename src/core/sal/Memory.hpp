@@ -60,12 +60,6 @@ public:
 	 * @param src Pointer to data to be copied.
 	 */
 	virtual void setBytes(guest_address_t addr, size_t cnt, void const *src) = 0;
-	/**
-	 * Transforms the guest address \a addr to a host address.
-	 * @param addr The guest address to be transformed
-	 * @return the transformed (host) address or \c ADDR_INV on errors
-	 */
-	virtual host_address_t guestToHost(guest_address_t addr) = 0;
 };
 
 } // end-of-namespace: fail

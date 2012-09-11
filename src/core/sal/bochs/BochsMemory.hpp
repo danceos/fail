@@ -82,7 +82,7 @@ public:
 			setByte(addr + i, s[i]);
 	}
 	/**
-	 * Transforms the guest address \a addr to a host address.
+	 * Transforms the guest address \a addr to a host address.  Bochs specific.
 	 * @param addr The (logical) guest address to be transformed
 	 * @return the transformed (host) address or \c ADDR_INV on errors
 	 */
