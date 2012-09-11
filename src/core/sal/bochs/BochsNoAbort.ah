@@ -1,9 +1,10 @@
 #ifndef __BOCHS_NO_ABORT_AH__
   #define __BOCHS_NO_ABORT_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_BOCHS_NO_ABORT
+#if defined(BUILD_BOCHS) && defined(CONFIG_BOCHS_NO_ABORT)
 
 #include "bochs.h"
 
@@ -37,5 +38,4 @@ aspect BochsNoAbort {
 };
 
 #endif // CONFIG_BOCHS_NO_ABORT
-
 #endif // __BOCHS_NO_ABORT_AH__

@@ -1,9 +1,10 @@
 #ifndef __TRAP_AH__
   #define __TRAP_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_EVENT_TRAP
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_TRAP)
 
 #include "bochs.h"
 #include "cpu/cpu.h"
@@ -22,5 +23,4 @@ aspect Trap {
 };
 
 #endif // CONFIG_EVENT_TRAP
-
 #endif // __TRAP_AH__

@@ -1,9 +1,10 @@
 #ifndef __GUEST_SYS_COM_AH__
   #define __GUEST_SYS_COM_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_EVENT_GUESTSYS
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_GUESTSYS)
 
 #include "bochs.h"
 #include "cpu/cpu.h"
@@ -29,5 +30,4 @@ aspect GuestSysCom {
 };
 
 #endif // CONFIG_EVENT_GUESTSYS
-
 #endif // __GUEST_SYS_COM_AH__

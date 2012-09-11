@@ -1,6 +1,10 @@
 #ifndef __CREDITS_AH__
   #define __CREDITS_AH__
 
+#include "config/VariantConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
 #include <string.h>
 #include <stdio.h>
 
@@ -26,4 +30,5 @@ aspect Credits {
 	}
 };
 
+#endif // BUILD_BOCHS
 #endif // __CREDITS_AH__

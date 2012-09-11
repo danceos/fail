@@ -1,9 +1,10 @@
 #ifndef __FIREINTERRUPT_AH__
   #define __FIREINTERRUPT_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_FIRE_INTERRUPTS
+#if defined(BUILD_BOCHS) && defined(CONFIG_FIRE_INTERRUPTS)
 
 #include "bochs.h"
 #include "cpu/cpu.h"
@@ -41,5 +42,4 @@ aspect InterruptDone {
 };
 
 #endif // CONFIG_FIRE_INTERRUPTS
-
 #endif // __FIREINTERRUPT_AH__

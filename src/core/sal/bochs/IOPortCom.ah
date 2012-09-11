@@ -1,9 +1,10 @@
 #ifndef __IOPORT_COM_AH__
   #define __IOPORT_COM_AH__
 
+#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_EVENT_IOPORT
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_IOPORT)
 
 #include "bochs.h"
 #include "cpu/cpu.h"
@@ -35,5 +36,4 @@ aspect IOPortCom {
 };
 
 #endif // CONFIG_EVENT_IOPORT
-
 #endif // __IOPORT_COM_AH__

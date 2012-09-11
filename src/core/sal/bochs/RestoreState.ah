@@ -4,8 +4,7 @@
 #include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#ifdef BUILD_BOCHS
-#ifdef CONFIG_SR_RESTORE
+#if defined(BUILD_BOCHS) && defined(CONFIG_SR_RESTORE)
 
 #include <iostream>
 
@@ -25,6 +24,4 @@ aspect RestoreState {
 };
 
 #endif // CONFIG_SR_RESTORE
-#endif // BUILD_BOCHS
-
 #endif // __RESTORE_STATE_AH__
