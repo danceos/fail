@@ -26,10 +26,10 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 #### Compiler configuration, see cmake/compilerconfig.cmake
 include(compilerconfig)
 
-#### #OPTION to configure Bochs/OVP ####
-OPTION( BUILD_OVP    "Build OVP Variant?" OFF) # Defaults to BOCHS  ON
-OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
+#### Backend selection ####
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
+OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
+OPTION( BUILD_OVP    "Build OVP Variant?" OFF)
 
 if(BUILD_BOCHS)
   ## add necessary additional header search paths.
