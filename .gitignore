@@ -8,22 +8,23 @@
 *~
 Makefile
 build
+build-*
 
-bochs/autom4te.cache/
-bochs/bochs
-bochs/build/linux/bochs-dlx
-bochs/build/macosx/Info.plist
-bochs/build/win32/nsis/bochs.nsi
-bochs/bxcommit
-bochs/bximage
-bochs/bxversion.h
-bochs/bxversion.rc
-bochs/config.h
-bochs/config.log
-bochs/config.status
-bochs/libtool
-bochs/ltdlconf.h
+simulators/bochs/autom4te.cache/
+simulators/bochs/bochs
+simulators/bochs/build/linux/bochs-dlx
+simulators/bochs/build/macosx/Info.plist
+simulators/bochs/build/win32/nsis/bochs.nsi
+simulators/bochs/bxcommit
+simulators/bochs/bximage
+simulators/bochs/bxversion.h
+simulators/bochs/bxversion.rc
+simulators/bochs/config.h
+simulators/bochs/config.log
+simulators/bochs/config.status
+simulators/bochs/libtool
+simulators/bochs/ltdlconf.h
 
-!bochs/plex86/kernel/freebsd/Makefile
+!simulators/bochs/plex86/kernel/freebsd/Makefile
 
 simulators/gem5/*
