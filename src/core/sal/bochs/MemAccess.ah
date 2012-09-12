@@ -77,7 +77,7 @@ aspect MemAccess {
 
 	advice execution (write_methods_new_stack()) : after ()
 	{
-		std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
+		//std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
 		// TODO: Log-level?
 		fail::simulator.onMemoryAccess(
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<3>())), true,
@@ -86,7 +86,7 @@ aspect MemAccess {
 
 	advice execution (write_methods_new_stack_64()) : after ()
 	{
-		std::cerr << "WOOOOOT write_methods_new_stack_64" << std::endl;
+		//std::cerr << "WOOOOOT write_methods_new_stack_64" << std::endl;
 		// TODO: Log-level?
 		fail::simulator.onMemoryAccess(
 			*(tjp->arg<0>()), sizeof(*(tjp->arg<2>())), true,

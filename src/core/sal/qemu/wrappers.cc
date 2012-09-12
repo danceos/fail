@@ -19,7 +19,6 @@ void fail_init(struct CPUX86State *env)
 
 void fail_watchpoint_hit(struct CPUX86State *env, uint64_t addr, int width, int is_write)
 {
-	std::cout << "fail_breakpoint_hit" << std::endl;
 	// FIXME: instruction pointer
 	fail::simulator.onMemoryAccess(addr, width, is_write == 1, 0);
 }
