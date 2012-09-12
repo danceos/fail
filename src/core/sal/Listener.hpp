@@ -110,7 +110,7 @@ public:
  * A Breakpoint listener to observe instruction changes within a given address space.
  */
 class BPListener : public BaseListener {
-private:
+protected:
 	BPEvent m_Data;
 	address_t m_CR3;
 public:
@@ -199,7 +199,7 @@ public:
  * A listener type to observe ranges of instruction pointers.
  */
 class BPRangeListener : public BPListener {
-private:
+protected:
 	address_t m_WatchStartAddr;
 	address_t m_WatchEndAddr;
 public:
@@ -239,7 +239,7 @@ public:
  * Observes memory read/write accesses.
  */
 class MemAccessListener : public BaseListener {
-private:
+protected:
 	//! Specific physical guest system address to watch, or ANY_ADDR.
 	address_t m_WatchAddr;
 	//! Width of the memory area being watched (# bytes).
@@ -353,7 +353,7 @@ public:
  * Observes interrupt/trap activties.
  */
 class TroubleListener : public BaseListener {
-private:
+protected:
 	TroubleEvent m_Data; //!< event related data, e.g. trap number
 	/**
 	 * Specific guest system interrupt/trap numbers to watch,
@@ -405,7 +405,7 @@ public:
  * Observes interrupts of the guest system.
  */
 class InterruptListener : public TroubleListener {
-private:
+protected:
 	InterruptEvent m_Data; //!< event related data, e.g. NMI flag
 public:
 	InterruptListener() { }
@@ -438,7 +438,7 @@ public:
 //        Additionaly, the port is fixed (at least in Bochs) but can be modified using setPort
 //        (effectless for now).
 class GuestListener : public BaseListener {
-private:
+protected:
 	GuestEvent m_Data;
 public:
 	GuestListener() { }
@@ -465,7 +465,7 @@ public:
  * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
  */
 class IOPortListener : public BaseListener {
-private:
+protected:
 	IOPortEvent m_Data;
 	unsigned m_Port;
 	bool m_Out;
@@ -519,7 +519,7 @@ public:
  * JumpListeners are used to observe conditional jumps (if...else if...else).
  */
 class JumpListener : public BaseListener {
-private:
+protected:
 	JumpEvent m_Data;
 public:
 	/**
