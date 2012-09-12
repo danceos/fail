@@ -3,6 +3,10 @@
 
 #include "../Memory.hpp"
 
+extern "C" {
+#include "qemu/failqemu.h"
+}
+
 namespace fail {
 
 /**
@@ -16,7 +20,7 @@ public:
 	host_address_t getStartAddr() const { return 0; }
 	byte_t getByte(guest_address_t addr)
 	{
-		return static_cast<byte_t>(0); /* TODO */
+		return failqemu_mem_read_byte(addr);
 	}
 	void getBytes(guest_address_t addr, size_t cnt, void *dest)
 	{
@@ -26,7 +30,7 @@ public:
 	}
 	void setByte(guest_address_t addr, byte_t data)
 	{
-		/* TODO */
+		failqemu_mem_write_byte(addr, data);
 	}
 	void setBytes(guest_address_t addr, size_t cnt, void const *src)
 	{
