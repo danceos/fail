@@ -597,10 +597,12 @@ public:
 
 #if defined BUILD_BOCHS
   #include "bochs/BochsListener.hpp"
-#elif defined BUILD_OVP
-//  #include "ovp/OVPListener.hpp"
 #elif defined BUILD_GEM5
   #include "gem5/Gem5Listener.hpp"
+#elif defined BUILD_OVP
+//  #include "ovp/OVPListener.hpp"
+#elif defined BUILD_QEMU
+  #include "qemu/QEMUListener.hpp"
 #else
   #error SAL Config Target not defined
 #endif

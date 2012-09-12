@@ -1,8 +1,9 @@
 #ifndef __VARIANT_CONFIG_HPP__
   #define __VARIANT_CONFIG_HPP__
 
-#cmakedefine BUILD_OVP
 #cmakedefine BUILD_BOCHS
 #cmakedefine BUILD_GEM5
+#cmakedefine BUILD_OVP
+#cmakedefine BUILD_QEMU
 
 #endif // __VARIANT_CONFIG_HPP__

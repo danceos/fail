@@ -9,21 +9,7 @@
 #include "bochs/BochsController.hpp"
 
 namespace fail {
-
 typedef BochsController ConcreteSimulatorController; //!< concrete simulator (type)
-extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
-
-}
-
-#elif defined BUILD_OVP
-
-#include "ovp/OVPController.hpp"
-
-namespace fail {
-
-typedef OVPController ConcreteSimulatorController; //!< concrete simulator (type)
-extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
-
 }
 
 #elif defined BUILD_GEM5
@@ -31,14 +17,31 @@ extern ConcreteSimulatorController simulator; //!< the global simulator-controll
 #include "gem5/Gem5Controller.hpp"
 
 namespace fail {
-
 typedef Gem5Controller ConcreteSimulatorController; //!< concrete simulator (type)
-extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
+}
 
+#elif defined BUILD_OVP
+
+#include "ovp/OVPController.hpp"
+
+namespace fail {
+typedef OVPController ConcreteSimulatorController; //!< concrete simulator (type)
+}
+
+#elif defined BUILD_QEMU
+
+#include "qemu/QEMUController.hpp"
+
+namespace fail {
+typedef QEMUController ConcreteSimulatorController; //!< concrete simulator (type)
 }
 
 #else
 #error SAL Instance not defined
 #endif
+
+namespace fail {
+extern ConcreteSimulatorController simulator; //!< the global simulator-controller instance
+};
 
 #endif // __SAL_INSTANCE_HPP__

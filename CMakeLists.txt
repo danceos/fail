@@ -30,7 +30,11 @@ include(compilerconfig)
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
 OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
 OPTION( BUILD_OVP    "Build OVP Variant?" OFF)
+OPTION( BUILD_QEMU   "Build QEMU Variant?" OFF)
 
+# FIXME: only add simulators/ to include_directories, and include, e.g.,
+# bochs/bochs.h in Fail*. -> avoids naming conflicts (e.g., /usr/include/elf.h
+# vs. qemu/elf.h)
 if(BUILD_BOCHS)
   ## add necessary additional header search paths.
   #add_definitions(-I${CMAKE_SOURCE_DIR}/simulators/bochs/instrument/stubs/ -I${CMAKE_SOURCE_DIR}/simulators/bochs)
@@ -39,6 +43,8 @@ elseif(BUILD_GEM5)
   include_directories(simulators/gem5/src simulators/gem5/build/ARM)
 elseif(BUILD_OVP)
   add_subdirectory(simulators/ovp)
+elseif(BUILD_QEMU)
+  include_directories(simulators)
 endif(BUILD_BOCHS)
 
 ## Additional Compiler flags ##
@@ -57,8 +63,9 @@ add_subdirectory(src)
 
 #### Backend-related build system stuff
 include(bochs)
-include(ovp)
 include(gem5)
+include(ovp)
+include(qemu)
 
 ## Just for testing:
 ## Invoking bochs build via external project

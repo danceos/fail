@@ -8,10 +8,12 @@
 // Type-config depends on the current selected simulator:
 #if defined BUILD_BOCHS
   #include "bochs/BochsConfig.hpp"
-#elif defined BUILD_OVP
-  #include "ovp/OVPConfig.hpp"
 #elif defined BUILD_GEM5
   #include "gem5/Gem5Config.hpp"
+#elif defined BUILD_OVP
+  #include "ovp/OVPConfig.hpp"
+#elif defined BUILD_QEMU
+  #include "qemu/QEMUConfig.hpp"
 #else
   #error SAL Config Target not defined
 #endif

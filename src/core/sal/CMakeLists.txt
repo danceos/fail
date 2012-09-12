@@ -31,6 +31,17 @@ elseif(BUILD_OVP)
 		SimulatorController.cc
 		${VARIANT}/OVPController.cc
 	)
+elseif(BUILD_QEMU)
+	set(SRCS
+		BufferCache.cc
+		Listener.cc
+		ListenerManager.cc
+		SALConfig.cc
+		Register.cc
+		SimulatorController.cc
+		qemu/QEMUController.cc
+		qemu/QEMUListener.cc
+	)
 endif(BUILD_BOCHS)
 
 add_library(fail-sal ${SRCS})
