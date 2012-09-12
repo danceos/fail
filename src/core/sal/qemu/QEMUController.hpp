@@ -28,12 +28,15 @@ public:
 	QEMUController();
 	~QEMUController();
 	/**
-	 * I/O port communication handler. This method is called from QEMU.  TODO.
+	 * I/O port communication handler. This method is called from QEMU.
 	 * @param data the data transmitted
 	 * @param port the port it was transmitted on
 	 * @param out true if the I/O traffic has been outbound, false otherwise
+	 * FIXME Should this be part of the generic interface?  Inherited from some generic x86 arch class?
+	 * FIXME Access width should be part of the interface.
+	 * FIXME Read/Write should be separate listeners.
 	 */
-	void onIOPort(unsigned char data, unsigned port, bool out) {}
+	void onIOPort(unsigned char data, unsigned port, bool out);
 	/**
 	 * Static internal handler for TimerListeners.  TODO.
 	 */

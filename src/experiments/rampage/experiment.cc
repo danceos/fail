@@ -43,56 +43,42 @@ bool RAMpageExperiment::run()
 
 	MemWriteListener l_mem1(addr1);
 	MemoryManager& mm = simulator.getMemoryManager();
-	while (true) {
-		simulator.addListener(&l_mem1);
-		simulator.resume();
-		unsigned char data = mm.getByte(addr1);
-#if 1
-		//data |= 1 << bit1; // stuck-to-1
-		mm.setByte(addr1, data);
-#elif 0
-		data &= ~(1 << bit1); // stuck-to-0
-		mm.setByte(addr1, data);
-#elif 0
-		data &= ~(1 << bit2); // coupling bit2 := bit1
-		data |= ((data & (1 << bit1)) != 0) << bit2;
-		mm.setByte(addr1, data);
-#elif 0
-		data &= ~(1 << bit2); // coupling bit2 := !bit1
-		data |= ((data & (1 << bit1)) == 0) << bit2;
-		mm.setByte(addr1, data);
-#elif 0
-		unsigned char data2 = mm.getByte(addr2);
-		data2 &= ~(1 << bit2); // coupling addr2:bit2 := !addr1:bit1
-		data2 |= ((data & (1 << bit1)) == 0) << bit2;
-		mm.setByte(addr2, data2);
-#endif
-		log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
-	}
-
-	/*
-	MemWriteListener l_mem2(addr2);
-	
-	log << "startup" << endl;
+	IOPortListener l_io(0x2f8, true); // ttyS1 aka COM2
 
 	simulator.addListener(&l_mem1);
-	simulator.addListener(&l_mem2);
-
+	simulator.addListener(&l_io);
 	while (true) {
-		MemWriteListener *l = static_cast<MemWriteListener*>(simulator.resume());
-		simulator.addListener(l);
-
-		address_t target;
+		BaseListener *l = simulator.resume();
 
 		if (l == &l_mem1) {
-			target = addr2;
-		} else {
-			target = addr1;
+			simulator.addListener(&l_mem1);
+			unsigned char data = mm.getByte(addr1);
+#if 1
+			data |= 1 << bit1; // stuck-to-1
+			mm.setByte(addr1, data);
+#elif 0
+			data &= ~(1 << bit1); // stuck-to-0
+			mm.setByte(addr1, data);
+#elif 0
+			data &= ~(1 << bit2); // coupling bit2 := bit1
+			data |= ((data & (1 << bit1)) != 0) << bit2;
+			mm.setByte(addr1, data);
+#elif 0
+			data &= ~(1 << bit2); // coupling bit2 := !bit1
+			data |= ((data & (1 << bit1)) == 0) << bit2;
+			mm.setByte(addr1, data);
+#elif 0
+			unsigned char data2 = mm.getByte(addr2);
+			data2 &= ~(1 << bit2); // coupling addr2:bit2 := !addr1:bit1
+			data2 |= ((data & (1 << bit1)) == 0) << bit2;
+			mm.setByte(addr2, data2);
+#endif
+			log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
+		} else if (l == &l_io) {
+			simulator.addListener(&l_io);
+			std::cout << l_io.getData() << std::endl;
 		}
-		
-		unsigned char data = simulator.getMemoryManager().getByte(l->getWatchAddress());
-		data ^= (
 	}
-	*/
+
 	return true;
 }

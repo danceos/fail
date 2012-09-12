@@ -24,4 +24,10 @@ void fail_watchpoint_hit(struct CPUX86State *env, uint64_t addr, int width, int 
 	fail::simulator.onMemoryAccess(addr, width, is_write == 1, 0);
 }
 
+void fail_io(int port, int width, int32_t data, int is_write)
+{
+	// FIXME: width is discarded
+	fail::simulator.onIOPort((unsigned char)data, port, is_write == 1);
+}
+
 }

@@ -124,7 +124,7 @@ void BochsController::updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cach
 }
 
 void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
-	// Check for active breakpoint-events:
+	// Check for active IOPortListeners:
 	io_cache_t &buffer_cache = m_LstList.getIOBuffer();
 	io_cache_t::iterator it = buffer_cache.begin();
 	while (it != buffer_cache.end()) {
@@ -139,8 +139,6 @@ void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 		it++;
 	}
 	m_LstList.triggerActiveListeners();
-	// Note: SimulatorController::onBreakpoint will not be invoked in this
-	//       implementation.
 }
 
 void BochsController::save(const std::string& path)
