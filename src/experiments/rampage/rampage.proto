@@ -1,0 +1,40 @@
+message RAMpageProtoMsg {
+	// Input: experiment parameters
+
+	// memory error address
+	required int64 mem_addr = 1;
+	// failing bit at that address
+	required int32 mem_bit = 2;
+	// coupled bit at that address (only for ERROR_COUPLING)
+	optional int32 mem_coupled_bit = 3;
+	// error type
+	enum ErrorType {
+		ERROR_NONE = 1;
+		ERROR_STUCK_AT_0 = 2;
+		ERROR_STUCK_AT_1 = 3;
+		ERROR_COUPLING = 4;
+	}
+	required ErrorType errortype = 4;
+	// global timeout
+	optional int32 timeout = 5;
+
+	// ----------------------------------------------------
+
+	// Output: experiment results
+
+	// erroneous byte was written to
+	required bool mem_written = 8;
+	// erroneous pfn was listed on the serial line
+	required bool pfn_listed = 9;
+	// error detected ("bad pfn at ...")
+	required bool error_detected = 10;
+	// pfn the error was detected in (hopefully the right one?)
+	required int32 error_detected_pfn = 11;
+	// global timeout was reached
+	required bool timeout_reached = 12;
+	// host wallclock time it took until we finished
+	required int32 experiment_time = 13;
+
+	// debugging info
+	optional string details = 14;
+}
