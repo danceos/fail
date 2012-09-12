@@ -41,6 +41,7 @@ elseif(BUILD_QEMU)
 		SimulatorController.cc
 		qemu/QEMUController.cc
 		qemu/QEMUListener.cc
+		qemu/wrappers.cc
 	)
 endif(BUILD_BOCHS)
 

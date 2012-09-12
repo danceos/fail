@@ -50,7 +50,7 @@ if(BUILD_QEMU)
   # make sure aspects don't fail to match in entry.cc
   include_directories(${PROJECT_SOURCE_DIR}/src/core ${CMAKE_BINARY_DIR}/src/core)
   add_executable(fail-client "${qemu_lib}")
-  target_link_libraries(fail-client "${qemu_lib}" fail ${qemu_library_dependencies})
+  target_link_libraries(fail-client -Wl,-whole-archive "${qemu_lib}" -Wl,-no-whole-archive fail ${qemu_library_dependencies})
   install(TARGETS fail-client RUNTIME DESTINATION bin)
   
   # a few QEMU-specific passthrough targets:
