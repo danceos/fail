@@ -1,16 +1,27 @@
+#include <iostream>
+
 #include "../SALInst.hpp"
+#include "../SALConfig.hpp"
 #include "config/FailConfig.hpp"
+
+struct CPUX86State; // fwd
 
 extern "C" {
 
-#include <stdio.h>
-//#include "qemu/failqemu.h"
+#include "qemu/failqemu.h"
 
-struct CPUX86State;
-void failqemu_init(struct CPUX86State *env)
+void fail_init(struct CPUX86State *env)
 {
-	printf("FailQEMU v%s\n", FAIL_VERSION);
+	std::cout << "FailQEMU v" FAIL_VERSION << std::endl;
+	fail::simulator.setCPUEnv(env);
 	fail::simulator.startup();
+}
+
+void fail_watchpoint_hit(struct CPUX86State *env, uint64_t addr, int width, int is_write)
+{
+	std::cout << "fail_breakpoint_hit" << std::endl;
+	// FIXME: instruction pointer
+	fail::simulator.onMemoryAccess(addr, width, is_write == 1, 0);
 }
 
 }

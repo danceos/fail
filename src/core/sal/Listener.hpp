@@ -337,14 +337,14 @@ public:
 };
 
 /**
- * \class MemWriteListener
+ * \class GenericMemWriteListener
  * Observes memory write accesses.
  */
-class MemWriteListener : public MemAccessListener {
+class GenericMemWriteListener : public MemAccessListener {
 public:
-	MemWriteListener()
+	GenericMemWriteListener()
 		: MemAccessListener(MemAccessEvent::MEM_READ) { }
-	MemWriteListener(address_t addr)
+	GenericMemWriteListener(address_t addr)
 		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE) { }
 };
 

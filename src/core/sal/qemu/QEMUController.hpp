@@ -10,6 +10,8 @@
 #include "../SimulatorController.hpp"
 #include "../Listener.hpp"
 
+struct CPUX86State;
+
 namespace fail {
 
 class ExperimentFlow;
@@ -19,8 +21,9 @@ class ExperimentFlow;
  * Very rudimentary, QEMU-specific implementation of a SimulatorController.
  */
 class QEMUController : public SimulatorController {
-private:
 public:
+	CPUX86State *m_cpuenv;
+
 	// Initialize the controller.
 	QEMUController();
 	~QEMUController();
@@ -52,6 +55,8 @@ public:
 	 * Reboot simulator. Clears all Listeners.  TODO.
 	 */
 	void reboot() {}
+	/* internal, QEMU-specific stuff */
+	void setCPUEnv(struct CPUX86State *env) { m_cpuenv = env; }
 };
 
 } // end-of-namespace: fail

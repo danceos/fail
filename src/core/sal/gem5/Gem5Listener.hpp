@@ -6,6 +6,8 @@
 
 namespace fail {
 
+typedef GenericMemWriteListener MemWriteListener;
+
 class Gem5BPSingleListener : public GenericBPSingleListener
 {
 public:

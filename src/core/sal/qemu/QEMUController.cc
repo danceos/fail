@@ -9,7 +9,8 @@
 namespace fail {
 
 QEMUController::QEMUController()
-	: SimulatorController(new QEMURegisterManager(), new QEMUMemoryManager())
+	: SimulatorController(new QEMURegisterManager(), new QEMUMemoryManager()),
+	  m_cpuenv(0)
 {
 	// TODO: probably do additional RegisterManager initializations
 }

@@ -17,7 +17,18 @@ public:
 	// TODO
 };
 
-// TODO: MemWriteListener
+class QEMUMemWriteListener : public GenericMemWriteListener {
+public:
+	QEMUMemWriteListener()
+		: GenericMemWriteListener() { }
+	QEMUMemWriteListener(address_t addr)
+		: GenericMemWriteListener(addr) { }
+
+	virtual bool onAddition();
+	virtual void onDeletion();
+};
+
+typedef QEMUMemWriteListener MemWriteListener;
 
 } // end-of-namespace: fail
 

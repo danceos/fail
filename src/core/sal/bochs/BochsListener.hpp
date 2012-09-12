@@ -6,6 +6,7 @@
 namespace fail {
 
 typedef GenericBPSingleListener BPSingleListener;
+typedef GenericMemWriteListener MemWriteListener;
 
 /**
  * \class TimerListener
