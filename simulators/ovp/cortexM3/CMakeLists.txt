@@ -7,9 +7,9 @@ set(SRCS
 )
 
 add_executable(ovp_cortexM3 ${SRCS})
-add_dependencies(ovp_cortexM3 ovpstatusmessages )
+add_dependencies(ovp_cortexM3 fail-ovpstatusmessages )
 
 
-target_link_libraries(ovp_cortexM3 ${SIM_LDFLAGS} sal cpn comm efw util ovpstatusmessages)
+target_link_libraries(ovp_cortexM3 ${SIM_LDFLAGS} fail fail-ovpstatusmessages)
 ## OVP links all needed shared libraries via a runtimeloader
 set_target_properties(ovp_cortexM3 PROPERTIES LINK_FLAGS "-L${CMAKE_BINARY_DIR}/lib -lpcl -lprotobuf -m32 ")

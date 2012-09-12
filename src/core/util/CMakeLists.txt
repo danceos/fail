@@ -24,5 +24,5 @@ find_package(Boost 1.42 COMPONENTS thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
-add_library(util ${SRCS})
-target_link_libraries(util ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})
+add_library(fail-util ${SRCS})
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})

@@ -7,4 +7,4 @@ set(MY_PLUGIN_SRCS
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## Build library
-add_library(${PLUGIN_NAME} ${MY_PLUGIN_SRCS})
+add_library(fail-${PLUGIN_NAME} ${MY_PLUGIN_SRCS})

@@ -7,7 +7,7 @@ env.Prepend(CPPPATH=Dir('../../../../../src/core/'))
 env.Prepend(CPPPATH=Dir('../../../../../build/src/core/'))
 
 env.Prepend(LIBPATH=Dir('../../../../../build/lib/'))
-gStaticLibs = ['-lsal', '-lhsc-simple', '-lcomm', '-lcpn', '-lefw', '-lutil', '-lpcl']
+gStaticLibs = ['-lfail-sal', '-lfail-hsc-simple', '-lfail-comm', '-lfail-cpn', '-lfail-efw', '-lfail-util', '-lpcl']
 
 if (len(gStaticLibs)>0):
 	linkFlags = ['-Wl,--start-group']

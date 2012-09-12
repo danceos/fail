@@ -33,6 +33,6 @@ elseif(BUILD_OVP)
 	)
 endif(BUILD_BOCHS)
 
-add_library(sal ${SRCS})
+add_library(fail-sal ${SRCS})
 
-add_dependencies(sal efw)
+add_dependencies(fail-sal fail-efw)

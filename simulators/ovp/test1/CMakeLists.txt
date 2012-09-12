@@ -7,7 +7,7 @@ set(SRCS
 	platform/platform.cpp
 )
 add_executable(ovp ${SRCS})
-add_dependencies(ovp msg)
+add_dependencies(ovp fail-comm)
 target_link_libraries(ovp ${SIM_LDFLAGS} )
 ## OVP links all needed shared libraries via a runtimeloader
 set_target_properties(ovp PROPERTIES LINK_FLAGS " -m32 ")

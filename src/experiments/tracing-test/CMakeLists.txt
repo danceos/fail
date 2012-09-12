@@ -12,6 +12,6 @@ set(MY_CAMPAIGN_SRCS
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## Build library
-add_library(${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
+add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 
-add_dependencies(${EXPERIMENT_NAME} tracing)
+add_dependencies(fail-${EXPERIMENT_NAME} fail-tracing)

@@ -33,4 +33,8 @@ add_library(fail dummy.cc)
 ## -> the Fail* targets and user defined experiment targets
 # start/end-group: ld must iterate over these archives more than once to figure
 #                  out which objects are needed
-target_link_libraries(fail -Wl,--start-group ${EXPERIMENTS_ACTIVATED} ${PLUGINS_ACTIVATED} sal cpn efw comm util -Wl,--end-group)
+set(experiment_libraries "")
+foreach(exp_or_plugin ${EXPERIMENTS_ACTIVATED} ${PLUGINS_ACTIVATED})
+    set(experiment_libraries ${experiment_libraries} fail-${exp_or_plugin})
+endforeach(exp_or_plugin)
+target_link_libraries(fail -Wl,--start-group ${experiment_libraries} fail-sal fail-cpn fail-efw fail-comm fail-util -Wl,--end-group)

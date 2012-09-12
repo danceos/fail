@@ -44,7 +44,7 @@ endif(BUILD_BOCHS)
 ## Additional Compiler flags ##
 set(CMAKE_C_FLAGS "-g -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}") 
-## Tell the linker where to find the libfail.a
+## Tell the linker where to find the Fail* libraries
 link_directories("${LIBRARY_OUTPUT_PATH}")
 
 # Add "simulators"-directory to the include path. This allows

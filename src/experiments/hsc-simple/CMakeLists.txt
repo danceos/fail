@@ -14,4 +14,4 @@ set(MY_EXPERIMENT_SRCS
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## build library
-add_library(${EXPERIMENT_NAME} ${MY_EXPERIMENT_SRCS})
+add_library(fail-${EXPERIMENT_NAME} ${MY_EXPERIMENT_SRCS})

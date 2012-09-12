@@ -3,6 +3,6 @@ set(SRCS
 	JobServer.cc
 )
 
-add_library(cpn ${SRCS})
+add_library(fail-cpn ${SRCS})
 
-add_dependencies(cpn comm)
+add_dependencies(fail-cpn fail-comm)

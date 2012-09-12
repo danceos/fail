@@ -11,5 +11,4 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS  ${MY_PROTOS}   )
 
 ## Build library
-add_library(ovpstatusmessages  ${PROTO_SRCS} ${PROTO_HDRS} )
-
+add_library(fail-ovpstatusmessages  ${PROTO_SRCS} ${PROTO_HDRS} )
