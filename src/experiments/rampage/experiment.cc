@@ -16,6 +16,11 @@
 
 #define LOCAL 1
 
+#define STR_STATS    "calculating stats"
+#define STR_START    "starting test pass"
+#define STR_TESTED   "tested "
+#define STR_BADFRAME "bad frame at pfn "
+
 using namespace std;
 using namespace fail;
 
@@ -29,8 +34,6 @@ using namespace fail;
 
 bool RAMpageExperiment::run()
 {
-	string output;
-	Logger log("RAMpage", false);
 	address_t addr1 = 1024*1024*62+3;
 	int bit1 = 3;
 	address_t addr2 = 1024*1024*63+8;
@@ -75,28 +78,61 @@ bool RAMpageExperiment::run()
 			data2 |= ((data & (1 << bit1)) == 0) << bit2;
 			mm.setByte(addr2, data2);
 #endif
-			log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
+			m_log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
 		} else if (l == &l_io) {
 			simulator.addListener(&l_io);
-			output += l_io.getData();
-			if (l_io.getData() == '\n') {
-				// calculating stats
-				// starting test pass
-				// tested %08x-%08x %08x-%08x ...
-				// bad frame at pfn %08x
-				// TODO scan + react
-				output.clear();
-
-				// restart local timer
+			if (handleIO(l_io.getData())) {
+				// we saw some progress, restart local timer
 				simulator.removeListener(&l_timeout_local);
 				simulator.addListener(&l_timeout_local);
 			}
 		} else if (l == &l_timeout_local) {
-			log << "local timeout" << std::endl;
+			m_log << "local timeout" << std::endl;
 		} else if (l == &l_timeout_global) {
-			log << "global timeout" << std::endl;
+			m_log << "global timeout" << std::endl;
 		}
 	}
 
+	return true;
+}
+
+bool RAMpageExperiment::handleIO(char c)
+{
+	if (c != '\n') {
+		m_output += c;
+		return false;
+	}
+
+	// calculating stats
+	if (!m_output.compare(0, sizeof(STR_STATS)-1, STR_STATS)) {
+		if (last_line_was_startingtestpass) {
+			// result: NO_PFNS_TESTED
+			m_log << "no PFNs were tested this time" << std::endl;
+			simulator.terminate();
+		}
+		m_log << STR_STATS << std::endl;
+
+	// starting test pass
+	} else if (!m_output.compare(0, sizeof(STR_START)-1, STR_START)) {
+		last_line_was_startingtestpass = true;
+		m_log << STR_START << std::endl;
+
+	// tested %08x-%08x %08x-%08x ...
+	} else if (!m_output.compare(0, sizeof(STR_TESTED)-1, STR_TESTED)) {
+		last_line_was_startingtestpass = false;
+		m_log << STR_TESTED << std::endl;
+
+	// bad frame at pfn %08x
+	} else if (!m_output.compare(0, sizeof(STR_BADFRAME)-1, STR_BADFRAME)) {
+		m_log << STR_BADFRAME << std::endl;
+
+		simulator.terminate();
+	} else {
+		// unknown
+		m_log << "wtf unknown: " << m_output << std::endl;
+		simulator.terminate();
+	}
+
+	m_output.clear();
 	return true;
 }
