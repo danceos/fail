@@ -1,7 +1,6 @@
 #ifndef __LISTENER_HPP__
   #define __LISTENER_HPP__
 
-#include <ctime>
 #include <string>
 #include <cassert>
 #include <vector>
@@ -31,7 +30,7 @@ protected:
 	ExperimentFlow* m_Parent; //!< this listener belongs to experiment m_Parent
 public:
 	BaseListener() : m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
-	{ updateTime(); }
+	{ }
 	virtual ~BaseListener() { }
 	/**
 	 * This method is called when an experiment flow adds a new listener by
@@ -59,13 +58,6 @@ public:
 	virtual void onTrigger() { }
 	// TODO: Hier noch ne neue Methode oder reicht es, die Semantik von onTrigger umzudef.?
 	/**
-	 * Retrieves the time stamp of this listener. The time stamp is set when
-	 * the listener gets created, i.e. the constructor is called. The meaning
-	 * of this value depends on the actual listener type.
-	 * @return the time stamp
-	 */
-	std::time_t getTime() const { return (m_tStamp); }
-	/**
 	 * Decreases the listener counter by one. When this counter reaches zero, the
 	 * listener will be triggered.
 	 */
@@ -85,10 +77,6 @@ public:
 	 * value that was set through \c setCounter().
 	 */
 	void resetCounter() { m_OccCounter = m_OccCounterInit; }
-	/**
-	 * Sets the time stamp for this listener to the current system time.
-	 */
-	void updateTime() { time(&m_tStamp); }
 	/**
 	 * Returns the parent experiment of this listener (context).
 	 * If the listener was created temporarily or wasn't linked to a context,
