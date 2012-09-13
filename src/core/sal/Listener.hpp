@@ -31,7 +31,7 @@ protected:
 public:
 	BaseListener() : m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
 	{ }
-	virtual ~BaseListener() { }
+	virtual ~BaseListener() { } // FIXME remove from queues
 	/**
 	 * This method is called when an experiment flow adds a new listener by
 	 * calling \c simulator.addListener() or \c simulator.addListenerAndResume().
@@ -559,7 +559,7 @@ public:
 	 * Creates a new timer listener. This can be used to implement a timeout-
 	 * mechanism in the experiment-flow. The timer starts automatically when
 	 * added to the simulator backend.
-	 * @param timeout the time intervall in milliseconds (ms)
+	 * @param timeout the time interval in milliseconds (ms)
 	 * @see SimulatorController::addListener
 	 */
 	GenericTimerListener(unsigned timeout) : m_Timeout(timeout) { }

@@ -45,7 +45,7 @@ public:
 	 */
 	TimerListener(unsigned timeout)
 		: GenericTimerListener(timeout) { }
-	~TimerListener() { onDeletion(); }
+	~TimerListener() { onDeletion(); } // FIXME ~BaseListener should automatically dequeue a Listener, and then indirectly calls onDeletion.  In the current implementation, no dequeueing happens at all.
 	
 	/**
 	 * This method is called when an experiment flow adds a new event by
@@ -70,7 +70,7 @@ public:
 	 * will be called *before* the event is actually triggered, i.e. before the
 	 * corresponding coroutine is toggled.
 	 */
-	void onTrigger() { onDeletion(); }
+	void onTrigger() { onDeletion(); } // FIXME It should NOT be a Listener's job to call its own onDeletion.  ListenerManager should call onDeletion when it deletes a Listener from a queue.
 	// TODO/FIXME: bei neuer impl. anpassen
 };
 
