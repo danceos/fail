@@ -15,8 +15,10 @@ message RAMpageProtoMsg {
 		ERROR_COUPLING = 4;
 	}
 	required ErrorType errortype = 4;
+	// local timeout (between newlines on ttyS1)
+	optional int32 local_timeout = 5;
 	// global timeout
-	optional int32 timeout = 5;
+	optional int32 global_timeout = 6;
 
 	// ----------------------------------------------------
 
@@ -24,17 +26,27 @@ message RAMpageProtoMsg {
 
 	// erroneous byte was written to
 	required bool mem_written = 8;
-	// erroneous pfn was listed on the serial line
-	required bool pfn_listed = 9;
-	// error detected ("bad pfn at ...")
-	required bool error_detected = 10;
+
+	enum ResultType {
+		RIGHT_PFN_DETECTED = 1;
+		// error was detected, but in the wrong PF (improbable)
+		WRONG_PFN_DETECTED = 2;
+		// erroneous pfn was listed on the serial line, but no error was detected
+		PFN_WAS_LISTED = 3;
+		// no "tested ..." line between "starting test pass" and "calculating stats"
+		NO_PFNS_TESTED = 3;
+		LOCAL_TIMEOUT = 4;
+		GLOBAL_TIMEOUT = 5;
+		// e.g., unknown string on serial line
+		UNKNOWN = 7;
+	}
+	optional ResultType resulttype = 9;
+
 	// pfn the error was detected in (hopefully the right one?)
-	required int32 error_detected_pfn = 11;
-	// global timeout was reached
-	required bool timeout_reached = 12;
+	optional int32 error_detected_pfn = 10;
 	// host wallclock time it took until we finished
-	required int32 experiment_time = 13;
+	required int32 experiment_time = 11;
 
 	// debugging info
-	optional string details = 14;
+	optional string details = 12;
 }
