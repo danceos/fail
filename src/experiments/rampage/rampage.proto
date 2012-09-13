@@ -13,19 +13,20 @@ message RAMpageProtoMsg {
 		ERROR_STUCK_AT_0 = 2;
 		ERROR_STUCK_AT_1 = 3;
 		ERROR_COUPLING = 4;
+		ERROR_INVERSE_COUPLING = 5;
 	}
 	required ErrorType errortype = 4;
 	// local timeout (between newlines on ttyS1)
-	optional int32 local_timeout = 5;
+	required int32 local_timeout = 5;
 	// global timeout
-	optional int32 global_timeout = 6;
+	required int32 global_timeout = 6;
 
 	// ----------------------------------------------------
 
 	// Output: experiment results
 
 	// erroneous byte was written to
-	required bool mem_written = 8;
+	optional bool mem_written = 8;
 
 	enum ResultType {
 		RIGHT_PFN_DETECTED = 1;
@@ -45,7 +46,7 @@ message RAMpageProtoMsg {
 	// pfn the error was detected in (hopefully the right one?)
 	optional int32 error_detected_pfn = 10;
 	// host wallclock time it took until we finished
-	required int32 experiment_time = 11;
+	optional int32 experiment_time = 11;
 
 	// debugging info
 	optional string details = 12;

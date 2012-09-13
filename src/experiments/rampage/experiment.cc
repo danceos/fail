@@ -34,19 +34,36 @@ using namespace fail;
 
 bool RAMpageExperiment::run()
 {
-	address_t addr1 = 1024*1024*62+3;
-	int bit1 = 3;
-	address_t addr2 = 1024*1024*63+8;
-	int bit2 = 5;
+	m_log << "startup" << std::endl;
 
 	// not implemented yet for QEMU:
 	//simulator.restore("rampage-cext-started");
 
-	MemWriteListener l_mem1(addr1);
-	MemoryManager& mm = simulator.getMemoryManager();
+	// We cannot include the auto-generated rampage.pb.h in experiment.hpp,
+	// because it is included in an aspect header; therefore we need to work
+	// around not having the type available there.
+	m_param = new RAMpageExperimentData;
+#if LOCAL
+	//m_param->msg.set_mem_addr(1024*604+123);
+	m_param->msg.set_mem_addr(1024*1024*63+123);
+	m_param->msg.set_mem_bit(7);
+	m_param->msg.set_errortype(m_param->msg.ERROR_STUCK_AT_0);
+	m_param->msg.set_local_timeout(1000*60*10); // 10m
+	m_param->msg.set_global_timeout(1000*60*50); // 50m
+#else
+	if (!m_jc.getm_param(m_param)) {
+		log << "Dying." << endl;
+		// communicate that we were told to die
+		simulator.terminate(1);
+	}
+#endif
+
+	m_param->msg.set_mem_written(false);
+
+	MemWriteListener l_mem1(m_param->msg.mem_addr());
 	IOPortListener l_io(0x2f8, true); // ttyS1 aka COM2
-	TimerListener l_timeout_local(1000*60*10); // 10m
-	TimerListener l_timeout_global(1000*60*30); // 30m
+	TimerListener l_timeout_local(m_param->msg.local_timeout());
+	TimerListener l_timeout_global(m_param->msg.global_timeout());
 
 	simulator.addListener(&l_mem1);
 	simulator.addListener(&l_io);
@@ -57,28 +74,8 @@ bool RAMpageExperiment::run()
 
 		if (l == &l_mem1) {
 			simulator.addListener(&l_mem1);
-			unsigned char data = mm.getByte(addr1);
-#if 1
-			data |= 1 << bit1; // stuck-to-1
-			mm.setByte(addr1, data);
-#elif 0
-			data &= ~(1 << bit1); // stuck-to-0
-			mm.setByte(addr1, data);
-#elif 0
-			data &= ~(1 << bit2); // coupling bit2 := bit1
-			data |= ((data & (1 << bit1)) != 0) << bit2;
-			mm.setByte(addr1, data);
-#elif 0
-			data &= ~(1 << bit2); // coupling bit2 := !bit1
-			data |= ((data & (1 << bit1)) == 0) << bit2;
-			mm.setByte(addr1, data);
-#elif 0
-			unsigned char data2 = mm.getByte(addr2);
-			data2 &= ~(1 << bit2); // coupling addr2:bit2 := !addr1:bit1
-			data2 |= ((data & (1 << bit1)) == 0) << bit2;
-			mm.setByte(addr2, data2);
-#endif
-			m_log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
+			handleMemWrite(l_mem1.getTriggerAddress());
+			m_param->msg.set_mem_written(true);
 		} else if (l == &l_io) {
 			simulator.addListener(&l_io);
 			if (handleIO(l_io.getData())) {
@@ -88,12 +85,50 @@ bool RAMpageExperiment::run()
 			}
 		} else if (l == &l_timeout_local) {
 			m_log << "local timeout" << std::endl;
+			terminateExperiment(m_param->msg.LOCAL_TIMEOUT);
 		} else if (l == &l_timeout_global) {
 			m_log << "global timeout" << std::endl;
+			terminateExperiment(m_param->msg.GLOBAL_TIMEOUT);
 		}
 	}
-
 	return true;
+}
+
+void RAMpageExperiment::handleMemWrite(address_t addr)
+{
+	address_t addr1 = addr;
+	unsigned bit1 = m_param->msg.mem_bit();
+	unsigned bit2 = m_param->msg.mem_coupled_bit();
+	unsigned char data = m_mm.getByte(addr1);
+
+	switch (m_param->msg.errortype()) {
+	case RAMpageProtoMsg::ERROR_NONE:
+		break;
+	case RAMpageProtoMsg::ERROR_STUCK_AT_0:
+		data &= ~(1 << bit1); // stuck-at-0
+		break;
+	case RAMpageProtoMsg::ERROR_STUCK_AT_1:
+		data |= 1 << bit1; // stuck-at-1
+		break;
+	case RAMpageProtoMsg::ERROR_COUPLING:
+		data &= ~(1 << bit2); // coupling bit2 := bit1
+		data |= ((data & (1 << bit1)) != 0) << bit2;
+		break;
+	case RAMpageProtoMsg::ERROR_INVERSE_COUPLING:
+		data &= ~(1 << bit2); // coupling bit2 := !bit1
+		data |= ((data & (1 << bit1)) == 0) << bit2;
+		break;
+	default:
+		m_log << "unknown error type" << std::endl;
+	}
+	m_mm.setByte(addr1, data);
+	m_log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
+/*
+	unsigned char data2 = m_mm.getByte(addr2);
+	data2 &= ~(1 << bit2); // coupling addr2:bit2 := !addr1:bit1
+	data2 |= ((data & (1 << bit1)) == 0) << bit2;
+	m_mm.setByte(addr2, data2);
+*/
 }
 
 bool RAMpageExperiment::handleIO(char c)
@@ -105,34 +140,49 @@ bool RAMpageExperiment::handleIO(char c)
 
 	// calculating stats
 	if (!m_output.compare(0, sizeof(STR_STATS)-1, STR_STATS)) {
-		if (last_line_was_startingtestpass) {
+		if (m_last_line_was_startingtestpass) {
 			// result: NO_PFNS_TESTED
 			m_log << "no PFNs were tested this time" << std::endl;
 			simulator.terminate();
+			terminateExperiment(m_param->msg.NO_PFNS_TESTED);
 		}
 		m_log << STR_STATS << std::endl;
 
 	// starting test pass
 	} else if (!m_output.compare(0, sizeof(STR_START)-1, STR_START)) {
-		last_line_was_startingtestpass = true;
+		m_last_line_was_startingtestpass = true;
 		m_log << STR_START << std::endl;
 
 	// tested %08x-%08x %08x-%08x ...
 	} else if (!m_output.compare(0, sizeof(STR_TESTED)-1, STR_TESTED)) {
-		last_line_was_startingtestpass = false;
+		m_last_line_was_startingtestpass = false;
 		m_log << STR_TESTED << std::endl;
 
+		// TODO test whether the failing PFN was listed
+		//terminateExperiment(m_param->msg.PFN_WAS_LISTED);
 	// bad frame at pfn %08x
 	} else if (!m_output.compare(0, sizeof(STR_BADFRAME)-1, STR_BADFRAME)) {
 		m_log << STR_BADFRAME << std::endl;
 
-		simulator.terminate();
+		// TODO test whether it was the right PFN
+		terminateExperiment(m_param->msg.RIGHT_PFN_DETECTED);
 	} else {
 		// unknown
 		m_log << "wtf unknown: " << m_output << std::endl;
-		simulator.terminate();
+		m_param->msg.set_details("unknown serial output: " + m_output);
+		terminateExperiment(m_param->msg.UNKNOWN);
 	}
 
 	m_output.clear();
 	return true;
+}
+
+void RAMpageExperiment::terminateExperiment(int resulttype)
+{
+	m_param->msg.set_resulttype((RAMpageProtoMsg::ResultType) resulttype);
+	// TODO measure time
+#if !LOCAL
+	m_jc.sendResult(param);
+#endif
+	simulator.terminate();
 }
