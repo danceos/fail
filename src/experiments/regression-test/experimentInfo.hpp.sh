@@ -16,12 +16,16 @@ EOF
 
 function alldefs() {
 cat <<EOF
-// loop_done() address:
 // nm -C $(basename $1)|fgrep loop_done
+#define REGRESSION_FUNC_STARTED		0x`addrof $1 started_test`
+#define REGRESSION_FUNC_BP		0x`addrof $1 bp_test`
 #define REGRESSION_FUNC_LOOP_DONE		0x`addrof $1 loop_done`
-#define REGRESSION_FUNC_MTEST_READ		0x`addrof $1 mtest_read`
-#define REGRESSION_FUNC_MTEST_WRITE		0x`addrof $1 mtest_write`
+#define REGRESSION_FUNC_MEM_READ		0x`addrof $1 mem_read`
+#define REGRESSION_FUNC_MEM_WRITE		0x`addrof $1 mem_write`
+#define REGRESSION_VAR_MTEST_READ		0x`addrof $1 mtest_read`
+#define REGRESSION_VAR_MTEST_WRITE		0x`addrof $1 mtest_write`
 #define REGRESSION_FUNC_TRAP		0x`addrof $1 trap_test`
+#define REGRESSION_FUNC_INTERRUPT		0x`addrof $1 interrupt_test`
 #define REGRESSION_FUNC_JUMP		0x`addrof $1 jump_test`
 EOF
 }

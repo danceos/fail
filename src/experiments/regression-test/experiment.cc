@@ -1,23 +1,24 @@
 #include <iostream>
 #include <unistd.h>
+#include <fstream>
 
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Listener.hpp"
-#include "util/Logger.hpp"
+#include "sal/Memory.hpp"
 #include "config/FailConfig.hpp"
 #include "sal/bochs/BochsRegister.hpp"
+#include "../plugins/tracing/TracingPlugin.hpp"
+#include "../plugins/serialoutput/SerialOutput.hpp"
 
-//ToDo:
-// more flow-control by BreakpointListener
-// life-counter (counter over BreakpointListener) monitor whether a test takes too much "time"
-// more tests + test of plugins
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_MEMREAD) \
-	|| !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SR_RESTORE) \
-	|| !defined(CONFIG_SR_REBOOT) || !defined(CONFIG_EVENT_TRAP)
+|| !defined(CONFIG_EVENT_GUESTSYS) || !defined(CONFIG_EVENT_INTERRUPT) \
+|| !defined(CONFIG_EVENT_IOPORT) || !defined(CONFIG_EVENT_JUMP) || !defined(CONFIG_EVENT_MEMREAD) \
+|| !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_SR_REBOOT) \
+|| !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) 
   #error This experiment needs: breakpoints, memread, memwrite. Enable these in the configuration.
 #endif
 
@@ -25,176 +26,252 @@ using namespace std;
 using namespace fail;
 
 bool RegressionTest::run()
-{
-	BPSingleListener bpPather(ANY_ADDR);
-	int count = 0;
+{	
+	unsigned instrAddr_at_save = 0;
+	BaseListener *ev;
 	
-	Logger log("Regression-Test", false);
-	log << "experiment start" << endl;
-
-//Breakpoint-Test
-	log << "Breakpoint-Test start." << endl;
+	//Result-File
+	fstream file ("regression-test.results", ios::out | ios::trunc);
 	
-	BPSingleListener mainbp(ANY_ADDR); 
-	mainbp.setCounter(1000);
+	file << "experiment start" << endl;
 	
-	BPRangeListener bprange(REGRESSION_FUNC_LOOP_DONE, REGRESSION_FUNC_LOOP_DONE);
-	BPSingleListener breakcounter(REGRESSION_FUNC_LOOP_DONE);
-	simulator.addListener(&breakcounter);
-
-
-	while(true){
-		
-		BaseListener* ev = simulator.resume();
-		
-		if(ev == &breakcounter || ev == &bprange) {
-			
-			count++;
-			//First 5 times test BPSingleListener
-			if(count < 5){
-				log << "Loop-Single-Test!" << endl;
-				simulator.addListener(&breakcounter);
-			//Next 5 times test BPRangeListener
-			}else if(count < 10){
-				log << "Loop-Range-Test!" << endl;
-				simulator.addListener(&bprange);
-			//At 10 run of loop start BPSingleListener, BPRangeListener, mainListener 
-			//which waits 1000 instructions. 
-			}else if(count == 10){
-				log << "loop-limit reached..." << endl;
-				simulator.addListener(&breakcounter);
-				simulator.addListener(&bprange);
-				simulator.addListener(&mainbp);
-			//If mainListener fires not first the test failes.
-			}else if(count >= 10){
-				log << "Breakpoint-Test FAILED."<< endl;
-				break;
-			}
-			//If mainListener fires first the test success.
-		}else if(ev == &mainbp) {
-			log << "Breakpoint-Test SUCCESS." <<endl;
+	//Wait for correct start point
+	GuestListener g;
+	
+	while (simulator.addListenerAndResume(&g) == &g) {
+		if (g.getData() == 'A') {
+			file << "Found start-point with signal: " << g.getData() << endl;
+			file << "GuestListener-Test SUCCESS." << endl;
 			break;
 		}
 	}
-	//simulator.clearListeners(this);
-	log << "Breakpoint-Test end" << endl;
 	
-//Memory test TODO..
-/*
-	log << "Memory-Test start." << endl;
+	//Watchdog-Timer
+	TimerListener watchdog(100000);
+	simulator.addListener(&watchdog);
 	
-	MemReadListener memread(REGRESSION_FUNC_MTEST_READ);
-	MemWriteListener memwrite(REGRESSION_FUNC_MTEST_READ);
-	
-	simulator.resume();
-	B D
-	log << "Memaddr: " << hex <<memread.getTriggerAddress() << dec <<endl;
-	
-	
-	log << "Memory-Test end." << endl;
-*/
-
-
-//Jump test
-
-	log << "Jump-Test start" << endl;
-	
-	bpPather.setWatchInstructionPointer(REGRESSION_FUNC_JUMP);
-	simulator.addListener(&bpPather);
-	simulator.resume();
-	log << "Begin of Jump-Function found." << endl;
-
-	JumpListener jump(ANY_INSTR);
-	simulator.addListener(&jump);
-	simulator.resume();
-	log << "Jump-Instruction found: " << jump.getOpcode() << endl;
-	log << "current Instruction-Pointer: 0x" << hex <<\
-	simulator.getRegisterManager().getInstructionPointer() << dec << endl;
-	
-	
-	log << "Jump-Test end" << endl;
-
-
-//Interrupt test
-
-	log << "Interrupt-Test start" << endl;
-	
-	InterruptListener interrupt(32);
-	simulator.addListener(&interrupt);
-	simulator.resume();
-	
-	log << "Interrupt-Test SUCCESS" << endl;
-	
-	log << "Interrupt-Test end" << endl;
-
-
-// Save / Restore test
-	
-	log << "Save-/Restore-Test start" << endl;
+	//Save state
+	file << "Saving state." << endl;
 	
 	simulator.save("regression-save");
+	instrAddr_at_save = simulator.getRegisterManager().getInstructionPointer();
 	
-	long beforeRestore = simulator.getRegisterManager().getInstructionPointer();
-	log << "InstructionPointer before restore : 0x" << hex << beforeRestore << dec << " DEZ: "<< beforeRestore << endl;
+	//Start Plugins
+	TracingPlugin tp;
+	ofstream of("regression-trace.results");
+	tp.setOstream(&of);
+	simulator.addFlow(&tp);
 	
-	simulator.restore("regression-save");
+	//SerialOutput-Plugin
+	SerialOutput so(0x3F8);
+	simulator.addFlow(&so);
 	
-	long afterRestore = simulator.getRegisterManager().getInstructionPointer();
-	log << "InstructionPointer after restore: 0x" << hex << afterRestore << dec << " DEZ: "<< afterRestore << endl;
+	//BPListener
+	BPSingleListener bp_test(REGRESSION_FUNC_BP);
+	BPSingleListener mem_read_test(REGRESSION_FUNC_MEM_READ);
+	BPSingleListener mem_write_test(REGRESSION_FUNC_MEM_WRITE);
+	BPSingleListener trap_test(REGRESSION_FUNC_TRAP);
+	BPSingleListener jump_test(REGRESSION_FUNC_JUMP);
+	BPSingleListener interrupt_test(REGRESSION_FUNC_INTERRUPT);
+
+	simulator.addListener(&bp_test);
+	simulator.addListener(&mem_read_test);
+	simulator.addListener(&mem_write_test);
+	simulator.addListener(&trap_test);
+	simulator.addListener(&jump_test);
+	simulator.addListener(&interrupt_test);
 	
-	if(beforeRestore == afterRestore) {
-		log << "Save-/Restore-Test SUCCESS." << endl;
-	}else {
-		log << "Save-/Restore-Test FAILED." << endl;
+	while (true) {
+		simulator.removeListener(&watchdog);
+		simulator.addListener(&watchdog);
+		ev = simulator.resume();
+		
+		if (ev == &bp_test) {
+			file << "Breakpoint-Test start." << endl;
+			
+			BPSingleListener mainbp(ANY_ADDR); 
+			mainbp.setCounter(1000);
+			
+			BPRangeListener bprange(REGRESSION_FUNC_LOOP_DONE, REGRESSION_FUNC_LOOP_DONE);
+			BPSingleListener breakcounter(REGRESSION_FUNC_LOOP_DONE);
+			simulator.addListener(&breakcounter);
+
+			int count = 0;
+
+			while(true){
+				
+				BaseListener* ev = simulator.resume();
+				
+				if(ev == &breakcounter || ev == &bprange) {
+					
+					count++;
+					//First 5 times test BPSingleListener
+					if(count < 5){
+						simulator.addListener(&breakcounter);
+					//Next 5 times test BPRangeListener
+					}else if(count < 10){
+						simulator.addListener(&bprange);
+					//At 10 run of loop start BPSingleListener, BPRangeListener, mainListener 
+					//which waits 1000 instructions. 
+					}else if(count == 10){
+						simulator.addListener(&breakcounter);
+						simulator.addListener(&bprange);
+						simulator.addListener(&mainbp);
+					//If mainListener fires not first the test failes.
+					}else if(count >= 10){
+						file << "Breakpoint-Test FAILED."<< endl;
+						break;
+					}
+					//If mainListener fires first the test success.
+				}else if(ev == &mainbp) {
+					file << "Breakpoint-Test SUCCESS." <<endl;
+					break;
+				}else if (ev == &watchdog) {
+					file << "Breakpoint-Test FAILED --> Watchdog fired. Timeout!" << endl;
+				}
+			}
+			file << "Breakpoint-Test end" << endl;
+			simulator.removeListener(&breakcounter);
+			simulator.removeListener(&bprange);
+			simulator.removeListener(&mainbp);
+			
+		} else if (ev == &mem_read_test) {
+
+			file << "Memory-Read-Test start." << endl;
+			
+			MemReadListener memread(REGRESSION_VAR_MTEST_READ);
+			simulator.addListener(&memread);
+			simulator.resume();
+			
+			file << "Memaddr-Read: " << hex << memread.getTriggerAddress() << dec << endl;
+			
+			if(memread.getTriggerAddress() == REGRESSION_VAR_MTEST_READ) {
+				file << "Memory-Read-Test SUCCESS." << endl;
+			} else {
+				file << "Memory-Read-Test FAILED." << endl;
+			}
+			
+			file << "Memory-Read-Test end." << endl;
+			simulator.removeListener(&memread);
+
+		} else if (ev == &mem_write_test) {
+			
+			file << "Memory-Write-Test start." << endl;
+			
+			MemWriteListener memwrite(REGRESSION_VAR_MTEST_WRITE);
+			simulator.addListener(&memwrite);
+			simulator.resume();
+			
+			file << "Memaddr-WRITE: " << hex << memwrite.getTriggerAddress() << dec << endl;
+
+			if(memwrite.getTriggerAddress() == REGRESSION_VAR_MTEST_WRITE) {
+				file << "Memory-Write-Test SUCCESS." << endl;
+			} else {
+				file << "Memory-Write-Test FAILED." << endl;
+			}
+
+			file << "Memory-Write-Test end." << endl;
+		
+		
+		} else if (ev == &trap_test) {
+			
+			file << "Trap-Test start" << endl;
+			
+			TrapListener trap(ANY_TRAP);
+			simulator.addListener(&trap);
+			simulator.resume();
+			file << "Trap found: " << trap.getTriggerNumber() << endl;
+			
+			file << "Trap-Test end" << endl;
+			
+			simulator.removeListener(&trap);
+			
+			//After a division-error trap ecos halts the cpu
+			//Because of this a restore to start point is needed
+			
+			simulator.restore("regression-save");
+			
+			if (simulator.getRegisterManager().getInstructionPointer() == instrAddr_at_save) {
+				file << "Save-/Restore-Test SUCCESS." << endl;
+			} else {
+				file << "Save-/Restore-Test FAILED. The instructionpointer after restore is \
+				different to the ionstructionpointer after save! " << endl;
+				file << "Instructionpointer after save: " << instrAddr_at_save << endl;
+				file << "Instructionpointer after restore: " << \
+				simulator.getRegisterManager().getInstructionPointer() << endl;
+			}
+			
+			// Reboot test
+
+			file << "Reboot-Test start" << endl;
+
+			BPSingleListener bpReboot(ANY_ADDR);
+			
+			simulator.addListener(&bpReboot);
+			simulator.resume();
+
+			long beforeReboot = bpReboot.getTriggerInstructionPointer();
+			
+			file << "Before Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
+			
+			bpReboot.setWatchInstructionPointer(beforeReboot);
+			simulator.addListener(&bpReboot);
+			
+			simulator.reboot(); 
+			
+			long afterReboot = bpReboot.getTriggerInstructionPointer();
+			
+			file << "After Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
+			
+			if (beforeReboot == afterReboot){
+				file << "Reboot-Test SUCCESS." << endl;
+			}else {
+				file << "Reboot-Test FAILED." << endl;
+			}
+
+			file << "Reboot-Test end" << endl;
+			simulator.removeListener(&bpReboot);
+			
+			file << "Serial-Output: " << so.getOutput() << endl;
+			
+			simulator.terminate();
+
+		} else if (ev == &jump_test) {
+			file << "Jump-Test start" << endl;
+
+			JumpListener jump(ANY_INSTR);
+			simulator.addListener(&jump);
+			simulator.resume();
+			
+			file << "Jump-Instruction found: " << jump.getOpcode() << endl;
+			file << "current Instruction-Pointer: 0x" << hex <<\
+			simulator.getRegisterManager().getInstructionPointer() << dec << endl;
+			
+			file << "Jump-Test end" << endl;
+			
+			simulator.removeListener(&jump);
+			
+		} else if (ev == &interrupt_test) {
+			
+			file << "Interrupt-Test start" << endl;
+			
+			InterruptListener interrupt(32);
+			simulator.addListener(&interrupt);
+			ev = simulator.resume();
+			
+			if (ev == &interrupt) {
+				file << "Interrupt-Test SUCCESS. Interruptnum: " << interrupt.getTriggerNumber() \
+				<< endl;
+			}
+			
+			file << "Interrupt-Test end" << endl;
+		} else if (ev == &watchdog) {
+			file << "Watchdog fired. Timeout!" << endl;
+		}
 	}
 	
-	log << "Save-/Restore-Test end" << endl;
-
-// Reboot test
-
-	log << "Reboot-Test start" << endl;
-
-	BPSingleListener bpReboot(ANY_ADDR);
+	file << "experiment end" << endl;
 	
-	simulator.addListener(&bpReboot);
-	simulator.resume();
-
-	long beforeReboot = bpReboot.getTriggerInstructionPointer();
-	
-	log << "Before Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
-	
-	bpReboot.setWatchInstructionPointer(beforeReboot);
-	simulator.addListener(&bpReboot);
-	
-	simulator.reboot(); 
-	
-	long afterReboot = bpReboot.getTriggerInstructionPointer();
-	
-	log << "After Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
-	
-	if (beforeReboot == afterReboot){
-		log << "Reboot-Test SUCCESS." << endl;
-	}else {
-		log << "Reboot-Test FAILED." << endl;
-	}
-
-	log << "Reboot-Test end" << endl;
-
-// Trap test
-	
-	log << "Trap-Test start" << endl;
-	
-	bpPather.setWatchInstructionPointer(REGRESSION_FUNC_TRAP);
-	simulator.addListener(&bpPather);
-	simulator.resume();
-	log << "Begin of Trap-Function found." << endl;
-	
-	TrapListener trap(ANY_TRAP);
-	simulator.addListener(&trap);
-	simulator.resume();
-	log << "Trap found." << endl;
-	
-	log << "Trap-Test end" << endl;
-
 	return true;
+	
 }
