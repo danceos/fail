@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <unistd.h>
 
@@ -9,9 +7,6 @@
 #include "sal/Listener.hpp"
 #include "util/Logger.hpp"
 #include "config/FailConfig.hpp"
-#include "../plugins/serialoutput/SerialOutput.hpp"
-
-
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SR_SAVE)
@@ -25,9 +20,6 @@ bool HSCSimpleExperiment::run()
 {
 	Logger log("HSC", false);
 	log << "experiment start" << endl;
-
-	SerialOutput so(0x3F8);
-	simulator.addFlow(&so);
 
 	// do funny things here...
 #if 1
