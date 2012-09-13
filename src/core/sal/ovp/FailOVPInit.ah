@@ -1,6 +1,10 @@
 #ifndef __OVPINIT_AH__
   #define __OVPINIT_AH__
 
+#include "config/VariantConfig.hpp"
+
+#ifdef BUILD_OVP
+
 #include <iostream>
 
 #include "../SALInst.hpp"
@@ -14,4 +18,5 @@ aspect FailOVPInit {
 	}
 };
 
+#endif // BUILD_OVP
 #endif // __OVPINIT_AH__
