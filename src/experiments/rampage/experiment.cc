@@ -29,6 +29,7 @@ using namespace fail;
 
 bool RAMpageExperiment::run()
 {
+	string output;
 	Logger log("RAMpage", false);
 	address_t addr1 = 1024*1024*62+3;
 	int bit1 = 3;
@@ -38,15 +39,16 @@ bool RAMpageExperiment::run()
 	// not implemented yet for QEMU:
 	//simulator.restore("rampage-cext-started");
 
-	// TODO: Timeout
-	// TODO: Serial
-
 	MemWriteListener l_mem1(addr1);
 	MemoryManager& mm = simulator.getMemoryManager();
 	IOPortListener l_io(0x2f8, true); // ttyS1 aka COM2
+	TimerListener l_timeout_local(1000*60*10); // 10m
+	TimerListener l_timeout_global(1000*60*30); // 30m
 
 	simulator.addListener(&l_mem1);
 	simulator.addListener(&l_io);
+	simulator.addListener(&l_timeout_local);
+	simulator.addListener(&l_timeout_global);
 	while (true) {
 		BaseListener *l = simulator.resume();
 
@@ -76,7 +78,23 @@ bool RAMpageExperiment::run()
 			log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
 		} else if (l == &l_io) {
 			simulator.addListener(&l_io);
-			std::cout << l_io.getData() << std::endl;
+			output += l_io.getData();
+			if (l_io.getData() == '\n') {
+				// calculating stats
+				// starting test pass
+				// tested %08x-%08x %08x-%08x ...
+				// bad frame at pfn %08x
+				// TODO scan + react
+				output.clear();
+
+				// restart local timer
+				simulator.removeListener(&l_timeout_local);
+				simulator.addListener(&l_timeout_local);
+			}
+		} else if (l == &l_timeout_local) {
+			log << "local timeout" << std::endl;
+		} else if (l == &l_timeout_global) {
+			log << "global timeout" << std::endl;
 		}
 	}
 
