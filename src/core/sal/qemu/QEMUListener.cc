@@ -25,4 +25,21 @@ void QEMUMemWriteListener::onDeletion()
 	failqemu_remove_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1);
 }
 
+bool QEMUTimerListener::onAddition()
+{
+	//std::cout << "QEMUTimerListener::onAddition" << std::endl;
+	setId(failqemu_register_timer(getTimeout(), (void *)this));
+	//std::cout << "this = " << std::hex << (unsigned) this << std::endl;
+	//std::cout << "id = " << std::hex << (unsigned) getId() << std::endl;
+	return true;
+}
+
+void QEMUTimerListener::onDeletion()
+{
+	//std::cout << "QEMUTimerListener::onDeletion" << std::endl;
+	//std::cout << "this = " << std::hex << (unsigned) this << std::endl;
+	//std::cout << "id = " << std::hex << (unsigned) getId() << std::endl;
+	failqemu_unregister_timer(getId());
+}
+
 } // end-of-namespace: fail

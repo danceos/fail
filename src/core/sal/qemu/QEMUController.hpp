@@ -38,9 +38,9 @@ public:
 	 */
 	void onIOPort(unsigned char data, unsigned port, bool out);
 	/**
-	 * Static internal handler for TimerListeners.  TODO.
+	 * Internal handler for TimerListeners.
 	 */
-	static void onTimerTrigger(void *thisPtr) {}
+	void onTimerTrigger(TimerListener *pli);
 	/* ********************************************************************
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/

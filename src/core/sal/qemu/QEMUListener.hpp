@@ -8,14 +8,19 @@ namespace fail {
 typedef GenericBPSingleListener BPSingleListener;
 
 /**
- * \class TimerListener
+ * \class QEMUTimerListener
  * Concrete TimerListener implementation of GenericTimerListener for QEMU.
  */
-class TimerListener : public GenericTimerListener {
+class QEMUTimerListener : public GenericTimerListener {
 private:
 public:
-	// TODO
+	QEMUTimerListener(unsigned timeout)
+		: GenericTimerListener(timeout) { }
+	~QEMUTimerListener() { onDeletion(); } // FIXME ~BaseListener should automatically dequeue a Listener, and then indirectly calls onDeletion.  In the current implementation, no dequeueing happens at all.
+	bool onAddition();
+	void onDeletion();
 };
+typedef QEMUTimerListener TimerListener;
 
 class QEMUMemWriteListener : public GenericMemWriteListener {
 public:

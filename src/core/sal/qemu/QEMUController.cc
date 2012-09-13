@@ -40,4 +40,20 @@ void QEMUController::onIOPort(unsigned char data, unsigned port, bool out) {
 	m_LstList.triggerActiveListeners();
 }
 
+void QEMUController::onTimerTrigger(TimerListener *pli)
+{
+	// FIXME: The timer logic can be modified to use only one timer in QEMU.
+	//        (For now, this suffices.)
+
+	// Check for a matching TimerListener. (In fact, we are only
+	// interessted in the iterator pointing at pli.)
+	ListenerManager::iterator it = std::find(m_LstList.begin(),
+	                                         simulator.m_LstList.end(), pli);
+	// TODO: This has O(|m_LstList|) time complexity. We can further improve this
+	//       by creating a method such that makeActive(pli) works as well,
+	//       reducing the time complexity to O(1).
+	m_LstList.makeActive(it);
+	m_LstList.triggerActiveListeners();
+}
+
 } // end-of-namespace: fail

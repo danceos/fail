@@ -29,4 +29,10 @@ void fail_io(int port, int width, int32_t data, int is_write)
 	fail::simulator.onIOPort((unsigned char)data, port, is_write == 1);
 }
 
+void fail_timer_callback(void *opaque)
+{
+	fail::TimerListener *l = static_cast<fail::TimerListener *>(opaque);
+	fail::simulator.onTimerTrigger(l);
+}
+
 }
