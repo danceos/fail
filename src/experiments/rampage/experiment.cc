@@ -165,13 +165,30 @@ bool RAMpageExperiment::handleIO(char c)
 	// tested %08x-%08x %08x-%08x ...
 	} else if (!m_output.compare(0, sizeof(STR_TESTED)-1, STR_TESTED)) {
 		m_last_line_was_startingtestpass = false;
-		m_log << STR_TESTED << std::endl;
+		//m_log << STR_TESTED << std::endl;
 
-		// TODO test whether the failing PFN was listed
-		//terminateExperiment(m_param->msg.PFN_WAS_LISTED);
+		// test whether the failing PFN was listed
+		stringstream ss;
+		ss << m_output.substr(sizeof(STR_TESTED) - 1);
+		while (!ss.eof()) {
+			char c;
+			uint32_t a, b;
+			ss >> hex >> a >> c >> b;
+			if (ss.fail()) {
+				m_param->msg.set_details("unknown serial output: " + m_output);
+				terminateExperiment(m_param->msg.UNKNOWN);
+			}
+			if (a <= (m_param->msg.mem_addr() >> 12) &&
+			    (m_param->msg.mem_addr() >> 12) <= b) {
+				// we abort even if errortype == ERROR_NONE
+				m_log << "PF was tested but no error was found, aborting" << endl;
+				terminateExperiment(m_param->msg.PFN_WAS_LISTED);
+			}
+		}
+
 	// bad frame at pfn %08x
 	} else if (!m_output.compare(0, sizeof(STR_BADFRAME)-1, STR_BADFRAME)) {
-		m_log << STR_BADFRAME << std::endl;
+		m_log << m_output << std::endl;
 
 		// test whether it was the right PFN
 		uint64_t pfn;
@@ -188,8 +205,9 @@ bool RAMpageExperiment::handleIO(char c)
 		} else {
 			terminateExperiment(m_param->msg.WRONG_PFN_DETECTED);
 		}
+
+	// unknown
 	} else {
-		// unknown
 		m_log << "wtf unknown: " << m_output << std::endl;
 		m_param->msg.set_details("unknown serial output: " + m_output);
 		terminateExperiment(m_param->msg.UNKNOWN);
