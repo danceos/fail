@@ -19,7 +19,7 @@
 || !defined(CONFIG_EVENT_IOPORT) || !defined(CONFIG_EVENT_JUMP) || !defined(CONFIG_EVENT_MEMREAD) \
 || !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_SR_REBOOT) \
 || !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) 
-  #error This experiment needs: breakpoints, memread, memwrite. Enable these in the configuration.
+  #error This experiment needs: all CONFIG_EVENT_* and CONFIG_SR_* aspects. Enable these in the configuration.
 #endif
 
 using namespace std;
@@ -32,7 +32,6 @@ bool RegressionTest::run()
 	
 	//Result-File
 	fstream file ("regression-test.results", ios::out | ios::trunc);
-	
 	file << "experiment start" << endl;
 	
 	//Wait for correct start point
@@ -52,7 +51,6 @@ bool RegressionTest::run()
 	
 	//Save state
 	file << "Saving state." << endl;
-	
 	simulator.save("regression-save");
 	instrAddr_at_save = simulator.getRegisterManager().getInstructionPointer();
 	
@@ -62,7 +60,6 @@ bool RegressionTest::run()
 	tp.setOstream(&of);
 	simulator.addFlow(&tp);
 	
-	//SerialOutput-Plugin
 	SerialOutput so(0x3F8);
 	simulator.addFlow(&so);
 	
