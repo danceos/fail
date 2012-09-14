@@ -60,6 +60,7 @@ bool RAMpageExperiment::run()
 	}
 #endif
 
+	m_starttime = std::time(0);
 	m_param->msg.set_mem_written(false);
 
 	MemWriteListener l_mem1(m_param->msg.mem_addr());
@@ -187,7 +188,7 @@ bool RAMpageExperiment::handleIO(char c)
 void RAMpageExperiment::terminateExperiment(int resulttype)
 {
 	m_param->msg.set_resulttype((RAMpageProtoMsg::ResultType) resulttype);
-	// TODO measure time
+	m_param->msg.set_experiment_time(std::time(0) - m_starttime);
 #if !LOCAL
 	m_jc.sendResult(*m_param);
 #endif

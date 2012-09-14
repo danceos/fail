@@ -2,6 +2,7 @@
   #define __RAMPAGE_EXPERIMENT_HPP__
   
 #include <string>
+#include <ctime>
 
 #include "sal/SALConfig.hpp"
 #include "efw/ExperimentFlow.hpp"
@@ -17,6 +18,7 @@ class RAMpageExperiment : public fail::ExperimentFlow {
 	bool m_last_line_was_startingtestpass;
 	fail::MemoryManager& m_mm;
 	RAMpageExperimentData *m_param;
+	std::time_t m_starttime;
 
 	void handleMemWrite(fail::address_t addr);
 	bool handleIO(char c);
