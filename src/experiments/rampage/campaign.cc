@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <set>
 
 #include "cpn/CampaignManager.hpp"
 #include "campaign.hpp"
@@ -12,7 +13,31 @@ char const * const results_filename = "rampage.csv";
 
 bool RAMpageCampaign::run()
 {
-	// TODO read already existing results
+	// read already existing results
+	bool file_exists = false;
+	set<uint64_t> existing_results;
+	ifstream oldresults(results_filename, ios::in);
+	if (oldresults.is_open()) {
+		char buf[1024];
+		uint64_t addr;
+		int count = 0;
+		m_log << "scanning existing results ..." << endl;
+		file_exists = true;
+		while (oldresults.getline(buf, sizeof(buf)).good()) {
+			stringstream ss;
+			ss << buf;
+			ss >> addr;
+			if (ss.fail()) {
+				continue;
+			}
+			++count;
+			if (!existing_results.insert(addr).second) {
+				m_log << "duplicate: " << addr << endl;
+			}
+		}
+		m_log << "found " << dec << count << " existing results" << endl;
+		oldresults.close();
+	}
 
 	// non-destructive: due to the CSV header we can always manually recover
 	// from an accident (append mode)
@@ -21,7 +46,10 @@ bool RAMpageCampaign::run()
 		m_log << "failed to open " << results_filename << endl;
 		return false;
 	}
-	results << "addr\tbit1\tbit2\terrortype\tlocal_timeout\tglobal_timeout\tmem_written\tresulttype\terror_detected_pfn\texperiment_time\tdetails" << endl;
+	// only write CSV header if file didn't exist before
+	if (!file_exists) {
+		results << "addr\tbit1\tbit2\terrortype\tlocal_timeout\tglobal_timeout\tmem_written\tresulttype\terror_detected_pfn\texperiment_time\tdetails" << endl;
+	}
 
 	// count address bits needed for memory size
 	unsigned address_bits = 0;
@@ -34,7 +62,8 @@ bool RAMpageCampaign::run()
 	// systematically march through the fault space
 	for (uint64_t n = 0; n < 1024; ++n) {
 		uint64_t addr = reverse_bits(n) >> (64 - address_bits);
-		if (addr >= MEM_SIZE) {
+		if (addr >= MEM_SIZE ||
+		    existing_results.find(addr) != existing_results.end()) {
 			continue;
 		}
 
