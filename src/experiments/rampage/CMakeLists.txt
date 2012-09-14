@@ -9,6 +9,7 @@ set(MY_PROTOS
 )
 
 set(MY_CAMPAIGN_SRCS
+	experimentInfo.hpp
 	experiment.hpp
 	experiment.cc
 	campaign.hpp

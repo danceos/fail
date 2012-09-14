@@ -14,7 +14,7 @@
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
 
-#define LOCAL 1
+#define LOCAL 0
 
 #define STR_STATS    "calculating stats"
 #define STR_START    "starting test pass"
@@ -45,14 +45,16 @@ bool RAMpageExperiment::run()
 	m_param = new RAMpageExperimentData;
 #if LOCAL
 	//m_param->msg.set_mem_addr(1024*604+123);
-	m_param->msg.set_mem_addr(1024*1024*63+123);
+	//m_param->msg.set_mem_addr(1024*1024*63+123);
+	m_param->msg.set_mem_addr(73728);
 	m_param->msg.set_mem_bit(7);
-	m_param->msg.set_errortype(m_param->msg.ERROR_STUCK_AT_0);
+	//m_param->msg.set_errortype(m_param->msg.ERROR_STUCK_AT_0);
+	m_param->msg.set_errortype(m_param->msg.ERROR_COUPLING);
 	m_param->msg.set_local_timeout(1000*60*10); // 10m
 	m_param->msg.set_global_timeout(1000*60*50); // 50m
 #else
-	if (!m_jc.getm_param(m_param)) {
-		log << "Dying." << endl;
+	if (!m_jc.getParam(*m_param)) {
+		m_log << "Dying." << endl;
 		// communicate that we were told to die
 		simulator.terminate(1);
 	}
@@ -149,7 +151,6 @@ bool RAMpageExperiment::handleIO(char c)
 		if (m_last_line_was_startingtestpass) {
 			// result: NO_PFNS_TESTED
 			m_log << "no PFNs were tested this time" << std::endl;
-			simulator.terminate();
 			terminateExperiment(m_param->msg.NO_PFNS_TESTED);
 		}
 		m_log << STR_STATS << std::endl;
@@ -188,7 +189,7 @@ void RAMpageExperiment::terminateExperiment(int resulttype)
 	m_param->msg.set_resulttype((RAMpageProtoMsg::ResultType) resulttype);
 	// TODO measure time
 #if !LOCAL
-	m_jc.sendResult(param);
+	m_jc.sendResult(*m_param);
 #endif
 	simulator.terminate();
 }

@@ -3,6 +3,7 @@
 
 #include "cpn/Campaign.hpp"
 #include "comm/ExperimentData.hpp"
+#include "util/Logger.hpp"
 #include "rampage.pb.h"
 
 class RAMpageExperimentData : public fail::ExperimentData {
@@ -12,7 +13,11 @@ public:
 };
 
 class RAMpageCampaign : public fail::Campaign {
+	fail::Logger m_log;
+
+	static uint64_t reverse_bits(uint64_t v);
 public:
+	RAMpageCampaign() : m_log("RAMpage Campaign") {}
 	virtual bool run();
 };
 
