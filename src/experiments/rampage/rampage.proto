@@ -35,9 +35,9 @@ message RAMpageProtoMsg {
 		// erroneous pfn was listed on the serial line, but no error was detected
 		PFN_WAS_LISTED = 3;
 		// no "tested ..." line between "starting test pass" and "calculating stats"
-		NO_PFNS_TESTED = 3;
-		LOCAL_TIMEOUT = 4;
-		GLOBAL_TIMEOUT = 5;
+		NO_PFNS_TESTED = 4;
+		LOCAL_TIMEOUT = 5;
+		GLOBAL_TIMEOUT = 6;
 		// e.g., unknown string on serial line
 		UNKNOWN = 7;
 	}
