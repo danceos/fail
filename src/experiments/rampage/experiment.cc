@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 // getpid
 #include <sys/types.h>
@@ -172,8 +173,21 @@ bool RAMpageExperiment::handleIO(char c)
 	} else if (!m_output.compare(0, sizeof(STR_BADFRAME)-1, STR_BADFRAME)) {
 		m_log << STR_BADFRAME << std::endl;
 
-		// TODO test whether it was the right PFN
-		terminateExperiment(m_param->msg.RIGHT_PFN_DETECTED);
+		// test whether it was the right PFN
+		uint64_t pfn;
+		stringstream ss;
+		ss << m_output.substr(sizeof(STR_BADFRAME) - 1);
+		ss >> hex >> pfn;
+		if (ss.fail()) {
+			m_param->msg.set_details("unknown serial output: " + m_output);
+			terminateExperiment(m_param->msg.UNKNOWN);
+		}
+		m_param->msg.set_error_detected_pfn(pfn);
+		if ((m_param->msg.mem_addr() >> 12) == pfn) {
+			terminateExperiment(m_param->msg.RIGHT_PFN_DETECTED);
+		} else {
+			terminateExperiment(m_param->msg.WRONG_PFN_DETECTED);
+		}
 	} else {
 		// unknown
 		m_log << "wtf unknown: " << m_output << std::endl;
