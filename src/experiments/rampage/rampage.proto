@@ -2,11 +2,11 @@ message RAMpageProtoMsg {
 	// Input: experiment parameters
 
 	// memory error address
-	required int64 mem_addr = 1;
+	required uint64 mem_addr = 1;
 	// failing bit at that address
-	required int32 mem_bit = 2;
+	required uint32 mem_bit = 2;
 	// coupled bit at that address (only for ERROR_COUPLING)
-	optional int32 mem_coupled_bit = 3;
+	optional uint32 mem_coupled_bit = 3;
 	// error type
 	enum ErrorType {
 		ERROR_NONE = 1;
@@ -17,9 +17,9 @@ message RAMpageProtoMsg {
 	}
 	required ErrorType errortype = 4;
 	// local timeout (between newlines on ttyS1)
-	required int32 local_timeout = 5;
+	required uint32 local_timeout = 5;
 	// global timeout
-	required int32 global_timeout = 6;
+	required uint32 global_timeout = 6;
 
 	// ----------------------------------------------------
 
@@ -44,9 +44,9 @@ message RAMpageProtoMsg {
 	optional ResultType resulttype = 9;
 
 	// pfn the error was detected in (hopefully the right one?)
-	optional int32 error_detected_pfn = 10;
+	optional uint32 error_detected_pfn = 10;
 	// host wallclock time it took until we finished
-	optional int32 experiment_time = 11;
+	optional uint32 experiment_time = 11;
 
 	// debugging info
 	optional string details = 12;
