@@ -101,20 +101,27 @@ void RAMpageExperiment::handleMemWrite(address_t addr)
 	unsigned bit2 = m_param->msg.mem_coupled_bit();
 	unsigned char data = m_mm.getByte(addr1);
 
+	m_log << "access to addr 0x" << std::hex << addr1 << ", FI" << endl;
+
 	switch (m_param->msg.errortype()) {
 	case RAMpageProtoMsg::ERROR_NONE:
+		m_log << "no fault injected" << endl;
 		break;
 	case RAMpageProtoMsg::ERROR_STUCK_AT_0:
+		m_log << "stuck-at-0, bit " << bit1 << endl;
 		data &= ~(1 << bit1); // stuck-at-0
 		break;
 	case RAMpageProtoMsg::ERROR_STUCK_AT_1:
+		m_log << "stuck-at-1, bit " << bit1 << endl;
 		data |= 1 << bit1; // stuck-at-1
 		break;
 	case RAMpageProtoMsg::ERROR_COUPLING:
+		m_log << "coupling, bit " << bit2 << " := bit " << bit1 << endl;
 		data &= ~(1 << bit2); // coupling bit2 := bit1
 		data |= ((data & (1 << bit1)) != 0) << bit2;
 		break;
 	case RAMpageProtoMsg::ERROR_INVERSE_COUPLING:
+		m_log << "coupling, bit " << bit2 << " := !bit " << bit1 << endl;
 		data &= ~(1 << bit2); // coupling bit2 := !bit1
 		data |= ((data & (1 << bit1)) == 0) << bit2;
 		break;
@@ -122,7 +129,6 @@ void RAMpageExperiment::handleMemWrite(address_t addr)
 		m_log << "unknown error type" << std::endl;
 	}
 	m_mm.setByte(addr1, data);
-	m_log << "access to addr 0x" << std::hex << addr1 << ", FI!" << endl;
 /*
 	unsigned char data2 = m_mm.getByte(addr2);
 	data2 &= ~(1 << bit2); // coupling addr2:bit2 := !addr1:bit1
