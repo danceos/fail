@@ -28,10 +28,10 @@ killall -q -9 fail-client || true
 # penalty, copy all experiment-related stuff to /tmp.
 TMP=/tmp/fail.$(id -nu)
 mkdir -p $TMP
-rsync -a --delete * $TMP/
+rsync -a --delete-before * $TMP/
 if [ -d $LIBDIR ]
 then
-	rsync -a --delete $LIBDIR $TMP/
+	rsync -a --delete-before $LIBDIR $TMP/
 fi
 cd $TMP
 
