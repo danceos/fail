@@ -18,7 +18,7 @@ bool RAMpageCampaign::run()
 	set<uint64_t> existing_results;
 	ifstream oldresults(results_filename, ios::in);
 	if (oldresults.is_open()) {
-		char buf[1024];
+		char buf[16*1024];
 		uint64_t addr;
 		int count = 0;
 		m_log << "scanning existing results ..." << endl;
