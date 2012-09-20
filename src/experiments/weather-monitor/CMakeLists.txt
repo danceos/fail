@@ -26,8 +26,8 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 
 ## Build library
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
-
 add_dependencies(${EXPERIMENT_NAME} fail-tracing)
+target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
