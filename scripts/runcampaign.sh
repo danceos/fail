@@ -14,8 +14,8 @@ SCRIPTDIR=$(readlink -f $(dirname $0))
 source $SCRIPTDIR/fail-env.sh
 
 CMD="killall -q client.sh || true; cd $FAIL_EXPERIMENT_TARGETDIR; ./multiple-clients.sh"
-SSH='ssh -o BatchMode=yes -o ConnectTimeout=60'
 CONNECTION_ATTEMPTS=2
+SSH="ssh -o BatchMode=yes -o ConnectTimeout=60 -o ConnectionAttempts=$CONNECTION_ATTEMPTS"
 
 # runcampaign.sh <campaignserver-binary>
 if [ ! -x "$1" ]; then echo "usage: $0 <campaignserver-binary>" >&2; exit 1; fi
@@ -36,15 +36,7 @@ do
 		NCLIENTS=
 	fi
 
-	(
-		for i in $(seq $CONNECTION_ATTEMPTS)
-		do
-			$SSH $h "$CMD $NCLIENTS" && break
-			# failed?  sleep 1-10s and retry.
-			sleep $(($RANDOM / (32768 / 10) + 1))
-			echo retrying $h ...
-		done
-	) &
+	$SSH $h "$CMD $NCLIENTS" &
 	disown
 done
 
