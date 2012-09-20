@@ -47,9 +47,10 @@ elseif(BUILD_QEMU)
   include_directories(simulators)
 endif(BUILD_BOCHS)
 
-## Additional Compiler flags ##
+## Additional compiler and linker flags ##
 set(CMAKE_C_FLAGS "-g -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}") 
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections")
 ## Tell the linker where to find the Fail* libraries
 link_directories("${LIBRARY_OUTPUT_PATH}")
 
