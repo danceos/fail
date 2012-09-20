@@ -60,7 +60,7 @@ bool RAMpageCampaign::run()
 	      << address_bits << " address bits" << endl;
 
 	// systematically march through the fault space
-	for (uint64_t n = 0; n < 1024; ++n) {
+	for (uint64_t n = 0; n < 1024*256; ++n) {
 		uint64_t addr = reverse_bits(n) >> (64 - address_bits);
 		if (addr >= MEM_SIZE ||
 		    existing_results.find(addr) != existing_results.end()) {
