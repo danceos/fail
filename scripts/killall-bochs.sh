@@ -15,8 +15,8 @@ SCRIPTDIR=$(readlink -f $(dirname $0))
 source $SCRIPTDIR/fail-env.sh
 
 CMD="killall -q client.sh"
-SSH='ssh -o BatchMode=yes -o ConnectTimeout=60'
 CONNECTION_ATTEMPTS=2
+SSH="ssh -o BatchMode=yes -o ConnectTimeout=60 -o ConnectionAttempts=$CONNECTION_ATTEMPTS"
 
 for h in $FAIL_EXPERIMENT_HOSTS
 do
@@ -29,13 +29,5 @@ do
 		NCLIENTS=
 	fi
 
-	(
-		for i in $(seq $CONNECTION_ATTEMPTS)
-		do
-			$SSH $h "$CMD" && break
-			# failed?  sleep 1-10s and retry.
-			sleep $(($RANDOM / (32768 / 10) + 1))
-			echo retrying $h ...
-		done
-	) &
+	$SSH $h "$CMD $NCLIENTS" &
 done
