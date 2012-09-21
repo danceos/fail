@@ -12,6 +12,8 @@ set(SRCS
 	SynchronizedCounter.hpp
 	SynchronizedMap.hpp
 	SynchronizedQueue.hpp
+	WallclockTimer.cc
+	WallclockTimer.hpp
 )
 
 # required by ProtoStream.cc:
