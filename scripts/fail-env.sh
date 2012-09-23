@@ -9,7 +9,7 @@
 # A whitespace-separated list of hosts to rsync the experiment data to.  This
 # is not necessarily the same list as FAIL_EXPERIMENT_HOSTS (see below), as
 # many hosts may share their homes via NFS.
-export FAIL_DISTRIBUTE_HOSTS=${FAIL_DISTRIBUTE_HOSTS:='ios kos virtuos plutonium bigbox.informatik.uni-erlangen.de ls12sp'}
+export FAIL_DISTRIBUTE_HOSTS=${FAIL_DISTRIBUTE_HOSTS:='ios kos virtuos plutonium bigbox.informatik.uni-erlangen.de ls12sp lidong2'}
 
 # A whitespace-separated list of hosts to run experiments on.  If the host name
 # is followed by a ':' and a number, this specifies the number of clients to
