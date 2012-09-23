@@ -50,7 +50,9 @@ else
 fi
 
 # Run $NWIN clients in a new tmux session.
-$TMUX new-session -s $SESSION -d "$COMMAND"
+if [ $NWIN -ge 1 ]; then
+	$TMUX new-session -s $SESSION -d "$COMMAND"
+fi
 for i in $(seq 1 $(($NWIN-1)))
 do
 	$TMUX new-session -t $SESSION -d \; split-window -h "$COMMAND"
