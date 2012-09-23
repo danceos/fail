@@ -199,10 +199,23 @@ void CommThread::operator()()
 
 	switch (ctrlmsg.command()) {
 	case FailControlMessage_Command_NEED_WORK:
+		// let old clients die
+		if (!ctrlmsg.has_run_id() || (ctrlmsg.run_id() != 0 && ctrlmsg.run_id() != m_js.m_runid)) {
+			cout << "!![Server] telling old client to die" << endl;
+			ctrlmsg.Clear();
+			ctrlmsg.set_command(FailControlMessage_Command_DIE);
+			ctrlmsg.set_build_id(42);
+			SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
+		}
 		// give minion something to do..
 		sendPendingExperimentData(minion);
 		break;
 	case FailControlMessage_Command_RESULT_FOLLOWS:
+		// ignore old client's results
+		if (!ctrlmsg.has_run_id() || (ctrlmsg.run_id() != 0 && ctrlmsg.run_id() != m_js.m_runid)) {
+			cout << "!![Server] ignoring old client's results" << endl;
+			break;
+		}
 		// get results and put to done queue.
 		receiveExperimentResults(minion, ctrlmsg.workloadid());
 		break;

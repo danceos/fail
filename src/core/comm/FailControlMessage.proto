@@ -12,5 +12,8 @@ message FailControlMessage {
 
   required Command command = 1;
   optional uint32 workloadID = 2;
-  required uint64 build_id = 3;	// identifying the client/server build (e.g., build time in unixtime format)
+  // identifying the client/server build (e.g., build time in unixtime format)
+  required uint64 build_id = 3;
+  // campaign server run ID: prevents old clients talking to new servers
+  optional uint64 run_id = 4;
 }

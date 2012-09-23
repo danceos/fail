@@ -26,6 +26,7 @@ private:
 	int m_server_port;
 	struct hostent* m_server_ent;
 	int m_sockfd;
+	uint64_t m_server_runid;
 
 	bool connectToServer();
 

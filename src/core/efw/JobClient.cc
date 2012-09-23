@@ -15,6 +15,7 @@ JobClient::JobClient(const std::string& server, int port)
 		exit(1);
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
+	m_server_runid = 0; // server accepts this for virgin clients
 }
 
 bool JobClient::connectToServer()
@@ -91,10 +92,14 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 	FailControlMessage ctrlmsg;
 	ctrlmsg.set_command(FailControlMessage_Command_NEED_WORK);
 	ctrlmsg.set_build_id(42);
+	ctrlmsg.set_run_id(m_server_runid);
 
 	SocketComm::sendMsg(m_sockfd, ctrlmsg);
 	ctrlmsg.Clear();
 	SocketComm::rcvMsg(m_sockfd, ctrlmsg);
+
+	// now we know the current run ID
+	m_server_runid = ctrlmsg.run_id();
 
 	switch (ctrlmsg.command()) {
 	case FailControlMessage_Command_WORK_FOLLOWS:
@@ -119,6 +124,7 @@ bool JobClient::sendResult(ExperimentData& result)
 	FailControlMessage ctrlmsg;
 	ctrlmsg.set_command(FailControlMessage_Command_RESULT_FOLLOWS);
 	ctrlmsg.set_build_id(42);
+	ctrlmsg.set_run_id(m_server_runid);
 	ctrlmsg.set_workloadid(result.getWorkloadID());	
 	cout << "[Client] Sending back result [" << std::dec << result.getWorkloadID() << "]..."  << endl;
 	// TODO: Log-level?

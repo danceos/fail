@@ -8,6 +8,7 @@
 #include "config/FailConfig.hpp"
 
 #include <list>
+#include <ctime>
 
 #ifndef __puma
 #include <boost/thread.hpp>
@@ -37,13 +38,16 @@ private:
 	unsigned m_maxThreads;
 	//! the maximal timeout per communication thread
 	int m_threadtimeout;
-	//! A of spawned threads
+	//! list of spawned threads
 #ifndef __puma
 	typedef std::list<boost::thread*> Tthreadlist;
 	Tthreadlist m_threadlist;
 	
 	boost::thread* m_serverThread;
 #endif // puma
+
+	//! unique server run ID
+	uint64_t m_runid;
 
 #ifdef SERVER_PERFORMANCE_MEASURE
 	static volatile unsigned m_DoneCount; //! the number of finished jobs
@@ -75,6 +79,7 @@ public:
 	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
 		m_maxThreads(128), m_threadtimeout(0)
 	{ 
+		m_runid = std::time(0);
 #ifndef __puma
 		m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread. 
 #ifdef SERVER_PERFORMANCE_MEASURE
