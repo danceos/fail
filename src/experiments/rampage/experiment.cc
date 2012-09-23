@@ -150,21 +150,24 @@ bool RAMpageExperiment::handleIO(char c)
 
 	// calculating stats
 	if (!m_output.compare(0, sizeof(STR_STATS)-1, STR_STATS)) {
-		if (m_last_line_was_startingtestpass) {
+		if (m_empty_passes > 0) {
+			m_log << "no PFNs were tested this time (#" << dec << m_empty_passes << ")" << std::endl;
+		}
+		if (m_empty_passes >= m_param->msg.empty_passes()) {
 			// result: NO_PFNS_TESTED
-			m_log << "no PFNs were tested this time" << std::endl;
+			m_log << "giving up" << std::endl;
 			terminateExperiment(m_param->msg.NO_PFNS_TESTED);
 		}
 		m_log << STR_STATS << std::endl;
 
 	// starting test pass
 	} else if (!m_output.compare(0, sizeof(STR_START)-1, STR_START)) {
-		m_last_line_was_startingtestpass = true;
+		++m_empty_passes;
 		m_log << STR_START << std::endl;
 
 	// tested %08x-%08x %08x-%08x ...
 	} else if (!m_output.compare(0, sizeof(STR_TESTED)-1, STR_TESTED)) {
-		m_last_line_was_startingtestpass = false;
+		m_empty_passes = 0;
 		//m_log << STR_TESTED << std::endl;
 
 		// test whether the failing PFN was listed

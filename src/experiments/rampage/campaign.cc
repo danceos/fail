@@ -71,6 +71,7 @@ bool RAMpageCampaign::run()
 		d->msg.set_mem_addr(addr);
 		d->msg.set_mem_bit(4);
 		d->msg.set_errortype(d->msg.ERROR_STUCK_AT_1);
+		d->msg.set_empty_passes(2);
 		d->msg.set_local_timeout(1000*60*10); // 10m
 		d->msg.set_global_timeout(1000*60*50); // 50m
 		campaignmanager.addParam(d);

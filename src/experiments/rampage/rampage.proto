@@ -16,10 +16,12 @@ message RAMpageProtoMsg {
 		ERROR_INVERSE_COUPLING = 5;
 	}
 	required ErrorType errortype = 4;
+	// number of empty passes until we give up
+	required uint32 empty_passes = 5;
 	// local timeout (between newlines on ttyS1)
-	required uint32 local_timeout = 5;
+	required uint32 local_timeout = 6;
 	// global timeout
-	required uint32 global_timeout = 6;
+	required uint32 global_timeout = 7;
 
 	// ----------------------------------------------------
 

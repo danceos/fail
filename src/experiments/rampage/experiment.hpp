@@ -15,7 +15,7 @@ class RAMpageExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 	fail::Logger m_log;
 	std::string m_output;
-	bool m_last_line_was_startingtestpass;
+	unsigned m_empty_passes;
 	fail::MemoryManager& m_mm;
 	RAMpageExperimentData *m_param;
 	std::time_t m_starttime;
@@ -25,7 +25,7 @@ class RAMpageExperiment : public fail::ExperimentFlow {
 	void terminateExperiment(int resulttype);
 public:
 	RAMpageExperiment()
-	: m_log("RAMpage"), m_last_line_was_startingtestpass(false),
+	: m_log("RAMpage"), m_empty_passes(0),
 	  m_mm(fail::simulator.getMemoryManager()) {}
 	bool run();
 };
