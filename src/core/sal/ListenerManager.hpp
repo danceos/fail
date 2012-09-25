@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "Listener.hpp"
-#include "BufferCache.hpp"
 
 namespace fail {
 
@@ -31,14 +30,6 @@ typedef std::vector<BaseListener*>  firelist_t;
 typedef std::vector<BaseListener*>  deletelist_t;
 
 /**
- * Cache classes for the most commonly used types of listeners, utilising static typing.
- * Apart from that, they work like bufferlist_t.
- */
-typedef BufferCache<BPListener*> bp_cache_t;
-typedef bp_cache_t::iterator bp_iter_t;
-typedef BufferCache<IOPortListener*> io_cache_t;
-typedef io_cache_t::iterator io_iter_t;
-/**
  * \class ListenerManager
  *
  * \brief This class manages the listeners of the Fail* implementation.
@@ -59,10 +50,6 @@ private:
 	firelist_t m_FireList; //!< the active listeners (used temporarily)
 	deletelist_t m_DeleteList; //!< the deleted listeners (used temporarily)
 	BaseListener* m_pFired; //!< the recently fired Listener-object
-	bp_cache_t m_Bp_cache; //!< the storage cache for breakpoint listeners
-	io_cache_t m_Io_cache; //!< the storage cache for port i/o listeners
-	friend bp_iter_t bp_cache_t::makeActive(ListenerManager &ev_list, bp_iter_t idx);
-	friend io_iter_t io_cache_t::makeActive(ListenerManager &ev_list, io_iter_t idx);
 public:
 	/**
 	 * Determines the pointer to the listener base type, stored at index \c idx.
@@ -124,7 +111,7 @@ private:
 	 * Updates the buffer-list by "removing" the element located at index \c idx.
 	 * This is done by replacing the element with the last element of the vector.
 	 * @param idx the index of the element to be removed
-	 * @warning The internals of the listener, stored at index \c idx wont be
+	 * @warning The internals of the listener, stored at index \c idx will be
 	 *          updated.
 	 * @note This method should typically be used in a performance buffer-list
 	 *       implemenation.
@@ -226,31 +213,6 @@ public:
 	 * triggered, the (internal) fire- and delete-list will be cleared.
 	 */
 	void triggerActiveListeners();
-	/**
-	 * Retrieves the BPListener buffer cache.
-	 * @returns the buffer cache
-	 */
-	inline bp_cache_t &getBPBuffer() { return m_Bp_cache; }
-	/**
-	 * Retrieves the IOPortListener buffer cache.
-	 * @returns the buffer cache
-	 */
-	inline io_cache_t &getIOBuffer() { return m_Io_cache; }
-private:
-	/**
-	 * Add an listener to its appropriate cache.
-	 * @param li the listener to add
-	 */
-	void addToCaches(BaseListener* li);
-	/**
-	 * Remove an listener from its cache.
-	 * @param li the listener to remove
-	 */
-	void removeFromCaches(BaseListener* li);
-	/**
-	 * Clear the listener caches.
-	 */
-	void clearCaches();
 };
 
 } // end-of-namespace: fail

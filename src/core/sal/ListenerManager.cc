@@ -5,34 +5,6 @@
 
 namespace fail {
 
-void ListenerManager::addToCaches(BaseListener *li) // FIXME: REMOVE
-{
-	BPListener *bps_li;
-	if ((bps_li = dynamic_cast<BPListener*>(li)) != NULL)
-		m_Bp_cache.add(bps_li);
-
-	IOPortListener *io_li;
-	if ((io_li = dynamic_cast<IOPortListener*>(li)) != NULL)
-		m_Io_cache.add(io_li);
-}
-
-void ListenerManager::removeFromCaches(BaseListener *li) // FIXME: REMOVE
-{
-	BPListener *bpr_li;
-	if ((bpr_li = dynamic_cast<BPListener*>(li)) != NULL)
-		m_Bp_cache.remove(bpr_li);
-
-	IOPortListener *io_li;
-	if ((io_li = dynamic_cast<IOPortListener*>(li)) != NULL)
-		m_Io_cache.remove(io_li);
-}
-
-void ListenerManager::clearCaches() // FIXME: REMOVE
-{
-	m_Bp_cache.clear();
-	m_Io_cache.clear();
-}
-
 void ListenerManager::add(BaseListener* li, ExperimentFlow* pExp)
 {
 	assert(li != NULL && "FATAL ERROR: Listener (of base type BaseListener*) cannot be NULL!");
@@ -47,7 +19,6 @@ void ListenerManager::add(BaseListener* li, ExperimentFlow* pExp)
 	index_t idx = m_BufferList.size()-1;
 	assert(m_BufferList[idx] == li && "FATAL ERROR: Invalid index after push_back() unexpected!");
 	li->setLocation(idx);
-	addToCaches(li); // FIXME: REMOVE
 }
 
 void ListenerManager::remove(BaseListener* li)
@@ -81,7 +52,6 @@ void ListenerManager::remove(BaseListener* li)
 				//  ==> no further processing required here
 			}
 		}
-		clearCaches(); // FIXME: REMOVE
 		// All remaining active listeners must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
 
@@ -92,7 +62,6 @@ void ListenerManager::remove(BaseListener* li)
 	//   * If 'li' in 'm_FireList', copy to 'm_DeleteList'
 	} else if (li->getLocation() != INVALID_INDEX) { // Check if li hasn't been added previously (Q&D)
 		li->onDeletion();
-		removeFromCaches(li); // FIXME: REMOVE
 		if (li->getPerformanceBuffer() != NULL)
 			li->getPerformanceBuffer()->remove(li->getLocation());
 		m_remove(li->getLocation());
@@ -118,8 +87,6 @@ void ListenerManager::m_remove(index_t idx)
 	// Note: This operation has O(1) time complexity. It copies (aka "swaps") the
 	//       trailing element "m_BufferList[m_BufferList.size()-1]" to the slot
 	//       at "m_BufferList[idx]" and removes the last element (pop_back()).
-	if(idx == INVALID_INDEX)
-		((BaseListener*)NULL)->setPerformanceBuffer(NULL);
 
 	// Override the element to be deleted (= copy the last element to the slot
 	// of the element to be deleted) and update their attributes:
@@ -156,14 +123,6 @@ ListenerManager::iterator ListenerManager::m_remove(iterator it, bool skip_delet
 		// to *delete* (not "move") a listener.
 		(*it)->onDeletion();
 		m_DeleteList.push_back(*it);
-
-		// Cached listeners have their own BufferCache<T>::makeActive() implementation, which
-		// calls this method and afterwards erase() in the cache class. This is why, when
-		// called from any kind of makeActive() method, it is unnecessary to call
-		// BufferCache<T>::remove() from m_remove().
-
-		// NOTE: in case the semantics of skip_deletelist change, please adapt the following lines
-		removeFromCaches(*it); // FIXME: REMOVE (incl. comments)
 	}
 
 	// This has O(1) time complexity due to a underlying std::vector (-> random access iterator)
@@ -206,7 +165,6 @@ void ListenerManager::remove(ExperimentFlow* flow)
 		for (std::set<PerfBufferBase*>::iterator it = perfBufLists.begin();
 			 it != perfBufLists.end(); ++it)
 			(*it)->clear();
-		clearCaches(); // FIXME: REMOVE
 		// All remaining active listeners must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
 	} else { // remove all listeners corresponding to a specific experiment ("flow"):

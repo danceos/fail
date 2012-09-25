@@ -22,15 +22,16 @@ QEMUController::~QEMUController()
 }
 
 // FIXME: copied from BochsController; remove redundancy!
-void QEMUController::onIOPort(unsigned char data, unsigned port, bool out) {
+void QEMUController::onIOPort(unsigned char data, unsigned port, bool out)
+{
 	// Check for active IOPortListeners:
-	io_cache_t &buffer_cache = m_LstList.getIOBuffer();
-	io_cache_t::iterator it = buffer_cache.begin();
-	while (it != buffer_cache.end()) {
-		IOPortListener* pIOPt = (*it);
-		if (pIOPt->isMatching(port, out)) {
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) {
+		BaseListener* pLi = ;
+		IOPortListener* pIOPt = dynamic_cast<IOPortListener>(*it);
+		if (pIOPt != NULL && pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
-			it = buffer_cache.makeActive(m_LstList, it);
+			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment

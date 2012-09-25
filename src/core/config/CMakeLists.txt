@@ -19,6 +19,7 @@ OPTION(CONFIG_SUPPRESS_INTERRUPTS       "Target backend: Suppress interrupts" OF
 OPTION(CONFIG_FIRE_INTERRUPTS           "Target backend: Fire interrupts" OFF)
 OPTION(CONFIG_DISABLE_KEYB_INTERRUPTS   "Target backend: Suppress keyboard interrupts" OFF)
 OPTION(SERVER_PERFORMANCE_MEASURE       "Performance measurement in job-server" OFF)
+OPTION(CONFIG_FAST_BREAKPOINTS          "Enable fast breakpoints (requires breakpoint events to be enabled)" OFF)
 SET(SERVER_COMM_HOSTNAME        "localhost"  CACHE STRING "Job-server hostname or IP")
 SET(SERVER_COMM_TCP_PORT        "1111"       CACHE STRING "Job-server TCP port")
 SET(SERVER_PERF_LOG_PATH        "perf.log"   CACHE STRING "A file name for storing the server's performance log (CSV)")

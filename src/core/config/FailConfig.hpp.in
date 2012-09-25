@@ -15,6 +15,9 @@
 #cmakedefine CONFIG_EVENT_TRAP
 #cmakedefine CONFIG_EVENT_JUMP
 
+// Performance options
+#cmakedefine CONFIG_FAST_BREAKPOINTS
+
 // Save/restore functionality
 #cmakedefine CONFIG_SR_RESTORE
 #cmakedefine CONFIG_SR_SAVE

@@ -1,6 +1,5 @@
 if(BUILD_BOCHS)
 	set(SRCS
-		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -12,7 +11,6 @@ if(BUILD_BOCHS)
 	)
 elseif(BUILD_GEM5)
 	set(SRCS
-		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -24,7 +22,6 @@ elseif(BUILD_GEM5)
 	)
 elseif(BUILD_OVP)
 	set(SRCS
-		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -35,7 +32,6 @@ elseif(BUILD_OVP)
 	)
 elseif(BUILD_QEMU)
 	set(SRCS
-		BufferCache.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc

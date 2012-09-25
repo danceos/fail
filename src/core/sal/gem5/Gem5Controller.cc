@@ -35,17 +35,16 @@ void Gem5Controller::reboot()
 void Gem5Controller::onBreakpoint(address_t instrPtr, address_t address_space)
 {
 	bool do_fire = false;
+	BPEvent tmp(instrPtr, address_space);
 	// Check for active breakpoint-events:
-	bp_cache_t &buffer_cache = m_LstList.getBPBuffer();
-	for(bp_cache_t::iterator it = buffer_cache.begin(); it != buffer_cache.end(); it++)
-	{
-		BPListener* pEvBreakpt = *it;
-		if(pEvBreakpt->isMatching(instrPtr, address_space)) {
-			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = buffer_cache.makeActive(m_LstList, it);
+	for (ListenerManager::iterator it = m_LstList.begin(); it != m_LstList.end(); it++) {
+		BaseListener* pLi = *it;
+		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
+		if(pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
+			pBreakpt->setTriggerInstructionPointer(instrPtr);
+			it = m_LstList.makeActive(it);
 			do_fire = true;
-			// "it" has already been set to the next element (by calling
-			// makeActive()):
+			// "it" has already been set to the next element (by calling makeActive()):
 			continue; // -> skip iterator increment
 		}
 	}

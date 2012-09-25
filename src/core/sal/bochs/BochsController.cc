@@ -95,14 +95,14 @@ void BochsController::onBreakpoint(address_t instrPtr, address_t address_space)
 #endif
 	bool do_fire = false;
 	// Check for active breakpoint-events:
-	bp_cache_t &buffer_cache = m_LstList.getBPBuffer();
-	bp_cache_t::iterator it = buffer_cache.begin();
+	ListenerManager::iterator it = m_LstList.begin();
 	BPEvent tmp(instrPtr, address_space);
-	while (it != buffer_cache.end()) {
-		BPListener* pEvBreakpt = *it;
-		if (pEvBreakpt->isMatching(&tmp)) {
-			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = buffer_cache.makeActive(m_LstList, it);
+	while (it != m_LstList.end()) {
+		BaseListener* pLi = *it;
+		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
+		if (pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
+			pBreakpt->setTriggerInstructionPointer(instrPtr);
+			it = m_LstList.makeActive(it);
 			do_fire = true;
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
@@ -126,13 +126,13 @@ void BochsController::updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cach
 
 void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 	// Check for active IOPortListeners:
-	io_cache_t &buffer_cache = m_LstList.getIOBuffer();
-	io_cache_t::iterator it = buffer_cache.begin();
-	while (it != buffer_cache.end()) {
-		IOPortListener* pIOPt = (*it);
-		if (pIOPt->isMatching(port, out)) {
+	ListenerManager::iterator it = m_LstList.begin();
+	while (it != m_LstList.end()) {
+		BaseListener* pLi = *it;
+		IOPortListener* pIOPt = dynamic_cast<IOPortListener*>(pLi);
+		if (pIOPt != NULL && pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
-			it = buffer_cache.makeActive(m_LstList, it);
+			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
