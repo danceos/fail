@@ -90,23 +90,14 @@ public:
 	 *       buffer-list implementation.
 	 */
 	void remove(BaseListener* li);
-	/**
-	 * Behaves like remove(BaseListener*) and additionally updates the provided
-	 * iterator.
-	 * @param it the iterator pointing to the Listener object to be removed
-	 * @return the updated iterator which will point to the next element
-	 */
-	iterator remove(iterator it) { return m_remove(it, false); }
 private:
 	/**
 	 * Internal implementation of remove(iterator it) that allows
 	 * to skip the delete-list.
 	 * @param it the iterator pointing to the Listener object to be removed
-	 * @param skip_deletelist \c true to skip the deletion of the Listener object
-	 *        or \false to behave like \c remove(iterator)
 	 * @return the updated iterator which will point to the next element
 	 */
-	iterator m_remove(iterator it, bool skip_deletelist);
+	iterator m_remove(iterator it);
 	/**
 	 * Updates the buffer-list by "removing" the element located at index \c idx.
 	 * This is done by replacing the element with the last element of the vector.

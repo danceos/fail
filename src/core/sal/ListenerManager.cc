@@ -113,18 +113,9 @@ void ListenerManager::m_remove(index_t idx)
 	}
 }
 
-ListenerManager::iterator ListenerManager::m_remove(iterator it, bool skip_deletelist)
+ListenerManager::iterator ListenerManager::m_remove(iterator it)
 {
-	if (!skip_deletelist) {
-		// If skip_deletelist = true, m_remove was called from makeActive. Accordingly, we
-		// are not going to delete an listener, instead we are "moving" a listener object (= *it)
-		// from the buffer list to the fire-list. Therefore we only need to call the simulator's
-		// listener handler (onDeletion), if m_remove is called with the primary intention
-		// to *delete* (not "move") a listener.
-		(*it)->onDeletion();
-		m_DeleteList.push_back(*it);
-	}
-
+	(*it)->onDeletion();
 	// This has O(1) time complexity due to a underlying std::vector (-> random access iterator)
 	index_t dist = std::distance(begin(), it);
 	assert((*it)->getPerformanceBuffer() == NULL &&
@@ -211,7 +202,7 @@ ListenerManager::iterator ListenerManager::makeActive(iterator it)
 	li->resetCounter();
 	// Note: This is the one and only situation in which remove() should NOT
 	//       store the removed item in the delete-list.
-	iterator it_next = m_remove(it, true); // remove listener from buffer-list
+	iterator it_next = m_remove(it); // remove listener from buffer-list
 	m_FireList.push_back(li);
 	return it_next;
 }
