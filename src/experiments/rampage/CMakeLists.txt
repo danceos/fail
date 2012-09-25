@@ -1,6 +1,6 @@
 set(EXPERIMENT_NAME rampage)
 set(EXPERIMENT_TYPE RAMpageExperiment)
-configure_file(../instantiate-experiment.ah.in
+configure_file(../instantiate-experiment-indirect.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
 
@@ -9,6 +9,7 @@ set(MY_PROTOS
 )
 
 set(MY_CAMPAIGN_SRCS
+	instantiateExperiment.cc
 	experimentInfo.hpp
 	experiment.hpp
 	experiment.cc
