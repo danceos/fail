@@ -199,7 +199,7 @@ void CommThread::operator()()
 
 	switch (ctrlmsg.command()) {
 	case FailControlMessage_Command_NEED_WORK:
-		// let old clients die
+		// let old clients die (run_id == 0 -> possibly virgin client)
 		if (!ctrlmsg.has_run_id() || (ctrlmsg.run_id() != 0 && ctrlmsg.run_id() != m_js.m_runid)) {
 			cout << "!![Server] telling old client to die" << endl;
 			ctrlmsg.Clear();
@@ -212,7 +212,7 @@ void CommThread::operator()()
 		break;
 	case FailControlMessage_Command_RESULT_FOLLOWS:
 		// ignore old client's results
-		if (!ctrlmsg.has_run_id() || (ctrlmsg.run_id() != 0 && ctrlmsg.run_id() != m_js.m_runid)) {
+		if (!ctrlmsg.has_run_id() || ctrlmsg.run_id() != m_js.m_runid) {
 			cout << "!![Server] ignoring old client's results" << endl;
 			break;
 		}
@@ -240,6 +240,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 {
 	FailControlMessage ctrlmsg;
 	ctrlmsg.set_build_id(42);
+	ctrlmsg.set_run_id(m_js.m_runid);
 	ExperimentData * exp = 0;
 	if (m_js.m_undoneJobs.Dequeue_nb(exp) == true) { 
 		// Got an element from queue, assign ID to workload and send to minion
