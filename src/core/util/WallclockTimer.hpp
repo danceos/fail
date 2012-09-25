@@ -8,9 +8,11 @@
   #define __WALLCLOCKTIMER_HPP__
 
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <sys/time.h>
 
-#include "Logger.hpp"
 
 namespace fail {
 
@@ -25,7 +27,6 @@ private:
 
 	bool isRunning;
 	struct timeval start,end,current;
-	Logger m_log;
 	
 public:
 	WallclockTimer();
@@ -35,9 +36,13 @@ public:
 	 */
 	void startTimer();
 	/**
-	 *	Returns the elapsed time. This works while the timer is running, and if it is stopped.
+	 *	Returns the elapsed time as string. This works while the timer is running, and if it is stopped.
 	 */
-	std::string getRuntime();
+	std::string getRuntimeAsString();
+	/**
+	 *	Returns the elapsed time as double. This works while the timer is running, and if it is stopped.
+	 */
+	double getRuntimeAsDouble();
 	/**
 	 *	Stops the timer.
 	 */
