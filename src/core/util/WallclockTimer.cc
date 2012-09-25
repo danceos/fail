@@ -50,7 +50,7 @@ double WallclockTimer::getRuntimeAsDouble() {
 	
 	int length;
 	long t1,t2, duration;
-	double resultdouble
+	double resultdouble;
 	std::stringstream lengthinfo, resultstring; 
 	
 	if (isRunning) {
