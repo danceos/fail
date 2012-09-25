@@ -27,8 +27,7 @@ void QEMUController::onIOPort(unsigned char data, unsigned port, bool out)
 	// Check for active IOPortListeners:
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) {
-		BaseListener* pLi = ;
-		IOPortListener* pIOPt = dynamic_cast<IOPortListener>(*it);
+		IOPortListener* pIOPt = dynamic_cast<IOPortListener *>(*it);
 		if (pIOPt != NULL && pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
 			it = m_LstList.makeActive(it);
