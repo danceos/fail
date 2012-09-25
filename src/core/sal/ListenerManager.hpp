@@ -15,9 +15,9 @@ class ExperimentFlow;
 
 /**
  * Buffer-list for a specific experiment; acts as a simple storage container
- * for listeners to watch for:
+ * for listeners to watch for.
  */
-typedef std::list<BaseListener*>    bufferlist_t;
+typedef std::vector<BaseListener*>  bufferlist_t;
 /**
  * List of listeners that match the current simulator listener; these listeners will
  * be triggered next (the list is used temporarily).
@@ -55,7 +55,6 @@ typedef io_cache_t::iterator io_iter_t;
  */
 class ListenerManager {
 private:
-	// TODO: List separation of "critical types"? Hashing/sorted lists? (-> performance!)
 	bufferlist_t m_BufferList; //!< the storage for listeners added by exp.
 	firelist_t m_FireList; //!< the active listeners (used temporarily)
 	deletelist_t m_DeleteList; //!< the deleted listeners (used temporarily)
@@ -65,6 +64,15 @@ private:
 	friend bp_iter_t bp_cache_t::makeActive(ListenerManager &ev_list, bp_iter_t idx);
 	friend io_iter_t io_cache_t::makeActive(ListenerManager &ev_list, io_iter_t idx);
 public:
+	/**
+	 * Determines the pointer to the listener base type, stored at index \c idx.
+	 * @param idx the index within the buffer-list of the listener to retrieve
+	 * @return the pointer to the (up-casted) base type (if \c idx is invalid and debug
+	 *         mode is enabled, an assertion is thrown)
+	 * @note This operation has O(1) time complexity (due to the underlying \c std::vector).
+	 */
+	inline BaseListener* dereference(index_t idx) { assert(idx < m_BufferList.size() &&
+	"FATAL ERROR: Invalid index! Listener already deleted?"); return m_BufferList[idx]; }
 	/**
 	 * The iterator of this class used to loop through the list of added
 	 * listeners. To retrieve an iterator to the first element, call \c begin().
@@ -81,15 +89,18 @@ public:
 	 * @param li pointer to the listener object to be added (cannot be \c NULL)
 	 * @param flow the listener context (a pointer to the experiment object
 	 *        which is interested in such listeners (cannot be \c NULL)
-	 * @return the id of the added listener object, that is ev->getId()
+	 * @note You need to overload this method if you are adding a (type-specific)
+	 *       performance buffer-list implementation.
 	 */
 	void add(BaseListener* li, ExperimentFlow* flow);
 	/**
-	 * Removes the listener based upon the specified \a ev pointer (requires
+	 * Removes the listener based upon the specified \c li pointer (requires
 	 * to loop through the whole buffer-list).
-	 * @param li the pointer of the listener to be removed; if ev is set to
-	 *        \c NULL, all listeners (for \a all experiments) will be
+	 * @param li the pointer of the listener to be removed; if \c li is set to
+	 *        \c NULL, all listeners (for the \a current experiment) will be
 	 *        removed
+	 * @note There is no need to re-implement this method in a performance-
+	 *       buffer-list implementation.
 	 */
 	void remove(BaseListener* li);
 	/**
@@ -98,7 +109,7 @@ public:
 	 * @param it the iterator pointing to the Listener object to be removed
 	 * @return the updated iterator which will point to the next element
 	 */
-	iterator remove(iterator it);
+	iterator remove(iterator it) { return m_remove(it, false); }
 private:
 	/**
 	 * Internal implementation of remove(iterator it) that allows
@@ -109,6 +120,16 @@ private:
 	 * @return the updated iterator which will point to the next element
 	 */
 	iterator m_remove(iterator it, bool skip_deletelist);
+	/**
+	 * Updates the buffer-list by "removing" the element located at index \c idx.
+	 * This is done by replacing the element with the last element of the vector.
+	 * @param idx the index of the element to be removed
+	 * @warning The internals of the listener, stored at index \c idx wont be
+	 *          updated.
+	 * @note This method should typically be used in a performance buffer-list
+	 *       implemenation.
+	 */
+	void m_remove(index_t idx);
 public:
 	/**
 	 * Returns an iterator to the beginning of the internal data structure.
@@ -170,20 +191,38 @@ public:
 	/**
 	 * Moves the listeners from the (internal) buffer-list to the fire-list.
 	 * To actually fire the listeners, call triggerActiveListeners().
-	 * Returns an updated iterator which points to the next element.
+	 * Returns an updated iterator which points to the next element. Additionally,
+	 * \c makeActive() decreases the listener counter and performs it's operation if
+	 * and only if the *decreased* listener counter is zero.
 	 * @param ev the listener to trigger
-	 * @return returns the updated iteration, pointing to the next element
-	 *         after makeActive returns, "it" is invalid, so the returned
+	 * @return returns the updated iterator, pointing to the next element
+	 *         after makeActive returns, "it" is *invalid*, so the *returned*
 	 *         iterator should be used to continue the iteration
 	 *
 	 * TODO: Improve naming (instead of "makeActive")?
 	 */
 	iterator makeActive(iterator it);
 	/**
+	 * Moves the listener \c pLi from the (internal "performance") buffer-list \c pSrc
+	 * to the fire-list. This method should be called from a performance implemenation.
+	 * It expects the member \c pLi->getLocation() to be valid, i.e. the element needs
+	 * to be stored in the buffer-list previously. Additionally, \c makeActive()
+	 * decreases the listener counter and performs it's operation if and only if the
+	 * *decreased* listener counter is zero. Activated listener objects will be updated
+	 * regarding their location and performance-buffer reference, i.e. their index and
+	 * performance-buffer pointer will be invalidated (by setting \c INVALID_INDEX and
+	 * \c NULL, respectively).
+	 * To actually fire the listeners, call triggerActiveListeners(). 
+	 * @param pLi the listener object pointer to trigger; \c pLi will be removed in
+	 *        \c pLi->getPerformanceBuffer(). If the performance buffer-list ptr is
+	 *        \c NULL, nothing will be done.
+	 */
+	void makeActive(BaseListener* pLi);
+	/**
 	 * Triggers the active listeners. Each listener is triggered if it has not
-	 * recently been removed (id est: is not found in the delete-list). See
-	 * makeActive() for more details. The recently triggered listener can be
-	 * retrieved by calling \a getLastFired(). After all listeners have been
+	 * recently been removed (i.e.: is not found in the delete-list). See
+	 * \c makeActive() for more details. The recently triggered listener can be
+	 * retrieved by calling \c getLastFired(). After all listeners have been
 	 * triggered, the (internal) fire- and delete-list will be cleared.
 	 */
 	void triggerActiveListeners();

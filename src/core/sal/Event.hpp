@@ -201,8 +201,10 @@ public:
 	/**
 	 * Creates a new \c InterruptEvent.
 	 * @param nmi the new NMI (non maskable interrupt) flag state
+	 * @param triggerNum system and type specific number identifying the requestet
+	 *        "trouble-type"
 	 */
-	InterruptEvent(bool nmi) : m_IsNMI(nmi) { }
+	InterruptEvent(bool nmi, int triggerNum) : TroubleEvent(triggerNum), m_IsNMI(nmi) { }
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 * @return \c true if NMI flag is set, \c false otherwise

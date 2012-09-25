@@ -52,17 +52,18 @@ void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_spa
 
 	// Loop through all listeners of type BP*Listener:
 	ListenerManager::iterator it = m_LstList.begin();
+	BPEvent tmp(instrPtr, address_space);
 	while (it != m_LstList.end()) {
 		BaseListener* pev = *it;
 		BPSingleListener* pbp; BPRangeListener* pbpr;
-		if ((pbp = dynamic_cast<BPSingleListener*>(pev)) && pbp->isMatching(instrPtr, address_space)) {
+		if ((pbp = dynamic_cast<BPSingleListener*>(pev)) && pbp->isMatching(&tmp)) {
 			 pbp->setTriggerInstructionPointer(instrPtr);
 			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
 		} else if ((pbpr = dynamic_cast<BPRangeListener*>(pev)) &&
-		           pbpr->isMatching(instrPtr, address_space)) {
+		           pbpr->isMatching(&tmp)) {
 			pbpr->setTriggerInstructionPointer(instrPtr);
 			it = m_LstList.makeActive(it);
 			continue; // dito
@@ -80,12 +81,13 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
 
+	MemAccessEvent tmp(addr, len, instrPtr, accesstype);
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		MemAccessListener* ev = dynamic_cast<MemAccessListener*>(pev);
 		// Is this a MemAccessListener? Correct access type?
-		if (!ev || !ev->isMatching(addr, len, accesstype)) {
+		if (!ev || !ev->isMatching(&tmp)) {
 			++it;
 			continue; // skip listener activation
 		}
@@ -101,10 +103,11 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
 void SimulatorController::onInterrupt(unsigned interruptNum, bool nmi)
 {
 	ListenerManager::iterator it = m_LstList.begin();
+	InterruptEvent tmp(nmi, interruptNum);
 	while (it != m_LstList.end()) { // check for active listeners 
 		BaseListener* pev = *it;
 		InterruptListener* pie = dynamic_cast<InterruptListener*>(pev);
-		if (!pie || !pie->isMatching(interruptNum)) {
+		if (!pie || !pie->isMatching(&tmp)) {
 			++it;
 			continue; // skip listener activation
 		}
@@ -156,11 +159,12 @@ bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
 
 void SimulatorController::onTrap(unsigned trapNum)
 {
+	TroubleEvent tmp(trapNum);
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		TrapListener* pte = dynamic_cast<TrapListener*>(pev);
-		if (!pte || !pte->isMatching(trapNum)) {
+		if (!pte || !pte->isMatching(&tmp)) {
 			++it;
 			continue; // skip listener activation
 		}

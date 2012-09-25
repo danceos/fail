@@ -47,10 +47,10 @@ public:
 	/**
 	 * Instruction pointer modification handler implementing the onBreakpoint
 	 * handler of the SimulatorController. This method is called (from
-	 * the Breakpoints aspect) every time the Bochs-internal IP changes.
+	 * the Breakpoints aspect) *every* time the Bochs-internal IP changes.
 	 * The handler itself evaluates if a breakpoint event needs to be triggered.
 	 * This handler needs to implement the breakpoint-mechanism in an indirect
-	 * fashion because the Bochs simulator doesn't support breakpoints explicitly.
+	 * fashion because the Bochs simulator doesn't support native breakpoints.
 	 * To match the interface specified by the simulator class, we need to provide
 	 * the two members \c m_CPUContext and \c m_CacheEntry. The elements are
 	 * being set before the handler is called (see \c updateBPEventInfo()).

@@ -182,15 +182,15 @@ public:
 	 */
 	void removeFlow(ExperimentFlow* flow);
 	/**
-	 * Add listener \c li to the listener management. This causes the listener to be active.
+	 * Adds the listener \c li to the listener management. This causes the listener to be active.
 	 * @param li the listener pointer to be added for the current flow
 	 * @return \c true if the listener has been added successfully, \c false otherwise
 	 */
 	bool addListener(BaseListener* li);
 	/**
 	 * Removes the listener with the specified pointer \c li.
-	 * @param li the pointer of the listener-object to be removed; if \c li is
-	 *        equal to \c NULL, all listeners (for all experiments) will be removed
+	 * @param li the pointer of the listener object to be removed; if \c li is
+	 *        equal to \c NULL, all listeners (for the \a current experiments) will be removed
 	 */
 	void removeListener(BaseListener* li) { m_LstList.remove(li); }
 	/**
@@ -209,15 +209,15 @@ public:
 	 */
 	BaseListener* resume();
 	/**
-	 * Add listener \a ev to the global buffer and continues the simulation
+	 * Add listener \c li to the global buffer and continues the simulation
 	 * (combines \c addListener() and \c resume()).
 	 * @param li the listener pointer to be added
 	 * @return the pointer of the occurred listener (it is not guaranteed that
-	 *         this pointer will be equal to li)
+	 *         this pointer will be equal to \c li)
 	 */
 	BaseListener* addListenerAndResume(BaseListener* li);
 	/**
-	 * Checks whether any experiment flow has listeners in the listener-list.
+	 * Checks whether any experiment flow has listeners in the listener (buffer-)list.
 	 * @return \c true if there are still listeners, or \c false otherwise
 	 */
 	bool hasListeners() const { return getListenerCount() > 0; }
@@ -227,6 +227,15 @@ public:
 	 * @return the actual number of listeners
 	 */
 	unsigned getListenerCount() const { return m_LstList.getListenerCount(); }
+	/**
+	 * Determines the pointer to the listener base type, stored at index \c idx.
+	 * @param idx the index within the buffer-list of the listener to retrieve
+	 * @return the pointer to the (up-casted) base type (if \c idx is invalid and debug
+	 *         mode is enabled, an assertion is thrown)
+	 * @note This operation has O(1) time complexity (due to the underlying \c std::vector).
+	 * @see ListenerManager::dereference()
+	 */
+	inline BaseListener* dereference(index_t idx) { return m_LstList.dereference(idx); }
 };
 
 // FIXME (see SimulatorController.cc): Weird, homeless global variable

@@ -9,14 +9,11 @@
 
 #include "SALConfig.hpp"
 #include "Event.hpp"
+#include "perf/BufferInterface.hpp"
 
 namespace fail {
 
 class ExperimentFlow;
-
-// FIXME(?): Maybe it suffices to provide a "setEventData" method in order to
-//           set the event data at once. (Consequently, all actual setters for
-//           attributes of the event-data objects could be removed.)
 
 /**
  * \class BaseListener
@@ -28,8 +25,11 @@ protected:
 	unsigned int m_OccCounter; //!< listener fires when 0 is reached
 	unsigned int m_OccCounterInit; //!< initial value for m_OccCounter
 	ExperimentFlow* m_Parent; //!< this listener belongs to experiment m_Parent
+	index_t m_Loc; //!< location of this listener object within the buffer-list
+	PerfBufferBase* m_Home; //!< ptr to performance buffer-list impl. or NULL of not existing
 public:
-	BaseListener() : m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL)
+	BaseListener()
+		: m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL), m_Loc(INVALID_INDEX), m_Home(NULL)
 	{ }
 	virtual ~BaseListener() { } // FIXME remove from queues
 	/**
@@ -56,7 +56,6 @@ public:
 	 * corresponding coroutine is toggled.
 	 */
 	virtual void onTrigger() { }
-	// TODO: Hier noch ne neue Methode oder reicht es, die Semantik von onTrigger umzudef.?
 	/**
 	 * Decreases the listener counter by one. When this counter reaches zero, the
 	 * listener will be triggered.
@@ -71,7 +70,7 @@ public:
 	 * Returns the current counter value.
 	 * @return the counter value
 	 */
-	unsigned int getCounter() const { return (m_OccCounter); }
+	unsigned int getCounter() const { return m_OccCounter; }
 	/**
 	 * Resets the listener counter to its default value, or the last
 	 * value that was set through \c setCounter().
@@ -81,13 +80,42 @@ public:
 	 * Returns the parent experiment of this listener (context).
 	 * If the listener was created temporarily or wasn't linked to a context,
 	 * the return value is \c NULL (unknown identity).
+	 * @return the listener's parent ptr
 	 */
-	ExperimentFlow* getParent() const { return (m_Parent); }
+	ExperimentFlow* getParent() const { return m_Parent; }
 	/**
 	 * Sets the parent (context) of this listener. The default context
 	 * is \c NULL (unknown identity).
+	 * @param pFlow the new parent ptr or \c NULL (= unknown identity)
 	 */
 	void setParent(ExperimentFlow* pFlow) { m_Parent = pFlow; }
+	/**
+	 * Sets the location of this listener within the buffer-list (which itself
+	 * part of the buffer-list).
+	 * @param idx the new index or \c INVALID_INDEX if not managed by (= added to)
+	 *        the ListenerManager.
+	 */
+	void setLocation(index_t idx) { m_Loc = idx; }
+	/**
+	 * Returns the current location of this listener in the buffer-list. See
+	 * \c setLocation for further details.
+	 * @return the location (index) within the buffer-list
+	 */
+	index_t getLocation() { return m_Loc; }
+	/**
+	 * Sets the performance buffer(-list), this listener is stored in. Upon calling
+	 * this method, the listener should already be stored in the buffer \c pHome.
+	 * @param pHome a pointer to the (fast) performance buffer-list, specific to this
+	 *        event type
+	 */
+	void setPerformanceBuffer(PerfBufferBase* pHome) { m_Home = pHome; }
+	/**
+	 * Retrieves the pointer to the performance buffer-list implementation for
+	 * this listener. The returned value may be \c NULL in case of a missing
+	 * performance implementation.
+	 * @return the ptr to the performance buffer-list, or \c NULL if not existing
+	 */
+	PerfBufferBase* getPerformanceBuffer() { return m_Home; }
 };
 // ----------------------------------------------------------------------------
 // Specialized listeners:
@@ -126,10 +154,6 @@ public:
 	 */
 	bool aspaceIsMatching(address_t address_space = ANY_ADDR) const;
 	/**
-	 * Checks whether a given address is matching.
-	 */
-	virtual bool isMatching(address_t addr = 0, address_t address_space = ANY_ADDR) const = 0;
-	/**
 	 * Returns the instruction pointer that triggered this listener.
 	 */
 	address_t getTriggerInstructionPointer() const { return m_Data.getTriggerInstructionPointer(); }
@@ -138,6 +162,12 @@ public:
 	 * be used by experiment code.
 	 */
 	void setTriggerInstructionPointer(address_t iptr) { m_Data.setTriggerInstructionPointer(iptr); }
+	/**
+	 * Checks whether a given address is matching.
+	 * @param pEv Breakpoint event data, retrieved by the simulator
+	 * @return \c true if matching, \c false otherwise
+	 */
+	virtual bool isMatching(const BPEvent* pEv) const = 0;
 };
 
 /**
@@ -174,12 +204,11 @@ public:
 	 */
 	void setWatchInstructionPointer(address_t iptr) { m_WatchInstrPtr = iptr; }
 	/**
-	 * Checks whether a given address is matching.
-	 * @param addr address to check
-	 * @param address_space address space information
+	 * Checks whether a given address (encapsulated in \c pEv) is matching.
+	 * @param pEv address to check, including address space information
 	 * @return \c true if address is within the range, \c false otherwise
 	 */
-	bool isMatching(address_t addr, address_t address_space) const;
+	bool isMatching(const BPEvent* pEv) const;
 };
 
 /**
@@ -219,7 +248,7 @@ public:
 	 * @return \c true if address is within the range (represented by
 	 *         \c this), \c false otherwise
 	 */
-	bool isMatching(address_t addr, address_t address_space) const;
+	bool isMatching(const BPEvent* pEv) const;
 };
 
 /**
@@ -260,10 +289,6 @@ public:
 	 * Sets the width of the memory area being watched (defaults to 1).
 	 */
 	void setWatchWidth(size_t width) { m_WatchWidth = width; }
-	/**
-	 * Checks whether a given physical memory access is matching.
-	 */
-	bool isMatching(address_t addr, size_t width, MemAccessEvent::access_type_t accesstype) const;
 	/**
 	 * Returns the specific physical memory address that actually triggered the
 	 * listener.
@@ -310,6 +335,10 @@ public:
 	 * this listener watches.  Should not be used by experiment code.
 	 */
 	MemAccessEvent::access_type_t getWatchAccessType() const { return m_WatchType; }
+	/**
+	 * Checks whether a given physical memory access is matching.
+	 */
+	bool isMatching(const MemAccessEvent* pEv) const;
 };
 
 /**
@@ -375,7 +404,7 @@ public:
 	/**
 	* Checks whether a given interrupt-/trap-number is matching.
 	*/
-	bool isMatching(unsigned troubleNum) const;
+	bool isMatching(const TroubleEvent* pEv) const;
 	/**
 	* Sets the specific interrupt-/trap-number that actually triggered
 	* the listener. Should not be used by experiment code.
@@ -488,7 +517,7 @@ public:
 	* @param p The port number an I/O listener occured on
 	* @param out True if the communication was outbound, false otherwise
 	*/
-	bool isMatching(unsigned p, bool out) const { return out = isOutListener() && p == getPort(); }
+	bool isMatching(unsigned p, bool out) const { return out == isOutListener() && p == getPort(); }
 	/**
 	 * Tells you if this listener is capturing outbound communication (inbound if false)
 	 */

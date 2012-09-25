@@ -6,6 +6,7 @@ if(BUILD_BOCHS)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
+		perf/BreakpointBuffer.cc
 		bochs/BochsController.cc
 		bochs/BochsListener.cc
 	)
@@ -29,6 +30,7 @@ elseif(BUILD_OVP)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
+		perf/BreakpointBuffer.cc
 		${VARIANT}/OVPController.cc
 	)
 elseif(BUILD_QEMU)
@@ -38,6 +40,7 @@ elseif(BUILD_QEMU)
 		ListenerManager.cc
 		SALConfig.cc
 		Register.cc
+		perf/BreakpointBuffer.cc
 		SimulatorController.cc
 		qemu/QEMUController.cc
 		qemu/QEMUListener.cc

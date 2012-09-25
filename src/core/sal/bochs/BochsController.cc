@@ -97,9 +97,10 @@ void BochsController::onBreakpoint(address_t instrPtr, address_t address_space)
 	// Check for active breakpoint-events:
 	bp_cache_t &buffer_cache = m_LstList.getBPBuffer();
 	bp_cache_t::iterator it = buffer_cache.begin();
+	BPEvent tmp(instrPtr, address_space);
 	while (it != buffer_cache.end()) {
 		BPListener* pEvBreakpt = *it;
-		if (pEvBreakpt->isMatching(instrPtr, address_space)) {
+		if (pEvBreakpt->isMatching(&tmp)) {
 			pEvBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = buffer_cache.makeActive(m_LstList, it);
 			do_fire = true;

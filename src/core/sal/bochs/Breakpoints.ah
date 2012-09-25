@@ -22,7 +22,7 @@ aspect Breakpoints {
 		// Points to the *current* bxInstruction-object
 		bxICacheEntry_c* pEntry = *(tjp->arg<1>());
 
-		// report this event to the Bochs controller:
+		// Report this event to the Bochs controller:
 		fail::simulator.updateBPEventInfo(pThis, pEntry);
 		fail::simulator.onBreakpoint(pThis->get_instruction_pointer(), pThis->cr3);
 		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.

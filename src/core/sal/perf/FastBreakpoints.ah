@@ -1,0 +1,85 @@
+#ifndef __FAST_BREAKPOINTS_AH__
+  #define __FAST_BREAKPOINTS_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_BREAKPOINTS
+
+#ifndef CONFIG_EVENT_BREAKPOINTS
+#error Breakpoint events are required for fast breakpoints!
+#endif
+
+#include "BreakpointManagerSlice.ah"    // slice class "BreakpointManagerSlice"
+#include "BreakpointControllerSlice.ah" // slice class "BreakpointControllerSlice"
+#include "../ListenerManager.hpp"
+#include "../Listener.hpp"
+#include "BreakpointBuffer.hpp"
+#include "../SALInst.hpp"
+
+// TODOs:
+//   - Check if this solutation works, even if there are more than one
+//     active performance aspects.
+
+aspect FastBreakpoints {
+
+	// Refer to slice classes:
+	advice "fail::ListenerManager"     : slice BreakpointManagerSlice;
+	advice "fail::SimulatorController" : slice BreakpointControllerSlice;
+
+	// These around-advices handle the (special) case where an experiment
+	// adds a listener object casted to the base type but actually has the
+	// BPSingle- or BPRangeListener type.
+	advice execution("bool fail::SimulatorController::addListener(fail::BaseListener*)") : around ()
+	{
+		// Note: The logic to update the performance buffer-list is
+		//       placed in the addListener() methods.
+		fail::BaseListener* pLi = *(tjp->arg<0>());
+		fail::BPSingleListener* pSi = dynamic_cast<fail::BPSingleListener*>(pLi);
+		fail::BPRangeListener*  pRi = dynamic_cast<fail::BPRangeListener*>(pLi);
+		if (pSi != NULL)
+			*(tjp->result()) = tjp->that()->addListener(pSi);
+		else if (pRi != NULL)
+			*(tjp->result()) = tjp->that()->addListener(pRi);
+		else
+			tjp->proceed();
+	}
+	advice call("BaseListener* fail::SimulatorController::addListenerAndResume(fail::BaseListener*)") : around ()
+	{
+		// Note: The logic to update the performance buffer-list is
+		//       placed in the addListenerAndResume methods.
+		fail::BaseListener* pLi = *(tjp->arg<0>());
+		fail::BPSingleListener* pSi = dynamic_cast<fail::BPSingleListener*>(pLi);
+		fail::BPRangeListener*  pRi = dynamic_cast<fail::BPRangeListener*>(pLi);
+		if (pSi != NULL)
+			*(tjp->result()) = tjp->that()->addListenerAndResume(pSi);
+		else if (pRi != NULL)
+			*(tjp->result()) = tjp->that()->addListenerAndResume(pRi);
+		else
+			tjp->proceed();
+	}
+
+	// The event handler for employing breakpoint events.
+	advice execution("void fail::%Controller::onBreakpoint(...)") : around ()
+	{
+		// Note: "BPListener" is an abstract class anyway.
+
+		fail::ListenerManager& ref = tjp->target()->m_LstList;
+		fail::BPEvent tmp(*(tjp->arg<0>()), *(tjp->arg<1>()));
+
+		// Check for matching BPSingleListeners:
+		fail::ResultSet& res1 = ref.getSingleListeners().gather(&tmp);
+		while (res1.hasMore())
+			ref.makeActive(ref.dereference(res1.getNext()));
+
+		// Check for matching BPRangeListeners:
+		fail::ResultSet& res2 = ref.getRangeListeners().gather(&tmp);
+		while (res2.hasMore())
+			ref.makeActive(ref.dereference(res2.getNext()));
+
+		ref.triggerActiveListeners();
+	}
+};
+
+#endif // CONFIG_FAST_BREAKPOINTS // see above
+
+#endif // __FAST_BREAKPOINTS_AH__
