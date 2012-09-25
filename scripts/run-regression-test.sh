@@ -33,15 +33,15 @@ then
     echo -e  '\033[37;44m Regression-Test FAILED. Look at regression-test.results for more information. \033[0m'
     if $testsuccess;
     then
-        echo -e  '\033[37;44m Tracing-Plugin Test SUCCESS. \033[0m'
+        echo -e  '\033[37;44m Tracing-Plugin Test SUCCESSFUL. \033[0m'
     else
         echo -e  '\033[37;44m Tracing-Plugin Test FAILED. Look at regression-trace.results for more information. \033[0m'
     fi
 else
     if $testsuccess;
     then
-        echo -e  '\033[37;44m Regression-Test SUCCESS. \033[0m'
-        echo -e  '\033[37;44m Tracing-Plugin Test SUCCESS. \033[0m'
+        echo -e  '\033[37;44m Regression-Test SUCCESSFUL. \033[0m'
+        echo -e  '\033[37;44m Tracing-Plugin Test SUCCESSFUL. \033[0m'
     else
         echo -e  '\033[37;44m Regression-Test FAILED.  Look at regression-test.results for more information. \033[0m'
         echo -e  '\033[37;44m Tracing-Plugin Test FAILED. \033[0m'

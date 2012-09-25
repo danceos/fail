@@ -40,7 +40,7 @@ bool RegressionTest::run()
 	while (simulator.addListenerAndResume(&g) == &g) {
 		if (g.getData() == 'A') {
 			file << "Found start-point with signal: " << g.getData() << endl;
-			file << "GuestListener-Test SUCCESS." << endl;
+			file << "GuestListener-Test SUCCESSFUL." << endl;
 			break;
 		}
 	}
@@ -121,7 +121,7 @@ bool RegressionTest::run()
 					}
 					//If mainListener fires first the test success.
 				}else if(ev == &mainbp) {
-					file << "Breakpoint-Test SUCCESS." <<endl;
+					file << "Breakpoint-Test SUCCESSFUL." <<endl;
 					break;
 				}else if (ev == &watchdog) {
 					file << "Breakpoint-Test FAILED --> Watchdog fired. Timeout!" << endl;
@@ -143,7 +143,7 @@ bool RegressionTest::run()
 			file << "Memaddr-Read: " << hex << memread.getTriggerAddress() << dec << endl;
 			
 			if(memread.getTriggerAddress() == REGRESSION_VAR_MTEST_READ) {
-				file << "Memory-Read-Test SUCCESS." << endl;
+				file << "Memory-Read-Test SUCCESSFUL." << endl;
 			} else {
 				file << "Memory-Read-Test FAILED." << endl;
 			}
@@ -162,7 +162,7 @@ bool RegressionTest::run()
 			file << "Memaddr-WRITE: " << hex << memwrite.getTriggerAddress() << dec << endl;
 
 			if(memwrite.getTriggerAddress() == REGRESSION_VAR_MTEST_WRITE) {
-				file << "Memory-Write-Test SUCCESS." << endl;
+				file << "Memory-Write-Test SUCCESSFUL." << endl;
 			} else {
 				file << "Memory-Write-Test FAILED." << endl;
 			}
@@ -189,7 +189,7 @@ bool RegressionTest::run()
 			simulator.restore("regression-save");
 			
 			if (simulator.getRegisterManager().getInstructionPointer() == instrAddr_at_save) {
-				file << "Save-/Restore-Test SUCCESS." << endl;
+				file << "Save-/Restore-Test SUCCESSFUL." << endl;
 			} else {
 				file << "Save-/Restore-Test FAILED. The instructionpointer after restore is \
 				different to the ionstructionpointer after save! " << endl;
@@ -221,7 +221,7 @@ bool RegressionTest::run()
 			file << "After Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
 			
 			if (beforeReboot == afterReboot){
-				file << "Reboot-Test SUCCESS." << endl;
+				file << "Reboot-Test SUCCESSFUL." << endl;
 			}else {
 				file << "Reboot-Test FAILED." << endl;
 			}
@@ -257,7 +257,7 @@ bool RegressionTest::run()
 			ev = simulator.resume();
 			
 			if (ev == &interrupt) {
-				file << "Interrupt-Test SUCCESS. Interruptnum: " << interrupt.getTriggerNumber() \
+				file << "Interrupt-Test SUCCESSFUL. Interruptnum: " << interrupt.getTriggerNumber() \
 				<< endl;
 			}
 			
