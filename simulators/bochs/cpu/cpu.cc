@@ -156,6 +156,12 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
       }
 #endif
 /****************************************************************
+* TUDOS - BOCHS-MODIFIED
+*
+*/
+      unsigned orig_len = i->ilen();
+/****************************************************************/
+/****************************************************************
  * DanceOS - BOCHS-MODIFIED
  * 
  */
@@ -166,7 +172,12 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
       // instruction decoding completed -> continue with execution
       // want to allow changing of the instruction inside instrumentation callback
       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
-      RIP += i->ilen();
+/****************************************************************
+* TUDOS - BOCHS-MODIFIED
+*
+*/
+      RIP += orig_len;
+/****************************************************************/
       BX_CPU_CALL_METHOD(i->execute, (i)); // might iterate repeat instruction
       BX_CPU_THIS_PTR prev_rip = RIP; // commit new RIP
       BX_INSTR_AFTER_EXECUTION(BX_CPU_ID, i);
