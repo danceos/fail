@@ -19,7 +19,7 @@
 || !defined(CONFIG_EVENT_IOPORT) || !defined(CONFIG_EVENT_JUMP) || !defined(CONFIG_EVENT_MEMREAD) \
 || !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_SR_REBOOT) \
 || !defined(CONFIG_SR_SAVE) || !defined(CONFIG_SR_RESTORE) || !defined(CONFIG_SUPPRESS_INTERRUPTS) 
-  #error This experiment needs: all CONFIG_EVENT_* and CONFIG_SR_* aspects. Enable these in the configuration.
+  #error This experiment needs: all CONFIG_EVENT_*, all CONFIG_SR_* and the CONFIG_SUPPRESS_INTERRUPTS flag. Enable these in the configuration.
 #endif
 
 using namespace std;
