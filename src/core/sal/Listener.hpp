@@ -21,7 +21,6 @@ class ExperimentFlow;
  */
 class BaseListener {
 protected:
-	time_t m_tStamp; //!< time stamp of listener
 	unsigned int m_OccCounter; //!< listener fires when 0 is reached
 	unsigned int m_OccCounterInit; //!< initial value for m_OccCounter
 	ExperimentFlow* m_Parent; //!< this listener belongs to experiment m_Parent
