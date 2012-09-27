@@ -396,10 +396,9 @@ public:
 	bool removeWatchNumber(unsigned troubleNum);
 	/**
 	 * Returns the list of observed numbers.
-	 * @return a copy of the list which contains all observed numbers 
+	 * @return a const reference to the list which contains all observed numbers 
 	 */
-	std::vector<unsigned> getWatchNumbers() { return m_WatchNumbers; }
-	// FIXME: Any reason for returning a *copy* of the vector? (-> overhead!)
+	const std::vector<unsigned>& getWatchNumbers() const { return m_WatchNumbers; }
 	/**
 	* Checks whether a given interrupt-/trap-number is matching.
 	*/
