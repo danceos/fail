@@ -79,6 +79,8 @@ public:
 	 *        is added *before* the bios has been loaded and initialized. To
 	 *        reproduce this error, try adding a \c TimerListener as the initial step
 	 *        in your experiment code and wait for it (\c addListenerAndResume()).
+	 *        This leads to the consequence that timers cannot be added/enabled at
+	 *        boot time.
 	 */
 	static void onTimerTrigger(void *thisPtr);
 	/* ********************************************************************

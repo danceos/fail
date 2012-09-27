@@ -11,7 +11,9 @@ typedef GenericMemWriteListener MemWriteListener;
 /**
  * \class TimerListener
  * Concrete TimerListener implementation of GenericTimerListener for the Bochs
- * simulator backend.
+ * simulator backend. A (Fail)Bochs bug currently leads to the consequence that
+ * timers cannot be added/enabled at boot time (see BochsController.hpp for
+ * further details).
  */
 class TimerListener : public GenericTimerListener {
 private:
