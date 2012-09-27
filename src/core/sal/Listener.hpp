@@ -30,7 +30,7 @@ public:
 	BaseListener()
 		: m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL), m_Loc(INVALID_INDEX), m_Home(NULL)
 	{ }
-	virtual ~BaseListener() { } // FIXME remove from queues
+	virtual ~BaseListener();
 	/**
 	 * This method is called when an experiment flow adds a new listener by
 	 * calling \c simulator.addListener() or \c simulator.addListenerAndResume().

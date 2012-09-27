@@ -3,6 +3,11 @@
 
 namespace fail {
 
+BaseListener::~BaseListener()
+{
+	simulator.removeListener(this);
+}
+
 bool TroubleListener::isMatching(const TroubleEvent* pEv) const
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
