@@ -20,13 +20,13 @@ private:
 	unsigned char *udis_instr; //<! the instruction buffer for UDIs86
 	size_t udis_instr_size; //<! the size of the instruction buffer
 public:
-	Udis86(const unsigned char *instr, size_t size, fail::address_t ip);
+	Udis86(unsigned char const *instr, size_t size, fail::address_t ip);
 	~Udis86();
 	/**
 	 * retrieves the private ud structure of udis86
 	 * @returns a reference pointer to a ud_t variable
 	 */
-	inline const ud_t &getCurrentState() const { return ud_obj; }
+	inline ud_t const &getCurrentState() const { return ud_obj; }
 	/**
 	 * Tries to decode the next instruction from the given buffer.
 	 * @returns \c true if a new instruction could be retrieved, \c false if the object has expired

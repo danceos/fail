@@ -9,6 +9,7 @@
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "UDIS86.hpp"
+#include "aluinstr.hpp"
 #include "campaign.hpp"
 
 #include "sal/SALConfig.hpp"
@@ -26,9 +27,8 @@ using namespace fail;
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
     !defined(CONFIG_SR_SAVE) || \
-    !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_IOPORT) || \
-    !defined(CONFIG_EVENT_INTERRUPT)
-#error This experiment needs: breakpoints, suppressed-interrupts, traps, I/O port and interrupt events, \
+    !defined(CONFIG_EVENT_IOPORT)
+#error This experiment needs: breakpoints and I/O port events, \
   save, and restore. Enable these in the configuration.
 #endif
 
@@ -149,6 +149,26 @@ void L4SysExperiment::singleStep() {
 	simulator.removeListener(&singlestepping_event);
 }
 
+void L4SysExperiment::injectInstruction(bxInstruction_c *oldInstr, bxInstruction_c *newInstr) {
+	// backup the current and insert the faulty instruction
+	bxInstruction_c backupInstr;
+	memcpy(&backupInstr, oldInstr, sizeof(bxInstruction_c));
+	memcpy(oldInstr, newInstr, sizeof(bxInstruction_c));
+
+	// execute the faulty instruction, then return
+	singleStep();
+
+	//restore the old instruction
+	memcpy(oldInstr, &backupInstr, sizeof(bxInstruction_c));
+}
+
+unsigned L4SysExperiment::calculateTimeout() {
+	// [instr] / [instr / s] = [s]
+	unsigned seconds = L4SYS_NUMINSTR / L4SYS_BOCHS_IPS;
+	// 1.1 (+10 percent) * 1000 ms/s * [s]
+	return 1100 * seconds;
+}
+
 bool L4SysExperiment::run() {
 	Logger log("L4Sys", false);
 	BPSingleListener bp(0, L4SYS_ADDRESS_SPACE);
@@ -194,7 +214,6 @@ bool L4SysExperiment::run() {
 
 	ofstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 	bp.setWatchInstructionPointer(L4SYS_FUNC_EXIT);
-	bp.setCounter(L4SYS_ITERATION_COUNT);
 	simulator.addListener(&bp);
 	BaseListener* ev = waitIOOrOther(true);
 	if (ev == &bp) {
@@ -279,19 +298,23 @@ bool L4SysExperiment::run() {
 	struct stat teststruct;
 	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1 || stat(L4SYS_CORRECT_OUTPUT, &teststruct) == -1) {
 		log << "Important data missing - call \"prepare\" first." << endl;
-		simulator.terminate(1);
+		simulator.terminate(10);
 	}
-		ifstream golden_run_file(L4SYS_CORRECT_OUTPUT);
+	ifstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 
-		golden_run.reserve(teststruct.st_size);
+	if(!golden_run_file.good()) {
+		log << "Could not open file " << L4SYS_CORRECT_OUTPUT << endl;
+		simulator.terminate(20);
+	}
+	golden_run.reserve(teststruct.st_size);
 
-		golden_run.assign((istreambuf_iterator<char>(golden_run_file)),
-				istreambuf_iterator<char>());
+	golden_run.assign((istreambuf_iterator<char>(golden_run_file)),
+			istreambuf_iterator<char>());
 
-		golden_run_file.close();
+	golden_run_file.close();
 
-		//the generated output probably has a similar length
-		output.reserve(teststruct.st_size);
+	//the generated output probably has a similar length
+	output.reserve(teststruct.st_size);
 
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
@@ -339,11 +362,23 @@ bool L4SysExperiment::run() {
 
 	// inject
 	if (exp_type == param.msg.GPRFLIP) {
+		if(!param.msg.has_register_offset()) {
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
+					simulator.getRegisterManager().getInstructionPointer());
+			param.msg.set_output(sanitised(output.c_str()));
+
+			stringstream ss;
+			ss << "Sent package did not contain the injection location (register offset)" << endl;
+			param.msg.set_details(ss.str());
+			simulator.terminate(30);
+		}
+		int reg_offset = param.msg.register_offset();
 		RegisterManager& rm = simulator.getRegisterManager();
-		Register *ebx = rm.getRegister(RID_EBX);
-		regdata_t data = ebx->getData();
+		Register *reg_target = rm.getRegister(reg_offset - 1);
+		regdata_t data = reg_target->getData();
 		regdata_t newdata = data ^ (1 << bit_offset);
-		ebx->setData(newdata);
+		reg_target->setData(newdata);
 
 		// do the logging in case everything worked out
 		logInjection(log, param);
@@ -353,8 +388,8 @@ bool L4SysExperiment::run() {
 		// this is a twisted one
 
 		// initial definitions
-		bxICacheEntry_c *cache_entry = simulator.getICacheEntry();
-		unsigned length_in_bits = cache_entry->i->ilen() << 3;
+		bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+		unsigned length_in_bits = currInstr->ilen() << 3;
 
 		// get the instruction in plain text in inject the error there
 		// Note: we need to fetch some extra bytes into the array
@@ -383,22 +418,13 @@ bool L4SysExperiment::run() {
 				&bochs_instr);
 
 		// inject it
-		// backup the current and insert the faulty instruction
-		bxInstruction_c old_instr;
-		memcpy(&old_instr, cache_entry->i, sizeof(bxInstruction_c));
-		memcpy(cache_entry->i, &bochs_instr, sizeof(bxInstruction_c));
-
-		// execute the faulty instruction, then return
-		singleStep();
-
-		//restore the old instruction
-		memcpy(cache_entry->i, &old_instr, sizeof(bxInstruction_c));
+		injectInstruction(currInstr, &bochs_instr);
 
 		// do the logging
 		logInjection(log, param);
 	} else if (exp_type == param.msg.RATFLIP) {
-		bxICacheEntry_c *cache_entry = simulator.getCPUContext()->getICacheEntry();
-		Udis86 udis(calculateInstructionAddress(), cache_entry->i->ilen(), injection_ip);
+		bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+		Udis86 udis(calculateInstructionAddress(), currInstr->ilen(), injection_ip);
 		if (udis.fetchNextInstruction()) {
 			ud_t _ud = udis.getCurrentState();
 
@@ -493,28 +519,50 @@ bool L4SysExperiment::run() {
 				// restore the actual value of the register
 				// in reality, it would never have been overwritten
 				rm.getRegister(bochs_reg)->setData(data);
+
+				// and log the injection
+				logInjection(log, param);
 			}
 
 		}
 	} else if (exp_type == param.msg.ALUINSTR) {
+		BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
+		// find the closest ALU instruction after the current IP
+
+		bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+		while(!aluInstrObject.isALUInstruction(currInstr)) {
+			singleStep();
+			currInstr = simulator.getCurrentInstruction();
+		}
+		// now exchange it with a random equivalent
+		bxInstruction_c newInstr = aluInstrObject.randomEquivalent();
+		if(!memcmp(&newInstr, currInstr, sizeof(bxInstruction_c))) {
+			// something went wrong - exit experiment
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
+					simulator.getRegisterManager().getInstructionPointer());
+			param.msg.set_output(sanitised(output.c_str()));
+
+			stringstream ss;
+			ss << "Did not hit an ALU instruction - correct the source code please!" << endl;
+			param.msg.set_details(ss.str());
+			simulator.terminate(40);
+		}
+		// inject it
+		injectInstruction(currInstr, &newInstr);
+
+		// do the logging
+		logInjection(log, param);
 	}
 
 	// aftermath
 	BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
-	ev_done.setCounter(L4SYS_ITERATION_COUNT);
 	simulator.addListener(&ev_done);
-	const unsigned instr_run = L4SYS_ITERATION_COUNT * L4SYS_NUMINSTR;
-	BPSingleListener ev_timeout(ANY_ADDR, L4SYS_ADDRESS_SPACE);
-	ev_timeout.setCounter(instr_run + 3000);
+	BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
+	ev_incomplete.setCounter(static_cast<unsigned>(L4SYS_NUMINSTR * 1.1));
+	simulator.addListener(&ev_incomplete);
+	TimerListener ev_timeout(calculateTimeout());
 	simulator.addListener(&ev_timeout);
-	TrapListener ev_trap(ANY_TRAP);
-	//one trap for each 150 instructions justifies an exception
-	ev_trap.setCounter(instr_run / 150);
-	simulator.addListener(&ev_trap);
-	InterruptListener ev_intr(ANY_INTERRUPT);
-	//one interrupt for each 100 instructions justifies an exception (timeout mostly)
-	ev_intr.setCounter(instr_run / 100);
-	simulator.addListener(&ev_intr);
 
 	//do not discard output recorded so far
 	BaseListener *ev = waitIOOrOther(false);
@@ -533,22 +581,15 @@ bool L4SysExperiment::run() {
 			param.msg.set_resulttype(param.msg.WRONG);
 			param.msg.set_output(sanitised(output.c_str()));
 		}
+	} else if (ev == &ev_incomplete) {
+		log << dec << "Result INCOMPLETE" << endl;
+		param.msg.set_resulttype(param.msg.INCOMPLETE);
+		param.msg.set_resultdata(
+				simulator.getRegisterManager().getInstructionPointer());
+		param.msg.set_output(sanitised(output.c_str()));
 	} else if (ev == &ev_timeout) {
-		log << dec << "Result TIMEOUT" << endl;
+		log << hex << "Result TIMEOUT; Last INT #:" << endl;
 		param.msg.set_resulttype(param.msg.TIMEOUT);
-		param.msg.set_resultdata(
-				simulator.getRegisterManager().getInstructionPointer());
-		param.msg.set_output(sanitised(output.c_str()));
-	} else if (ev == &ev_trap) {
-		log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
-		param.msg.set_resulttype(param.msg.TRAP);
-		param.msg.set_resultdata(
-				simulator.getRegisterManager().getInstructionPointer());
-		param.msg.set_output(sanitised(output.c_str()));
-	} else if (ev == &ev_intr) {
-		log << hex << "Result INT FLOOD; Last INT #:"
-				<< ev_intr.getTriggerNumber() << endl;
-		param.msg.set_resulttype(param.msg.INTR);
 		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
 		param.msg.set_output(sanitised(output.c_str()));

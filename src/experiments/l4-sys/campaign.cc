@@ -11,16 +11,16 @@ using namespace std;
 using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
-const char *l4sys_output_result_strings[] = { "Unknown", "Done", "Timeout", "Trap", "Interrupt", "Wrong output", "Error" };
-const char *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "Instr Flip", "ALU Instr Flip" };
+char const *l4sys_output_result_strings[] = { "Unknown", "Done", "Incomplete", "Timeout", "Wrong output", "Error" };
+char const *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "Instr Flip", "ALU Instr Flip" };
+char const *l4sys_output_register_strings[] = { "Unknown", "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
 
 #define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_result_strings[L4SysProtoMsg::OUTPUT];
 std::string L4SysCampaign::output_result(L4SysProtoMsg_ResultType res) {
 	switch (res) {
 	OUTPUT_CASE(DONE);
+	OUTPUT_CASE(INCOMPLETE);
 	OUTPUT_CASE(TIMEOUT);
-	OUTPUT_CASE(TRAP);
-	OUTPUT_CASE(INTR);
 	OUTPUT_CASE(WRONG);
 	OUTPUT_CASE(UNKNOWN);
 	default:
@@ -61,9 +61,23 @@ bool L4SysCampaign::run() {
 
 	int count = 0;
 	srand(time(NULL));
+	for (int i = 0; i < 1000; ++i) {
+		L4SysExperimentData *d = new L4SysExperimentData;
+		d->msg.set_exp_type(d->msg.ALUINSTR);
+		// modify for a random instruction
+		int instr_offset = rand() % L4SYS_NUMINSTR;
+		d->msg.set_instr_offset(instr_offset);
+		// this value is not required for this experiment, so set it to an arbitrary value
+		d->msg.set_bit_offset(0);
+
+		campaignmanager.addParam(d);
+		++count;
+	}
+#if 0
 	for (int i = 0; i < 25; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.IDCFLIP);
+		d->msg.set_exp_type(d->msg.GPRFLIP);
+		d->msg.set_register_offset(d->msg.EBX);
 		// modify for a random instruction
 		int instr_offset = rand() % L4SYS_NUMINSTR;
 		d->msg.set_instr_offset(instr_offset);
@@ -74,7 +88,6 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-#if 0
 	for (int i = 0; i < 1000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.RATFLIP);
@@ -108,13 +121,17 @@ bool L4SysCampaign::run() {
 	L4SysExperimentData *res;
 	int rescount = 0;
 	results
-			<< "exp_type,injection_ip,instr_offset,injection_bit,resulttype,resultdata,output,details"
+			<< "exp_type,injection_ip,register,instr_offset,injection_bit,resulttype,resultdata,output,details"
 			<< endl;
 	while ((res = static_cast<L4SysExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
-		results << output_experiment(res->msg.exp_type()) << "," << hex << res->msg.injection_ip() << "," << dec
-				<< res->msg.instr_offset() << "," << res->msg.bit_offset()
+		results << output_experiment(res->msg.exp_type()) << "," << hex << res->msg.injection_ip() << dec << ",";
+		if (res->msg.has_register_offset())
+			results << res->msg.register_offset();
+		else
+			results << "None";
+		results	<< "," << res->msg.instr_offset() << "," << res->msg.bit_offset()
 				<< "," << output_result(res->msg.resulttype()) << ","
 				<< res->msg.resultdata();
 		if (res->msg.has_output())

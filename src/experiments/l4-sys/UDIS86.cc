@@ -3,7 +3,7 @@
 
 using namespace fail;
 
-Udis86::Udis86(const unsigned char *instr, size_t size, address_t ip) {
+Udis86::Udis86(unsigned char const *instr, size_t size, address_t ip) {
 	// initialise the buffer
 	udis_instr_size = size;
 	udis_instr = static_cast<unsigned char*>(malloc(udis_instr_size));

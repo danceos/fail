@@ -33,7 +33,7 @@
 
 // Just a dummy function to define a join-point. This function is
 // *just* called once within bx_cpu_c::cpu_loop(...).
-static inline void defineCPULoopJoinPoint(BX_CPU_C* pThis, bxICacheEntry_c *pEntry)
+static inline void defineCPULoopJoinPoint(BX_CPU_C* pThis, bxInstruction_c *pInstr)
 {
     /* nothing to do here */
 }
@@ -166,7 +166,7 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
  * 
  */
 
-      defineCPULoopJoinPoint(BX_CPU_THIS, entry);
+      defineCPULoopJoinPoint(BX_CPU_THIS, i);
 
 /****************************************************************/
       // instruction decoding completed -> continue with execution

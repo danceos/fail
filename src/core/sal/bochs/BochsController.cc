@@ -19,7 +19,7 @@ bx_bool interrupt_injection_request = false;
 
 BochsController::BochsController()
 	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager()),
-	  m_CPUContext(NULL), m_CacheEntry(NULL)
+	  m_CPUContext(NULL), m_CurrentInstruction(NULL)
 {
 	// -------------------------------------
 	// Add the general purpose register:
@@ -116,12 +116,12 @@ void BochsController::onBreakpoint(address_t instrPtr, address_t address_space)
 	//       implementation.
 }
 
-void BochsController::updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cacheEntry)
+void BochsController::updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *instr)
 {
 	assert(context != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
-	assert(cacheEntry != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
+	assert(instr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
 	m_CPUContext = context;
-	m_CacheEntry = cacheEntry;
+	m_CurrentInstruction = instr;
 }
 
 void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
@@ -229,7 +229,7 @@ void BochsController::onTimerTrigger(void* thisPtr)
 const std::string& BochsController::getMnemonic() const
 {
 	static std::string str;
-	bxInstruction_c* pInstr = getICacheEntry()->i;
+	bxInstruction_c* pInstr = getCurrentInstruction();
 	assert(pInstr != NULL && "FATAL ERROR: Bochs internal member was NULL (not expected)!");
 	const char* pszName = get_bx_opcode_name(pInstr->getIaOpcode());
 	if (pszName != NULL)

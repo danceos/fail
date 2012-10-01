@@ -31,7 +31,7 @@ class BochsController : public SimulatorController {
 private:
 	ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
 	BX_CPU_C *m_CPUContext; //!< Additional information that is passed on occurence of a BPEvent
-	bxICacheEntry_c *m_CacheEntry; //!< dito.
+	bxInstruction_c *m_CurrentInstruction; //!< dito.
   #ifdef DEBUG
 	unsigned m_Regularity; //! regularity of instruction ptr output
 	unsigned m_Counter; //! current instr-ptr counter
@@ -145,7 +145,7 @@ public:
 	 * Retrieves the current Bochs instruction cache entry
 	 * @returns a pointer to a bxICacheEntry_c object
 	 */
-	inline bxICacheEntry_c *getICacheEntry() const { return m_CacheEntry; }
+	inline bxInstruction_c *getCurrentInstruction() const { return m_CurrentInstruction; }
 	/**
 	 * Retrieves the current CPU context
 	 * @return a pointer to a \c BX_CPU_C object
@@ -157,7 +157,7 @@ public:
 	 * @param context the CPU context object ptr (Bochs internal=
 	 * @param cacheEntry the Bochs internal CPU cache entry ptr
 	 */
-	void updateBPEventInfo(BX_CPU_C *context, bxICacheEntry_c *cacheEntry);
+	void updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *instr);
 };
 
 } // end-of-namespace: fail

@@ -4,14 +4,13 @@
 // the maximum number of bytes in a Bochs instruction
 #define MAX_INSTR_BYTES 15
 
-// the bounds of the program
+// the bounds of the program (space, instructions and time)
 #define L4SYS_ADDRESS_SPACE		0x203d000
 #define L4SYS_FUNC_ENTRY		0x10025ca
 #define L4SYS_FUNC_EXIT			0x1002810
-#define L4SYS_NUMINSTR			83084798
-// kernel: 3599694, userland: 79485104
-
-#define L4SYS_ITERATION_COUNT	1
+// kernel: 16300287, userland: 210785625
+#define L4SYS_NUMINSTR			227085912
+#define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
 #define L4SYS_STATE_FOLDER		"l4sys.state"
@@ -23,6 +22,6 @@
 #define HEADLESS_EXPERIMENT
 //  0 - preparation complete
 // >0 - next step to execute
-#define PREPARATION_STEP		3
+#define PREPARATION_STEP		0
 
 #endif // __EXPERIMENT_INFO_HPP__

@@ -6,7 +6,6 @@
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
-#include "aluinstr.hpp"
 
 class L4SysExperimentData;
 
@@ -65,6 +64,16 @@ private:
 	 * Proceeds by one single instruction.
 	 */
 	void singleStep();
+	/**
+	 * Injects a new instruction into the Bochs instruction stream and restores the previous one
+	 * @param oldInstr address of the instruction to be replaced
+	 * @param newInstr address of the instruction to replace it with
+	 */
+	void injectInstruction(bxInstruction_c *oldInstr, bxInstruction_c *newInstr);
+	/**
+	 * Calculate the timeout of the current workload in milliseconds.
+	 */
+	unsigned calculateTimeout();
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__
