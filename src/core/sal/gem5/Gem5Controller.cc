@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include "../Listener.hpp"
+
 #include "sim/core.hh"
 #include "sim/sim_exit.hh"
 //#include "sim/root.hh"
