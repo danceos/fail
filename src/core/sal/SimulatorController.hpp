@@ -9,7 +9,6 @@
 #include "efw/CoroutineManager.hpp"
 #include "ListenerManager.hpp"
 #include "SALConfig.hpp"
-#include "Listener.hpp"
 
 namespace fail {
 

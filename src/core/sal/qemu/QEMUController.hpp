@@ -8,13 +8,13 @@
 #include <string.h>
 
 #include "../SimulatorController.hpp"
-#include "../Listener.hpp"
 
 struct CPUX86State;
 
 namespace fail {
 
 class ExperimentFlow;
+class TimerListener;
 
 /**
  * \class QEMUController

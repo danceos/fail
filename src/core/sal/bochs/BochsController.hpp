@@ -8,10 +8,8 @@
 #include <string.h>
 
 #include "FailBochsGlobals.hpp"
-#include "BochsListener.hpp"
 
 #include "../SimulatorController.hpp"
-#include "../Listener.hpp"
 
 #include "bochs.h"
 #include "cpu/cpu.h"

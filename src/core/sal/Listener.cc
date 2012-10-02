@@ -74,7 +74,7 @@ bool BPRangeListener::isMatching(const BPEvent* pEv) const
 	return true;
 }
 
-bool GenericBPSingleListener::isMatching(const BPEvent* pEv) const
+bool BPSingleListener::isMatching(const BPEvent* pEv) const
 {
 	if (aspaceIsMatching(pEv->getCR3())) {
 		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == pEv->getTriggerInstructionPointer())

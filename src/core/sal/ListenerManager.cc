@@ -3,6 +3,8 @@
 #include "ListenerManager.hpp"
 #include "SALInst.hpp"
 
+#include "Listener.hpp"
+
 namespace fail {
 
 void ListenerManager::add(BaseListener* li, ExperimentFlow* pExp)

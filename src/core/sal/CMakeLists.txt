@@ -7,7 +7,6 @@ if(BUILD_BOCHS)
 		SimulatorController.cc
 		perf/BreakpointBuffer.cc
 		bochs/BochsController.cc
-		bochs/BochsListener.cc
 	)
 elseif(BUILD_GEM5)
 	set(SRCS
@@ -17,7 +16,6 @@ elseif(BUILD_GEM5)
 		Register.cc
 		SimulatorController.cc
 		gem5/Gem5Controller.cc
-		gem5/Gem5Listener.cc
 		gem5/Gem5PCEvent.cc
 	)
 elseif(BUILD_OVP)
@@ -39,7 +37,6 @@ elseif(BUILD_QEMU)
 		perf/BreakpointBuffer.cc
 		SimulatorController.cc
 		qemu/QEMUController.cc
-		qemu/QEMUListener.cc
 		qemu/wrappers.cc
 	)
 endif(BUILD_BOCHS)

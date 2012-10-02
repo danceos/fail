@@ -6,11 +6,12 @@
 #include <vector>
 #include <algorithm>
 
-#include "Listener.hpp"
+#include "perf/BufferInterface.hpp"
 
 namespace fail {
 
 class ExperimentFlow;
+class BaseListener;
 
 /**
  * Buffer-list for a specific experiment; acts as a simple storage container

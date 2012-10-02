@@ -5,6 +5,7 @@
 #include "BochsRegister.hpp"
 #include "../Register.hpp"
 #include "../SALInst.hpp"
+#include "../Listener.hpp"
 
 namespace fail {
 

@@ -1,0 +1,39 @@
+#ifndef __GEM5LISTENER_AH__
+  #define __GEM5LISTENER_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS)
+
+#include "Gem5PCEvent.hh"
+#include "sim/system.hh"
+
+aspect Gem5Listener
+{
+	advice "fail::BPSingleListener" : slice class
+	{
+	private:
+		Gem5PCEvent* m_Breakpoint;
+	public:
+		virtual bool onAddition()
+		{
+			System* sys = *System::systemList.begin();
+			m_Breakpoint = new Gem5PCEvent(&sys->pcEventQueue, this->m_WatchInstrPtr);
+			
+			return true;
+		}
+
+		virtual void onDeletion()
+		{
+			if(m_Breakpoint)
+			{
+				delete m_Breakpoint;
+				m_Breakpoint = 0;
+			}
+		}
+	};
+};
+
+#endif // BUILD_GEM5 && CONFIG_EVENT_BREAKPOINTS
+#endif // __GEM5LISTENER_AH__

@@ -173,7 +173,7 @@ public:
  * \class BPSingleListener
  * A Breakpoint listener to observe specific instruction pointers.
  */
-class GenericBPSingleListener : public BPListener {
+class BPSingleListener : public BPListener {
 protected:
 	address_t m_WatchInstrPtr;
 public:
@@ -189,7 +189,7 @@ public:
 	 *        Here, too, ANY_ADDR is a placeholder to allow debugging
 	 *        in a random address space.
 	 */
-	GenericBPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
+	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
 		: BPListener(address_space), m_WatchInstrPtr(ip) { }
 	/**
 	 * Returns the instruction pointer this listener waits for.
@@ -353,14 +353,14 @@ public:
 };
 
 /**
- * \class GenericMemWriteListener
+ * \class MemWriteListener
  * Observes memory write accesses.
  */
-class GenericMemWriteListener : public MemAccessListener {
+class MemWriteListener : public MemAccessListener {
 public:
-	GenericMemWriteListener()
+	MemWriteListener()
 		: MemAccessListener(MemAccessEvent::MEM_READ) { }
-	GenericMemWriteListener(address_t addr)
+	MemWriteListener(address_t addr)
 		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE) { }
 };
 
@@ -568,16 +568,16 @@ public:
 };
 
 /**
- * \class GenericTimerListener
+ * \class TimerListener
  * This listener type is used to create timeouts within in an experiment.
  *
  * Depending on your simulator backend, a concrete class needs to be derived from
- * \c GenericTimerListener. \c onAddition should be used to register and \c onDeletion
+ * \c TimerListener. \c onAddition should be used to register and \c onDeletion
  * to unregister the timer. \c onTrigger can be used to re-register the timer if a
  * repetitive timer is requested and the back-end doesn't support such timer types
  * natively.
  */
-class GenericTimerListener : public BaseListener {
+class TimerListener : public BaseListener {
 protected:
 	unsigned m_Timeout; //!< timeout interval in milliseconds
 	GenericTimerEvent m_Data;
@@ -589,8 +589,8 @@ public:
 	 * @param timeout the time interval in milliseconds (ms)
 	 * @see SimulatorController::addListener
 	 */
-	GenericTimerListener(unsigned timeout) : m_Timeout(timeout) { }
-	~GenericTimerListener() { }
+	TimerListener(unsigned timeout) : m_Timeout(timeout) { }
+	~TimerListener() { }
 	/**
 	 * Retrieves the internal timer id. Maybe useful for debug output.
 	 * @return the timer id
@@ -609,17 +609,5 @@ public:
 };
 
 } // end-of-namespace: fail
-
-#if defined BUILD_BOCHS
-  #include "bochs/BochsListener.hpp"
-#elif defined BUILD_GEM5
-  #include "gem5/Gem5Listener.hpp"
-#elif defined BUILD_OVP
-//  #include "ovp/OVPListener.hpp"
-#elif defined BUILD_QEMU
-  #include "qemu/QEMUListener.hpp"
-#else
-  #error SAL Config Target not defined
-#endif
 
 #endif // __LISTENER_HPP__
