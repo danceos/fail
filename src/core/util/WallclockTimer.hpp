@@ -24,7 +24,7 @@ class WallclockTimer {
 private:
 
 	bool isRunning;
-	struct timeval start,end,current;
+	struct timeval start,end;
 	
 public:
 	WallclockTimer();
@@ -36,11 +36,11 @@ public:
 	/**
 	 *	Returns the elapsed time as string. This works while the timer is running, and if it is stopped.
 	 */
-	std::string getRuntimeAsString();
+	std::string getRuntimeAsString() const;
 	/**
 	 *	Returns the elapsed time as double. This works while the timer is running, and if it is stopped.
 	 */
-	double getRuntimeAsDouble();
+	double getRuntimeAsDouble() const;
 	/**
 	 *	Stops the timer.
 	 */
@@ -50,8 +50,12 @@ public:
 	 */
 	void reset();
 	
+	operator double() { return getRuntimeAsDouble(); }
 	
+	operator int() { return ((int) getRuntimeAsDouble()); }
 };
+
+std::ostream& operator<< (std::ostream& os, const WallclockTimer& w);
 
 } // end-of-namespace: fail
 
