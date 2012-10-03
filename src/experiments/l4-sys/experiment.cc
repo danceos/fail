@@ -195,7 +195,7 @@ bool L4SysExperiment::run() {
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	for (; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
 		simulator.addListenerAndResume(&bp);
-		if(bp.getTriggerInstructionPointer() < 0xC0000000) {
+		if (bp.getTriggerInstructionPointer() < 0xC0000000) {
 			ul++;
 		} else {
 			kernel++;
@@ -277,7 +277,7 @@ bool L4SysExperiment::run() {
 			bxInstruction_c instr;
 			fetchInstruction(simulator.getCPUContext(), calculateInstructionAddress(), &instr);
 			// add it to a second list if it is an ALU instruction
-			if(isALUInstruction(instr.getIaOpcode())) {
+			if (isALUInstruction(instr.getIaOpcode())) {
 				alu_instr_list.push_back(new_instr);
 				alu_instr_file.write(reinterpret_cast<char*>(&new_instr), sizeof(trace_instr));
 			}
@@ -302,7 +302,7 @@ bool L4SysExperiment::run() {
 	}
 	ifstream golden_run_file(L4SYS_CORRECT_OUTPUT);
 
-	if(!golden_run_file.good()) {
+	if (!golden_run_file.good()) {
 		log << "Could not open file " << L4SYS_CORRECT_OUTPUT << endl;
 		simulator.terminate(20);
 	}
@@ -362,7 +362,7 @@ bool L4SysExperiment::run() {
 
 	// inject
 	if (exp_type == param.msg.GPRFLIP) {
-		if(!param.msg.has_register_offset()) {
+		if (!param.msg.has_register_offset()) {
 			param.msg.set_resulttype(param.msg.UNKNOWN);
 			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
@@ -459,7 +459,7 @@ bool L4SysExperiment::run() {
 
 			ud_type_t which;
 			unsigned rnd;
-			if(opcount == 0)
+			if (opcount == 0)
 				rnd = 0;
 			else
 				rnd = rand() % opcount;
@@ -496,7 +496,7 @@ bool L4SysExperiment::run() {
 				if (rnd > 0) {
 					//input register - do the fault injection here
 					regdata_t newdata = 0;
-					if(exchg_reg >= 0) {
+					if (exchg_reg >= 0) {
 						newdata = rm.getRegister(exchg_reg)->getData();
 					} else {
 						newdata = rand();
@@ -510,7 +510,7 @@ bool L4SysExperiment::run() {
 				// restore
 				if (rnd == 0) {
 					// output register - do the fault injection here
-					if(exchg_reg >= 0) {
+					if (exchg_reg >= 0) {
 						// write the result into the wrong local register
 						regdata_t newdata = rm.getRegister(bochs_reg)->getData();
 						rm.getRegister(exchg_reg)->setData(newdata);
@@ -529,14 +529,14 @@ bool L4SysExperiment::run() {
 		BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
 		// find the closest ALU instruction after the current IP
 
-		bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-		while(!aluInstrObject.isALUInstruction(currInstr)) {
+		bxInstruction_c *currInstr;
+		while (!aluInstrObject.isALUInstruction(
+		       currInstr = simulator.getCurrentInstruction())) {
 			singleStep();
-			currInstr = simulator.getCurrentInstruction();
 		}
 		// now exchange it with a random equivalent
 		bxInstruction_c newInstr = aluInstrObject.randomEquivalent();
-		if(!memcmp(&newInstr, currInstr, sizeof(bxInstruction_c))) {
+		if (!memcmp(&newInstr, currInstr, sizeof(bxInstruction_c))) {
 			// something went wrong - exit experiment
 			param.msg.set_resulttype(param.msg.UNKNOWN);
 			param.msg.set_resultdata(
@@ -588,7 +588,7 @@ bool L4SysExperiment::run() {
 				simulator.getRegisterManager().getInstructionPointer());
 		param.msg.set_output(sanitised(output.c_str()));
 	} else if (ev == &ev_timeout) {
-		log << hex << "Result TIMEOUT; Last INT #:" << endl;
+		log << hex << "Result TIMEOUT" << endl;
 		param.msg.set_resulttype(param.msg.TIMEOUT);
 		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
