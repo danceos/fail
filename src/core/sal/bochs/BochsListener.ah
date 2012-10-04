@@ -1,43 +1,45 @@
-#ifndef __BOCHSLISTENER_AH__
-  #define __BOCHSLISTENER_AH__
+#ifndef __BOCHS_LISTENER_AH__
+  #define __BOCHS_LISTENER_AH__
 
 #include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
 #if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_BREAKPOINTS)
 
+#include <cassert>
 #include "bochs.h"
-#include "BochsController.hpp"
+#include "BochsListener.hpp"
 
-aspect BochsListener
-{
-	advice "fail::TimerListener" : slice class
-	{
+/*
+ * Note: A (Fail)Bochs bug currently leads to the consequence that timers
+ * cannot be added/enabled at boot time (see BochsController.hpp for further
+ * details).
+ */
+aspect BochsListener {
+	advice "fail::TimerListener" : slice class {
 	public:
 		bool onAddition()
 		{
 			// Register the timer listener in the Bochs simulator:
-			setId(m_registerTimer(this));
-			if(getId() == -1)
+			if(m_registerTimer(this) == -1) {
+				setId(INVALID_TIMER);
 				return false; // unable to register the timer (error in Bochs' function call)
+			}
 			return true;
 		}
-
 		void onDeletion()
 		{
 			// Unregister the time listener:
 			m_unregisterTimer(this);
 		}
-
 	private:
 		timer_id_t m_registerTimer(TimerListener* pev)
 		{
 			assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
 			return static_cast<timer_id_t>(
-				bx_pc_system.register_timer(pev, BochsController::onTimerTrigger, pev->getTimeout(),
+				bx_pc_system.register_timer(pev, fail::onTimerTrigger, pev->getTimeout(),
 					false, 1/*start immediately*/, "Fail*: BochsController"/*name*/));
 		}
-
 		bool m_unregisterTimer(TimerListener* pev)
 		{
 			assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
@@ -48,4 +50,4 @@ aspect BochsListener
 };
 
 #endif // BUILD_BOCHS && CONFIG_EVENT_BREAKPOINTS
-#endif // __BOCHSLISTENER_AH__
+#endif // __BOCHS_LISTENER_AH__
