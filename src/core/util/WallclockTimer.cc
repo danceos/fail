@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #include "WallclockTimer.hpp"
 
@@ -17,38 +19,27 @@ void WallclockTimer::startTimer() {
 
 std::string WallclockTimer::getRuntimeAsString() const {
 	
-	int length;
-	long t1,t2, duration;
-	struct timeval current;
-	std::stringstream lengthinfo, resultstring; 
+	std::stringstream result;
+	result << getRuntimeAsDouble();
 	
-	if (isRunning) {
-		gettimeofday(&current, NULL);
-		t1 = (start.tv_sec*1000000)+start.tv_usec;
-		t2 = (current.tv_sec*1000000)+current.tv_usec;
-	} else {
-		t1 = (start.tv_sec*1000000)+start.tv_usec;
-		t2 = (end.tv_sec*1000000)+end.tv_usec;
-	}
-	
-	duration = t2-t1;
-	lengthinfo << duration-((duration/1000000)*1000000);
-	length = lengthinfo.str().length();
-	resultstring << (int) duration/1000000 << ",";
-	
-	if (length < 6) {
-		int i;
-		for (i = 0 ; i< 6-length ; i++){
-			resultstring << "0";
-		}
-	}
-	
-	resultstring << (int) duration-((duration/1000000)*1000000);
-	return resultstring.str();
+	return result.str().c_str();
 }
 
 double WallclockTimer::getRuntimeAsDouble() const {
-	return atof(getRuntimeAsString().c_str());
+	
+	double result;
+	struct timeval current;
+	
+	if (isRunning) {
+		gettimeofday(&current, NULL);
+		result = current.tv_sec - start.tv_sec;
+		result = result + (((double)current.tv_usec-start.tv_usec)/1000000);
+	} else {
+		result = end.tv_sec - start.tv_sec;
+		result = result + (((double)end.tv_usec-start.tv_usec)/1000000);
+	}
+	
+	return result;
 }
 
 
