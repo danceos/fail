@@ -15,6 +15,7 @@ elseif(BUILD_GEM5)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
+		perf/BreakpointBuffer.cc
 		gem5/Gem5Controller.cc
 		gem5/Gem5PCEvent.cc
 	)
