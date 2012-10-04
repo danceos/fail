@@ -42,7 +42,7 @@ public:
 	 */
 	virtual bool onAddition() { return true; }
 	/**
-	 * This method is called when an experiment flow removes an listener from
+	 * This method is called when an experiment flow removes a listener from
 	 * the listener-management by calling \c removeListener(), \c clearListeners()
 	 * or by deleting a complete flow (\c removeFlow()). More specifically, this
 	 * listener handler will be called *before* the listener is actually deleted.
@@ -50,11 +50,11 @@ public:
 	virtual void onDeletion() { }
 	/**
 	 * This method is called when an previously added listener is about to be
-	 * triggered by the simulator-backend. More specifically, this listener handler
-	 * will be called *before* the listener is actually triggered, i.e. before the
-	 * corresponding coroutine is toggled.
+	 * triggered by the simulator-backend. \c onTrigger() toggles the experiment
+	 * flow specified by \c BaseListener::getParent(). You can use this handler
+	 * as a callback function by overwriting this method appropriately.
 	 */
-	virtual void onTrigger() { }
+	virtual void onTrigger();
 	/**
 	 * Decreases the listener counter by one. When this counter reaches zero, the
 	 * listener will be triggered.

@@ -235,6 +235,11 @@ public:
 	 * @see ListenerManager::dereference()
 	 */
 	inline BaseListener* dereference(index_t idx) { return m_LstList.dereference(idx); }
+	/**
+	 * Toggles the provided experiment flow by activating its coroutine.
+	 * @param pfl the experiment flow to be activated
+	 */
+	void toggle(ExperimentFlow* pfl) { m_Flows.toggle(pfl); }
 };
 
 // FIXME (see SimulatorController.cc): Weird, homeless global variable

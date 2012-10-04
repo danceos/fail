@@ -8,6 +8,12 @@ BaseListener::~BaseListener()
 	simulator.removeListener(this);
 }
 
+void BaseListener::onTrigger()
+{
+	assert(m_Parent && "FATAL ERROR: The listener has no parent!");
+	simulator.toggle(m_Parent);
+}
+
 bool TroubleListener::isMatching(const TroubleEvent* pEv) const
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {

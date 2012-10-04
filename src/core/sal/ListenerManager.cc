@@ -236,10 +236,8 @@ void ListenerManager::triggerActiveListeners()
 			m_pFired = *it;
 			// Inform (call) the simulator's (internal) listener handler that we are about
 			// to trigger an listener (*before* we actually toggle the experiment flow):
-			m_pFired->onTrigger();
-			ExperimentFlow* pFlow = m_pFired->getParent();
-			assert(pFlow && "FATAL ERROR: The listener has no parent experiment (owner)!");
-			simulator.m_Flows.toggle(pFlow);
+			m_pFired->onDeletion(); // the listener has already been deleted (in the buffer-list)!
+			m_pFired->onTrigger(); // onTrigger will toggle the correct coroutine
 		}
 	}
 	m_FireList.clear();
