@@ -125,6 +125,22 @@ void BochsController::updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *inst
 	m_CurrentInstruction = instr;
 }
 
+void BochsController::onTimerTrigger(void* thisPtr)
+{
+	// FIXME: The timer logic can be modified to use only one timer in Bochs.
+	//        (For now, this suffices.)
+	TimerListener* pli = static_cast<TimerListener*>(thisPtr);
+	// Check for a matching TimerListener. (In fact, we are only
+	// interessted in the iterator pointing at pli.)
+	ListenerManager::iterator it = std::find(simulator.m_LstList.begin(),
+											simulator.m_LstList.end(), pli);
+	// TODO: This has O(|m_LstList|) time complexity. We can further improve this
+	//       by creating a method such that makeActive(pli) works as well,
+	//       reducing the time complexity to O(1).
+	simulator.m_LstList.makeActive(it);
+	simulator.m_LstList.triggerActiveListeners();
+}
+
 void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 	// Check for active IOPortListeners:
 	ListenerManager::iterator it = m_LstList.begin();

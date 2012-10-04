@@ -7,6 +7,7 @@ if(BUILD_BOCHS)
 		SimulatorController.cc
 		perf/BreakpointBuffer.cc
 		bochs/BochsController.cc
+		bochs/BochsListener.cc
 	)
 elseif(BUILD_GEM5)
 	set(SRCS
