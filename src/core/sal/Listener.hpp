@@ -53,6 +53,13 @@ public:
 	 * triggered by the simulator-backend. \c onTrigger() toggles the experiment
 	 * flow specified by \c BaseListener::getParent(). You can use this handler
 	 * as a callback function by overwriting this method appropriately.
+	 * @note Re-adding the current listener (= \c this) within onTrigger can be
+	 * done using \c addListener(this). When adding *new* listeners (allocated
+	 * within onTrigger), you have two options:
+	 *  a) overwrite the onTrigger method as well (recommended) or
+	 *  b) set a valid experiment flow pointer (using \c setParent()) *before*
+	 *     calling \c addListener(). (This pointer can be passed to a new method
+	 *     of your derived listener class.)
 	 */
 	virtual void onTrigger();
 	/**
@@ -181,7 +188,7 @@ public:
 	 * Creates a new breakpoint listener.
 	 * @param ip the instruction pointer of the breakpoint. If the control
 	 *        flow reaches this address and its counter value is zero, the
-	 *        listener will be triggered. \a eip can be set to the ANY_ADDR
+	 *        listener will be triggered. \a ip can be set to the ANY_ADDR
 	 *        wildcard to allow arbitrary addresses. Defaults to 0.
 	 * @param address_space the address space to be oberserved, given as the
 	 *        content of a CR3 register. The listener will not be triggered unless
