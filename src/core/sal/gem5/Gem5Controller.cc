@@ -10,7 +10,7 @@
 
 namespace fail {
 
-void Gem5Controller::save(const std::string &path)
+bool Gem5Controller::save(const std::string &path)
 {
 	// Takes a snapshot in the m5out dir
 	Tick when = curTick() + 1;
@@ -22,6 +22,7 @@ void Gem5Controller::save(const std::string &path)
 	std::ofstream file(path.c_str()); 
 	root->serialize(file);
 	file.close();*/
+	return false; // TODO
 }
 
 void Gem5Controller::restore(const std::string &path)

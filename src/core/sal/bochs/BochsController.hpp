@@ -87,8 +87,9 @@ public:
 	/**
 	 * Save simulator state.
 	 * @param path Location to store state information
+	 * @return \c true if the state has been successfully saved, \c false otherwise
 	 */
-	void save(const std::string& path);
+	bool save(const std::string& path);
 	/**
 	 * Save finished: Callback from Simulator
 	 */

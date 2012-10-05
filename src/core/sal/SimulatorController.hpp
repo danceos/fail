@@ -108,8 +108,9 @@ public:
 	/**
 	 * Save simulator state.
 	 * @param path Location to store state information
+	 * @return \c true if the state has been successfully saved, \c false otherwise
 	 */
-	virtual void save(const std::string& path) = 0;
+	virtual bool save(const std::string& path) = 0;
 	/**
 	 * Restore simulator state.  Implicitly discards all previously
 	 * registered listeners.

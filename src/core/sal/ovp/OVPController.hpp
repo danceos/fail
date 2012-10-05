@@ -35,22 +35,23 @@ public:
 	 * Initialize the controller.
 	 */
 	OVPController();
-	virtual ~OVPController();
-	virtual void onInstrPtrChanged(address_t instrPtr); 
+	~OVPController();
+	void onInstrPtrChanged(address_t instrPtr); 
 	/**
 	 * Save simulator state.
 	 * @param path Location to store state information
+	 * @return \c true if the state has been successfully saved, \c false otherwise
 	 */
-	virtual void save(const std::string& path);
+	bool save(const std::string& path);
 	/**
 	 * Restore simulator state.
 	 * @param path Location to previously saved state information
 	 */
-	virtual void restore(const std::string& path);
+	void restore(const std::string& path);
 	/**
 	 * Reboot simulator.
 	 */
-	virtual void reboot();
+	void reboot();
 	/**
 	 * Returns the current instruction pointer.
 	 * @return the current eip

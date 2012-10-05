@@ -109,10 +109,11 @@ void OVPController::onInstrPtrChanged(address_t instrPtr)
 	m_EvList.fireActiveListeners();
 }
 
-void OVPController::save(const string& path)
+bool OVPController::save(const string& path)
 {
 	// TODO!
 	ovpplatform.save(path);
+	return false; // TODO
 }
 
 void OVPController::restore(const string& path)

@@ -47,8 +47,9 @@ public:
 	/**
 	 * Save simulator state.  TODO.
 	 * @param path Location to store state information
+	 * @return \c true if the state has been successfully saved, \c false otherwise
 	 */
-	void save(const std::string& path) {}
+	bool save(const std::string& path) { return false; }
 	/**
 	 * Restore simulator state. Clears all Listeners.  TODO.
 	 * @param path Location to previously saved state information

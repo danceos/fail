@@ -11,9 +11,9 @@ class Gem5Controller : public SimulatorController {
 public:
 	void onBreakpoint(address_t instrPtr, address_t address_space);
 
-	virtual void save(const std::string &path);
-	virtual void restore(const std::string &path);
-	virtual void reboot();
+	bool save(const std::string &path);
+	void restore(const std::string &path);
+	void reboot();
 };
 
 } // end-of-namespace: fail

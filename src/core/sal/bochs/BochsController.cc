@@ -159,20 +159,23 @@ void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 	m_LstList.triggerActiveListeners();
 }
 
-void BochsController::save(const std::string& path)
+bool BochsController::save(const std::string& path)
 {
 	int stat;
 	
 	stat = mkdir(path.c_str(), 0777);
-	if (!(stat == 0 || errno == EEXIST))
-		std::cout << "[FAIL] Can not create target-directory to save!" << std::endl;
+	if (!(stat == 0 || errno == EEXIST)) {
+		return false;
+		// std::cout << "[FAIL] Can not create target-directory to save!" << std::endl;
 		// TODO: (Non-)Verbose-Mode? Log-level? Maybe better: use return value to indicate failure?
+	}
 	
 	save_bochs_request = true;
 	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
 	m_CurrFlow = m_Flows.getCurrent();
 	m_Flows.resume();
+	return true;
 }
 
 void BochsController::saveDone()
