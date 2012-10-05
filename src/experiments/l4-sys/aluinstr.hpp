@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <string>
 #include <stdlib.h>
 #include "config.h"
 #include "cpu/instr.h"
@@ -321,9 +322,10 @@ public:
 	/**
 	 * Determines a new bxInstruction_c object with an equivalent
 	 * addressing mode.
-	 * @returns a bxInstruction_c object as described above
+	 * @param result the resulting bxInstruction_c object as described above
+	 * @param details after completion contains details about \c result
 	 */
-	bxInstruction_c randomEquivalent() const;
+	void randomEquivalent(bxInstruction_c &result, std::string &details) const;
 protected:
 	/**
 	 * Convert a bxInstruction_c object into its matching BochsALUInstr object.

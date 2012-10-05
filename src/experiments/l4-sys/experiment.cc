@@ -377,6 +377,7 @@ bool L4SysExperiment::run() {
 			stringstream ss;
 			ss << "Sent package did not contain the injection location (register offset)" << endl;
 			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
 			simulator.terminate(30);
 		}
 		int reg_offset = param.msg.register_offset();
@@ -540,8 +541,14 @@ bool L4SysExperiment::run() {
 		       currInstr = simulator.getCurrentInstruction())) {
 			singleStep();
 		}
+
+		// store the real injection point
+		param.msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
+
 		// now exchange it with a random equivalent
-		bxInstruction_c newInstr = aluInstrObject.randomEquivalent();
+		bxInstruction_c newInstr;
+		string details;
+		aluInstrObject.randomEquivalent(newInstr, details);
 		if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
 			// something went wrong - exit experiment
 			param.msg.set_resulttype(param.msg.UNKNOWN);
@@ -549,11 +556,15 @@ bool L4SysExperiment::run() {
 					simulator.getRegisterManager().getInstructionPointer());
 			param.msg.set_output(sanitised(output.c_str()));
 
-			stringstream ss;
-			ss << "Did not hit an ALU instruction - correct the source code please!" << endl;
-			param.msg.set_details(ss.str());
+			ostringstream oss;
+			oss << "Did not hit an ALU instruction - correct the source code please!" << endl;
+			param.msg.set_details(oss.str());
+			m_jc.sendResult(param);
 			simulator.terminate(40);
 		}
+		// record information on the new instruction
+		param.msg.set_details(details);
+
 		// inject it
 		injectInstruction(currInstr, &newInstr);
 
@@ -567,7 +578,6 @@ bool L4SysExperiment::run() {
 	BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
 	ev_incomplete.setCounter(static_cast<unsigned>(L4SYS_NUMINSTR * 1.1));
 	simulator.addListener(&ev_incomplete);
-	log << calculateTimeout() << endl;
 	TimerListener ev_timeout(calculateTimeout());
 	simulator.addListener(&ev_timeout);
 

@@ -1,4 +1,6 @@
 #include "aluinstr.hpp"
+#include <iostream>
+#include <sstream>
 #include <string.h>
 #include <time.h>
 #include "bochs.h"
@@ -90,12 +92,14 @@ bool BochsALUInstructions::isALUInstruction(bxInstruction_c const *src) {
 	return false;
 }
 
-bxInstruction_c BochsALUInstructions::randomEquivalent() const {
+void BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
+                                                  std::string &details) const {
 	// find a random member of the same equivalence class
 	X86AluClass equClassID = lastInstr.aluClass;
 	if (equClassID == ALU_UNDEF) {
 		// something went wrong - just return the original instruction
-		return lastOrigInstr;
+		result = lastOrigInstr;
+		return;
 	}
 
 	InstrList const &destList = equivalenceClasses.at(equClassID);
@@ -106,8 +110,16 @@ bxInstruction_c BochsALUInstructions::randomEquivalent() const {
 		dest = destList[index];
 	} while (memcmp(&dest, &lastInstr, sizeof(BochsALUInstr)) == 0);
 
+	// alternative chosen -- now store the necessary details
+	std::ostringstream oss;
+	oss << "Opcode 0x" << std::hex << static_cast<unsigned>(dest.opcode) << std::dec;
+	if (dest.reg < dest.REG_COUNT) oss << " # " << static_cast<unsigned>(dest.reg);
+	if (dest.opcodeRegisterOffset <= dest.REG_COUNT)
+		oss << " # " << static_cast<unsigned>(dest.opcodeRegisterOffset);
+	details = oss.str();
+
 	// first, copy everything
-	bxInstruction_c result = lastOrigInstr;
+	result = lastOrigInstr;
 
 	// then change what has to be different
 	// execute functions
@@ -124,12 +136,9 @@ bxInstruction_c BochsALUInstructions::randomEquivalent() const {
 	if (dest.opcodeRegisterOffset < BochsALUInstr::REG_COUNT) {
 		result.setRm(dest.opcodeRegisterOffset);
 	}
-	// finally, return the result
-	return result;
 }
 
 #ifdef DEBUG
-#include <iostream>
 
 void BochsALUInstructions::printNestedMap() {
 	for (EquivClassMap::iterator it = equivalenceClasses.begin();
