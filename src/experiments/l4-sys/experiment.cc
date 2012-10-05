@@ -163,8 +163,9 @@ void L4SysExperiment::injectInstruction(bxInstruction_c *oldInstr, bxInstruction
 }
 
 unsigned L4SysExperiment::calculateTimeout() {
+	// the timeout in seconds, plus one backup second (avoids rounding overhead)
 	// [instr] / [instr / s] = [s]
-	unsigned seconds = L4SYS_NUMINSTR / L4SYS_BOCHS_IPS;
+	unsigned seconds = L4SYS_NUMINSTR / L4SYS_BOCHS_IPS + 1;
 	// 1.1 (+10 percent) * 1000 ms/s * [s]
 	return 1100 * seconds;
 }
@@ -200,9 +201,11 @@ bool L4SysExperiment::run() {
 		} else {
 			kernel++;
 		}
-		// log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
 	}
-	log << "test function calculation position reached after " << dec << count << " instructions; "
+	log << "EIP = " << hex
+			<< simulator.getRegisterManager().getInstructionPointer() << endl;
+	log << "test function calculation position reached after "
+			<< dec << count << " instructions; "
 			<< "ul: " << ul << ", kernel: " << kernel << endl;
 #elif PREPARATION_STEP == 3
 	// STEP 3: determine the output of a "golden run"
@@ -222,7 +225,8 @@ bool L4SysExperiment::run() {
 		log << "Output successfully logged!" << endl;
 	} else {
 		log
-				<< "Obviously, there is some trouble with the events registered - aborting simulation!"
+				<< "Obviously, there is some trouble with"
+				<< " the events registered - aborting simulation!"
 				<< endl;
 		golden_run_file.close();
 		simulator.terminate(10);
@@ -238,7 +242,8 @@ bool L4SysExperiment::run() {
 	 * You would probably need some kind of loop detection,
 	 * but for the moment, I have to focus on different issues.
 	 */
-	if (stat(L4SYS_INSTRUCTION_LIST, &teststruct) == -1 || stat(L4SYS_ALU_INSTRUCTIONS, &teststruct) == -1) {
+	if (stat(L4SYS_INSTRUCTION_LIST, &teststruct) == -1 ||
+		stat(L4SYS_ALU_INSTRUCTIONS, &teststruct) == -1) {
 		log << "restoring state" << endl;
 		simulator.restore(L4SYS_STATE_FOLDER);
 		log << "EIP = " << hex
@@ -296,7 +301,8 @@ bool L4SysExperiment::run() {
 #elif PREPARATION_STEP == 0
 	// LAST STEP: The actual experiment.
 	struct stat teststruct;
-	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1 || stat(L4SYS_CORRECT_OUTPUT, &teststruct) == -1) {
+	if (stat(L4SYS_STATE_FOLDER, &teststruct) == -1 ||
+		stat(L4SYS_CORRECT_OUTPUT, &teststruct) == -1) {
 		log << "Important data missing - call \"prepare\" first." << endl;
 		simulator.terminate(10);
 	}
@@ -526,7 +532,7 @@ bool L4SysExperiment::run() {
 
 		}
 	} else if (exp_type == param.msg.ALUINSTR) {
-		BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
+		static BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
 		// find the closest ALU instruction after the current IP
 
 		bxInstruction_c *currInstr;
@@ -536,7 +542,7 @@ bool L4SysExperiment::run() {
 		}
 		// now exchange it with a random equivalent
 		bxInstruction_c newInstr = aluInstrObject.randomEquivalent();
-		if (!memcmp(&newInstr, currInstr, sizeof(bxInstruction_c))) {
+		if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
 			// something went wrong - exit experiment
 			param.msg.set_resulttype(param.msg.UNKNOWN);
 			param.msg.set_resultdata(
@@ -561,6 +567,7 @@ bool L4SysExperiment::run() {
 	BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
 	ev_incomplete.setCounter(static_cast<unsigned>(L4SYS_NUMINSTR * 1.1));
 	simulator.addListener(&ev_incomplete);
+	log << calculateTimeout() << endl;
 	TimerListener ev_timeout(calculateTimeout());
 	simulator.addListener(&ev_timeout);
 

@@ -45,47 +45,45 @@ void BochsALUInstructions::buildEquivalenceClasses() {
 	}
 }
 
-void BochsALUInstructions::bochsInstrToInstrStruct(bxInstruction_c const *src, BochsALUInstr *dest) const {
-	if (dest == NULL) return;
+void BochsALUInstructions::bochsInstrToInstrStruct(bxInstruction_c const &src, BochsALUInstr &dest) const {
 	//Note: it may be necessary to introduce a solution for two-byte
 	//opcodes once they overlap with one-byte ones
 	for (size_t i = 0; i < allInstrSize; i++) {
 		// first, check the opcode
 		if (allInstr[i].opcodeRegisterOffset <= BochsALUInstr::REG_COUNT) {
 			// the opcode listed in allInstr is the starting value for a range
-			if (src->b1() < allInstr[i].opcode ||
-					src->b1() > allInstr[i].opcode + BochsALUInstr::REG_COUNT) {
+			if (src.b1() < allInstr[i].opcode ||
+					src.b1() > allInstr[i].opcode + BochsALUInstr::REG_COUNT) {
 				continue;
 			}
-		} else if (src->b1() != allInstr[i].opcode) {
+		} else if (src.b1() != allInstr[i].opcode) {
 			// normal case -- just compare the opcode
 			continue;
 		}
 		// second, check the opcode extension
 		if (allInstr[i].reg < BochsALUInstr::REG_COUNT &&
-				allInstr[i].reg != src->nnn()) {
+				allInstr[i].reg != src.nnn()) {
 			continue;
 		}
 		// found it - now copy
 		if (allInstr[i].opcodeRegisterOffset <= BochsALUInstr::REG_COUNT) {
-			BochsALUInstr result = { allInstr[i].bochs_operation,
-			src->b1(),
-			allInstr[i].reg,
-			src->rm(),
-			allInstr[i].aluClass};
-			memcpy(dest, &result, sizeof(BochsALUInstr));
+			dest.bochs_operation = allInstr[i].bochs_operation;
+			dest.opcode = src.b1();
+			dest.reg = allInstr[i].reg;
+			dest.opcodeRegisterOffset = src.rm();
+			dest.aluClass = allInstr[i].aluClass;
 		} else {
-			memcpy(dest, &allInstr[i], sizeof(BochsALUInstr));
+			dest = allInstr[i];
 		}
 		return;
 	}
 	// not found - marking it undefined
-	dest->aluClass = ALU_UNDEF;
+	dest.aluClass = ALU_UNDEF;
 }
 
-bool BochsALUInstructions::isALUInstruction(const bxInstruction_c *src) {
-	lastOrigInstr = src;
-	bochsInstrToInstrStruct(src, &lastInstr);
+bool BochsALUInstructions::isALUInstruction(bxInstruction_c const *src) {
+	memcpy(&lastOrigInstr, src, sizeof(bxInstruction_c));
+	bochsInstrToInstrStruct(lastOrigInstr, lastInstr);
 	if (lastInstr.aluClass != ALU_UNDEF) {
 		return true;
 	}
@@ -97,7 +95,7 @@ bxInstruction_c BochsALUInstructions::randomEquivalent() const {
 	X86AluClass equClassID = lastInstr.aluClass;
 	if (equClassID == ALU_UNDEF) {
 		// something went wrong - just return the original instruction
-		return *lastOrigInstr;
+		return lastOrigInstr;
 	}
 
 	InstrList const &destList = equivalenceClasses.at(equClassID);
@@ -106,11 +104,10 @@ bxInstruction_c BochsALUInstructions::randomEquivalent() const {
 	do {
 		int index = rand() % destList.size();
 		dest = destList[index];
-	} while (!memcmp(&dest, &lastInstr, sizeof(BochsALUInstr)));
+	} while (memcmp(&dest, &lastInstr, sizeof(BochsALUInstr)) == 0);
 
 	// first, copy everything
-	bxInstruction_c result;
-	memcpy(&result, lastOrigInstr, sizeof(bxInstruction_c));
+	bxInstruction_c result = lastOrigInstr;
 
 	// then change what has to be different
 	// execute functions

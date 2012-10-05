@@ -8,12 +8,16 @@
 #include "cpu/instr.h"
 
 /**
- * Trying to order X86 ALU instructions.
+ * \enum X86AluClass
+ *
+ * \brief An attempt to order X86 ALU instructions.
+ *
+ * An attempt to order X86 ALU instructions.
  * Each instruction class contains instructions
  * of roughly equal length and operands, so that
  * all the bxInstruction_c structures residing within
  * one class contain the same member fields (except for
- * b1, rm and the execute pointers).
+ * b1, rm and the execute function pointers).
  */
 enum X86AluClass {
 	ALU_UNDEF = 0,
@@ -32,6 +36,8 @@ enum X86AluClass {
 };
 
 /**
+ * \struct BochsALUInstr
+ *
  * A struct describing a specific x86
  * ALU instruction in terms of Bochs.
  */
@@ -73,11 +79,9 @@ struct BochsALUInstr {
 
 
 /**
- * Array containing most (all?) Bochs ALU commands.
- * Attention: here, \a reg and \a opcodeRegisterOffset, if less than 8,
- * define the maximum value possible in this field,
- * according to the Bochs instruction decoder function.
- * (see the BxOpcodeInfoG... arrays in cpu/fetchdecode.h)
+ * \var aluInstructions
+ *
+ * Array containing the Bochs IA-32 Integer ALU commands.
  */
 const BochsALUInstr aluInstructions [] = {
 	// Now is a great time to open Volume 2 of Intel's IA-32 documentation.
@@ -266,33 +270,81 @@ const BochsALUInstr aluInstructions [] = {
 	/* --- \\\ BINARY OPERATIONS /// --- */
 };
 
-const size_t aluInstructionsSize = sizeof(aluInstructions);
+/**
+ * \var aluInstructionsSize
+ *
+ * the size of aluInstructions, in bytes
+ */
+size_t const aluInstructionsSize = sizeof(aluInstructions);
 
+/**
+ * \class BochsALUInstructions
+ *
+ * \brfief This class handles Bochs ALU instructions.
+ *
+ * This class analyses a given bxInstruction_c object:
+ * if it belongs to the instructions listed in
+ * \a allInstr, the user can request a random
+ * ALU instruction with an equivalent addressing mode.
+ */
 class BochsALUInstructions {
 public:
 	/**
-	 *
+	 * A list of Bochs instructions
 	 */
 	typedef std::vector<BochsALUInstr> InstrList;
+	/**
+	 * This data structure assigns lists of instructions on their ALU equivalence
+	 * class.
+	 *
+	 * \see X86AluClass
+	 */
 	typedef std::map<X86AluClass, InstrList> EquivClassMap;
 	/**
-	 *
+	 * Creates a new BochsALUInstructions object.
+	 * @param initial_array initialises \a allInstr
+	 * @param array_size the size of initial_array
 	 */
 	BochsALUInstructions(const BochsALUInstr *initial_array, size_t array_size);
+	/**
+	 * Destroys the BochsALUInstructions object.
+	 */
 	~BochsALUInstructions() { free(allInstr); }
+	/**
+	 * Determines if a given Bochs instruction is an ALU instruction.
+	 * @param src the instruction to examine. It is stored internally
+	 *            to be reused with \a randomEquivalent
+	 * @returns \c true if the given instruction is an ALU instruction,
+	 *          \c false otherwise
+	 */
 	bool isALUInstruction(const bxInstruction_c *src);
+	/**
+	 * Determines a new bxInstruction_c object with an equivalent
+	 * addressing mode.
+	 * @returns a bxInstruction_c object as described above
+	 */
 	bxInstruction_c randomEquivalent() const;
 protected:
-	void bochsInstrToInstrStruct(const bxInstruction_c *src, BochsALUInstr *dest) const;
+	/**
+	 * Convert a bxInstruction_c object into its matching BochsALUInstr object.
+	 * @params src the Bochs instruction to examine
+	 * @params dest the resulting BochsALUInstr object. Its \a aluClass field
+	 *         is set to \c ALU_UNDEF in case no matching ALU instruction
+	 *         could be found. In this case, all other fields of dest are invalid.
+	 */
+	void bochsInstrToInstrStruct(bxInstruction_c const &src, BochsALUInstr &dest) const;
 private:
-	BochsALUInstr *allInstr;
-	BochsALUInstr lastInstr;
-	const bxInstruction_c *lastOrigInstr;
-	size_t allInstrSize;
-	EquivClassMap equivalenceClasses;
+	BochsALUInstr *allInstr; //<! array that contains all known ALU instructions of the object
+	size_t allInstrSize; //<! the element count of the allInstr array
+	BochsALUInstr lastInstr; //<! a buffer for the last generated ALU instruction
+	bxInstruction_c lastOrigInstr; //!< a buffer for the last examined Bochs instruction
+	EquivClassMap equivalenceClasses; //!< the object's \a EquivClassMap (see there)
+	/**
+	 * A function to build the equivalence classes from the given instructions.
+	 */
 	void buildEquivalenceClasses();
 #ifdef DEBUG
-	void printNestedMap();
+	void printNestedMap(); //!< prints the \a EquivClassMap of the oject
 #endif
 };
 

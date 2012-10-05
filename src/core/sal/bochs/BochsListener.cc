@@ -1,3 +1,4 @@
+#include "../SALInst.hpp"
 #include "BochsListener.hpp"
 #include "../SALInst.hpp"
 
