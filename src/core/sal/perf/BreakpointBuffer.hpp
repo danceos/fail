@@ -73,7 +73,7 @@ public:
 	 * TODO.
 	 * @warning The method expects that \c idx is a valid index within the main
 	 * buffer-list. Therefore we are allowed to call \c SimulatorController::dereference().
-	 * Additionally, the indexed listener is epected to be of type \c BPListener*.
+	 * Additionally, the indexed listener is expected to be of type \c BPListener*.
 	 *
 	void add(index_t idx)
 	{
