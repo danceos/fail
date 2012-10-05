@@ -12,9 +12,7 @@ class ExperimentFlow;
 
 /**
  * \class CoroutineManager
- * Manages the experiments flow encapsulated in coroutines. Each
- * experiment (flow) has it's associated data structure which is
- * represented by the ExperimentData-class.
+ * Manages the experiments flow encapsulated in coroutines.
  */
 class CoroutineManager {
 private:
