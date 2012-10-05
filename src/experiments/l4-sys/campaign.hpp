@@ -17,6 +17,7 @@ public:
 private:
 	std::string output_result(L4SysProtoMsg_ResultType res);
 	std::string output_experiment(L4SysProtoMsg_ExperimentType res);
+	std::string output_register(L4SysProtoMsg_RegisterType res);
 };
 
 #endif // __L4SYS_CAMPAIGN_HPP__

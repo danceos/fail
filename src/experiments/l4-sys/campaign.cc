@@ -40,6 +40,22 @@ std::string L4SysCampaign::output_experiment(L4SysProtoMsg_ExperimentType res) {
 	}
 }
 #undef OUTPUT_CASE
+#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_register_strings[L4SysProtoMsg::OUTPUT];
+std::string L4SysCampaign::output_register(L4SysProtoMsg_RegisterType res) {
+	switch (res) {
+	OUTPUT_CASE(EAX);
+	OUTPUT_CASE(ECX);
+	OUTPUT_CASE(EDX);
+	OUTPUT_CASE(EBX);
+	OUTPUT_CASE(ESP);
+	OUTPUT_CASE(EBP);
+	OUTPUT_CASE(ESI);
+	OUTPUT_CASE(EDI);
+	default:
+		return l4sys_output_register_strings[0];
+	}
+}
+#undef OUTPUT_CASE
 
 bool L4SysCampaign::run() {
 	Logger log("L4SysCampaign");
@@ -61,23 +77,14 @@ bool L4SysCampaign::run() {
 
 	int count = 0;
 	srand(time(NULL));
+
 	for (int i = 0; i < 1000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.ALUINSTR);
-		// modify for a random instruction
-		int instr_offset = rand() % L4SYS_NUMINSTR;
-		d->msg.set_instr_offset(instr_offset);
-		// this value is not required for this experiment, so set it to an arbitrary value
-		d->msg.set_bit_offset(0);
-
-		campaignmanager.addParam(d);
-		++count;
-	}
-#if 0
-	for (int i = 0; i < 25; ++i) {
-		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
-		d->msg.set_register_offset(d->msg.EBX);
+		// affect a random register
+		int reg_offset = rand() % 8 + 1;
+		d->msg.set_register_offset(
+				static_cast<L4SysProtoMsg_RegisterType>(reg_offset));
 		// modify for a random instruction
 		int instr_offset = rand() % L4SYS_NUMINSTR;
 		d->msg.set_instr_offset(instr_offset);
@@ -90,7 +97,7 @@ bool L4SysCampaign::run() {
 	}
 	for (int i = 0; i < 1000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
-		d->msg.set_exp_type(d->msg.RATFLIP);
+		d->msg.set_exp_type(d->msg.ALUINSTR);
 		// modify for a random instruction
 		int instr_offset = rand() % L4SYS_NUMINSTR;
 		d->msg.set_instr_offset(instr_offset);
@@ -113,7 +120,19 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-#endif
+	for (int i = 0; i < 1000; ++i) {
+		L4SysExperimentData *d = new L4SysExperimentData;
+		d->msg.set_exp_type(d->msg.RATFLIP);
+		// modify for a random instruction
+		int instr_offset = rand() % L4SYS_NUMINSTR;
+		d->msg.set_instr_offset(instr_offset);
+		// this value is not required for this experiment, so set it to an arbitrary value
+		d->msg.set_bit_offset(0);
+
+		campaignmanager.addParam(d);
+		++count;
+	}
+
 	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
 
@@ -128,7 +147,7 @@ bool L4SysCampaign::run() {
 
 		results << output_experiment(res->msg.exp_type()) << "," << hex << res->msg.injection_ip() << dec << ",";
 		if (res->msg.has_register_offset())
-			results << res->msg.register_offset();
+			results << output_register(res->msg.register_offset());
 		else
 			results << "None";
 		results	<< "," << res->msg.instr_offset() << "," << res->msg.bit_offset()

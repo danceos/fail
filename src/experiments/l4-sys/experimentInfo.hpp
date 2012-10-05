@@ -8,8 +8,8 @@
 #define L4SYS_ADDRESS_SPACE		0x203d000
 #define L4SYS_FUNC_ENTRY		0x10025ca
 #define L4SYS_FUNC_EXIT			0x1002810
-// kernel: 16300287, userland: 210785625
-#define L4SYS_NUMINSTR			227085912
+// kernel: 3597806, userland: 79484908
+#define L4SYS_NUMINSTR			83082714
 #define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
