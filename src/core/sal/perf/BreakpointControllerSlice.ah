@@ -19,7 +19,11 @@ public:
 	bool addListener(fail::BPSingleListener* sli)
 	{
 		assert(sli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
-		m_LstList.add(sli, m_Flows.getCurrent());
+		// Check whether we were called from onTrigger (see SimulatorController.cc@addListener).
+		ExperimentFlow* pFlow = m_Flows.getCurrent(); 
+		if (pFlow == CoroutineManager::SIM_FLOW)
+			pFlow = sli->getParent();
+		m_LstList.add(sli, pFlow);
 		// Call the common postprocessing function:
 		if (!sli->onAddition()) { // If the return value signals "false"...,
 			m_LstList.remove(sli); // ...skip the addition
@@ -32,7 +36,11 @@ public:
 	bool addListener(fail::BPRangeListener* rli)
 	{
 		assert(rli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
-		m_LstList.add(rli, m_Flows.getCurrent());
+		// Check whether we were called from onTrigger (see above).
+		ExperimentFlow* pFlow = m_Flows.getCurrent();
+		if (pFlow == CoroutineManager::SIM_FLOW)
+			pFlow = rli->getParent();
+		m_LstList.add(rli, pFlow);
 		// Call the common postprocessing function:
 		if (!rli->onAddition()) { // If the return value signals "false"...,
 			m_LstList.remove(rli); // ...skip the addition

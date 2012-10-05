@@ -13,7 +13,14 @@ int interrupt_to_fire = -1;
 bool SimulatorController::addListener(BaseListener* li)
 {
 	assert(li != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
-	m_LstList.add(li, m_Flows.getCurrent());
+	// If addListener() was called from onTrigger(), there is no parent
+	// to retrieve/assign. In this case, we simple expect the parent-member
+	// to be valid ('as is'). (Otherwise, the current flow is retrieved by
+	// calling CoroutineManager::getCurrent().)
+	ExperimentFlow* pFlow = m_Flows.getCurrent();
+	if (pFlow == CoroutineManager::SIM_FLOW)
+		pFlow = li->getParent();
+	m_LstList.add(li, pFlow);
 	// Call the common postprocessing function:
 	if (!li->onAddition()) { // If the return value signals "false"...,
 		m_LstList.remove(li); // ...skip the addition

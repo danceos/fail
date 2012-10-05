@@ -24,6 +24,9 @@ CoroutineManager::~CoroutineManager() { }
 
 void CoroutineManager::toggle(ExperimentFlow* flow)
 {
+	assert((co_current() != m_simCoro || flow != SIM_FLOW) &&
+		"FATAL ERROR: We are already in the simulators coroutine flow! \
+		(Maybe you forgot to overwrite the (default) onTrigger() method?)");
 	m_togglerstack.push(co_current());
 	//std::cerr << "CORO toggle from " << m_togglerstack.top() << " to ";
 	if (flow == SIM_FLOW) {
@@ -86,8 +89,7 @@ ExperimentFlow* CoroutineManager::getCurrent()
 		if (it->second == cr)
 			return it->first;
 
-	assert(false && "FATAL ERROR: The current flow could not be retrieved!");
-	return 0;
+	return NULL;
 }
 
 const ExperimentFlow* CoroutineManager::SIM_FLOW = NULL;
