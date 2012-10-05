@@ -189,10 +189,14 @@ bool L4SysExperiment::run() {
 	simulator.save(L4SYS_STATE_FOLDER);
 #elif PREPARATION_STEP == 2
 	// STEP 2: determine instructions executed
+	log << "restoring state" << endl;
+	simulator.restore(L4SYS_STATE_FOLDER);
+	log << "EIP = " << hex
+			<< simulator.getRegisterManager().getInstructionPointer()
+			<< endl;
 
-	// count the first instruction which has already been executed
-	int count = 1;
-	int ul = 1, kernel = 0;
+	int count = 0;
+	int ul = 0, kernel = 0;
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	for (; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
 		simulator.addListenerAndResume(&bp);
