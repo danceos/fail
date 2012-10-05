@@ -26,9 +26,7 @@ typedef uint32_t         regwidth_t;  //!< type of register width [bits]
 typedef register_data_t  regdata_t;   //!< type of register data
 typedef timer_t          timer_id_t;  //!< type of timer IDs
 
-// The following flags are defined in SALConfig.cc.
-
-// FIXME: The flags should be initialized based on simulator-specific values!
+// Note: The following flags are defined in SALConfig.cc.
 
 //! invalid address flag (e.g. for memory address ptrs)
 extern const address_t   ADDR_INV;
