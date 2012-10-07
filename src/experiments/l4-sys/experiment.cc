@@ -500,6 +500,9 @@ bool L4SysExperiment::run() {
 
 		} while (which == UD_NONE);
 
+		// store the real injection point
+		param.msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
+
 		// so we are able to flip the associated registers
 		// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
 
