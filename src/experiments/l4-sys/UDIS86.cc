@@ -10,7 +10,6 @@ Udis86::Udis86(unsigned char const *instr, size_t size, address_t ip) {
 	memcpy(udis_instr, instr, udis_instr_size);
 
 	// initialise the internal data structure
-	memset(&ud_obj, 0, sizeof(ud_t));
 	ud_init(&ud_obj);
 	ud_set_mode(&ud_obj, 32);
 	ud_set_syntax(&ud_obj, UD_SYN_ATT);

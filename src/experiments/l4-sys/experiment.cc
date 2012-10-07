@@ -434,9 +434,23 @@ bool L4SysExperiment::run() {
 		// do the logging
 		logInjection(log, param);
 	} else if (exp_type == param.msg.RATFLIP) {
-		bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-		Udis86 udis(calculateInstructionAddress(), currInstr->ilen(), injection_ip);
-		if (udis.fetchNextInstruction()) {
+		ud_type_t which = UD_NONE;
+		unsigned rnd = 0;
+		do {
+			bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+			Udis86 udis(calculateInstructionAddress(), currInstr->ilen(), injection_ip);
+			if (!udis.fetchNextInstruction()) {
+				param.msg.set_resulttype(param.msg.UNKNOWN);
+				param.msg.set_resultdata(
+						simulator.getRegisterManager().getInstructionPointer());
+				param.msg.set_output(sanitised(output.c_str()));
+
+				stringstream ss;
+				ss << "Could not decode instruction using UDIS86" << endl;
+				param.msg.set_details(ss.str());
+				m_jc.sendResult(param);
+				simulator.terminate(32);
+			}
 			ud_t _ud = udis.getCurrentState();
 
 			/* start Bjoern Doebel's code (slightly modified) */
@@ -468,74 +482,77 @@ bool L4SysExperiment::run() {
 				}
 			}
 
-			ud_type_t which;
-			unsigned rnd;
-			if (opcount == 0)
-				rnd = 0;
-			else
+			if (opcount == 0) {
+				// try the next instruction
+				singleStep();
+			} else {
+				// assign the necessary variables
 				rnd = rand() % opcount;
 
-			if (operands[rnd] > RAT_IDX_OFFSET) {
-				which = _ud.operand[operands[rnd] - RAT_IDX_OFFSET].index;
-			} else {
-				which = _ud.operand[operands[rnd]].base;
+				if (operands[rnd] > RAT_IDX_OFFSET) {
+					which = _ud.operand[operands[rnd] - RAT_IDX_OFFSET].index;
+				} else {
+					which = _ud.operand[operands[rnd]].base;
+				}
 			}
 			/* ============================================ */
 			/* end Bjoern Doebel's code (slightly modified) */
 
-			if (which != UD_NONE) {
-				// so we are able to flip the associated registers
-				// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
+		} while (which == UD_NONE);
 
-				// some declarations
-				GPRegisterId bochs_reg = Udis86::udisGPRToFailBochsGPR(which);
-				int exchg_reg = -1;
-				RegisterManager &rm = simulator.getRegisterManager();
+		// so we are able to flip the associated registers
+		// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
 
-				// first, decide if the fault hits a register bound to this thread
-				// (ten percent chance)
-				if (rand() % 10) {
-					// assure exchange of registers
-					exchg_reg = rand() % 7;
-					if (exchg_reg == bochs_reg)
-						exchg_reg++;
+		// some declarations
+		GPRegisterId bochs_reg = Udis86::udisGPRToFailBochsGPR(which);
+		int exchg_reg = -1;
+		RegisterManager &rm = simulator.getRegisterManager();
 
-				}
-
-				// prepare the fault
-				regdata_t data = rm.getRegister(bochs_reg)->getData();
-				if (rnd > 0) {
-					//input register - do the fault injection here
-					regdata_t newdata = 0;
-					if (exchg_reg >= 0) {
-						newdata = rm.getRegister(exchg_reg)->getData();
-					} else {
-						newdata = rand();
-					}
-					rm.getRegister(bochs_reg)->setData(newdata);
-				}
-
-				// execute the instruction
-				singleStep();
-
-				// restore
-				if (rnd == 0) {
-					// output register - do the fault injection here
-					if (exchg_reg >= 0) {
-						// write the result into the wrong local register
-						regdata_t newdata = rm.getRegister(bochs_reg)->getData();
-						rm.getRegister(exchg_reg)->setData(newdata);
-					}
-				}
-				// restore the actual value of the register
-				// in reality, it would never have been overwritten
-				rm.getRegister(bochs_reg)->setData(data);
-
-				// and log the injection
-				logInjection(log, param);
-			}
+		// first, decide if the fault hits a register bound to this thread
+		// (ten percent chance)
+		if (rand() % 10 == 0) {
+			// assure exchange of registers
+			exchg_reg = rand() % 7;
+			if (exchg_reg == bochs_reg)
+				exchg_reg++;
 
 		}
+
+		// prepare the fault
+		regdata_t data = rm.getRegister(bochs_reg)->getData();
+		if (rnd > 0) {
+			//input register - do the fault injection here
+			regdata_t newdata = 0;
+			if (exchg_reg >= 0) {
+				// the data is taken from a process register chosen before
+				newdata = rm.getRegister(exchg_reg)->getData();
+			} else {
+				// the data comes from an uninitialised register
+				newdata = rand();
+			}
+			rm.getRegister(bochs_reg)->setData(newdata);
+		}
+
+		// execute the instruction
+		singleStep();
+
+		// restore
+		if (rnd == 0) {
+			// output register - do the fault injection here
+			if (exchg_reg >= 0) {
+				// write the result into the wrong local register
+				regdata_t newdata = rm.getRegister(bochs_reg)->getData();
+				rm.getRegister(exchg_reg)->setData(newdata);
+			}
+			// otherwise, just assume it is stored in an unused register
+		}
+		// restore the actual value of the register
+		// in reality, it would never have been overwritten
+		rm.getRegister(bochs_reg)->setData(data);
+
+		// and log the injection
+		logInjection(log, param);
+
 	} else if (exp_type == param.msg.ALUINSTR) {
 		static BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
 		// find the closest ALU instruction after the current IP

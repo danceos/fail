@@ -60,13 +60,12 @@ std::string L4SysCampaign::output_register(L4SysProtoMsg_RegisterType res) {
 bool L4SysCampaign::run() {
 	Logger log("L4SysCampaign");
 
-#if 0
 	ifstream test(results_csv);
 	if (test.is_open()) {
 		log << results_csv << " already exists" << endl;
 		return false;
 	}
-#endif
+
 	ofstream results(results_csv);
 	if (!results.is_open()) {
 		log << "failed to open " << results_csv << endl;
@@ -78,7 +77,7 @@ bool L4SysCampaign::run() {
 	int count = 0;
 	srand(time(NULL));
 
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
 		// affect a random register
@@ -95,7 +94,7 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.ALUINSTR);
 		// modify for a random instruction
@@ -107,7 +106,7 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.IDCFLIP);
 		// modify for a random instruction
@@ -120,7 +119,7 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.RATFLIP);
 		// modify for a random instruction
