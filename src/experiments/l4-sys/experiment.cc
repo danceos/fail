@@ -436,9 +436,10 @@ bool L4SysExperiment::run() {
 	} else if (exp_type == param.msg.RATFLIP) {
 		ud_type_t which = UD_NONE;
 		unsigned rnd = 0;
+		Udis86 udis(injection_ip);
 		do {
 			bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-			Udis86 udis(calculateInstructionAddress(), currInstr->ilen(), injection_ip);
+			udis.setInputBuffer(calculateInstructionAddress(), currInstr->ilen());
 			if (!udis.fetchNextInstruction()) {
 				param.msg.set_resulttype(param.msg.UNKNOWN);
 				param.msg.set_resultdata(
