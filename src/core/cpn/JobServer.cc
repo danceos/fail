@@ -301,7 +301,7 @@ void CommThread::receiveExperimentResults(Minion& minion, uint32_t workloadID)
 	boost::unique_lock<boost::mutex> lock(m_CommMutex);
 #endif
 
-	ExperimentData * exp; // Get exp* from running jobs
+	ExperimentData* exp = NULL; // Get exp* from running jobs
 	//cout << "<<[Server] Received result for workload id [" << workloadID << "]" << endl;
 	cout << "<<[" << workloadID << "] " << flush;
 	if (m_js.m_runningJobs.remove(workloadID, exp)) { // ExperimentData* found
