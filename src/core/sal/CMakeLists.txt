@@ -18,7 +18,7 @@ elseif(BUILD_GEM5)
 		SimulatorController.cc
 		perf/BreakpointBuffer.cc
 		gem5/Gem5Controller.cc
-		gem5/Gem5PCEvent.cc
+		gem5/Gem5PCEvents.cc
 	)
 elseif(BUILD_OVP)
 	set(SRCS

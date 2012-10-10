@@ -6,7 +6,7 @@
 
 #if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS)
 
-#include "Gem5PCEvent.hh"
+#include "Gem5PCEvents.hpp"
 #include "sim/system.hh"
 
 aspect Gem5Listener
@@ -14,12 +14,12 @@ aspect Gem5Listener
 	advice "fail::BPSingleListener" : slice class
 	{
 	private:
-		Gem5PCEvent* m_Breakpoint;
+		Gem5BreakpointEvent* m_Breakpoint;
 	public:
 		virtual bool onAddition()
 		{
 			System* sys = *System::systemList.begin();
-			m_Breakpoint = new Gem5PCEvent(&sys->pcEventQueue, this->m_WatchInstrPtr);
+			m_Breakpoint = new Gem5BreakpointEvent(&sys->pcEventQueue, this->m_WatchInstrPtr);
 			
 			return true;
 		}
