@@ -1,20 +1,33 @@
 #!/bin/bash
 declare testsuccess=$true;
-declare fail_dir=$PWD/../
-declare build_dir=$PWD/../build
-declare target_dir=$PWD/../../experiment_targets/regression-test
-declare script_dir=$PWD
+declare script_dir=$(dirname $0);
+declare fail_dir=$script_dir/../;
+declare build_dir=$PWD;
+declare target_dir=$script_dir/../../experiment_targets/regression-test;
 
-#Exists build-directory?
-cd $fail_dir;
-if [ ! -d build ]; then
-mkdir build;
-cd build;
+#find . -name *.ah -not -regex "./src/.*" ! -path $build_dir -exec rm {} \;
+cd $build_dir
+if [ -f bin/fail-client ]; then
+echo -e  '\033[37;44m Build-Environment already exists. Start to compile changes. \033[0m'
+$script_dir/rebuild-bochs.sh -;
+else
+echo -e  '\033[37;44m Start to generate Build-Environment. \033[0m'
+rm * -rf;
+cmake -DCONFIG_EVENT_BREAKPOINTS:BOOL=ON -DCONFIG_EVENT_GUESTSYS:BOOL=ON -DCONFIG_EVENT_INTERRUPT:BOOL=ON \
+-DCONFIG_EVENT_IOPORT:BOOL=ON -DCONFIG_EVENT_JUMP:BOOL=ON -DCONFIG_EVENT_MEMREAD:BOOL=ON \
+-DCONFIG_EVENT_MEMWRITE:BOOL=ON -DCONFIG_EVENT_TRAP:BOOL=ON -DCONFIG_FAST_BREAKPOINTS:BOOL=ON \
+-DCONFIG_FIRE_INTERRUPTS:BOOL=ON -DCONFIG_SR_REBOOT:BOOL=ON -DCONFIG_SR_RESTORE:BOOL=ON \
+-DCONFIG_SR_SAVE:BOOL=ON -DCONFIG_SUPPRESS_INTERRUPTS:BOOL=ON \
+-DEXPERIMENTS_ACTIVATED:STRING=regression-test -DPLUGINS_ACTIVATED:STRING='serialoutput;tracing' ..;
+echo -e  '\033[37;44m Start to compile. \033[0m'
+$script_dir/rebuild-bochs.sh;
+fi
+if [ -d $build_dir/../build ]; then
+echo -e  '\033[37;44m Restore old configuration in build. \033[0m'
+cd $build_dir/../build/;
 cmake ..;
 fi
-cd $build_dir;
-cp $target_dir/CMakeCache.txt CMakeCache.txt -f
-$script_dir/rebuild-bochs.sh;
+
 cd $target_dir;
 $build_dir/bin/fail-client -q;
 
