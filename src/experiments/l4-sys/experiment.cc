@@ -235,8 +235,7 @@ bool L4SysExperiment::run() {
 		golden_run_file.close();
 		simulator.terminate(10);
 	}
-	simulator.clearListeners();
-	bp.setCounter(1);
+
 	log << "saving output generated during normal execution" << endl;
 	golden_run_file.close();
 

@@ -134,27 +134,28 @@ public:
 class BPListener : public BaseListener {
 protected:
 	BPEvent m_Data;
-	address_t m_CR3;
 public:
 	/**
 	 * Creates a new breakpoint listener. The range information is specific to
 	 * the subclasses.
-	 * @param address_space the address space to be oberserved, given as the
-	 *        content of a CR3 register. The listener will not be triggered unless
+	 * @param address_space the address space to be oberserved.
+	 *        The nature if its identifier is implementation-specific.
+	 *        For IA-32, it is given as the
+	 *        content of the CR3 register. The listener will not be triggered unless
 	 *        \a ip is part of the given address space.
 	 *        ANY_ADDR can be used as a placeholder to allow debugging
 	 *        in a random address space.
 	 */
 	BPListener(address_t address_space = ANY_ADDR)
-		: m_Data(address_space, ANY_ADDR), m_CR3(ANY_ADDR) { }
+		: m_Data(address_space, ANY_ADDR) { }
 	/**
 	 * Returns the address space register of this listener.
 	 */
-	address_t getCR3() const { return m_CR3; }
+	address_t getAddressSpace() const { return m_Data.getAddressSpace(); }
 	/**
 	 * Sets the address space register for this listener.
 	 */
-	void setCR3(address_t iptr) { m_CR3 = iptr; }
+	void setAddressSpace(address_t iptr) { m_Data.setAddressSpace(iptr); }
 	/**
 	 * Checks whether a given address space is matching.
 	 */
@@ -190,11 +191,8 @@ public:
 	 *        flow reaches this address and its counter value is zero, the
 	 *        listener will be triggered. \a ip can be set to the ANY_ADDR
 	 *        wildcard to allow arbitrary addresses. Defaults to 0.
-	 * @param address_space the address space to be oberserved, given as the
-	 *        content of a CR3 register. The listener will not be triggered unless
-	 *        \a ip is part of the given address space. Defaults to \c ANY_ADDR.
-	 *        Here, too, ANY_ADDR is a placeholder to allow debugging
-	 *        in a random address space.
+	 * @param address_space the address space to be oberserved.
+	 *        \see BPListener
 	 */
 	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
 		: BPListener(address_space), m_WatchInstrPtr(ip) { }

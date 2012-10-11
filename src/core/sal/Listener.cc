@@ -57,9 +57,9 @@ bool MemAccessListener::isMatching(const MemAccessEvent* pEv) const
 	return true;
 }
 
-bool BPListener::aspaceIsMatching(address_t aspace) const
+bool BPListener::aspaceIsMatching(address_t address_space) const
 {
-	if (m_CR3 == ANY_ADDR || m_CR3 == aspace)
+	if (m_Data.getAddressSpace() == ANY_ADDR || m_Data.getAddressSpace() == address_space)
 		return true;
 	return false;
 }
@@ -72,7 +72,7 @@ void BPRangeListener::setWatchInstructionPointerRange(address_t start, address_t
 
 bool BPRangeListener::isMatching(const BPEvent* pEv) const
 {
-	if (!aspaceIsMatching(pEv->getCR3()))
+	if (!aspaceIsMatching(pEv->getAddressSpace()))
 		return false;
 	if ((m_WatchStartAddr != ANY_ADDR && pEv->getTriggerInstructionPointer() < m_WatchStartAddr) ||
 		(m_WatchEndAddr != ANY_ADDR && pEv->getTriggerInstructionPointer() > m_WatchEndAddr))
@@ -82,7 +82,7 @@ bool BPRangeListener::isMatching(const BPEvent* pEv) const
 
 bool BPSingleListener::isMatching(const BPEvent* pEv) const
 {
-	if (aspaceIsMatching(pEv->getCR3())) {
+	if (aspaceIsMatching(pEv->getAddressSpace())) {
 		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == pEv->getTriggerInstructionPointer())
 			return true;
 	}
