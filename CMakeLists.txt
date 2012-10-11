@@ -31,6 +31,7 @@ OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
 OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
 OPTION( BUILD_OVP    "Build OVP Variant?" OFF)
 OPTION( BUILD_QEMU   "Build QEMU Variant?" OFF)
+OPTION( BUILD_T32   "Build Lauterbach Trace32 Variant?" OFF)
 
 # FIXME: only add simulators/ to include_directories, and include, e.g.,
 # bochs/bochs.h in Fail*. -> avoids naming conflicts (e.g., /usr/include/elf.h
@@ -46,6 +47,8 @@ elseif(BUILD_OVP)
   add_subdirectory(simulators/ovp)
 elseif(BUILD_QEMU)
   include_directories(simulators)
+elseif(BUILD_T32)
+  add_subdirectory(hwdebuggers/t32)
 endif(BUILD_BOCHS)
 
 ## Additional compiler and linker flags ##
@@ -68,7 +71,7 @@ include(bochs)
 include(gem5)
 include(ovp)
 include(qemu)
-
+include(t32)
 ## Just for testing:
 ## Invoking bochs build via external project
 # Setup configure call for bochs (-> make ebochs)

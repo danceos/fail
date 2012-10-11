@@ -41,6 +41,17 @@ elseif(BUILD_QEMU)
 		qemu/QEMUController.cc
 		qemu/wrappers.cc
 	)
+elseif(BUILD_T32)
+	set(SRCS
+		Listener.cc
+		ListenerManager.cc
+		SALConfig.cc
+		Register.cc
+		perf/BreakpointBuffer.cc
+		SimulatorController.cc
+		t32/T32Controller.cc
+		t32/wrappers.cc
+	)
 endif(BUILD_BOCHS)
 
 add_library(fail-sal ${SRCS})

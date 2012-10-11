@@ -5,5 +5,6 @@
 #cmakedefine BUILD_GEM5
 #cmakedefine BUILD_OVP
 #cmakedefine BUILD_QEMU
+#cmakedefine BUILD_T32
 
 #endif // __VARIANT_CONFIG_HPP__

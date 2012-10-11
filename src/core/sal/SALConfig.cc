@@ -5,7 +5,8 @@ namespace fail {
 // Flag initialization depends on the current selected simulator
 // (For now, the initialization values are all the same):
 #if defined BUILD_BOCHS || defined BUILD_GEM5 || \
-    defined BUILD_OVP   || defined BUILD_QEMU
+    defined BUILD_OVP   || defined BUILD_QEMU || \
+    defined BUILD_T32
 const address_t       ADDR_INV = static_cast<address_t>  (0);
 const address_t       ANY_ADDR = static_cast<address_t> (-1);
 const unsigned       ANY_INSTR = static_cast<unsigned>  (-1);

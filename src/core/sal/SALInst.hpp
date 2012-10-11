@@ -36,6 +36,15 @@ namespace fail {
 typedef QEMUController ConcreteSimulatorController; //!< concrete simulator (type)
 }
 
+#elif defined BUILD_T32
+
+#include "t32/T32Controller.hpp"
+
+namespace fail {
+typedef T32Controller ConcreteSimulatorController; //!< concrete simulator (type)
+}
+
+
 #else
 #error SAL Instance not defined
 #endif
