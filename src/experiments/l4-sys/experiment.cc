@@ -499,7 +499,21 @@ bool L4SysExperiment::run() {
 			/* ============================================ */
 			/* end Bjoern Doebel's code (slightly modified) */
 
-		} while (which == UD_NONE);
+		} while (which == UD_NONE &&
+				 simulator.getRegisterManager().getInstructionPointer() != L4SYS_FUNC_EXIT);
+
+		if (simulator.getRegisterManager().getInstructionPointer() == L4SYS_FUNC_EXIT) {
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
+					simulator.getRegisterManager().getInstructionPointer());
+			param.msg.set_output(sanitised(output.c_str()));
+
+			stringstream ss;
+			ss << "Reached the end of the experiment without finding an appropriate instruction" << endl;
+			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
+			simulator.terminate(33);
+		}
 
 		// store the real injection point
 		param.msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
@@ -563,8 +577,22 @@ bool L4SysExperiment::run() {
 
 		bxInstruction_c *currInstr;
 		while (!aluInstrObject.isALUInstruction(
-		       currInstr = simulator.getCurrentInstruction())) {
+		       currInstr = simulator.getCurrentInstruction()) &&
+			   simulator.getRegisterManager().getInstructionPointer() != L4SYS_FUNC_EXIT) {
 			singleStep();
+		}
+
+		if (simulator.getRegisterManager().getInstructionPointer() == L4SYS_FUNC_EXIT) {
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
+					simulator.getRegisterManager().getInstructionPointer());
+			param.msg.set_output(sanitised(output.c_str()));
+
+			stringstream ss;
+			ss << "Reached the end of the experiment without finding an appropriate instruction" << endl;
+			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
+			simulator.terminate(33);
 		}
 
 		// store the real injection point
