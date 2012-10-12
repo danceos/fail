@@ -2,6 +2,7 @@
 
 #include "sal/SALInst.hpp"
 #include "sal/Register.hpp"
+#include "sal/Listener.hpp"
 #include "TracingPlugin.hpp"
 
 using namespace std;
