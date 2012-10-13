@@ -162,10 +162,10 @@ void L4SysExperiment::injectInstruction(bxInstruction_c *oldInstr, bxInstruction
 	memcpy(oldInstr, &backupInstr, sizeof(bxInstruction_c));
 }
 
-unsigned L4SysExperiment::calculateTimeout() {
+unsigned L4SysExperiment::calculateTimeout(unsigned instr_left) {
 	// the timeout in seconds, plus one backup second (avoids rounding overhead)
 	// [instr] / [instr / s] = [s]
-	unsigned seconds = L4SYS_NUMINSTR / L4SYS_BOCHS_IPS + 1;
+	unsigned seconds = instr_left / L4SYS_BOCHS_IPS + 1;
 	// 1.1 (+10 percent) * 1000 ms/s * [s]
 	return 1100 * seconds;
 }
@@ -600,7 +600,7 @@ bool L4SysExperiment::run() {
 		// now exchange it with a random equivalent
 		bxInstruction_c newInstr;
 		string details;
-		aluInstrObject.randomEquivalent(newInstr, details);
+		int result = aluInstrObject.randomEquivalent(newInstr, details);
 		if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
 			// something went wrong - exit experiment
 			param.msg.set_resulttype(param.msg.UNKNOWN);
@@ -627,10 +627,12 @@ bool L4SysExperiment::run() {
 	// aftermath
 	BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
 	simulator.addListener(&ev_done);
+	unsigned instr_left = L4SYS_NUMINSTR - instr_offset;
 	BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
-	ev_incomplete.setCounter(static_cast<unsigned>(L4SYS_NUMINSTR * 1.1));
+	ev_incomplete.setCounter(
+	    static_cast<unsigned>(instr_left * 1.1));
 	simulator.addListener(&ev_incomplete);
-	TimerListener ev_timeout(calculateTimeout());
+	TimerListener ev_timeout(calculateTimeout(instr_left));
 	simulator.addListener(&ev_timeout);
 
 	//do not discard output recorded so far

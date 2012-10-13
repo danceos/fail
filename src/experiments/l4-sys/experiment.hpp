@@ -73,7 +73,7 @@ private:
 	/**
 	 * Calculate the timeout of the current workload in milliseconds.
 	 */
-	unsigned calculateTimeout();
+	unsigned calculateTimeout(unsigned instr_left);
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__

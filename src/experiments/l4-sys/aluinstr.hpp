@@ -76,6 +76,24 @@ struct BochsALUInstr {
 	 * the count of registers
 	 */
 	static const unsigned REG_COUNT = 8;
+	/**
+	 * returns true if obj equals this object
+	 * the Bochs opcode is generated dynamically and thus not relevant for comparison
+	 */
+	bool operator==(BochsALUInstr const &obj) const
+	{
+		return opcode == obj.opcode &&
+		        reg == obj.reg &&
+		        opcodeRegisterOffset == obj.opcodeRegisterOffset &&
+		        aluClass == obj.aluClass;
+	}
+	/**
+	 * returns false if obj equals this object
+	 * \see operator==
+	 */
+	bool operator!=(BochsALUInstr const &obj) const {
+		return !(*this == obj);
+	}
 };
 
 
@@ -325,7 +343,7 @@ public:
 	 * @param result the resulting bxInstruction_c object as described above
 	 * @param details after completion contains details about \c result
 	 */
-	void randomEquivalent(bxInstruction_c &result, std::string &details) const;
+	int randomEquivalent(bxInstruction_c &result, std::string &details) const;
 protected:
 	/**
 	 * Convert a bxInstruction_c object into its matching BochsALUInstr object.
