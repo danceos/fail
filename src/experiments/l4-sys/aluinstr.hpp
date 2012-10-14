@@ -343,7 +343,7 @@ public:
 	 * @param result the resulting bxInstruction_c object as described above
 	 * @param details after completion contains details about \c result
 	 */
-	int randomEquivalent(bxInstruction_c &result, std::string &details) const;
+	void randomEquivalent(bxInstruction_c &result, std::string &details) const;
 protected:
 	/**
 	 * Convert a bxInstruction_c object into its matching BochsALUInstr object.

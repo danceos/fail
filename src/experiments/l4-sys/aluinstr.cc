@@ -92,14 +92,14 @@ bool BochsALUInstructions::isALUInstruction(bxInstruction_c const *src) {
 	return false;
 }
 
-int BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
+void BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
                                                   std::string &details) const {
 	// find a random member of the same equivalence class
 	X86AluClass equClassID = lastInstr.aluClass;
 	if (equClassID == ALU_UNDEF) {
 		// something went wrong - just return the original instruction
 		result = lastOrigInstr;
-		return 10;
+		return;
 	}
 
 	InstrList const &destList = equivalenceClasses.at(equClassID);
@@ -136,13 +136,6 @@ int BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
 	if (dest.opcodeRegisterOffset < BochsALUInstr::REG_COUNT) {
 		result.setRm(dest.opcodeRegisterOffset);
 	}
-
-	if (memcmp(&result, &lastOrigInstr, sizeof(bxInstruction_c)) == 0) {
-		fprintf(stderr,"randomEquivalent failed\n");
-		scanf("%*s");
-	}
-
-	return 0;
 }
 
 #ifdef DEBUG

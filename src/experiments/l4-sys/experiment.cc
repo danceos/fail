@@ -600,7 +600,7 @@ bool L4SysExperiment::run() {
 		// now exchange it with a random equivalent
 		bxInstruction_c newInstr;
 		string details;
-		int result = aluInstrObject.randomEquivalent(newInstr, details);
+		aluInstrObject.randomEquivalent(newInstr, details);
 		if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
 			// something went wrong - exit experiment
 			param.msg.set_resulttype(param.msg.UNKNOWN);
