@@ -26,11 +26,7 @@
 
 #include "iodev/iodev.h"
 
-/****************************************************************
- * DanceOS - BOCHS-MODIFIED
- *
- */
-
+// DanceOS:
 // Just a dummy function to define a join-point. This function is
 // *just* called once within bx_cpu_c::cpu_loop(...).
 static inline void defineCPULoopJoinPoint(BX_CPU_C* pThis, bxInstruction_c *pInstr)
@@ -155,29 +151,16 @@ void BX_CPU_C::cpu_loop(Bit32u max_instr_count)
         debug_disasm_instruction(BX_CPU_THIS_PTR prev_rip);
       }
 #endif
-/****************************************************************
-* TUDOS - BOCHS-MODIFIED
-*
-*/
+      // DanceOS: Save original instruction length in case we modify the instruction.
       unsigned orig_len = i->ilen();
-/****************************************************************/
-/****************************************************************
- * DanceOS - BOCHS-MODIFIED
- * 
- */
-
+      // DanceOS: Aspect "hook"
       defineCPULoopJoinPoint(BX_CPU_THIS, i);
 
-/****************************************************************/
       // instruction decoding completed -> continue with execution
       // want to allow changing of the instruction inside instrumentation callback
       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
-/****************************************************************
-* TUDOS - BOCHS-MODIFIED
-*
-*/
+      // DanceOS: Use original length (see above).
       RIP += orig_len;
-/****************************************************************/
       BX_CPU_CALL_METHOD(i->execute, (i)); // might iterate repeat instruction
       BX_CPU_THIS_PTR prev_rip = RIP; // commit new RIP
       BX_INSTR_AFTER_EXECUTION(BX_CPU_ID, i);
