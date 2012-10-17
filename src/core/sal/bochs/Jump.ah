@@ -1,16 +1,10 @@
 #ifndef __JUMP_AH__
   #define __JUMP_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_JUMP)
-
 #include <iostream>
 #include <cstdlib>
 #include <string>
 #include <ctime>
-
 #include "bochs.h"
 
 #include "../SALInst.hpp"
@@ -135,5 +129,4 @@ aspect Jump {
 	}
 };
 
-#endif // CONFIG_EVENT_JUMP
 #endif // __JUMP_AH__

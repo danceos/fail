@@ -1,11 +1,7 @@
 #ifndef __MEM_ACCESS_AH__
   #define __MEM_ACCESS_AH__
 
-#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
-
-#ifdef BUILD_BOCHS
-#if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
 
 #include <iostream>
 
@@ -157,6 +153,4 @@ aspect MemAccess {
 #endif
 };
 
-#endif // CONFIG_EVENT_MEMACCESS
-#endif // BUILD_BOCHS
 #endif // __MEM_ACCESS_AH__

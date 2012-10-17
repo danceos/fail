@@ -3,6 +3,7 @@ set(EXPERIMENT_TYPE FireInterruptExperiment)
 configure_file(../instantiate-experiment.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
+add_aspect_headers(${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah)
 
 #experiment sources
 set(MY_EXPERIMENT_SRCS

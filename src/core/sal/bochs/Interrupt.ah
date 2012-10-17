@@ -1,11 +1,6 @@
 #ifndef __INTERRUPT_AH__
   #define __INTERRUPT_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_INTERRUPT)
-
 #include "bochs.h"
 #include "cpu/cpu.h"
 
@@ -35,5 +30,4 @@ aspect Interrupt {
 	}
 };
 
-#endif // CONFIG_EVENT_INTERRUPT
 #endif // __INTERRUPT_AH__

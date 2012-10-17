@@ -29,6 +29,9 @@ endforeach(plugin_name)
 # (probably there's a smarter way to do that with cmake?)
 add_library(fail dummy.cc)
 
+# dummy .ah file to keep the aspect-header list non-empty
+add_aspect_headers(${CMAKE_CURRENT_SOURCE_DIR}/dummy.ah)
+
 ## Setup build dependencies of the Fail* lib 
 ## -> the Fail* targets and user defined experiment targets
 # start/end-group: ld must iterate over these archives more than once to figure

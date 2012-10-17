@@ -1,13 +1,9 @@
 #ifndef __BOCHS_LISTENER_AH__
   #define __BOCHS_LISTENER_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_BREAKPOINTS)
-
 #include <cassert>
 #include "bochs.h"
+
 #include "BochsListener.hpp"
 
 /*
@@ -51,5 +47,4 @@ aspect BochsListener {
 	};
 };
 
-#endif // BUILD_BOCHS && CONFIG_EVENT_BREAKPOINTS
 #endif // __BOCHS_LISTENER_AH__

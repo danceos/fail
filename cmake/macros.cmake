@@ -1,0 +1,5 @@
+macro(add_aspect_headers)
+	foreach(ah_path ${ARGN})
+		set(CMAKE_ASPECT_HEADERS ${CMAKE_ASPECT_HEADERS} ${ah_path} CACHE INTERNAL "List of active aspect headers")
+	endforeach()
+endmacro()

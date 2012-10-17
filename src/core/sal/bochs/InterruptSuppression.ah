@@ -1,11 +1,6 @@
 #ifndef __INTERRUPT_SUPPRESSION_AH__
   #define __INTERRUPT_SUPPRESSION_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_SUPPRESS_INTERRUPTS)
-
 #include "bochs.h"
 #include "cpu/cpu.h"
 
@@ -23,5 +18,4 @@ aspect InterruptSuppression {
 	}
 };
 
-#endif // CONFIG_SUPPRESS_INTERRUPTS
 #endif // __INTERRUPT_SUPPRESSION_AH__

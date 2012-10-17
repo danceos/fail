@@ -1,11 +1,6 @@
 #ifndef __BOCHS_NON_VERBOSE_AH__
   #define __BOCHS_NON_VERBOSE_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_BOCHS_NON_VERBOSE)
-
 #include "bochs.h"
 
 /*
@@ -57,5 +52,4 @@ aspect BochsNonVerbose {
 	     : around () { }
 };
 
-#endif // CONFIG_BOCHS_NON_VERBOSE
 #endif // __BOCHS_NON_VERBOSE_AH__

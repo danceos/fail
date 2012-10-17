@@ -1,11 +1,6 @@
 #ifndef __DISABLE_KEYBOARD_INTERRUPT_AH__
   #define __DISABLE_KEYBOARD_INTERRUPT_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_DISABLE_KEYB_INTERRUPTS)
-
 #include "iodev/iodev.h"
 #include "iodev/keyboard.h"
 
@@ -22,5 +17,4 @@ aspect DisableKeyboardInterrupt {
 	}
 };
 
-#endif // CONFIG_DISABLE_KEYB_INTERRUPTS
 #endif // __DISABLE_KEYBOARD_INTERRUPT_AH__

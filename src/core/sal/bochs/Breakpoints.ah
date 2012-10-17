@@ -1,11 +1,6 @@
 #ifndef __BREAKPOINTS_AH__
   #define __BREAKPOINTS_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_BREAKPOINTS)
-
 #include "bochs.h"
 #include "cpu/cpu.h"
 
@@ -29,5 +24,4 @@ aspect Breakpoints {
 	}
 };
 
-#endif // CONFIG_EVENT_BREAKPOINTS
 #endif // __BREAKPOINTS_AH__

@@ -3,8 +3,6 @@
 
 #include "config/FailConfig.hpp"
 
-#ifdef CONFIG_FAST_BREAKPOINTS
-
 #ifndef CONFIG_EVENT_BREAKPOINTS
 #error Breakpoint events are required for fast breakpoints!
 #endif
@@ -79,7 +77,5 @@ aspect FastBreakpoints {
 		ref.triggerActiveListeners();
 	}
 };
-
-#endif // CONFIG_FAST_BREAKPOINTS // see above
 
 #endif // __FAST_BREAKPOINTS_AH__

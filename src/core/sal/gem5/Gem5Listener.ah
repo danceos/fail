@@ -1,11 +1,6 @@
 #ifndef __GEM5LISTENER_AH__
   #define __GEM5LISTENER_AH__
 
-#include "config/VariantConfig.hpp"
-#include "config/FailConfig.hpp"
-
-#if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS)
-
 #include "Gem5PCEvents.hpp"
 #include "sim/system.hh"
 
@@ -35,5 +30,4 @@ aspect Gem5Listener
 	};
 };
 
-#endif // BUILD_GEM5 && CONFIG_EVENT_BREAKPOINTS
 #endif // __GEM5LISTENER_AH__
