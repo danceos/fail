@@ -3,6 +3,7 @@
 
 #include "sal/SALInst.hpp"
 #include "sal/Register.hpp"
+#include "sal/Listener.hpp"
 #include "experiment.hpp"
 #include "../plugins/tracing/TracingPlugin.hpp"
 
@@ -20,8 +21,8 @@ bool TracingTest::run()
 
 #if 0
 	// STEP 1: run until interesting function starts, and save state
-	BPSingleEvent breakpoint(0x00101658);
-	simulator.addEventAndResume(&breakpoint);
+	BPSingleListener breakpoint(0x00101658);
+	simulator.addListenerAndResume(&breakpoint);
 	cout << "[TracingTest] main() reached, saving" << endl;
 
 	simulator.save("state");
@@ -38,12 +39,12 @@ bool TracingTest::run()
 	simulator.addFlow(&tp);
 
 	cout << "[TracingTest] tracing 1000000 instructions" << endl;
-	BPSingleEvent timeout(ANY_ADDR);
+	BPSingleListener timeout(ANY_ADDR);
 	timeout.setCounter(1000000);
-	simulator.addEvent(&timeout);
+	simulator.addListener(&timeout);
 
-	InterruptEvent ie(ANY_INTERRUPT);
-	while (simulator.addEventAndResume(&ie) != &timeout) {
+	InterruptListener ie(ANY_INTERRUPT);
+	while (simulator.addListenerAndResume(&ie) != &timeout) {
 		cout << "INTERRUPT #" << ie.getTriggerNumber() << "\n";
 	}
 
@@ -71,7 +72,7 @@ bool TracingTest::run()
 */
 #endif
 	cout << "[TracingTest] Finished." << endl;
-	simulator.clearEvents(this);
+	simulator.clearListeners(this);
 	simulator.terminate();
 
 	return true;
