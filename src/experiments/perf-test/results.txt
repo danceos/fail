@@ -76,7 +76,7 @@ Case B: 587.698s (= ~9min)
 ****************************************************************************************************
 Note: These are just exemplary results based on the observed values (see above).
 
-- The (former) BufferCache's enabled a speedup up to 2,5x (according to Martin Unzer).
+- The (former) BufferCache's enabled a speedup up to 2,5x (according to Martin Unzner).
 - hsc-simple: Fast-Breakpoints are only faster if compiled in Release mode (yields a
   speedup up to 2x).
 - hsc-simple: Unfortunately, they are also slower by a factor of 2, if compiled in
