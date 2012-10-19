@@ -7,13 +7,14 @@
 #include "util/Logger.hpp"
 
 #include "experiment.hpp"
-//#include "experimentInfo.hpp"
+#include "experimentInfo.hpp"
 //#include "campaign.hpp"
 
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
+#include "sal/Register.hpp"
 
 // you need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -37,14 +38,27 @@ bool NanoJPEGExperiment::run()
 	log << "startup" << endl;
 
 #if 1
-	// STEP 1: run until main starts, save state
-	// TODO: record trace, store golden run output
+	// STEP 1: run until main starts, save state, record trace
+	// TODO: store golden run output
 	IOPortListener io(0x3f8, true);
 	simulator.addListenerAndResume(&io);
 
 	log << "main() reached, saving state" << endl;
 	simulator.save(statename);
 
+	// record trace
+	log << "restoring state" << endl;
+	simulator.restore(statename);
+	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+	log << "enabling tracing" << endl;
+	TracingPlugin tp;
+	tp.setLogIPOnly(true);
+	ofstream of(NANOJPEG_TRACE);
+	tp.setTraceFile(&of);
+	// this must be done *after* configuring the plugin:
+	simulator.addFlow(&tp);
+
+	// count instructions
 	simulator.addListener(&io);
 	BPSingleListener step(ANY_ADDR);
 	long counter = 0;
@@ -55,7 +69,9 @@ bool NanoJPEGExperiment::run()
 		}
 		counter++;
 	}
-	log << "golden run took " << counter << " instructions" << endl;
+	log << "golden run took " << dec << counter << " instructions" << endl;
+	simulator.removeFlow(&tp);
+	of.close();
 #endif
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();
