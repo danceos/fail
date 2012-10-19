@@ -1,6 +1,11 @@
 #ifndef __T32LISTENER_AH__
   #define __T32LISTENER_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_T32) && defined(CONFIG_EVENT_BREAKPOINTS)
+
 #include "../SALInst.hpp"
 
 aspect T32Listener
@@ -26,4 +31,5 @@ aspect T32Listener
 	};
 };
 
+#endif // BUILD_T32 && CONFIG_EVENT_BREAKPOINTS
 #endif // __T32LISTENER_AH__

@@ -1,6 +1,11 @@
 #ifndef _SAVE_STATE_AH__
   #define _SAVE_STATE_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_SR_SAVE)
+
 #include "bochs.h"
 
 #include "../SALInst.hpp"
@@ -24,4 +29,5 @@ aspect SaveState {
 	}
 };
 
+#endif // CONFIG_SR_SAVE
 #endif // _SAVE_STATE_AH__

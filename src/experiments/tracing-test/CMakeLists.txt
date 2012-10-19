@@ -3,7 +3,6 @@ set(EXPERIMENT_TYPE TracingTest)
 configure_file(../instantiate-experiment.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
-add_aspect_headers(${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah)
 
 set(MY_CAMPAIGN_SRCS
 	experiment.hpp

@@ -1,6 +1,11 @@
 #ifndef __QEMULISTENER_AH__
   #define __QEMULISTENER_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_QEMU) && defined(CONFIG_EVENT_BREAKPOINTS)
+
 #include "../SALInst.hpp"
 
 extern "C" {
@@ -51,4 +56,5 @@ aspect QEMUListener
 	};
 };
 
+#endif // BUILD_QEMU && CONFIG_EVENT_BREAKPOINTS
 #endif // __QEMULISTENER_AH__

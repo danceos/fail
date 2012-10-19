@@ -1,4 +1,0 @@
-// dummy aspect header:
-// Makes sure at least *one* .ah file is active, and ag++ is called with at
-// least *one* -a parameter.  Otherwise ag++ would take *all* .ah files in the
-// project tree into account.

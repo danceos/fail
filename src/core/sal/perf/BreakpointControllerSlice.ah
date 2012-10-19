@@ -1,6 +1,10 @@
 #ifndef __BREAKPOINT_CONTROLLER_SLICE_AH__
   #define __BREAKPOINT_CONTROLLER_SLICE_AH__
 
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_BREAKPOINTS
+
 #include <iostream>
 #include "../Listener.hpp"
 
@@ -47,5 +51,7 @@ public:
 	fail::BaseListener* addListenerAndResume(fail::BPRangeListener* rli)
 	{ addListener(rli); return resume(); }
 };
+
+#endif // CONFIG_FAST_BREAKPOINTS
 
 #endif // __BREAKPOINT_CONTROLLER_SLICE_AH__

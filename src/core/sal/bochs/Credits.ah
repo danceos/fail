@@ -1,10 +1,13 @@
 #ifndef __CREDITS_AH__
   #define __CREDITS_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
 #include <string.h>
 #include <stdio.h>
-
-#include "config/FailConfig.hpp"
 
 aspect Credits {
 	bool first;
@@ -28,4 +31,5 @@ aspect Credits {
 	}
 };
 
+#endif // BUILD_BOCHS
 #endif // __CREDITS_AH__

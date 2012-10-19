@@ -10,13 +10,6 @@ PROJECT(Fail*)
 
 set(PROJECT_VERSION "0.0.1" CACHE STRING "Fail* version number")
 
-#### Setup search path for custom cmake scripts  ####
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# initialize list of active aspect headers
-set(CMAKE_ASPECT_HEADERS "" CACHE INTERNAL "List of active aspect headers" FORCE)
-include(macros)
-
 #### Put all resulting library files in <your_build_dir>/lib ####
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
@@ -25,6 +18,13 @@ SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 # At the moment this is the campaign controller executable.
 ## (The autoconf'd Bochs instance is placed in the auto-configured path,
 ## as we still just call Bochs' Makefile's make install)
+
+
+#### Setup search path for custom cmake scipts  ####
+SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+#### Compiler configuration, see cmake/compilerconfig.cmake
+include(compilerconfig)
 
 #### Backend selection ####
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
@@ -66,17 +66,12 @@ include_directories(${CMAKE_BINARY_DIR}/src/core)
 ## Add CMakeLists from subdirectories:
 add_subdirectory(src)
 
-#### Compiler configuration, see cmake/compilerconfig.cmake
-# Needs to come after source subdirectories, as we only now know all active .ah files.
-include(compilerconfig)
-
 #### Backend-related build system stuff
 include(bochs)
 include(gem5)
 include(ovp)
 include(qemu)
 include(t32)
-
 ## Just for testing:
 ## Invoking bochs build via external project
 # Setup configure call for bochs (-> make ebochs)

@@ -1,7 +1,13 @@
 #ifndef __RESTORE_STATE_AH__
   #define __RESTORE_STATE_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_SR_RESTORE)
+
 #include <iostream>
+
 #include "bochs.h"
 
 #include "../SALInst.hpp"
@@ -17,4 +23,5 @@ aspect RestoreState {
 	}
 };
 
+#endif // CONFIG_SR_RESTORE
 #endif // __RESTORE_STATE_AH__

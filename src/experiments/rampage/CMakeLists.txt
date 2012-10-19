@@ -3,7 +3,6 @@ set(EXPERIMENT_TYPE RAMpageExperiment)
 configure_file(../instantiate-experiment-indirect.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
-add_aspect_headers(${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah)
 
 set(MY_PROTOS 
 	rampage.proto

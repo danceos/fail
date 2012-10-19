@@ -1,6 +1,10 @@
 #ifndef __FAIL_BOCHS_INIT_AH__
   #define __FAIL_BOCHS_INIT_AH__
 
+#include "config/VariantConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
 #include "../SALInst.hpp"
 
 aspect FailBochsInit {
@@ -10,4 +14,5 @@ aspect FailBochsInit {
 	}
 };
 
+#endif
 #endif // __FAIL_BOCHS_INIT_AH__

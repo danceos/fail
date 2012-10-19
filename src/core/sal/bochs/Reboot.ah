@@ -1,6 +1,11 @@
 #ifndef __REBOOT_AH__
   #define __REBOOT_AH__
 
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_SR_REBOOT)
+
 #include "bochs.h"
 #include "../SALInst.hpp"
 
@@ -20,4 +25,5 @@ aspect Reboot {
 	}
 };
 
+#endif // CONFIG_SR_REBOOT
 #endif // __REBOOT_AH__

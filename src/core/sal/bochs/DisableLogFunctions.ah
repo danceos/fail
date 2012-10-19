@@ -1,6 +1,10 @@
 #ifndef __DISABLE_ADD_REMOVE_LOGFN_AH__
   #define __DISABLE_ADD_REMOVE_LOGFN_AH__
 
+#include "config/VariantConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
 /* Hack to prevent Bochs' logfunctions list (bochs.h) to overflow if the
  * experiment restores simulator state more than ~1000 times.
  *
@@ -16,4 +20,5 @@ aspect DisableLogFunctions {
 	advice execution (add_remove_logfn()) : around () { }
 };
 
+#endif // BUILD_BOCHS
 #endif // __DISABLE_ADD_REMOVE_LOGFN_AH__
