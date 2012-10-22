@@ -11,6 +11,7 @@
 #include "util/ProtoStream.hpp"
 
 #include "UDIS86.hpp"
+#include "udis86_helper.hpp"
 
 #include "../plugins/tracing/TracingPlugin.hpp"
 
@@ -80,6 +81,8 @@ bool NanoJPEGCampaign::run()
 		return false;
 	}
 	Udis86 udis(0);
+	Udis86Helper udis_helper;
+	Udis86Helper::UDRegisterSet in_regs, out_regs;
 
 	// load trace
 	ifstream tracef(NANOJPEG_TRACE);
@@ -118,22 +121,25 @@ bool NanoJPEGCampaign::run()
 			return false;
 		}
 
-		ud_t ud = udis.getCurrentState();
+		ud_t& ud = udis.getCurrentState();
+		udis_helper.setUd(&ud);
 
 		// for now: debug output
 		m_log << "0x" << hex << ev.ip() << " " << ::ud_insn_asm(&ud) << endl;
 		for (int i = 0; i < 3; ++i) {
-			switch (ud.operand[i].type) {
-			case UD_NONE: cout << "-"; break;
-			case UD_OP_MEM: cout << "M"; break;
-			case UD_OP_PTR: cout << "P"; break;
-			case UD_OP_IMM: cout << "I"; break;
-			case UD_OP_JIMM: cout << "J"; break;
-			case UD_OP_CONST: cout << "C"; break;
-			case UD_OP_REG: cout << "R"; break;
-			default: m_log << "WAT" << endl;
-			}
-			std::cout << " ";
+			cout << udis_helper.operandTypeToChar(ud.operand[i].type) << " ";
+		}
+		cout << endl;
+		udis_helper.inOutRegisters(in_regs, out_regs);
+		cout << "IN: ";
+		for (Udis86Helper::UDRegisterSet::const_iterator it = in_regs.begin();
+		     it != in_regs.end(); ++it) {
+			cout << udis_helper.typeToString(*it) << " ";
+		}
+		cout << "OUT: ";
+		for (Udis86Helper::UDRegisterSet::const_iterator it = out_regs.begin();
+		     it != out_regs.end(); ++it) {
+			cout << udis_helper.typeToString(*it) << " ";
 		}
 		cout << endl;
 	}
