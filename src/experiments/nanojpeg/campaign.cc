@@ -84,6 +84,20 @@ bool NanoJPEGCampaign::run()
 	Udis86Helper udis_helper;
 	Udis86Helper::UDRegisterSet in_regs, out_regs;
 
+	// register cascade for equivalence class generation
+	// map: register -> list of latest accesses (front = newest access)
+	// list: latest accesses (instr offset | bit mask)
+	map<GPRegisterId, std::list<std::pair<unsigned, uint64_t> > > reg_cascade;
+	// open up an equivalence class for all bits in all GPRs
+	reg_cascade[RID_EAX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_EBX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_ECX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_EDX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_ESP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_EBP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_ESI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_EDI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+
 	// load trace
 	ifstream tracef(NANOJPEG_TRACE);
 	if (tracef.fail()) {
@@ -124,13 +138,15 @@ bool NanoJPEGCampaign::run()
 		ud_t& ud = udis.getCurrentState();
 		udis_helper.setUd(&ud);
 
-		// for now: debug output
-		m_log << "0x" << hex << ev.ip() << " " << ::ud_insn_asm(&ud) << endl;
-		for (int i = 0; i < 3; ++i) {
-			cout << udis_helper.operandTypeToChar(ud.operand[i].type) << " ";
-		}
-		cout << endl;
+		//m_log << "0x" << hex << ev.ip() << " " << ::ud_insn_asm(&ud) << endl;
+		//for (int i = 0; i < 3; ++i) {
+		//	cout << udis_helper.operandTypeToChar(ud.operand[i].type) << " ";
+		//}
+		//cout << endl;
+
+		// determine input/output registers
 		udis_helper.inOutRegisters(in_regs, out_regs);
+#if 0
 		cout << "IN: ";
 		for (Udis86Helper::UDRegisterSet::const_iterator it = in_regs.begin();
 		     it != in_regs.end(); ++it) {
@@ -142,7 +158,64 @@ bool NanoJPEGCampaign::run()
 			cout << udis_helper.typeToString(*it) << " ";
 		}
 		cout << endl;
+#endif
+
+		// all IN registers close an equivalence class and generate experiments
+		for (Udis86Helper::UDRegisterSet::const_iterator it = in_regs.begin();
+		     it != in_regs.end(); ++it) {
+			// determine Fail* register ID and bitmask
+			uint64_t access_mask;
+			fail::GPRegisterId reg = udis_helper.udisGPRToFailBochsGPR(*it, access_mask);
+			uint64_t remaining_access_mask = access_mask;
+
+			// iterate over latest accesses to register, newest to oldest
+			for (std::list<std::pair<unsigned, uint64_t> >::iterator acc = reg_cascade[reg].begin();
+			     acc != reg_cascade[reg].end() && remaining_access_mask; ) {
+				uint64_t curr_mask = acc->second;
+				uint64_t common_mask = curr_mask & remaining_access_mask;
+				if (!common_mask) {
+					++acc;
+					continue;
+				}
+
+				remaining_access_mask &= ~common_mask;
+				acc->second &= ~common_mask;
+
+				// new EC with experiments: acc->first -- instr, common_mask
+				count += add_experiment_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+
+				// new memory access EC in access cascade
+				reg_cascade[reg].push_front(std::pair<unsigned, uint64_t>(instr + 1, common_mask));
+
+				// old access completely shadowed by newer accesses?
+				if (acc->second == 0) {
+					acc = reg_cascade[reg].erase(acc);
+				} else {
+					++acc;
+				}
+			}
+			assert(remaining_access_mask == 0);
+		}
+
+		// all OUT registers close an equivalence class and generate known results
+		// TODO
+		// special case: empty EC!
 	}
+	cout << "experiments planned: " << dec << count << endl;
 
 	return true;
+}
+
+int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_offset,
+	unsigned instr_address, fail::GPRegisterId register_id, uint64_t bitmask)
+{
+	uint64_t v = bitmask; // count the number of bits set in v
+	int c; // c accumulates the total bits set in v
+
+	for (c = 0; v; v >>= 1) {
+		c += v & 1;
+	}
+
+	// TODO really enqueue jobs
+	return c;
 }
