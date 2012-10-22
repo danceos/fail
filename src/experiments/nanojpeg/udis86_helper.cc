@@ -209,6 +209,55 @@ Udis86Helper::typeToString(ud_type type)
 }
 #undef CASE
 
+fail::GPRegisterId
+Udis86Helper::udisGPRToFailBochsGPR(ud_type_t udisReg, uint64_t& bitmask)
+{
+#define REG_CASE(UDREG, FAILREG, BITMASK) case UD_R_##UDREG: bitmask = BITMASK; return fail::RID_##FAILREG;
+	switch (udisReg) {
+#if BX_SUPPORT_X86_64 // 64 bit register id's:
+	// TODO
+#else
+	// 8 bit GPRs
+	REG_CASE(AL, EAX, 0xff)
+	REG_CASE(BL, EBX, 0xff)
+	REG_CASE(CL, ECX, 0xff)
+	REG_CASE(DL, EDX, 0xff)
+	REG_CASE(SPL, ESP, 0xff)
+	REG_CASE(BPL, EBP, 0xff)
+	REG_CASE(SIL, ESI, 0xff)
+	REG_CASE(DIL, EDI, 0xff)
+	// (R8B-R15B)
+	REG_CASE(AH, EAX, 0xff00)
+	REG_CASE(BH, EBX, 0xff00)
+	REG_CASE(CH, ECX, 0xff00)
+	REG_CASE(DH, EDX, 0xff00)
+	// 16 bit GPRs
+	REG_CASE(AX, EAX, 0xffff)
+	REG_CASE(BX, EBX, 0xffff)
+	REG_CASE(CX, ECX, 0xffff)
+	REG_CASE(DX, EDX, 0xffff)
+	REG_CASE(SP, ESP, 0xffff)
+	REG_CASE(BP, EBP, 0xffff)
+	REG_CASE(SI, ESI, 0xffff)
+	REG_CASE(DI, EDI, 0xffff)
+	// (R8W-R15W)
+	// 32 bit GPRs
+	REG_CASE(EAX, EAX, 0xffffffff)
+	REG_CASE(EBX, EBX, 0xffffffff)
+	REG_CASE(ECX, ECX, 0xffffffff)
+	REG_CASE(EDX, EDX, 0xffffffff)
+	REG_CASE(ESP, ESP, 0xffffffff)
+	REG_CASE(EBP, EBP, 0xffffffff)
+	REG_CASE(ESI, ESI, 0xffffffff)
+	REG_CASE(EDI, EDI, 0xffffffff)
+	// missing: segment, control, debug, mmx, x86, xmm registers, EIP
+#endif
+	default:
+		return fail::RID_LAST_GP_ID;
+	}
+#undef REG_CASE
+}
+
 void Udis86Helper::initOpcodeModMap()
 {
 	// The mentioned operands only include general-purpose registers.

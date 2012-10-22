@@ -7,6 +7,8 @@
 #include <utility>
 #include <map>
 
+#include "sal/bochs/BochsRegisterIDs.hpp"
+
 class Udis86Helper {
 public:
 	// types
@@ -48,6 +50,13 @@ public:
 	void inOutRegisters(UDRegisterSet& in, UDRegisterSet& out);
 	char operandTypeToChar(unsigned op);
 	unsigned operandCount();
+	/**
+	 * Returns the FailBochs equivalent to a UDIS86 GPR identifier.
+	 * Attention: this only returns either 32-bit or 64-bit registers, no general IDs
+	 * @param udisReg the udis86 GPR ID
+	 * @returns the FailBochs GPR ID, usable with the BochsRegisterManager class
+	 */
+	static fail::GPRegisterId udisGPRToFailBochsGPR(ud_type_t udisReg, uint64_t& bitmask);
 	static char const * mnemonicToString(unsigned mnemonic);
 	static char const * typeToString(ud_type type);
 };

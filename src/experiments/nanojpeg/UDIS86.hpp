@@ -48,48 +48,6 @@ public:
 	 * @returns \c true if a new instruction could be retrieved, \c false if the object has expired
 	 */
 	inline bool fetchNextInstruction() { return (ud_disassemble(&ud_obj) > 0); }
-	/**
-	 * Returns the FailBochs equivalent to a UDIS86 GPR identifier.
-	 * Attention: this only returns either 32-bit or 64-bit registers, no general IDs
-	 * @param udisReg the udis86 GPR ID
-	 * @returns the FailBochs GPR ID, usable with the BochsRegisterManager class
-	 */
-	static inline fail::GPRegisterId udisGPRToFailBochsGPR(ud_type_t udisReg)
-	{
-		#define REG_CASE(REG) case UD_R_##REG: return fail::RID_##REG
-			switch (udisReg) {
-		#if BX_SUPPORT_X86_64 // 64 bit register id's:
-			REG_CASE(RAX);
-			REG_CASE(RCX);
-			REG_CASE(RDX);
-			REG_CASE(RBX);
-			REG_CASE(RSP);
-			REG_CASE(RBP);
-			REG_CASE(RSI);
-			REG_CASE(RDI);
-			REG_CASE(R8);
-			REG_CASE(R9);
-			REG_CASE(R10);
-			REG_CASE(R11);
-			REG_CASE(R12);
-			REG_CASE(R13);
-			REG_CASE(R14);
-			REG_CASE(R15);
-		#else
-			REG_CASE(EAX);
-			REG_CASE(ECX);
-			REG_CASE(EDX);
-			REG_CASE(EBX);
-			REG_CASE(ESP);
-			REG_CASE(EBP);
-			REG_CASE(ESI);
-			REG_CASE(EDI);
-		#endif
-			default:
-				return fail::RID_LAST_GP_ID;
-			}
-		#undef REG_CASE
-	}
 };
 
 #endif // __UDIS86_HPP__
