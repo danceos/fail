@@ -21,6 +21,8 @@ set(MY_CAMPAIGN_SRCS
 	UDIS86.cc
 	udis86_helper.hpp
 	udis86_helper.cc
+	psnr.cc
+	psnr.hpp
 )
 
 #### PROTOBUFS ####

@@ -8,5 +8,7 @@
 #define NANOJPEG_RESULTS		"nanojpeg.csv"
 #define NANOJPEG_INSTR_LIMIT	999999999 // currently "unlimited"
 #define NANOJPEG_TIMEOUT		5000 // 2s
+#define NANOJPEG_GOLDEN_PPM		"golden.ppm"
+#define NANOJPEG_STATE			"bochs.state"
 
 #endif
