@@ -79,7 +79,7 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
   //so we have the namebuf now seek to symtab data
   fseek(fp,sym_data_offset,SEEK_SET);
 
-	m_log << "[section " << sect_num << "] contains " << num_sym << " symbols." << std::endl;
+	//m_log << "[section " << sect_num << "] contains " << num_sym << " symbols." << std::endl;
   for(i=0;i<num_sym;i++)
   {
                           
@@ -88,7 +88,7 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
 
 		   		int type = ELF32_ST_TYPE(mysym.st_info);
 					if((type != STT_SECTION) && (type != STT_FILE)){
-						m_log << " " <<  (i) << " " << name_buf+idx  << " @ "  << mysym.st_value << std::endl;
+						//m_log << " " <<  (i) << " " << name_buf+idx  << " @ "  << mysym.st_value << std::endl;
 						m_map[name_buf+idx] = mysym.st_value;
 					}
 
