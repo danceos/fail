@@ -359,7 +359,7 @@ void Udis86Helper::inOutRegisters(UDRegisterSet& in, UDRegisterSet& out)
 		std::cerr << __func__ << ": Unknown mnemonic "
 			<< mnemonicToString(ud->mnemonic)
 		    << " (0x" << std::hex << ((int) ud->mnemonic) << ") :: "
-			<< ud_insn_asm(ud);
+			<< ud_insn_asm(ud) << std::endl;
 		// continue to fallback solution below
 	} else {
 		std::vector<ModificationInfo> const &v = it->second;
