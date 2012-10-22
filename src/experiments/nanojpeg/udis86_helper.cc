@@ -261,7 +261,36 @@ void Udis86Helper::initOpcodeModMap()
 	m[UD_Iret].back().addImplicit(UD_R_ESP, INOUT); // reads/modifies ESP
 	//m[UD_Isalc].push_back(ModificationInfo(INOUT, IN)); untested
 	m[UD_Isar].push_back(ModificationInfo(INOUT, IN));
+	m[UD_Iseta].push_back(ModificationInfo(OUT));
+	//m[UD_Isetae].push_back(ModificationInfo(OUT));
+	m[UD_Isetb].push_back(ModificationInfo(OUT));
+	m[UD_Isetbe].push_back(ModificationInfo(OUT));
+	//m[UD_Isetc].push_back(ModificationInfo(OUT));
+	//m[UD_Isete].push_back(ModificationInfo(OUT));
+	m[UD_Isetg].push_back(ModificationInfo(OUT));
+	m[UD_Isetge].push_back(ModificationInfo(OUT));
+	m[UD_Isetl].push_back(ModificationInfo(OUT));
+	m[UD_Isetle].push_back(ModificationInfo(OUT));
+	//m[UD_Isetna].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnae].push_back(ModificationInfo(OUT));
+	m[UD_Isetnb].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnbe].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnc].push_back(ModificationInfo(OUT));
+	//m[UD_Isetne].push_back(ModificationInfo(OUT));
+	//m[UD_Isetng].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnge].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnl].push_back(ModificationInfo(OUT));
+	//m[UD_Isetnle].push_back(ModificationInfo(OUT));
+	m[UD_Isetno].push_back(ModificationInfo(OUT));
+	m[UD_Isetnp].push_back(ModificationInfo(OUT));
+	m[UD_Isetns].push_back(ModificationInfo(OUT));
 	m[UD_Isetnz].push_back(ModificationInfo(OUT));
+	m[UD_Iseto].push_back(ModificationInfo(OUT));
+	m[UD_Isetp].push_back(ModificationInfo(OUT));
+	//m[UD_Isetpe].push_back(ModificationInfo(OUT));
+	//m[UD_Isetpo].push_back(ModificationInfo(OUT));
+	m[UD_Isets].push_back(ModificationInfo(OUT));
+	m[UD_Isetz].push_back(ModificationInfo(OUT));
 	m[UD_Ishl].push_back(ModificationInfo(INOUT, IN));
 	m[UD_Ishr].push_back(ModificationInfo(INOUT, IN));
 	m[UD_Isub].push_back(ModificationInfo(INOUT, IN));
