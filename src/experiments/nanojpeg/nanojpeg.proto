@@ -38,7 +38,7 @@ message NanoJPEGProtoMsg {
 			BROKEN = 2;
 			TRAP = 3;
 			OUTSIDE = 4;
-			DETECTED = 5; // unused for now
+			OUTSIDEMEM = 5;
 			TIMEOUT = 6;
 			UNKNOWN = 7;
 		}

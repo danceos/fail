@@ -83,11 +83,16 @@ bool NanoJPEGExperiment::run()
 		elfreader.getAddressByName("___TEXT_START__");
 	guest_address_t addr_text_end =
 		elfreader.getAddressByName("___TEXT_END__");
+	guest_address_t addr_rodata_start =
+		elfreader.getAddressByName("___RODATA_START__");
+	guest_address_t addr_bss_end =
+		elfreader.getAddressByName("___BSS_END__");
 	guest_address_t addr_output_image_ptr =
 		elfreader.getAddressByName("output_image");
 	guest_address_t addr_output_image_size =
 		elfreader.getAddressByName("output_image_size");
 	log << "ELF symbols: text " << hex << addr_text_start << "-" << addr_text_end
+	    << " rodata/data/bss " << addr_rodata_start << "-" << addr_bss_end
 	    << " output_image ptr @ " << addr_output_image_ptr << ", size @ " << addr_output_image_size << endl;
 	elfreader.~ElfReader();
 
@@ -171,6 +176,7 @@ bool NanoJPEGExperiment::run()
 		// possible outcomes:
 		// - trap, "crash"
 		// - jump outside text segment
+		// - memory access outside of DATA/BSS
 		// - (XXX unaligned jump inside text segment)
 		// - (XXX weird instructions?)
 		// - reaches the end, PSNR can be calculated
@@ -193,6 +199,13 @@ bool NanoJPEGExperiment::run()
 		BPRangeListener ev_beyond_text(addr_text_end + 1, ANY_ADDR);
 		simulator.addListener(&ev_below_text);
 		simulator.addListener(&ev_beyond_text);
+		// memory access outside of data/bss segment
+		MemAccessListener ev_mem_low(0x0, MemAccessEvent::MEM_READWRITE);
+		ev_mem_low.setWatchWidth(addr_rodata_start);
+		MemAccessListener ev_mem_high(addr_bss_end + 1, MemAccessEvent::MEM_READWRITE);
+		ev_mem_high.setWatchWidth(0xFFFFFFFFU - (addr_bss_end + 1));
+		simulator.addListener(&ev_mem_low);
+		simulator.addListener(&ev_mem_high);
 
 		BaseListener *ev = simulator.resume();
 		// record latest IP regardless of result
@@ -229,6 +242,9 @@ bool NanoJPEGExperiment::run()
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);
+		} else if (ev == &ev_mem_low || ev == &ev_mem_high) {
+			log << "Result OUTSIDEMEM (EIP " << result->latest_ip() << ")" << endl;
+			result->set_resulttype(result->OUTSIDEMEM);
 		} else if (ev == &ev_trap) {
 			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 			result->set_resulttype(result->TRAP);
