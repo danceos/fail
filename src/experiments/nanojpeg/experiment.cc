@@ -222,9 +222,11 @@ bool NanoJPEGExperiment::run()
 			log << "image address " << hex << output_image_addr << " size " << dec << output_image_size << endl;
 			if (output_image_size != 3 * psnr.getWidth() * psnr.getHeight()) {
 				log << "odd image size" << endl;
+				result->set_details("odd image size");
 				result->set_resulttype(result->BROKEN);
 			} else if (output_image_addr == 0) {
 				log << "odd image address" << endl;
+				result->set_details("odd image address");
 				result->set_resulttype(result->BROKEN);
 			} else {
 				result->set_resulttype(result->FINISHED);
