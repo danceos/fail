@@ -5,6 +5,7 @@
 *.pb.h
 *.pb.cc
 *.gcda
+*.pyc
 *~
 Makefile
 build
@@ -27,4 +28,4 @@ simulators/bochs/ltdlconf.h
 
 !simulators/bochs/plex86/kernel/freebsd/Makefile
 
-simulators/gem5/*
+simulators/gem5/.hg
