@@ -69,13 +69,6 @@ bool NanoJPEGCampaign::run()
 	}
 	ProtoIStream ps(&tracef);
 
-	// experiment count
-	int count_exp = 0;
-	int count_exp_jobs = 0;
-	// known output count
-	int count_known = 0;
-	int count_known_jobs = 0;
-
 	// instruction counter within trace
 	unsigned instr = 0;
 
@@ -151,7 +144,6 @@ bool NanoJPEGCampaign::run()
 				// new EC with experiments: acc->first -- instr, common_mask
 //				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
 					count_exp += add_experiment_ec(acc->first, instr, ev.ip(), reg, common_mask);
-					count_exp_jobs++;
 //				}
 
 				// new memory access EC in access cascade
@@ -196,7 +188,6 @@ bool NanoJPEGCampaign::run()
 					// new EC with known result: acc->first -- instr, common_mask
 //					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
 						count_known += add_known_ec(acc->first, instr, ev.ip(), reg, common_mask);
-						count_known_jobs++;
 //					}
 				}
 
@@ -216,6 +207,7 @@ bool NanoJPEGCampaign::run()
 		}
 	}
 	campaignmanager.noMoreParameters();
+	available_results.clear();
 	cout << "experiments planned: " << dec << count_exp
 	     << " (" << count_exp_jobs << " jobs)" << endl;
 	cout << "known outcome ECs: " << dec << count_known
@@ -278,7 +270,12 @@ int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_o
 		c += v & 1;
 	}
 
-	// TODO check result CSV if we already know the answer
+	bitmask = check_available(instr_offset, register_id, bitmask);
+	if (!bitmask) {
+		return 0;
+	}
+
+	count_exp_jobs++;
 
 	// enqueue job
 	NanoJPEGExperimentData *d = new NanoJPEGExperimentData;
@@ -303,7 +300,12 @@ int NanoJPEGCampaign::add_known_ec(unsigned instr_ecstart, unsigned instr_offset
 		c += v & 1;
 	}
 
-	// TODO check result CSV if we already stored the answer
+	bitmask = check_available(instr_offset, register_id, bitmask);
+	if (!bitmask) {
+		return 0;
+	}
+
+	count_known_jobs++;
 
 	add_result(instr_ecstart, instr_offset, instr_address, register_id, 0, 0,
 		bitmask, NanoJPEGProtoMsg_Result::FINISHED, 0, INFINITY, "");
@@ -314,31 +316,32 @@ bool NanoJPEGCampaign::init_results()
 {
 	// read already existing results
 	bool file_exists = false;
-/*
-	set<uint64_t> existing_results;
-	ifstream oldresults(results_filename, ios::in);
+	ifstream oldresults(NANOJPEG_RESULTS, ios::in);
 	if (oldresults.is_open()) {
 		char buf[16*1024];
-		uint64_t addr;
+		unsigned ignore;
+		unsigned instr_offset;
+		int register_id;
+		uint64_t bitmask;
 		int count = 0;
 		m_log << "scanning existing results ..." << endl;
 		file_exists = true;
 		while (oldresults.getline(buf, sizeof(buf)).good()) {
 			stringstream ss;
 			ss << buf;
-			ss >> addr;
+			ss >> hex >> ignore >> instr_offset >> ignore >> register_id >> ignore
+			   >> ignore >> bitmask;
 			if (ss.fail()) {
 				continue;
 			}
 			++count;
-			if (!existing_results.insert(addr).second) {
-				m_log << "duplicate: " << addr << endl;
-			}
+			available_results
+				[std::pair<unsigned, int>(instr_offset, register_id)]
+				|= bitmask;
 		}
-		m_log << "found " << dec << count << " existing results" << endl;
+		m_log << "found " << dec << count << " existing result rows" << endl;
 		oldresults.close();
 	}
-*/
 
 	// non-destructive: due to the CSV header we can always manually recover
 	// from an accident (append mode)
@@ -352,6 +355,17 @@ bool NanoJPEGCampaign::init_results()
 		resultstream << "instr_ecstart\tinstr_offset\tinstr_address\tregister_id\ttimeout\tinjection_ip\tbitmask\tresulttype\tlatest_ip\tpsnr\tdetails" << endl;
 	}
 	return true;
+}
+
+uint64_t NanoJPEGCampaign::check_available(unsigned instr_offset,
+	fail::GPRegisterId register_id, uint64_t bitmask)
+{
+	std::map<std::pair<unsigned, int>, uint64_t>::iterator it;
+	it = available_results.find(std::pair<unsigned, int>(instr_offset, (int)register_id));
+	if (it == available_results.end()) {
+		return bitmask;
+	}
+	return bitmask & ~it->second;
 }
 
 void NanoJPEGCampaign::add_result(unsigned instr_ecstart,
