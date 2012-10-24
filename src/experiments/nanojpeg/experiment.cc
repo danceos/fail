@@ -97,7 +97,7 @@ bool NanoJPEGExperiment::run()
 	elfreader.~ElfReader();
 
 #if !LOCAL
-	for (int i = 0; i < 50; ++i) { // only do 50 sequential experiments, to prevent swapping
+	for (int experiment_count = 0; experiment_count < 200; ) { // only do 200 sequential experiments, to prevent swapping
 #endif
 
 	// get an experiment parameter set
@@ -128,6 +128,9 @@ bool NanoJPEGExperiment::run()
 		if (!((1 << bitnr) & bitmask)) {
 			continue;
 		}
+#if !LOCAL
+		experiment_count++;
+#endif
 		log << "ID=" << id << " instr=0x" << hex << instr_offset << " reg=" << reg->getName()
 		    << " bitnr=" << dec << bitnr << " timeout=" << timeout << endl;
 		NanoJPEGProtoMsg_Result *result = param.msg.add_result();
