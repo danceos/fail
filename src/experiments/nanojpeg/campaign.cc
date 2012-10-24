@@ -371,6 +371,7 @@ void NanoJPEGCampaign::add_result(unsigned instr_ecstart,
 		<< latest_ip << "\t"
 		<< dec << psnr << "\t"
 		<< details << "\n";
+	//resultstream.flush(); // for debugging purposes
 }
 
 void NanoJPEGCampaign::finalize_results()
