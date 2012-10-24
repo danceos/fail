@@ -185,7 +185,7 @@ bool NanoJPEGCampaign::run()
 
 				// new EC with experiments: acc->first -- instr, common_mask
 //				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
-					count_exp += add_experiment_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+					count_exp += add_experiment_ec(acc->first, instr, ev.ip(), reg, common_mask);
 //				}
 
 				// new memory access EC in access cascade
@@ -229,7 +229,7 @@ bool NanoJPEGCampaign::run()
 				if (acc->first <= instr) {
 					// new EC with known result: acc->first -- instr, common_mask
 //					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
-						count_known += add_known_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+						count_known += add_known_ec(acc->first, instr, ev.ip(), reg, common_mask);
 //					}
 				}
 
