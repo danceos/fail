@@ -71,7 +71,7 @@ bool NanoJPEGCampaign::run()
 	}
 	// only write CSV header if file didn't exist before
 	if (!file_exists) {
-		results << "instr_offset\tinstr_address\tregister_id\ttimeout\tinjection_ip\tbitnr\tresulttype\tlatest_ip\tpsnr\tdetails" << endl;
+		results << "instr_ecstart\ninstr_offset\tinstr_address\tregister_id\ttimeout\tinjection_ip\tbitnr\tresulttype\tlatest_ip\tpsnr\tdetails" << endl;
 	}
 
 	// load binary image (objcopy'ed system.elf = system.bin)
@@ -107,7 +107,7 @@ bool NanoJPEGCampaign::run()
 	ProtoIStream ps(&tracef);
 
 	// experiment count
-	int count = 0;
+	int count_exp = 0;
 
 	// instruction counter within trace
 	int instr = 0;
@@ -182,7 +182,9 @@ bool NanoJPEGCampaign::run()
 				acc->second &= ~common_mask;
 
 				// new EC with experiments: acc->first -- instr, common_mask
-				count += add_experiment_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+//				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+					count_exp += add_experiment_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+//				}
 
 				// new memory access EC in access cascade
 				reg_cascade[reg].push_front(std::pair<unsigned, uint64_t>(instr + 1, common_mask));
@@ -194,14 +196,16 @@ bool NanoJPEGCampaign::run()
 					++acc;
 				}
 			}
-			assert(remaining_access_mask == 0);
+			if (remaining_access_mask != 0) {
+				m_log << "something weird happened: remaining_access_mask = 0x" << hex << remaining_access_mask << endl;
+			}
 		}
 
 		// all OUT registers close an equivalence class and generate known results
 		// TODO
 		// special case: empty EC!
 	}
-	cout << "experiments planned: " << dec << count << endl;
+	cout << "experiments planned: " << dec << count_exp << endl;
 
 	return true;
 }
