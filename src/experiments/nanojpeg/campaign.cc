@@ -215,10 +215,54 @@ bool NanoJPEGCampaign::run()
 			}
 		}
 	}
+	campaignmanager.noMoreParameters();
 	cout << "experiments planned: " << dec << count_exp
 	     << " (" << count_exp_jobs << " jobs)" << endl;
 	cout << "known outcome ECs: " << dec << count_known
 	     << " (" << count_known_jobs << " jobs)" << endl;
+
+	// collect results
+	NanoJPEGExperimentData *res;
+	int rescount = 0;
+	while ((res = static_cast<NanoJPEGExperimentData *>(campaignmanager.getDone()))) {
+		rescount++;
+
+		NanoJPEGProtoMsg_Result const *prev_singleres = 0;
+		uint64_t bitmask = 0;
+
+		// one job contains multiple experiments
+		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
+			NanoJPEGProtoMsg_Result const *cur_singleres = &res->msg.result(idx);
+			if (!prev_singleres) {
+				prev_singleres = cur_singleres;
+				bitmask = 1ULL << cur_singleres->bitnr();
+				continue;
+			}
+			// compatible?  merge.
+			if (prev_singleres->resulttype() == cur_singleres->resulttype()
+			 && prev_singleres->latest_ip() == cur_singleres->latest_ip()
+			 && prev_singleres->psnr() == cur_singleres->psnr()
+			 && prev_singleres->details() == cur_singleres->details()) {
+				bitmask |= 1ULL << cur_singleres->bitnr();
+				continue;
+			}
+
+			add_result(res->msg.instr_ecstart(), res->msg.instr_offset(),
+				res->msg.instr_address(), (fail::GPRegisterId) res->msg.register_id(),
+				res->msg.timeout(), res->msg.injection_ip(),
+				bitmask, prev_singleres->resulttype(), prev_singleres->latest_ip(),
+				prev_singleres->psnr(), prev_singleres->details().c_str());
+
+			prev_singleres = cur_singleres;
+			bitmask = 1ULL << cur_singleres->bitnr();
+		}
+		add_result(res->msg.instr_ecstart(), res->msg.instr_offset(),
+			res->msg.instr_address(), (fail::GPRegisterId) res->msg.register_id(),
+			res->msg.timeout(), res->msg.injection_ip(),
+			bitmask, prev_singleres->resulttype(), prev_singleres->latest_ip(),
+			prev_singleres->psnr(), prev_singleres->details().c_str());
+		//delete res;	// currently racy if jobs are reassigned
+	}
 
 	finalize_results();
 	return true;
