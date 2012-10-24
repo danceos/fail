@@ -20,11 +20,11 @@ static inline double square(double x)
 	return x*x;
 }
 
-static double image_rgb_mse(const unsigned char *f1, const unsigned char *f2, int width, int height, double max)
+static double image_rgb_mse(const unsigned char *f1, const unsigned char *f2, unsigned width, unsigned height, double max)
 {
 	double sum = 0.0;
-	for (int y = 0; y < height; ++y) {
-		for (int x = 0; x < width; ++x) {
+	for (unsigned y = 0; y < height; ++y) {
+		for (unsigned x = 0; x < width; ++x) {
 			sum += square(f1[x*y*3+0] - f2[x*y*3+0]);
 			sum += square(f1[x*y*3+1] - f2[x*y*3+1]);
 			sum += square(f1[x*y*3+2] - f2[x*y*3+2]);
@@ -33,7 +33,7 @@ static double image_rgb_mse(const unsigned char *f1, const unsigned char *f2, in
 	return sum / (3 * height * width);
 }
 
-static double image_rgb_psnr(const unsigned char *f1, const unsigned char *f2, int width, int height, double max)
+static double image_rgb_psnr(const unsigned char *f1, const unsigned char *f2, unsigned width, unsigned height, double max)
 {
 	double mse = image_rgb_mse(f1, f2, width, height, max);
 	return 20.0 * log10(max / sqrt(mse));
@@ -76,4 +76,5 @@ bool PSNR::load_refimage(char const *refimage_filename)
 		std::cerr << "image too small" << std::endl;
 		return false;
 	}
+	return true;
 }

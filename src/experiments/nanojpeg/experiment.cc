@@ -153,7 +153,7 @@ bool NanoJPEGExperiment::run()
 		uint32_t newdata = data ^ (1 << bitnr);
 		reg->setData(newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
+		uint32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		log << "fault injected @ ip " << injection_ip << " reg " << reg->getName()
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
@@ -217,7 +217,7 @@ bool NanoJPEGExperiment::run()
 			MemoryManager& mm = simulator.getMemoryManager();
 			uint32_t output_image_addr;
 			mm.getBytes(addr_output_image_ptr, 4, &output_image_addr);
-			int32_t output_image_size;
+			uint32_t output_image_size;
 			mm.getBytes(addr_output_image_size, 4, &output_image_size);
 			log << "image address " << hex << output_image_addr << " size " << dec << output_image_size << endl;
 			if (output_image_size != 3 * psnr.getWidth() * psnr.getHeight()) {

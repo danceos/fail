@@ -7,7 +7,7 @@
 class PSNR {
 private:
 	std::string refimg;
-	int refimg_width, refimg_height, refimg_max;
+	unsigned refimg_width, refimg_height, refimg_max;
 
 public:
 	PSNR(char const *refimage_filename)
@@ -19,8 +19,8 @@ public:
 	// we only accept P6 without comments
 	bool load_refimage(char const *refimage_filename);
 	double calculate(const std::string& img);
-	int getWidth() { return refimg_width; }
-	int getHeight() { return refimg_height; }
+	unsigned getWidth() { return refimg_width; }
+	unsigned getHeight() { return refimg_height; }
 };
 
 #endif
