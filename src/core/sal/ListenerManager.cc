@@ -160,6 +160,7 @@ void ListenerManager::remove(ExperimentFlow* flow)
 			(*it)->clear();
 		// All remaining active listeners must not fire anymore
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
+		m_FireList.clear();
 	} else { // remove all listeners corresponding to a specific experiment ("flow"):
 		for (index_t i = 0; i < m_BufferList.size(); ) {
 			if (m_BufferList[i]->getParent() == flow) {
