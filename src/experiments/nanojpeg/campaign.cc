@@ -71,8 +71,10 @@ bool NanoJPEGCampaign::run()
 
 	// experiment count
 	int count_exp = 0;
+	int count_exp_jobs = 0;
 	// known output count
 	int count_known = 0;
+	int count_known_jobs = 0;
 
 	// instruction counter within trace
 	unsigned instr = 0;
@@ -149,6 +151,7 @@ bool NanoJPEGCampaign::run()
 				// new EC with experiments: acc->first -- instr, common_mask
 //				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
 					count_exp += add_experiment_ec(acc->first, instr, ev.ip(), reg, common_mask);
+					count_exp_jobs++;
 //				}
 
 				// new memory access EC in access cascade
@@ -193,6 +196,7 @@ bool NanoJPEGCampaign::run()
 					// new EC with known result: acc->first -- instr, common_mask
 //					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
 						count_known += add_known_ec(acc->first, instr, ev.ip(), reg, common_mask);
+						count_known_jobs++;
 //					}
 				}
 
@@ -211,8 +215,10 @@ bool NanoJPEGCampaign::run()
 			}
 		}
 	}
-	cout << "experiments planned: " << dec << count_exp << endl;
-	cout << "known outcome ECs: " << dec << count_known << endl;
+	cout << "experiments planned: " << dec << count_exp
+	     << " (" << count_exp_jobs << " jobs)" << endl;
+	cout << "known outcome ECs: " << dec << count_known
+	     << " (" << count_known_jobs << " jobs)" << endl;
 
 	finalize_results();
 	return true;
