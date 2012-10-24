@@ -1,6 +1,10 @@
 #ifndef __GEM5_LISTENER_AH__
   #define __GEM5_LISTENER_AH__
 
+#include "config/VariantConfig.hpp"
+
+#if defined(BUILD_GEM5)
+
 #include "../SALInst.hpp"
 
 #include "sim/system.hh"
@@ -40,5 +44,5 @@ aspect Gem5Listener
 	};
 };
 
+#endif
 #endif // __GEM5_LISTENER_AH__
-
