@@ -48,7 +48,7 @@ message NanoJPEGProtoMsg {
 		required uint32 latest_ip = 3;
 
 		// PSNR golden run <-> this run
-		required float psnr = 4;
+		optional float psnr = 4;
 
 		// optional textual description of what happened
 		optional string details = 5;
