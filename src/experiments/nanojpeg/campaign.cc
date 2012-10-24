@@ -108,9 +108,11 @@ bool NanoJPEGCampaign::run()
 
 	// experiment count
 	int count_exp = 0;
+	// known output count
+	int count_known = 0;
 
 	// instruction counter within trace
-	int instr = 0;
+	unsigned instr = 0;
 
 	Trace_Event ev;
 	// for every event in the trace ...
@@ -202,10 +204,52 @@ bool NanoJPEGCampaign::run()
 		}
 
 		// all OUT registers close an equivalence class and generate known results
-		// TODO
 		// special case: empty EC!
+		for (Udis86Helper::UDRegisterSet::const_iterator it = out_regs.begin();
+		     it != out_regs.end(); ++it) {
+			// determine Fail* register ID and bitmask
+			uint64_t access_mask;
+			fail::GPRegisterId reg = udis_helper.udisGPRToFailBochsGPR(*it, access_mask);
+			uint64_t remaining_access_mask = access_mask;
+
+			// iterate over latest accesses to register, newest to oldest
+			for (std::list<std::pair<unsigned, uint64_t> >::iterator acc = reg_cascade[reg].begin();
+			     acc != reg_cascade[reg].end() && remaining_access_mask; ) {
+				uint64_t curr_mask = acc->second;
+				uint64_t common_mask = curr_mask & remaining_access_mask;
+				if (!common_mask) {
+					++acc;
+					continue;
+				}
+
+				remaining_access_mask &= ~common_mask;
+				acc->second &= ~common_mask;
+
+				// skip empty EC (because register was read within the same instruction)?
+				if (acc->first <= instr) {
+					// new EC with known result: acc->first -- instr, common_mask
+//					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+						count_known += add_known_ec(acc->first, instr, 0 /*todo*/, reg, common_mask);
+//					}
+				}
+
+				// new memory access EC in access cascade
+				reg_cascade[reg].push_front(std::pair<unsigned, uint64_t>(instr + 1, common_mask));
+
+				// old access completely shadowed by newer accesses?
+				if (acc->second == 0) {
+					acc = reg_cascade[reg].erase(acc);
+				} else {
+					++acc;
+				}
+			}
+			if (remaining_access_mask != 0) {
+				m_log << "something weird happened: remaining_access_mask = 0x" << hex << remaining_access_mask << endl;
+			}
+		}
 	}
 	cout << "experiments planned: " << dec << count_exp << endl;
+	cout << "known outcome ECs: " << dec << count_known << endl;
 
 	return true;
 }
@@ -221,5 +265,19 @@ int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_o
 	}
 
 	// TODO really enqueue jobs
+	return c;
+}
+
+int NanoJPEGCampaign::add_known_ec(unsigned instr_ecstart, unsigned instr_offset,
+	unsigned instr_address, fail::GPRegisterId register_id, uint64_t bitmask)
+{
+	uint64_t v = bitmask; // count the number of bits set in v
+	int c; // c accumulates the total bits set in v
+
+	for (c = 0; v; v >>= 1) {
+		c += v & 1;
+	}
+
+	// TODO really store results
 	return c;
 }
