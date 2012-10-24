@@ -76,6 +76,11 @@
 #endif
 #endif
 
+// FAIL*
+// don't use unordered map with aspect c++ compiler
+#undef HAVE_STD_UNORDERED_MAP
+#undef HAVE_STD_TR1_UNORDERED_MAP
+
 // set a default value of 0
 #ifndef HAVE_STD_UNORDERED_MAP
 #define HAVE_STD_UNORDERED_MAP 0

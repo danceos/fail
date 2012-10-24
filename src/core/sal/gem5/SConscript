@@ -6,6 +6,8 @@ if env['TARGET_ISA'] == 'no':
 env.Prepend(CPPPATH=Dir('../../../../../src/core/'))
 env.Prepend(CPPPATH=Dir('../../../../../build/src/core/'))
 
+env.Append(CXXFLAGS = '-Wno-deprecated')
+
 env.Prepend(LIBPATH=Dir('../../../../../build/lib/'))
 gStaticLibs = ['-lfail-sal', '-lfail-hsc-simple', '-lfail-comm', '-lfail-cpn', '-lfail-efw', '-lfail-util', '-lpcl']
 
@@ -20,6 +22,7 @@ if (len(gStaticLibs)>0):
 	env.Append(LINKCOM = ' $GEN_LIB_BUILD_STATIC')
 
 
-SimObject('FailGem5Device.py')
-Source('FailGem5Device.cc')
-DebugFlag('Fail')
+DebugFlag('FailState')
+CompoundFlag('Fail', ['FailState'])
+
+Source('Gem5Connector.cc')

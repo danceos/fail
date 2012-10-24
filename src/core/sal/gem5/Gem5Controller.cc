@@ -1,35 +1,23 @@
 #include "Gem5Controller.hpp"
-
-#include <fstream>
+#include "Gem5Connector.hpp"
 
 #include "../Listener.hpp"
-
-#include "sim/core.hh"
-#include "sim/sim_exit.hh"
-//#include "sim/root.hh"
 
 namespace fail {
 
 bool Gem5Controller::save(const std::string &path)
 {
-	// Takes a snapshot in the m5out dir
-	Tick when = curTick() + 1;
-	exitSimLoop("checkpoint", 0, when, 0);
-	
-	// This could be a version to take snapshots with a specified name
-	/*Root* root = Root::root();
+	connector.save(path);
 
-	std::ofstream file(path.c_str()); 
-	root->serialize(file);
-	file.close();*/
-	return false; // TODO
+	return true;
 }
 
 void Gem5Controller::restore(const std::string &path)
 {
-
+	connector.restore(path);
 }
 
+// TODO: Implement reboot
 void Gem5Controller::reboot()
 {
 

@@ -62,6 +62,9 @@
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
 
+#include "config/FailConfig.hpp"
+#include "sal/SALInst.hpp"
+
 using namespace std;
 
 AbstractMemory::AbstractMemory(const Params *p) :
@@ -400,6 +403,10 @@ AbstractMemory::access(PacketPtr pkt)
         bytesRead[pkt->req->masterId()] += pkt->getSize();
         if (pkt->req->isInstFetch())
             bytesInstRead[pkt->req->masterId()] += pkt->getSize();
+		// FAIL*
+		#ifdef CONFIG_EVENT_MEMREAD
+		fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), false, 0);
+		#endif
     } else if (pkt->isWrite()) {
         if (writeOK(pkt)) {
             if (pmemAddr)
@@ -408,6 +415,10 @@ AbstractMemory::access(PacketPtr pkt)
             TRACE_PACKET("Write");
             numWrites[pkt->req->masterId()]++;
             bytesWritten[pkt->req->masterId()] += pkt->getSize();
+			// FAIL*
+			#ifdef CONFIG_EVENT_MEMWRITE
+			fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), true, 0);
+			#endif
         }
     } else if (pkt->isInvalidate()) {
         // no need to do anything
@@ -432,11 +443,19 @@ AbstractMemory::functionalAccess(PacketPtr pkt)
         if (pmemAddr)
             memcpy(pkt->getPtr<uint8_t>(), hostAddr, pkt->getSize());
         TRACE_PACKET("Read");
+		// FAIL*
+		#ifdef CONFIG_EVENT_MEMREAD
+		fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), false, 0);
+		#endif
         pkt->makeResponse();
     } else if (pkt->isWrite()) {
         if (pmemAddr)
             memcpy(hostAddr, pkt->getPtr<uint8_t>(), pkt->getSize());
         TRACE_PACKET("Write");
+		// FAIL*
+		#ifdef CONFIG_EVENT_MEMWRITE
+		fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), true, 0);
+		#endif
         pkt->makeResponse();
     } else if (pkt->isPrint()) {
         Packet::PrintReqState *prs =

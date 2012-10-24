@@ -37,6 +37,8 @@
 #include "sim/full_system.hh"
 #include "sim/root.hh"
 
+#include "sal/SALInst.hpp"
+
 Root *Root::_root = NULL;
 
 /*
@@ -124,6 +126,14 @@ Root::loadState(Checkpoint *cp)
 {
     SimObject::loadState(cp);
     timeSyncEnable(params()->time_sync_enable);
+}
+
+
+// FAIL*
+void
+Root::startup()
+{
+	fail::simulator.startup();
 }
 
 void

@@ -81,6 +81,9 @@
 #include "sim/stats.hh"
 #include "sim/system.hh"
 
+#include "sal/SALInst.hpp"
+#include "config/FailConfig.hpp"
+
 using namespace std;
 using namespace TheISA;
 
@@ -329,6 +332,10 @@ BaseSimpleCPU::checkForInterrupts()
         Fault interrupt = interrupts->getInterrupt(tc);
 
         if (interrupt != NoFault) {
+			// FAIL*
+			#ifdef CONFIG_EVENT_INTERRUPT
+			fail::simulator.onInterrupt(dynamic_cast<ArmFault*>(interrupt.get())->offset(), false);
+			#endif
             fetchOffset = 0;
             interrupts->updateIntrInfo(tc);
             interrupt->invoke(tc);

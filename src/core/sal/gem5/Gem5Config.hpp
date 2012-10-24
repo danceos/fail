@@ -7,7 +7,6 @@
   #define __GEM5_CONFIG_HPP__
 
 #include "base/types.hh"
-//#include "arch/arm/registers.hh"
 
 namespace fail {
 
