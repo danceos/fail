@@ -19,7 +19,7 @@ elseif(${COMPILER} STREQUAL "ag++")
   set(CMAKE_CXX_COMPILER "ag++")
   set(CMAKE_AGPP_FLAGS "--real-instances" CACHE STRING "Additional ag++ flags, e.g. --real-instances --keep_woven")
   ## Here we add the build dir holding the generated header files (protobuf)
-  add_definitions("-p ${CMAKE_SOURCE_DIR} ${CMAKE_AGPP_FLAGS} --Xcompiler")
+  add_definitions("-p ${CMAKE_SOURCE_DIR}" ${CMAKE_AGPP_FLAGS} --Xcompiler)
 
 else(${COMPILER} STREQUAL "clang")
   message(FATAL_ERROR "COMPILER must be exactly one of clang/gcc/ag++.  If unsure, use 'ag++'.")
