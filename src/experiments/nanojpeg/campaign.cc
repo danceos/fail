@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <cmath>
 
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
@@ -34,45 +35,7 @@ bool get_file_contents(const char *filename, string& contents)
 
 bool NanoJPEGCampaign::run()
 {
-	// read already existing results
-	bool file_exists = false;
-/*
-	set<uint64_t> existing_results;
-	ifstream oldresults(results_filename, ios::in);
-	if (oldresults.is_open()) {
-		char buf[16*1024];
-		uint64_t addr;
-		int count = 0;
-		m_log << "scanning existing results ..." << endl;
-		file_exists = true;
-		while (oldresults.getline(buf, sizeof(buf)).good()) {
-			stringstream ss;
-			ss << buf;
-			ss >> addr;
-			if (ss.fail()) {
-				continue;
-			}
-			++count;
-			if (!existing_results.insert(addr).second) {
-				m_log << "duplicate: " << addr << endl;
-			}
-		}
-		m_log << "found " << dec << count << " existing results" << endl;
-		oldresults.close();
-	}
-*/
-
-	// non-destructive: due to the CSV header we can always manually recover
-	// from an accident (append mode)
-	ofstream results(NANOJPEG_RESULTS, ios::out | ios::app);
-	if (!results.is_open()) {
-		m_log << "failed to open " << NANOJPEG_RESULTS << endl;
-		return false;
-	}
-	// only write CSV header if file didn't exist before
-	if (!file_exists) {
-		results << "instr_ecstart\ninstr_offset\tinstr_address\tregister_id\ttimeout\tinjection_ip\tbitnr\tresulttype\tlatest_ip\tpsnr\tdetails" << endl;
-	}
+	init_results();
 
 	// load binary image (objcopy'ed system.elf = system.bin)
 	string binimage;
@@ -251,6 +214,7 @@ bool NanoJPEGCampaign::run()
 	cout << "experiments planned: " << dec << count_exp << endl;
 	cout << "known outcome ECs: " << dec << count_known << endl;
 
+	finalize_results();
 	return true;
 }
 
@@ -264,7 +228,18 @@ int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_o
 		c += v & 1;
 	}
 
-	// TODO really enqueue jobs
+	// TODO check result CSV if we already know the answer
+
+	// enqueue job
+	NanoJPEGExperimentData *d = new NanoJPEGExperimentData;
+	d->msg.set_instr_ecstart(instr_ecstart);
+	d->msg.set_instr_offset(instr_offset);
+	d->msg.set_instr_address(instr_address);
+	d->msg.set_register_id(register_id);
+	d->msg.set_bitmask(bitmask);
+	d->msg.set_timeout(NANOJPEG_TIMEOUT);
+	campaignmanager.addParam(d);
+
 	return c;
 }
 
@@ -278,6 +253,77 @@ int NanoJPEGCampaign::add_known_ec(unsigned instr_ecstart, unsigned instr_offset
 		c += v & 1;
 	}
 
-	// TODO really store results
+	// TODO check result CSV if we already stored the answer
+
+	add_result(instr_ecstart, instr_offset, instr_address, register_id, 0, 0,
+		bitmask, NanoJPEGProtoMsg_Result::FINISHED, 0, INFINITY, "");
 	return c;
+}
+
+bool NanoJPEGCampaign::init_results()
+{
+	// read already existing results
+	bool file_exists = false;
+/*
+	set<uint64_t> existing_results;
+	ifstream oldresults(results_filename, ios::in);
+	if (oldresults.is_open()) {
+		char buf[16*1024];
+		uint64_t addr;
+		int count = 0;
+		m_log << "scanning existing results ..." << endl;
+		file_exists = true;
+		while (oldresults.getline(buf, sizeof(buf)).good()) {
+			stringstream ss;
+			ss << buf;
+			ss >> addr;
+			if (ss.fail()) {
+				continue;
+			}
+			++count;
+			if (!existing_results.insert(addr).second) {
+				m_log << "duplicate: " << addr << endl;
+			}
+		}
+		m_log << "found " << dec << count << " existing results" << endl;
+		oldresults.close();
+	}
+*/
+
+	// non-destructive: due to the CSV header we can always manually recover
+	// from an accident (append mode)
+	resultstream.open(NANOJPEG_RESULTS, ios::out | ios::app);
+	if (!resultstream.is_open()) {
+		m_log << "failed to open " << NANOJPEG_RESULTS << endl;
+		return false;
+	}
+	// only write CSV header if file didn't exist before
+	if (!file_exists) {
+		resultstream << "instr_ecstart\tinstr_offset\tinstr_address\tregister_id\ttimeout\tinjection_ip\tbitmask\tresulttype\tlatest_ip\tpsnr\tdetails" << endl;
+	}
+	return true;
+}
+
+void NanoJPEGCampaign::add_result(unsigned instr_ecstart,
+	unsigned instr_offset, uint32_t instr_address, fail::GPRegisterId register_id,
+	unsigned timeout, uint32_t injection_ip, uint64_t bitmask, int resulttype,
+	uint32_t latest_ip, float psnr, char const *details)
+{
+	resultstream << hex
+		<< instr_ecstart << "\t"
+		<< instr_offset << "\t"
+		<< instr_address << "\t"
+		<< register_id << "\t"
+		<< timeout << "\t"
+		<< injection_ip << "\t"
+		<< bitmask << "\t"
+		<< resulttype << "\t"
+		<< latest_ip << "\t"
+		<< dec << psnr << "\t"
+		<< details << "\n";
+}
+
+void NanoJPEGCampaign::finalize_results()
+{
+	resultstream.close();
 }
