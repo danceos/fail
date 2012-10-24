@@ -7,7 +7,7 @@ message NanoJPEGProtoMsg {
 	// FI at #instructions from experiment start
 	required int32 instr_offset = 2;
 	// the exact IP value at this point in time (from golden run)
-	optional int32 instr_address = 3; // for sanity checks
+	optional uint32 instr_address = 3; // for sanity checks
 	// ID of the register to inject faults into
 	required int32 register_id = 4;
 	// bits to inject a bit flip into
@@ -21,7 +21,7 @@ message NanoJPEGProtoMsg {
 
 	// IP where we did the injection: for debugging purposes, must be identical
 	// to instr_address
-	optional int32 injection_ip = 8;
+	optional uint32 injection_ip = 8;
 
 	repeated group Result = 9 {
 		// single experiment bit number
