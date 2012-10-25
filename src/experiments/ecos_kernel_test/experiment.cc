@@ -474,9 +474,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 			ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
 			result->set_details(ss.str());
 		}
-		// explicitly remove all events before we leave their scope
-		// FIXME event destructors should remove them from the queues
-		simulator.clearListeners();
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
