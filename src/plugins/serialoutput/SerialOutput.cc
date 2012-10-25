@@ -1,4 +1,5 @@
 #include "SerialOutput.hpp"
+#include "sal/Listener.hpp"
 
 using namespace std;
 using namespace fail;
