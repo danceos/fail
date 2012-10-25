@@ -46,15 +46,8 @@ void ListenerManager::remove(BaseListener* li)
 				++i;
 			}
 		}
-		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++) {
-			if ((*it)->getParent() == simulator.m_Flows.getCurrent()) {
-				(*it)->onDeletion();
-				// Listeners in the fire-list have already been deleted in the buffer-list.
-				// Consequently, they must have been deleted in the perf. buffer-list, too.
-				//  ==> no further processing required here
-			}
-		}
-		// All remaining active listeners must not fire anymore
+		// All remaining active listeners must not fire anymore (makeActive() already
+		// called onDeletion for these listeners):
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
 
 	// - li != 0 -> remove single listener (if added previously)
@@ -115,26 +108,6 @@ void ListenerManager::m_remove(index_t idx)
 	}
 }
 
-ListenerManager::iterator ListenerManager::m_remove(iterator it)
-{
-	(*it)->onDeletion();
-	// This has O(1) time complexity due to a underlying std::vector (-> random access iterator)
-	index_t dist = std::distance(begin(), it);
-	assert((*it)->getPerformanceBuffer() == NULL &&
-		"FATAL ERROR: makeActive(iterator) cannot be called on listeners stored in a perf. \
-		 buff-list! Use makeActive(BaseListener*) instead!");
-	// Remove the element from the buffer-list:
-	m_remove((*it)->getLocation());
-	// Create a new iterator, pointing to the element after *it
-	// (the new iterator actually points to the same slot in the vector, but now
-	//  this slot stores the element which has previously been stored in the last slot):
-	// This is required because the provided iterator "it" isn't valid anymore (due
-	// to the deletion of the last element within m_remove(index_t)).
-	
-	return begin() + dist; // O(1)
-	// Note: "begin() + dist" yields end() if dist is "large enough" (as computed above)
-}
-
 void ListenerManager::remove(ExperimentFlow* flow)
 {
 	// All listeners (in all flows)?
@@ -148,10 +121,6 @@ void ListenerManager::remove(ExperimentFlow* flow)
 				perfBufLists.insert((*it)->getPerformanceBuffer());
 			(*it)->setPerformanceBuffer(NULL);
 			(*it)->setLocation(INVALID_INDEX);
-		}
-		for (firelist_t::iterator it = m_FireList.begin(); it != m_FireList.end(); it++) {
-			(*it)->onDeletion();
-			// See remove(BaseListener*).
 		}
 		m_BufferList.clear();
 		// Remove the indices within each performance buffer-list (maybe empty):
@@ -187,11 +156,6 @@ void ListenerManager::remove(ExperimentFlow* flow)
 	}
 }
 
-ListenerManager::~ListenerManager()
-{
-	// nothing to do here yet
-}
-
 ListenerManager::iterator ListenerManager::makeActive(iterator it)
 {
 	assert(it != m_BufferList.end() && "FATAL ERROR: Iterator has already reached the end!");
@@ -202,9 +166,28 @@ ListenerManager::iterator ListenerManager::makeActive(iterator it)
 		return ++it;
 	}
 	li->resetCounter();
+
+	//
+	// Remove listener from buffer-list
 	// Note: This is the one and only situation in which remove() should NOT
 	//       store the removed item in the delete-list.
-	iterator it_next = m_remove(it); // remove listener from buffer-list
+	(*it)->onDeletion();
+	// This has O(1) time complexity due to a underlying std::vector (-> random access iterator)
+	index_t dist = std::distance(begin(), it);
+	assert((*it)->getPerformanceBuffer() == NULL &&
+		"FATAL ERROR: makeActive(iterator) cannot be called on listeners stored in a perf. \
+		 buff-list! Use makeActive(BaseListener*) instead!");
+	// Remove the element from the buffer-list:
+	m_remove((*it)->getLocation());
+	// Create a new iterator, pointing to the element after *it
+	// (the new iterator actually points to the same slot in the vector, but now
+	//  this slot stores the element which has previously been stored in the last slot):
+	// This is required because the provided iterator "it" isn't valid anymore (due
+	// to the deletion of the last element within m_remove(index_t)).
+	
+	iterator it_next = begin() + dist; // O(1)
+	// Note: "begin() + dist" yields end() if dist is "large enough" (as computed above)
+
 	m_FireList.push_back(li);
 	return it_next;
 }
@@ -234,9 +217,10 @@ void ListenerManager::triggerActiveListeners()
 		if (std::find(m_DeleteList.begin(), m_DeleteList.end(), *it)
 		    == m_DeleteList.end()) { // not found in delete-list?
 			m_pFired = *it;
+			// Note: onDeletion was previously called within makeActive()!
+
 			// Inform (call) the simulator's (internal) listener handler that we are about
 			// to trigger an listener (*before* we actually toggle the experiment flow):
-			m_pFired->onDeletion(); // the listener has already been deleted (in the buffer-list)!
 			m_pFired->onTrigger(); // onTrigger will toggle the correct coroutine
 		}
 	}

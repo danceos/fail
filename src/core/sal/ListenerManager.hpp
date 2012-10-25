@@ -70,7 +70,7 @@ public:
 	typedef bufferlist_t::iterator iterator;
 
 	ListenerManager() : m_pFired(NULL) { }
-	~ListenerManager();
+	~ListenerManager() { }
 	/**
 	 * Adds the specified listener object for the given ExperimentFlow to the
 	 * list of listeners to be watched for.
@@ -93,20 +93,13 @@ public:
 	void remove(BaseListener* li);
 private:
 	/**
-	 * Internal implementation of remove(iterator it) that allows
-	 * to skip the delete-list.
-	 * @param it the iterator pointing to the Listener object to be removed
-	 * @return the updated iterator which will point to the next element
-	 */
-	iterator m_remove(iterator it);
-	/**
 	 * Updates the buffer-list by "removing" the element located at index \c idx.
-	 * This is done by replacing the element with the last element of the vector.
+	 * This is done by replacing the element with the last element of the buffer-list.
 	 * @param idx the index of the element to be removed
 	 * @warning The internals of the listener, stored at index \c idx will be
-	 *          updated.
+	 *          updated, too.
 	 * @note This method should typically be used in a performance buffer-list
-	 *       implemenation.
+	 *       implementation.
 	 */
 	void m_remove(index_t idx);
 public:
