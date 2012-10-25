@@ -211,14 +211,15 @@ bool RegressionTest::run()
 			
 			file << "Before Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
 			
+			simulator.reboot(); 
+			
 			bpReboot.setWatchInstructionPointer(beforeReboot);
 			simulator.addListener(&bpReboot);
-			
-			simulator.reboot(); 
+			simulator.resume();
 			
 			long afterReboot = bpReboot.getTriggerInstructionPointer();
 			
-			file << "After Reboot-Addr: 0x" << hex << beforeReboot << dec << endl;
+			file << "After Reboot-Addr: 0x" << hex << afterReboot << dec << endl;
 			
 			if (beforeReboot == afterReboot){
 				file << "Reboot-Test SUCCESSFUL." << endl;
