@@ -3,7 +3,7 @@
 
 namespace fail {
 
-// FIXME: not inlined
+// FIXME: can not be inlined this way
 ResultSet& PerfVectorBreakpoints::gather(BPEvent* pData)
 {
 	static ResultSet res;
