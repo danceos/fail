@@ -1,4 +1,5 @@
 #include <string>
+#include <errno.h>
 
 #include "SocketComm.hpp"
 
@@ -8,17 +9,17 @@ bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 {
 #ifdef USE_SIZE_PREFIX
     int size = htonl(msg.ByteSize());
-    if (write(sockfd, &size, sizeof(size)) != sizeof(size)) {
+    if (safe_write(sockfd, &size, sizeof(size)) == -1) {
         return false;
     }
     std::string buf;
     msg.SerializeToString(&buf);
-    if (write(sockfd, buf.c_str(), buf.size()) != (ssize_t) buf.size()) {
+    if (safe_write(sockfd, buf.c_str(), buf.size()) == -1) {
         return false;
     }
 #else
     char c = 0;
-    if (!msg.SerializeToFileDescriptor(sockfd) || write(sockfd, &c, 1) != 1) {
+    if (!msg.SerializeToFileDescriptor(sockfd) || safe_write(sockfd, &c, 1) == -1) {
         return false;
     }
 #endif
@@ -29,14 +30,12 @@ bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
 {
 #ifdef USE_SIZE_PREFIX
     int size;
-    // FIXME: read() may need to be called multiple times until all data was read
-    if (read(sockfd, &size, sizeof(size)) != sizeof(size)) {
+    if (safe_read(sockfd, &size, sizeof(size)) == -1) {
         return false;
     }
     size = ntohl(size);
     char *buf = new char[size];
-    // FIXME: read() may need to be called multiple times until all data was read
-    if (read(sockfd, buf, size) != size) {
+    if (safe_read(sockfd, buf, size) == -1) {
         delete [] buf;
         return false;
     }
@@ -47,6 +46,42 @@ bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
 #else
     return msg.ParseFromFileDescriptor(sockfd);
 #endif
+}
+
+ssize_t SocketComm::safe_write(int fd, const void *buf, size_t count)
+{
+	ssize_t ret;
+	const char *cbuf = (const char *) buf;
+	do {
+		ret = write(fd, cbuf, count);
+		if (ret == -1) {
+			if (errno == EINTR) {
+				continue;
+			}
+			return -1;
+		}
+		count -= ret;
+		cbuf += ret;
+	} while (count);
+	return cbuf - (const char *)buf;
+}
+
+ssize_t SocketComm::safe_read(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+	char *cbuf = (char *) buf;
+	do {
+		ret = read(fd, cbuf, count);
+		if (ret == -1) {
+			if (errno == EINTR) {
+				continue;
+			}
+			return -1;
+		}
+		count -= ret;
+		cbuf += ret;
+	} while (count);
+	return cbuf - (const char *) buf;
 }
 
 } // end-of-namespace: fail
