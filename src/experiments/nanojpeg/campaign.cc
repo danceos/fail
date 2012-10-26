@@ -71,6 +71,8 @@ bool NanoJPEGCampaign::run()
 
 	// instruction counter within trace
 	unsigned instr = 0;
+	// absolute IP
+	uint32_t absolute_instr = 0;
 
 	Trace_Event ev;
 	// for every event in the trace ...
@@ -80,25 +82,26 @@ bool NanoJPEGCampaign::run()
 			continue;
 		}
 		instr++;
+		absolute_instr = ev.ip();
 
 		// disassemble instruction
-		if (ev.ip() < NANOJPEG_BIN_OFFSET || ev.ip() - NANOJPEG_BIN_OFFSET > binimage.size()) {
-			m_log << "traced IP 0x" << hex << ev.ip() << " outside system image" << endl;
+		if (absolute_instr < NANOJPEG_BIN_OFFSET || absolute_instr - NANOJPEG_BIN_OFFSET > binimage.size()) {
+			m_log << "traced IP 0x" << hex << absolute_instr << " outside system image" << endl;
 			continue;
 		}
-		udis.setIP(ev.ip());
-		size_t ip_offset = ev.ip() - NANOJPEG_BIN_OFFSET;
+		udis.setIP(absolute_instr);
+		size_t ip_offset = absolute_instr - NANOJPEG_BIN_OFFSET;
 		udis.setInputBuffer((unsigned char *) &binimage[ip_offset], min((size_t) 20, binimage.size() - ip_offset));
 
 		if (!udis.fetchNextInstruction()) {
-			m_log << "fatal: cannot disassemble instruction at 0x" << hex << ev.ip() << endl;
+			m_log << "fatal: cannot disassemble instruction at 0x" << hex << absolute_instr << endl;
 			return false;
 		}
 
 		ud_t& ud = udis.getCurrentState();
 		udis_helper.setUd(&ud);
 
-		//m_log << "0x" << hex << ev.ip() << " " << ::ud_insn_asm(&ud) << endl;
+		//m_log << "0x" << hex << absolute_instr << " " << ::ud_insn_asm(&ud) << endl;
 		//for (int i = 0; i < 3; ++i) {
 		//	cout << udis_helper.operandTypeToChar(ud.operand[i].type) << " ";
 		//}
@@ -143,7 +146,7 @@ bool NanoJPEGCampaign::run()
 
 				// new EC with experiments: acc->first -- instr, common_mask
 //				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
-					count_exp += add_experiment_ec(acc->first, instr, ev.ip(), reg, common_mask);
+					count_exp += add_experiment_ec(acc->first, instr, absolute_instr, reg, common_mask);
 //				}
 
 				// new memory access EC in access cascade
@@ -187,7 +190,7 @@ bool NanoJPEGCampaign::run()
 				if (acc->first <= instr) {
 					// new EC with known result: acc->first -- instr, common_mask
 //					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
-						count_known += add_known_ec(acc->first, instr, ev.ip(), reg, common_mask);
+						count_known += add_known_ec(acc->first, instr, absolute_instr, reg, common_mask);
 //					}
 				}
 
@@ -204,6 +207,50 @@ bool NanoJPEGCampaign::run()
 			if (remaining_access_mask != 0) {
 				m_log << "something weird happened: remaining_access_mask = 0x" << hex << remaining_access_mask << endl;
 			}
+		}
+	}
+
+	// close all open ECs
+	for (map<GPRegisterId, std::list<std::pair<unsigned, uint64_t> > >::iterator it = reg_cascade.begin();
+	     it != reg_cascade.end(); ++it) {
+		// determine Fail* register ID and bitmask
+		uint64_t access_mask = 0xffffffffULL;
+		fail::GPRegisterId reg = it->first;
+		uint64_t remaining_access_mask = access_mask;
+
+		// iterate over latest accesses to register, newest to oldest
+		for (std::list<std::pair<unsigned, uint64_t> >::iterator acc = reg_cascade[reg].begin();
+			 acc != reg_cascade[reg].end() && remaining_access_mask; ) {
+			uint64_t curr_mask = acc->second;
+			uint64_t common_mask = curr_mask & remaining_access_mask;
+			if (!common_mask) {
+				++acc;
+				continue;
+			}
+
+			remaining_access_mask &= ~common_mask;
+			acc->second &= ~common_mask;
+
+			// skip empty EC (because register was read within the same instruction)?
+			if (acc->first <= instr) {
+				// new EC with known result: acc->first -- instr, common_mask
+//				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+					count_exp += add_experiment_ec(acc->first, instr, absolute_instr, reg, common_mask);
+//				}
+			}
+
+			// old access completely shadowed by newer accesses?
+			if (acc->second == 0) {
+				acc = reg_cascade[reg].erase(acc);
+			} else {
+				++acc;
+			}
+		}
+		if (remaining_access_mask != 0) {
+			m_log << "something weird happened: remaining_access_mask = 0x" << hex << remaining_access_mask << endl;
+		}
+		if (reg_cascade[reg].size() != 1 || (reg_cascade[reg].front().second & access_mask) != 0) {
+			m_log << "something weird happened: could not close EC for reg=" << dec << reg << endl;
 		}
 	}
 	campaignmanager.noMoreParameters();
