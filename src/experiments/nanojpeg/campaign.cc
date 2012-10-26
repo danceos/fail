@@ -367,7 +367,8 @@ bool NanoJPEGCampaign::init_results()
 		unsigned instr_offset;
 		int register_id;
 		uint64_t bitmask;
-		int count = 0;
+		int rowcount = 0;
+		int expcount = 0;
 		m_log << "scanning existing results ..." << endl;
 		file_exists = true;
 		while (oldresults.getline(buf, sizeof(buf)).good()) {
@@ -378,12 +379,15 @@ bool NanoJPEGCampaign::init_results()
 			if (ss.fail()) {
 				continue;
 			}
-			++count;
+			++rowcount;
+			expcount += count_1bits(bitmask);
+			// TODO: sanity check (duplicates?)
 			available_results
 				[std::pair<unsigned, int>(instr_offset, register_id)]
 				|= bitmask;
 		}
-		m_log << "found " << dec << count << " existing result rows" << endl;
+		m_log << "found " << dec << expcount << " existing experiment results ("
+		      << rowcount << " CSV rows)" << endl;
 		oldresults.close();
 	}
 
