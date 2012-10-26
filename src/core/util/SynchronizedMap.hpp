@@ -27,7 +27,8 @@ private:
 #endif
 
 	int nextpick;
-	enum { pick_window_size = 500 };
+	// We need a window at least as wide as the number of clients we serve.
+	enum { pick_window_size = 2000 };
 
 public:
 	SynchronizedMap() : nextpick(0) { }
