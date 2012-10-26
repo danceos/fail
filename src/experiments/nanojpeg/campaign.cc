@@ -307,21 +307,24 @@ bool NanoJPEGCampaign::run()
 	return true;
 }
 
-int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_offset,
-	unsigned instr_address, fail::GPRegisterId register_id, uint64_t bitmask)
+static inline int count_1bits(uint64_t v)
 {
-	uint64_t v = bitmask; // count the number of bits set in v
-	int c; // c accumulates the total bits set in v
-
+	int c;
 	for (c = 0; v; v >>= 1) {
 		c += v & 1;
 	}
+	return c;
+}
 
+int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_offset,
+	unsigned instr_address, fail::GPRegisterId register_id, uint64_t bitmask)
+{
 	bitmask = check_available(instr_offset, register_id, bitmask);
 	if (!bitmask) {
 		return 0;
 	}
 
+	int nexps = count_1bits(bitmask);
 	count_exp_jobs++;
 
 	// enqueue job
@@ -334,29 +337,23 @@ int NanoJPEGCampaign::add_experiment_ec(unsigned instr_ecstart, unsigned instr_o
 	d->msg.set_timeout(NANOJPEG_TIMEOUT);
 	campaignmanager.addParam(d);
 
-	return c;
+	return nexps;
 }
 
 int NanoJPEGCampaign::add_known_ec(unsigned instr_ecstart, unsigned instr_offset,
 	unsigned instr_address, fail::GPRegisterId register_id, uint64_t bitmask)
 {
-	uint64_t v = bitmask; // count the number of bits set in v
-	int c; // c accumulates the total bits set in v
-
-	for (c = 0; v; v >>= 1) {
-		c += v & 1;
-	}
-
 	bitmask = check_available(instr_offset, register_id, bitmask);
 	if (!bitmask) {
 		return 0;
 	}
 
+	int nexps = count_1bits(bitmask);
 	count_known_jobs++;
 
 	add_result(instr_ecstart, instr_offset, instr_address, register_id, 0, 0,
 		bitmask, NanoJPEGProtoMsg_Result::FINISHED, 0, INFINITY, "");
-	return c;
+	return nexps;
 }
 
 bool NanoJPEGCampaign::init_results()
