@@ -13,7 +13,7 @@ export FAIL_DISTRIBUTE_HOSTS=${FAIL_DISTRIBUTE_HOSTS:='ios kos virtuos plutonium
 
 # A whitespace-separated list of hosts to run experiments on.  If the host name
 # is followed by a ':' and a number, this specifies the number of clients to
-# run on that host (defaults to #CPUs+1).
+# run on that host (defaults to #CPUs).
 export FAIL_EXPERIMENT_HOSTS=${FAIL_EXPERIMENT_HOSTS:="bigbox.informatik.uni-erlangen.de plutonium uran virtuos ios:6 kos:6 bohrium polonium radon $(for hostnr in $(seq 100 254); do echo fiws$hostnr; done)"}
 
 # A homedir-relative directory on the distribution hosts where all necessary
