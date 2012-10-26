@@ -227,7 +227,7 @@ bool NanoJPEGExperiment::run()
 				log << "odd image size" << endl;
 				result->set_details("odd image size");
 				result->set_resulttype(result->BROKEN);
-			} else if (output_image_addr == 0) {
+			} else if (output_image_addr < addr_rodata_start || output_image_addr >= addr_bss_end) {
 				log << "odd image address" << endl;
 				result->set_details("odd image address");
 				result->set_resulttype(result->BROKEN);
