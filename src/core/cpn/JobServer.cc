@@ -198,19 +198,19 @@ void CommThread::operator()()
 	}
 
 	switch (ctrlmsg.command()) {
-	case FailControlMessage_Command_NEED_WORK:
+	case FailControlMessage::NEED_WORK:
 		// let old clients die (run_id == 0 -> possibly virgin client)
 		if (!ctrlmsg.has_run_id() || (ctrlmsg.run_id() != 0 && ctrlmsg.run_id() != m_js.m_runid)) {
 			cout << "!![Server] telling old client to die" << endl;
 			ctrlmsg.Clear();
-			ctrlmsg.set_command(FailControlMessage_Command_DIE);
+			ctrlmsg.set_command(FailControlMessage::DIE);
 			ctrlmsg.set_build_id(42);
 			SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
 		}
 		// give minion something to do..
 		sendPendingExperimentData(minion);
 		break;
-	case FailControlMessage_Command_RESULT_FOLLOWS:
+	case FailControlMessage::RESULT_FOLLOWS:
 		// ignore old client's results
 		if (!ctrlmsg.has_run_id() || ctrlmsg.run_id() != m_js.m_runid) {
 			cout << "!![Server] ignoring old client's results" << endl;
@@ -224,7 +224,7 @@ void CommThread::operator()()
 		cout << "!![Server] no idea what to do with command #"
 		     << ctrlmsg.command() << ", telling minion to die." << endl;
 		ctrlmsg.Clear();
-		ctrlmsg.set_command(FailControlMessage_Command_DIE);
+		ctrlmsg.set_command(FailControlMessage::DIE);
 		ctrlmsg.set_build_id(42);
 		SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
 	}
@@ -249,7 +249,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		if (!m_js.m_runningJobs.insert(workloadID, exp)) {
 			cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
 		}
-		ctrlmsg.set_command(FailControlMessage_Command_WORK_FOLLOWS);
+		ctrlmsg.set_command(FailControlMessage::WORK_FOLLOWS);
 		ctrlmsg.set_workloadid(workloadID); // set workload id
 		//cout << ">>[Server] Sending workload [" << workloadID << "]" << endl;
 		cout << ">>[" << workloadID << "] " << flush;
@@ -275,7 +275,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		//        single parameter-set, @see receiveExperimentResults.)
 		uint32_t workloadID = exp->getWorkloadID(); // (this ID has been set previously)
 		// Resend the parameter-set.
-		ctrlmsg.set_command(FailControlMessage_Command_WORK_FOLLOWS);
+		ctrlmsg.set_command(FailControlMessage::WORK_FOLLOWS);
 		ctrlmsg.set_workloadid(workloadID); // set workload id
 		//cout << ">>[Server] Re-sending workload [" << workloadID << "]" << endl;
 		cout << ">>R[" << workloadID << "] " << flush;
@@ -284,12 +284,12 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	} else if (m_js.noMoreExperiments() == false) { 
 		// Currently we have no workload (even the running-job-queue is empty!), but
 		// the campaign is not over yet. Minion can try again later.
-		ctrlmsg.set_command(FailControlMessage_Command_COME_AGAIN);
+		ctrlmsg.set_command(FailControlMessage::COME_AGAIN);
 		SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
 		cout << "--[Server] No workload, come again..."  <<  endl;
 	} else {
 		// No more elements, and campaign is over. Minion can die.
-		ctrlmsg.set_command(FailControlMessage_Command_DIE);
+		ctrlmsg.set_command(FailControlMessage::DIE);
 		cout << "--[Server] No workload, and no campaign, please die." << endl;
 		SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
 	}
