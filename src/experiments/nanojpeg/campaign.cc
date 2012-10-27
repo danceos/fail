@@ -300,7 +300,7 @@ bool NanoJPEGCampaign::run()
 			res->msg.timeout(), res->msg.injection_ip(),
 			bitmask, prev_singleres->resulttype(), prev_singleres->latest_ip(),
 			prev_singleres->psnr(), prev_singleres->details().c_str());
-		//delete res;	// currently racy if jobs are reassigned
+		delete res;
 	}
 
 	finalize_results();
