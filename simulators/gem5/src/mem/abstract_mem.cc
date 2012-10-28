@@ -443,19 +443,11 @@ AbstractMemory::functionalAccess(PacketPtr pkt)
         if (pmemAddr)
             memcpy(pkt->getPtr<uint8_t>(), hostAddr, pkt->getSize());
         TRACE_PACKET("Read");
-		// FAIL*
-		#ifdef CONFIG_EVENT_MEMREAD
-		fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), false, 0);
-		#endif
         pkt->makeResponse();
     } else if (pkt->isWrite()) {
         if (pmemAddr)
             memcpy(hostAddr, pkt->getPtr<uint8_t>(), pkt->getSize());
         TRACE_PACKET("Write");
-		// FAIL*
-		#ifdef CONFIG_EVENT_MEMWRITE
-		fail::simulator.onMemoryAccess(pkt->getAddr(), pkt->getSize(), true, 0);
-		#endif
         pkt->makeResponse();
     } else if (pkt->isPrint()) {
         Packet::PrintReqState *prs =
