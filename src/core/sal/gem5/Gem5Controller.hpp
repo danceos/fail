@@ -2,6 +2,9 @@
   #define __GEM5_CONTROLLER_HPP__
 
 #include "../SimulatorController.hpp"
+#include "Gem5Memory.hpp"
+
+#include "sim/system.hh"
 
 namespace fail {
 
@@ -11,6 +14,13 @@ namespace fail {
  */
 class Gem5Controller : public SimulatorController {
 public:
+	void startup()
+	{
+		SimulatorController::startup();
+		
+		m_Mem = new Gem5MemoryManager(System::systemList.front());
+	}
+
 	void onBreakpoint(address_t instrPtr, address_t address_space);
 
 	bool save(const std::string &path);
