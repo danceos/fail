@@ -8,61 +8,52 @@
 
 namespace fail {
 
-WallclockTimer::WallclockTimer() {
-	isRunning = false;
+void WallclockTimer::startTimer()
+{
+	m_IsRunning = true;
+	gettimeofday(&m_Start, NULL);
 }
 
-void WallclockTimer::startTimer() {
-		isRunning = true;
-		gettimeofday(&start, NULL);
-}
-
-std::string WallclockTimer::getRuntimeAsString() const {
-	
+std::string WallclockTimer::getRuntimeAsString() const
+{
 	std::stringstream result;
 	result << getRuntimeAsDouble();
 	
 	return result.str().c_str();
 }
 
-double WallclockTimer::getRuntimeAsDouble() const {
-	
+double WallclockTimer::getRuntimeAsDouble() const
+{
 	double result;
 	struct timeval current;
 	
-	if (isRunning) {
+	if (m_IsRunning) {
 		gettimeofday(&current, NULL);
-		result = current.tv_sec - start.tv_sec;
-		result = result + (((double)current.tv_usec-start.tv_usec)/1000000);
+		result = current.tv_sec - m_Start.tv_sec;
+		result = result + (((double)current.tv_usec-m_Start.tv_usec)/1000000);
 	} else {
-		result = end.tv_sec - start.tv_sec;
-		result = result + (((double)end.tv_usec-start.tv_usec)/1000000);
+		result = m_End.tv_sec - m_Start.tv_sec;
+		result = result + (((double)m_End.tv_usec-m_Start.tv_usec)/1000000);
 	}
 	
 	return result;
 }
 
-
-
-void WallclockTimer::stopTimer() {
-	if (isRunning) {
-		isRunning = false;
-		gettimeofday(&end, NULL);
+void WallclockTimer::stopTimer()
+{
+	if (m_IsRunning) {
+		m_IsRunning = false;
+		gettimeofday(&m_End, NULL);
 	} 
 }
 
-void WallclockTimer::reset() {
-	isRunning = false;
-	start.tv_sec = 0;
-	start.tv_usec = 0;
-	end.tv_sec = 0;
-	end.tv_usec = 0;
-}
-
-
-std::ostream& operator<< (std::ostream& os, const WallclockTimer& w) {
-  os << w.getRuntimeAsString();
-  return os;
+void WallclockTimer::reset()
+{
+	m_IsRunning = false;
+	m_Start.tv_sec  = 0;
+	m_Start.tv_usec = 0;
+	m_End.tv_sec    = 0;
+	m_End.tv_usec   = 0;
 }
 
 } // end-of-namespace: fail
