@@ -18,6 +18,8 @@ set(MY_CAMPAIGN_SRCS
 	campaign.cc
 	UDIS86.hpp
 	UDIS86.cc
+	InstructionFilter.hpp
+	InstructionFilter.cc
 )
 
 #### PROTOBUFS ####

@@ -9,6 +9,21 @@
 
 class L4SysExperimentData;
 
+/**
+ * A data type containing an instruction trace entry.
+ */
+typedef struct TraceInstrType {
+	fail::address_t trigger_addr; //!< the instruction pointer of the observed instruction
+	/**
+	 * counts how often this instruction has been called
+	 * if you want to call exactly this instruction, e.g. in a loop,
+	 * you need to ignore the breakpoint \c bp_counter - 1 times
+	 */
+	unsigned bp_counter;
+} TraceInstr;
+
+typedef std::vector<TraceInstr> TraceVector;
+
 class L4SysExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 public:
@@ -56,10 +71,6 @@ private:
 	 * @param param The experiment parameter object to log data from
 	 */
 	void logInjection(fail::Logger &log, const L4SysExperimentData &param);
-	/**
-	 * May be obsolete. Not supplying doc until I am sure whether I need to
-	 */
-	void readFromFileToVector(std::ifstream &file, std::vector<struct __trace_instr_type> &instr_list);
 	/**
 	 * Proceeds by one single instruction.
 	 */

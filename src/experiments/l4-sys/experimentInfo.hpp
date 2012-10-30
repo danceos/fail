@@ -1,5 +1,5 @@
-#ifndef __EXPERIMENT_INFO_HPP__
-  #define __EXPERIMENT_INFO_HPP__
+#ifndef __L4SYS_EXPERIMENT_INFO_HPP__
+  #define __L4SYS_EXPERIMENT_INFO_HPP__
 
 // the maximum number of bytes in a Bochs instruction
 #define MAX_INSTR_BYTES 15
@@ -24,4 +24,4 @@
 // >0 - next step to execute
 #define PREPARATION_STEP		0
 
-#endif // __EXPERIMENT_INFO_HPP__
+#endif // __L4SYS_EXPERIMENT_INFO_HPP__

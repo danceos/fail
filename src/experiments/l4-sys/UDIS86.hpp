@@ -1,5 +1,5 @@
-#ifndef __UDIS86_HPP__
-  #define __UDIS86_HPP__
+#ifndef __L4SYS_UDIS86_HPP__
+  #define __L4SYS_UDIS86_HPP__
 
 #include <udis86.h>
 #include "sal/bochs/BochsController.hpp"
@@ -87,4 +87,4 @@ public:
 	}
 };
 
-#endif // __UDIS86_HPP__
+#endif // __L4SYS_UDIS86_HPP__

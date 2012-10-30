@@ -299,7 +299,7 @@ size_t const aluInstructionsSize = sizeof(aluInstructions);
 /**
  * \class BochsALUInstructions
  *
- * \brfief This class handles Bochs ALU instructions.
+ * \brief This class handles Bochs ALU instructions.
  *
  * This class analyses a given bxInstruction_c object:
  * if it belongs to the instructions listed in
