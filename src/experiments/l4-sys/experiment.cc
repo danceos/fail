@@ -202,7 +202,8 @@ bool L4SysExperiment::run() {
 
 		// now check if we want to add the instruction for fault injection
 		if (instrFilter != NULL &&
-				instrFilter->isValidInstr(curr_addr, calculateInstructionAddress())) {
+				instrFilter->isValidInstr(curr_addr,
+                                reinterpret_cast<char const*>(calculateInstructionAddress()))) {
 			accepted++;
 			TraceInstr new_instr;
 			new_instr.trigger_addr = curr_addr;
