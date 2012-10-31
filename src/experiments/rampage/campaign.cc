@@ -60,7 +60,7 @@ bool RAMpageCampaign::run()
 	      << address_bits << " address bits" << endl;
 
 	// systematically march through the fault space
-	for (uint64_t n = 0; n < 1024*512; ++n) {
+	for (uint64_t n = 0; n < 1024*256; ++n) {
 		uint64_t addr = reverse_bits(n) >> (64 - address_bits);
 		if (addr >= MEM_SIZE ||
 		    existing_results.find(addr) != existing_results.end()) {
@@ -71,12 +71,15 @@ bool RAMpageCampaign::run()
 		d->msg.set_mem_addr(addr);
 		d->msg.set_mem_bit(4);
 		d->msg.set_errortype(d->msg.ERROR_STUCK_AT_1);
-		d->msg.set_empty_passes(2);
+		//d->msg.set_empty_passes(2);
+		d->msg.set_empty_passes(4);
 		//d->msg.set_local_timeout(1000*60*10); // 10m
 		//d->msg.set_global_timeout(1000*60*50); // 50m
 		//d->msg.set_local_timeout(1000*60*20); // 20m
 		//d->msg.set_global_timeout(1000*60*90); // 90m
-		d->msg.set_local_timeout(1000*60*20); // 20m
+		//d->msg.set_local_timeout(1000*60*20); // 20m
+		//d->msg.set_global_timeout(1000*60*120); // 120m
+		d->msg.set_local_timeout(1000*60*30); // 30m
 		d->msg.set_global_timeout(1000*60*120); // 120m
 		campaignmanager.addParam(d);
 	}
