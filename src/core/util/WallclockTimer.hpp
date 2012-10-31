@@ -61,7 +61,7 @@ public:
 	operator int() { return (int)getRuntimeAsDouble(); }
 };
 
-std::ostream& operator<< (std::ostream& os, const WallclockTimer& w)
+inline std::ostream& operator<< (std::ostream& os, const WallclockTimer& w)
 { return os << w.getRuntimeAsString(); }
 
 } // end-of-namespace: fail
