@@ -334,8 +334,8 @@ bool L4SysExperiment::run() {
 	if (injection_ip != curr_instr.trigger_addr) {
 		stringstream ss;
 		ss << "SANITY CHECK FAILED: " << injection_ip << " != "
-		<< curr_instr.trigger_addr << endl;
-		log << ss.str();
+		<< curr_instr.trigger_addr;
+		log << ss.str() << endl;
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 		param.msg.set_resultdata(injection_ip);
 		param.msg.set_details(ss.str());
@@ -355,7 +355,7 @@ bool L4SysExperiment::run() {
 			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
-			ss << "Sent package did not contain the injection location (register offset)" << endl;
+			ss << "Sent package did not contain the injection location (register offset)";
 			param.msg.set_details(ss.str());
 			m_jc.sendResult(param);
 			simulator.terminate(30);
@@ -423,7 +423,7 @@ bool L4SysExperiment::run() {
 				param.msg.set_output(sanitised(output.c_str()));
 
 				stringstream ss;
-				ss << "Could not decode instruction using UDIS86" << endl;
+				ss << "Could not decode instruction using UDIS86";
 				param.msg.set_details(ss.str());
 				m_jc.sendResult(param);
 				simulator.terminate(32);
@@ -485,7 +485,7 @@ bool L4SysExperiment::run() {
 			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
-			ss << "Reached the end of the experiment without finding an appropriate instruction" << endl;
+			ss << "Reached the end of the experiment without finding an appropriate instruction";
 			param.msg.set_details(ss.str());
 			m_jc.sendResult(param);
 			simulator.terminate(33);
@@ -565,7 +565,7 @@ bool L4SysExperiment::run() {
 			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
-			ss << "Reached the end of the experiment without finding an appropriate instruction" << endl;
+			ss << "Reached the end of the experiment without finding an appropriate instruction";
 			param.msg.set_details(ss.str());
 			m_jc.sendResult(param);
 			simulator.terminate(33);
@@ -586,7 +586,7 @@ bool L4SysExperiment::run() {
 			param.msg.set_output(sanitised(output.c_str()));
 
 			ostringstream oss;
-			oss << "Did not hit an ALU instruction - correct the source code please!" << endl;
+			oss << "Did not hit an ALU instruction - correct the source code please!";
 			param.msg.set_details(oss.str());
 			m_jc.sendResult(param);
 			simulator.terminate(40);
@@ -650,8 +650,7 @@ bool L4SysExperiment::run() {
 
 		stringstream ss;
 		ss << "eventid " << ev << " EIP "
-				<< simulator.getRegisterManager().getInstructionPointer()
-				<< endl;
+				<< simulator.getRegisterManager().getInstructionPointer();
 		param.msg.set_details(ss.str());
 	}
 
