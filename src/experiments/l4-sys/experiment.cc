@@ -34,9 +34,6 @@ using namespace fail;
 #endif
 
 string output;
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-TraceVector instr_list;
-#endif
 string golden_run;
 
 string L4SysExperiment::sanitised(const string &in_str) {
@@ -179,7 +176,7 @@ bool L4SysExperiment::run() {
 			<< endl;
 
 #ifdef L4SYS_FILTER_INSTRUCTIONS
-	ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::out | ios::binary);
+	ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
 	bp.setWatchInstructionPointer(ANY_ADDR);
 
 	size_t count = 0, accepted = 0;
@@ -202,8 +199,8 @@ bool L4SysExperiment::run() {
 
 		// now check if we want to add the instruction for fault injection
 		if (instrFilter != NULL &&
-				instrFilter->isValidInstr(curr_addr,
-                                reinterpret_cast<char const*>(calculateInstructionAddress()))) {
+		    instrFilter->isValidInstr(curr_addr,
+                reinterpret_cast<char const*>(calculateInstructionAddress()))) {
 			accepted++;
 			TraceInstr new_instr;
 			new_instr.trigger_addr = curr_addr;
@@ -285,21 +282,6 @@ bool L4SysExperiment::run() {
 
 	golden_run_file.close();
 
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-	ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::in | ios::binary);
-
-	if (!instr_list_file.good()) {
-		log << "Missing instruction trace" << endl;
-		simulator.terminate(21);
-	}
-	while (!instr_list_file.eof()) {
-		TraceInstr curr_instr;
-		instr_list_file.read(reinterpret_cast<char*>(&curr_instr), sizeof(TraceInstr));
-		instr_list.push_back(curr_instr);
-	}
-	instr_list_file.close();
-#endif
-
 	//the generated output probably has a similar length
 	output.reserve(teststruct.st_size);
 
@@ -319,8 +301,20 @@ bool L4SysExperiment::run() {
 	int exp_type = param.msg.exp_type();
 
 #ifdef L4SYS_FILTER_INSTRUCTIONS
-	bp.setWatchInstructionPointer(instr_list[instr_offset].trigger_addr);
-	bp.setCounter(instr_list[instr_offset].bp_counter);
+	ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
+
+	if (!instr_list_file.good()) {
+		log << "Missing instruction trace" << endl;
+		simulator.terminate(21);
+	}
+
+	TraceInstr curr_instr;
+	instr_list_file.seekg(instr_offset * sizeof(TraceInstr));
+	instr_list_file.read(reinterpret_cast<char*>(&curr_instr), sizeof(TraceInstr));
+	instr_list_file.close();
+
+	bp.setWatchInstructionPointer(curr_instr.trigger_addr);
+	bp.setCounter(curr_instr.bp_counter);
 #else
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(instr_offset);
@@ -337,10 +331,10 @@ bool L4SysExperiment::run() {
 #ifdef L4SYS_FILTER_INSTRUCTIONS
 	// only works if we filter instructions
 	// sanity check (only works if we're working with an instruction trace)
-	if (injection_ip != instr_list[instr_offset].trigger_addr) {
+	if (injection_ip != curr_instr.trigger_addr) {
 		stringstream ss;
 		ss << "SANITY CHECK FAILED: " << injection_ip << " != "
-		<< instr_list[instr_offset].trigger_addr << endl;
+		<< curr_instr.trigger_addr << endl;
 		log << ss.str();
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 		param.msg.set_resultdata(injection_ip);
