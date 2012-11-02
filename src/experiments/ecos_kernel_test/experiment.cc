@@ -162,7 +162,7 @@ bool EcosKernelTestExperiment::performTrace() {
 	unsigned instr_counter = 0;
 
 	// on the way, count elapsed time
-	TimerListener time_step(10000); //TODO: granularity?
+	TimerListener time_step(10); //TODO: granularity?
 	//elapsed_time.setCounter(0xFFFFFFFFU); // not working for TimerListener
 	simulator.addListener(&time_step);
 	unsigned elapsed_time = 1; // always run 1 step
