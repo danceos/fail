@@ -17,6 +17,8 @@
 #include "iodev/iodev.h"
 #include "pc_system.h"
 
+#define DEBUG
+
 namespace fail {
 
 class ExperimentFlow;
@@ -24,17 +26,22 @@ class ExperimentFlow;
 /**
  * \class BochsController
  * Bochs-specific implementation of a SimulatorController.
+ * 
+ * @note The instruction (IP) pointer modification handler (onBreakpoint())
+ * is called (from the Breakpoints aspect) *every* time the Bochs-internal IP
+ * changes. The handler itself evaluates if a breakpoint event needs to be
+ * triggered. This handler needs to implement the breakpoint-mechanism in an
+ * indirect fashion because the Bochs simulator doesn't support native
+ * breakpoints. To be compatible with the interface specified by the simulator
+ * class, we need to provide the two members \c m_CPUContext and \c m_CacheEntry.
+ * The elements are being set before the handler is called (see
+ * \c updateBPEventInfo())
  */
 class BochsController : public SimulatorController {
 private:
 	ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
 	BX_CPU_C *m_CPUContext; //!< Additional information that is passed on occurence of a BPEvent
 	bxInstruction_c *m_CurrentInstruction; //!< dito.
-  #ifdef DEBUG
-	unsigned m_Regularity; //! regularity of instruction ptr output
-	unsigned m_Counter; //! current instr-ptr counter
-	std::ostream* m_pDest; //! debug output object (defaults to \c std::cout)
-  #endif
 public:
 	// Initialize the controller.
 	BochsController();
@@ -42,20 +49,6 @@ public:
 	/* ********************************************************************
 	 * Standard Listener Handler API:
 	 * ********************************************************************/
-	/**
-	 * Instruction pointer modification handler implementing the onBreakpoint
-	 * handler of the SimulatorController. This method is called (from
-	 * the Breakpoints aspect) *every* time the Bochs-internal IP changes.
-	 * The handler itself evaluates if a breakpoint event needs to be triggered.
-	 * This handler needs to implement the breakpoint-mechanism in an indirect
-	 * fashion because the Bochs simulator doesn't support native breakpoints.
-	 * To match the interface specified by the simulator class, we need to provide
-	 * the two members \c m_CPUContext and \c m_CacheEntry. The elements are
-	 * being set before the handler is called (see \c updateBPEventInfo()).
-	 * @param instrPtr the new instruction pointer
-	 * @param address_space the address space the CPU is currently in
-	 */
-	void onBreakpoint(address_t instrPtr, address_t address_space);
 	/**
 	 * I/O port communication handler. This method is called (from
 	 * the IOPortCom aspect) every time when Bochs performs a port I/O operation.
@@ -123,15 +116,6 @@ public:
 	/* ********************************************************************
 	 * BochsController-specific (not implemented in SimulatorController!):
 	 * ********************************************************************/
-  #ifdef DEBUG
-	/**
-	 * Enables instruction pointer debugging output.
-	 * @param regularity the output regularity; 1 to display every
-	 *        instruction pointer, 0 to disable
-	 * @param dest specifies the output destition; defaults to \c std::cout
-	 */
-	void dbgEnableInstrPtrOutput(unsigned regularity, std::ostream* dest = &std::cout);
-  #endif
 	/**
 	 * Retrieves the textual description (mnemonic) for the current
 	 * instruction. The format of the returned string is Bochs-specific.

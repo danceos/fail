@@ -44,11 +44,6 @@ BochsController::BochsController()
 		m_Regs->add(pReg);
 	}
   #endif // BX_SUPPORT_X86_64
-  #ifdef DEBUG
-	m_Regularity = 0; // disabled
-	m_Counter = 0;
-	m_pDest = NULL;
-  #endif
 	// -------------------------------------
 	// Add the Program counter register:
   #if BX_SUPPORT_X86_64
@@ -77,44 +72,6 @@ BochsController::~BochsController()
 	m_Regs->clear();
 	delete m_Regs;
 	delete m_Mem;
-}
-
-#ifdef DEBUG
-void BochsController::dbgEnableInstrPtrOutput(unsigned regularity, std::ostream* dest)
-{
-	m_Regularity = regularity;
-	m_pDest = dest;
-	m_Counter = 0;
-}
-#endif // DEBUG
-
-void BochsController::onBreakpoint(address_t instrPtr, address_t address_space)
-{
-#ifdef DEBUG
-	if (m_Regularity != 0 && ++m_Counter % m_Regularity == 0)
-		(*m_pDest) << "0x" << std::hex << instrPtr;
-#endif
-	bool do_fire = false;
-	// Check for active breakpoint-events:
-	ListenerManager::iterator it = m_LstList.begin();
-	BPEvent tmp(instrPtr, address_space);
-	while (it != m_LstList.end()) {
-		BaseListener* pLi = *it;
-		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
-		if (pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
-			pBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = m_LstList.makeActive(it);
-			do_fire = true;
-			// "it" has already been set to the next element (by calling
-			// makeActive()):
-			continue; // -> skip iterator increment
-		}
-		it++;
-	}
-	if (do_fire)
-		m_LstList.triggerActiveListeners();
-	// Note: SimulatorController::onBreakpoint will not be invoked in this
-	//       implementation.
 }
 
 void BochsController::updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *instr)

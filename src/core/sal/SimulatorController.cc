@@ -54,29 +54,20 @@ void SimulatorController::initExperiments()
 
 void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_space)
 {
-	assert(false &&
-	"FIXME: SimulatorController::onBreakpoint() has not been tested before");
-	// FIXME: Improve performance!
-
-	// Loop through all listeners of type BP*Listener:
+	// Check for active breakpoint-events:
 	ListenerManager::iterator it = m_LstList.begin();
 	BPEvent tmp(instrPtr, address_space);
 	while (it != m_LstList.end()) {
-		BaseListener* pev = *it;
-		BPSingleListener* pbp; BPRangeListener* pbpr;
-		if ((pbp = dynamic_cast<BPSingleListener*>(pev)) && pbp->isMatching(&tmp)) {
-			 pbp->setTriggerInstructionPointer(instrPtr);
+		BaseListener* pLi = *it;
+		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
+		if (pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
+			pBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
 			continue; // -> skip iterator increment
-		} else if ((pbpr = dynamic_cast<BPRangeListener*>(pev)) &&
-		           pbpr->isMatching(&tmp)) {
-			pbpr->setTriggerInstructionPointer(instrPtr);
-			it = m_LstList.makeActive(it);
-			continue; // dito
 		}
-		++it;
+		it++;
 	}
 	m_LstList.triggerActiveListeners();
 }
@@ -84,7 +75,6 @@ void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_spa
 void SimulatorController::onMemoryAccess(address_t addr, size_t len,
                                          bool is_write, address_t instrPtr)
 {
-	// FIXME: Improve performance!
 	MemAccessEvent::access_type_t accesstype =
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
