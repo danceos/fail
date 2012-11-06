@@ -21,10 +21,12 @@ aspect BochsListener {
 		bool onAddition()
 		{
 			// Register the timer listener in the Bochs simulator:
-			if(m_registerTimer(this) == -1) {
+			timer_id_t id = m_registerTimer(this);
+			if (id == -1) {
 				setId(INVALID_TIMER);
 				return false; // unable to register the timer (error in Bochs' function call)
 			}
+			setId(id);
 			return true;
 		}
 		void onDeletion()
