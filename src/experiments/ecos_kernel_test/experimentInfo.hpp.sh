@@ -23,7 +23,9 @@ cat <<EOF
 // cyg_test_output address
 #define ECOS_FUNC_TEST_OUTPUT		0x`addrof $1 cyg_test_output`
 // the variable that's increased if ECC corrects an error:
-#define ECOS_ERROR_CORRECTED		0x`addrof $1 errors_corrected`
+#define ECC_ERROR_CORRECTED			0x`addrof $1 errors_corrected`
+// the function that is called when an uncorrectable error occurs
+#define ECC_FUNC_PANIC				0x`addrof $1 ecc_panic`
 
 // text begin:
 // nm -C $(basename $1)|fgrep _stext

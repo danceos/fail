@@ -117,7 +117,7 @@ bool EcosKernelTestExperiment::establishState() {
 	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
-	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
+	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(ECC_ERROR_CORRECTED)) << endl;
 	simulator.save(statename);
 	assert(bp.getTriggerInstructionPointer() == ECOS_FUNC_ENTRY);
 	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
@@ -382,6 +382,10 @@ bool EcosKernelTestExperiment::faultInjection() {
 		BPSingleListener func_test_output(ECOS_FUNC_TEST_OUTPUT);
 		simulator.addListener(&func_test_output);
 
+		// function called by ecc aspects, when an uncorrectable error is detected
+		BPSingleListener func_ecc_panic(ECC_FUNC_PANIC);
+		simulator.addListener(&func_ecc_panic);
+
 #if LOCAL && 0
 		// XXX debug
 		log << "enabling tracing" << endl;
@@ -434,7 +438,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
 
 		// record error_corrected regardless of result
-		int32_t error_corrected = simulator.getMemoryManager().getByte(ECOS_ERROR_CORRECTED);
+		int32_t error_corrected = simulator.getMemoryManager().getByte(ECC_ERROR_CORRECTED);
 		result->set_error_corrected(error_corrected);
 		
 		// record ecos_test_result
@@ -466,6 +470,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 			stringstream ss;
 			ss << ev_trap.getTriggerNumber();
 			result->set_details(ss.str());
+		} else if (ev == &func_ecc_panic) {
+			log << "ECC Panic: uncorrectable error" << endl;
+			result->set_resulttype(result->DETECTED); // DETECTED <=> ECC_PANIC <=> reboot
 		} else {
 			log << "Result WTF?" << endl;
 			result->set_resulttype(result->UNKNOWN);
