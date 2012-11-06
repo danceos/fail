@@ -4,7 +4,7 @@
 #include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
 
-#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_BREAKPOINTS)
+#if defined(BUILD_BOCHS)
 
 #include <cassert>
 #include "bochs.h"
