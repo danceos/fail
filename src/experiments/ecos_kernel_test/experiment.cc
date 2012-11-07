@@ -510,8 +510,7 @@ bool EcosKernelTestExperiment::run()
 
 	// step 1
 	if(establishState()) {
-		log << "STEP 1 finished: rebooting ..." << endl;
-		simulator.reboot();
+		log << "STEP 1 finished: proceeding ..." << endl;
 	} else { return false; }
 
 	// step 2
