@@ -2,58 +2,19 @@
   #define __BREAKPOINT_BUFFER_HPP__
 
 #include "BufferInterface.hpp"
-#include "../Listener.hpp"
-#include <cassert>
-#include <vector>
 
 // TODOs: 
 //  - Make these implementations even faster (see below: continue PerfVecSortedSingleBP).
-//  - The implementation of gather() (see below) in BreakpointBuffer.cc (not inlined in
-//    .hpp) avoids an include cycle. Unfortunately, this may cause a bad performance
-//    because gather() won't be inlined anymore! (The method is called quite often.)
 
 namespace fail {
 
 class BPEvent;
 
 /**
- * \class ResultSet
- *
- * Results (= indices of matching listeners) returned by the "gather"-method,
- * see below. (This class can be seen as a "temporary fire-list".)
+ * Concrete implementation for the \c BPSingleListener class.
  */
-class ResultSet {
-	std::vector<index_t> m_Res;
+class PerfVectorBreakpoints : public DefPerfVector<BPEvent> {
 public:
-	ResultSet() { }
-	bool hasMore() const { return !m_Res.empty(); }
-	index_t getNext() { index_t idx = m_Res.back(); m_Res.pop_back(); return idx; }
-	void add(index_t idx) { m_Res.push_back(idx); }
-	size_t size() const { return m_Res.size(); }
-	void clear() { m_Res.clear(); }
-};
-
-/**
- * Concrete implementation of the PerfBufferBase class for \c std::vector
- * and \c BPSingleListener.
- */
-class PerfVectorBreakpoints : public PerfBufferBase {
-protected:
-	std::vector<index_t> m_BufList;
-public:
-	void add(index_t idx) { m_BufList.push_back(idx); }
-	void remove(index_t idx)
-	{
-		for (std::vector<index_t>::iterator it = m_BufList.begin();
-		     it != m_BufList.end(); ++it) {
-			if (*it == idx) {
-				m_BufList.erase(it);
-				break;
-			}
-		}
-	}
-	void clear() { m_BufList.clear(); }
-	size_t size() const { return m_BufList.size(); }
 	ResultSet& gather(BPEvent* pData);
 };
 

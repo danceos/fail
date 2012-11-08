@@ -5,7 +5,9 @@
 
 #ifdef CONFIG_FAST_BREAKPOINTS
 
+#include <cassert>
 #include "BreakpointBuffer.hpp"
+#include "../Listener.hpp"
 
 /**
  * \class BreakpointManagerSlice

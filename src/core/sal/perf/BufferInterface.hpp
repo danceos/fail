@@ -2,6 +2,7 @@
   #define __BUFFER_INTERFACE_HPP__
 
 #include <cstddef>
+#include <vector>
 
 namespace fail {
 
@@ -35,6 +36,50 @@ public:
 	 * @return the number of elements in the perf. buffer-list
 	 */
 	virtual std::size_t size() const = 0;
+};
+
+/**
+ * \class ResultSet
+ *
+ * Results (= indices of matching listeners) returned by the "gather"-method,
+ * see below. (This class can be seen as a "temporary fire-list".)
+ */
+class ResultSet {
+private:
+	std::vector<index_t> m_Res; //!< vector of matching listener indices
+public:
+	ResultSet() { }
+	bool hasMore() const { return !m_Res.empty(); }
+	index_t getNext() { index_t idx = m_Res.back(); m_Res.pop_back(); return idx; }
+	void add(index_t idx) { m_Res.push_back(idx); }
+	size_t size() const { return m_Res.size(); }
+	void clear() { m_Res.clear(); }
+};
+
+/**
+ * \class DefPerfVector
+ * 
+ * Default \c std::vector based performance implementation (abstract)
+ */
+template<class T>
+class DefPerfVector : public PerfBufferBase {
+protected:
+	std::vector<index_t> m_BufList; //!< the performance buffer-list
+public:
+	void add(index_t idx) { m_BufList.push_back(idx); }
+	void remove(index_t idx)
+	{
+		for (std::vector<index_t>::iterator it = m_BufList.begin();
+		     it != m_BufList.end(); ++it) {
+			if (*it == idx) {
+				m_BufList.erase(it);
+				break;
+			}
+		}
+	}
+	void clear() { m_BufList.clear(); }
+	size_t size() const { return m_BufList.size(); }
+	virtual ResultSet& gather(T* pData) = 0;
 };
 
 } // end-of-namespace: fail
