@@ -1,0 +1,42 @@
+#ifndef __WATCHPOINT_MANAGER_SLICE_AH__
+  #define __WATCHPOINT_MANAGER_SLICE_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_WATCHPOINTS
+
+#include <cassert>
+#include "WatchpointBuffer.hpp"
+#include "../Listener.hpp"
+
+/**
+ * \class WatchpointManagerSlice
+ *
+ * The slice class definition to be used with FastWatchpoints.ah.
+ * The members of this class will be sliced into the \c ListenerManager class.
+ */
+slice class WatchpointManagerSlice {
+private:
+	fail::PerfVectorWatchpoints m_MemListeners;
+public:
+	fail::PerfVectorWatchpoints& getMemoryListeners() { return m_MemListeners; }
+
+	void add(fail::MemAccessListener* mli, fail::ExperimentFlow* flow)
+	{
+		assert(mli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		mli->setParent(flow);
+		// (1) Add mli to the main buffer-list, ...
+		m_BufferList.push_back(mli);
+		// (2) ... update it's location (index) / performance-buffer (ptr) and ...
+		fail::index_t idx = m_BufferList.size()-1;
+		assert(m_BufferList[idx] == mli && "FATAL ERROR: Invalid index after push_back() unexpected!");
+		mli->setLocation(idx);
+		mli->setPerformanceBuffer(&m_MemListeners);
+		// (3) ... add this index to the m_SingleListeners vector.
+		m_MemListeners.add(idx);
+	}
+};
+
+#endif // CONFIG_FAST_WATCHPOINTS
+
+#endif // __WATCHPOINT_MANAGER_SLICE_AH__

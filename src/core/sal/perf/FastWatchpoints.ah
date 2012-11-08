@@ -1,0 +1,75 @@
+#ifndef __FAST_WATCHPOINTS_AH__
+  #define __FAST_WATCHPOINTS_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_WATCHPOINTS
+
+#if !defined(CONFIG_EVENT_MEMREAD) && !defined(CONFIG_EVENT_MEMWRITE)
+#error Watchpoint events (i.e. memory read or write accesses) are required for fast watchpoints!
+#endif	
+
+#include "WatchpointManagerSlice.ah"    // slice class "WatchpointManagerSlice"
+#include "WatchpointControllerSlice.ah" // slice class "WatchpointControllerSlice"
+#include "../ListenerManager.hpp"
+#include "../Listener.hpp"
+#include "WatchpointBuffer.hpp"
+#include "../SALInst.hpp"
+
+// Warning: Do not import namespace using "using namespace"!
+// (It may yields collisions due to woven aspect code.)
+
+aspect FastWatchpoints {
+
+	// Refer to slice classes:
+	advice "fail::ListenerManager"     : slice WatchpointManagerSlice;
+	advice "fail::SimulatorController" : slice WatchpointControllerSlice;
+
+	// These around-advices handle the (special) case where an experiment
+	// adds a listener object casted to the base type but actually has the
+	// MemRead- or MemWriteListener type.
+	advice execution("bool fail::SimulatorController::addListener(fail::BaseListener*)") : around ()
+	{
+		// Note: The logic to update the performance buffer-list is
+		//       placed in the addListener() methods.
+		fail::MemAccessListener* pma = dynamic_cast<fail::MemAccessListener*>(*(tjp->arg<0>()));
+		// (MemRead- and MemWriteListener are derived classes of MemAccessListener!)
+		if (pma != NULL)
+			*(tjp->result()) = tjp->that()->addListener(pma);
+		else
+			tjp->proceed();
+	}
+	advice call("BaseListener* fail::SimulatorController::addListenerAndResume(fail::BaseListener*)") : around ()
+	{
+		// Note: The logic to update the performance buffer-list is
+		//       placed in the addListenerAndResume methods.
+		fail::MemAccessListener* pma = dynamic_cast<fail::MemAccessListener*>(*(tjp->arg<0>()));
+		if (pma != NULL)
+			*(tjp->result()) = tjp->that()->addListenerAndResume(pma);
+		else
+			tjp->proceed();
+	}
+
+	// The event handler for employing watchpoint (aka memory access) events.
+	advice execution("void fail::%Controller::onMemoryAccess(...)") : around ()
+	{
+		// Note: "BPListener" is an abstract class anyway.
+		fail::ListenerManager& ref = tjp->target()->m_LstList;
+
+		#define TJPARG(i) *(tjp->arg<i>())
+		fail::MemAccessEvent tmp(TJPARG(0), TJPARG(1), TJPARG(3),
+			TJPARG(2) ? fail::MemAccessEvent::MEM_WRITE : fail::MemAccessEvent::MEM_READ);
+		#undef TJPARG
+		
+		// Check for matching MemAccessListener:
+		fail::ResultSet& res = ref.getMemoryListeners().gather(&tmp);
+		while (res.hasMore())
+			ref.makeActive(ref.dereference(res.getNext()));
+
+		ref.triggerActiveListeners();
+	}
+};
+
+#endif // CONFIG_FAST_WATCHPOINTS
+
+#endif // __FAST_WATCHPOINTS_AH__
