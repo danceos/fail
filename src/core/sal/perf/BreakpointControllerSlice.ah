@@ -5,7 +5,7 @@
 
 #ifdef CONFIG_FAST_BREAKPOINTS
 
-#include <iostream>
+#include <cassert>
 #include "../Listener.hpp"
 
 /**
@@ -20,7 +20,7 @@ public:
 	{
 		assert(sli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
 		// Check whether we were called from onTrigger (see SimulatorController.cc@addListener).
-		ExperimentFlow* pFlow = m_Flows.getCurrent(); 
+		fail::ExperimentFlow* pFlow = m_Flows.getCurrent(); 
 		if (pFlow == CoroutineManager::SIM_FLOW)
 			pFlow = sli->getParent();
 		m_LstList.add(sli, pFlow);
@@ -37,7 +37,7 @@ public:
 	{
 		assert(rli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
 		// Check whether we were called from onTrigger (see above).
-		ExperimentFlow* pFlow = m_Flows.getCurrent();
+		fail::ExperimentFlow* pFlow = m_Flows.getCurrent();
 		if (pFlow == CoroutineManager::SIM_FLOW)
 			pFlow = rli->getParent();
 		m_LstList.add(rli, pFlow);
