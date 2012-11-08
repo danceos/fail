@@ -16,10 +16,6 @@
 #include "BreakpointBuffer.hpp"
 #include "../SALInst.hpp"
 
-// TODOs:
-//   - Check if this solutation works, even if there are more than one
-//     active performance aspects.
-
 aspect FastBreakpoints {
 
 	// Refer to slice classes:
