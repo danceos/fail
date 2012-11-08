@@ -17,6 +17,7 @@
 
 // Performance options
 #cmakedefine CONFIG_FAST_BREAKPOINTS
+#cmakedefine CONFIG_FAST_WATCHPOINTS
 
 // Save/restore functionality
 #cmakedefine CONFIG_SR_RESTORE

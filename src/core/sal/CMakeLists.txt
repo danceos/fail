@@ -5,7 +5,6 @@ if(BUILD_BOCHS)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
-		perf/BreakpointBuffer.cc
 		bochs/BochsController.cc
 		bochs/BochsListener.cc
 	)
@@ -16,7 +15,6 @@ elseif(BUILD_GEM5)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
-		perf/BreakpointBuffer.cc
 		gem5/Gem5Controller.cc
 	)
 elseif(BUILD_OVP)
@@ -26,7 +24,6 @@ elseif(BUILD_OVP)
 		SALConfig.cc
 		Register.cc
 		SimulatorController.cc
-		perf/BreakpointBuffer.cc
 		${VARIANT}/OVPController.cc
 	)
 elseif(BUILD_QEMU)
@@ -35,7 +32,6 @@ elseif(BUILD_QEMU)
 		ListenerManager.cc
 		SALConfig.cc
 		Register.cc
-		perf/BreakpointBuffer.cc
 		SimulatorController.cc
 		qemu/QEMUController.cc
 		qemu/wrappers.cc
@@ -46,13 +42,26 @@ elseif(BUILD_T32)
 		ListenerManager.cc
 		SALConfig.cc
 		Register.cc
-		perf/BreakpointBuffer.cc
 		SimulatorController.cc
 		t32/T32Controller.cc
 		t32/wrappers.cc
 	)
 endif(BUILD_BOCHS)
 
-add_library(fail-sal ${SRCS})
+# Don't include these sources if perf-stuff is disabled
+# (reduces compiler overhead):
+if(CONFIG_FAST_WATCHPOINTS)
+	set(SRCS ${SRCS}
+		perf/WatchpointBuffer.cc
+	)
+endif(CONFIG_FAST_WATCHPOINTS)
 
+if(CONFIG_FAST_BREAKPOINTS)
+	set(SRCS ${SRCS}
+		perf/BreakpointBuffer.cc
+	)
+endif(CONFIG_FAST_BREAKPOINTS)
+
+
+add_library(fail-sal ${SRCS})
 add_dependencies(fail-sal fail-efw)
