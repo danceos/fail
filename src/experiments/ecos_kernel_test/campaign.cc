@@ -94,7 +94,7 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 std::string EcosKernelTestCampaign::filename_memorymap(const std::string& variant, const std::string& benchmark)
 {
 	if (variant.size() && benchmark.size()) {
-		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "memorymap.txt";
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "memorymap.txt";
 	}
 	return "memorymap.txt";
 }
@@ -102,7 +102,7 @@ std::string EcosKernelTestCampaign::filename_memorymap(const std::string& varian
 std::string EcosKernelTestCampaign::filename_state(const std::string& variant, const std::string& benchmark)
 {
 	if (variant.size() && benchmark.size()) {
-		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "state";
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "state";
 	}
 	return "state";
 }
@@ -110,7 +110,7 @@ std::string EcosKernelTestCampaign::filename_state(const std::string& variant, c
 std::string EcosKernelTestCampaign::filename_trace(const std::string& variant, const std::string& benchmark)
 {
 	if (variant.size() && benchmark.size()) {
-		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "trace.tc";
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "trace.tc";
 	}
 	return "trace.tc";
 }
@@ -118,14 +118,14 @@ std::string EcosKernelTestCampaign::filename_trace(const std::string& variant, c
 std::string EcosKernelTestCampaign::filename_traceinfo(const std::string& variant, const std::string& benchmark)
 {
 	if (variant.size() && benchmark.size()) {
-		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "traceinfo.txt";
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "traceinfo.txt";
 	}
 	return "traceinfo.txt";
 }
 
 std::string EcosKernelTestCampaign::filename_results(const std::string& variant, const std::string& benchmark)
 {
-	return dir_results + "/" + variant + "_" + benchmark + "_" + "results.csv";
+	return dir_results + "/" + variant + "-" + benchmark + "-" + "results.csv";
 }
 
 std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, const std::string& benchmark)
