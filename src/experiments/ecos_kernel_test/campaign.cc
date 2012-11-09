@@ -19,10 +19,9 @@
 using namespace std;
 using namespace fail;
 
-char const * const trace_filename = "trace.tc"; //TODO: sync with experiment.cc
-char const * const results_filename = "ecos_kernel_test.csv";
-char const * const mm_filename = "memory_map.txt"; //TODO: sync with experiment.cc
-char const * const traceinfo_name = "trace_info.txt";
+const std::string EcosKernelTestCampaign::dir_images("images");
+const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites");
+const std::string EcosKernelTestCampaign::dir_results("results");
 
 bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * const filename) {
 	ifstream file(filename);
@@ -47,9 +46,9 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 }
 
 bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr) {
-	ofstream ti(traceinfo_name, ios::out | ios::app);
+	ofstream ti(filename_traceinfo().c_str(), ios::out);
 	if (!ti.is_open()) {
-		cout << "failed to open " << traceinfo_name << endl;
+		cout << "failed to open " << filename_traceinfo() << endl;
 		return false;
 	}
 	ti << instr_counter << endl << timeout << endl << lowest_addr << endl << highest_addr << endl;
@@ -59,9 +58,9 @@ bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned tim
 }
 
 bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr) {
-	ifstream file(traceinfo_name);
+	ifstream file(filename_traceinfo().c_str());
 	if (!file.is_open()) {
-		cout << "failed to open " << traceinfo_name << endl;
+		cout << "failed to open " << filename_traceinfo() << endl;
 		return false;
 	}
 
@@ -91,6 +90,43 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 	return (count == 4);
 }
 
+std::string EcosKernelTestCampaign::filename_memorymap(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "memorymap.txt";
+	}
+	return "memorymap.txt";
+}
+
+std::string EcosKernelTestCampaign::filename_state(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "state";
+	}
+	return "state";
+}
+
+std::string EcosKernelTestCampaign::filename_trace(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "trace.tc";
+	}
+	return "trace.tc";
+}
+
+std::string EcosKernelTestCampaign::filename_traceinfo(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "_" + benchmark + "_" + "traceinfo.txt";
+	}
+	return "traceinfo.txt";
+}
+
+std::string EcosKernelTestCampaign::filename_results(const std::string& variant, const std::string& benchmark)
+{
+	return dir_results + "/" + variant + "_" + benchmark + "_" + "results.csv";
+}
+
 // equivalence class type: addr, [i1, i2]
 // addr: byte to inject a bit-flip into
 // [i1, i2]: interval of instruction numbers, counted from experiment
@@ -107,9 +143,9 @@ bool EcosKernelTestCampaign::run()
 
 	// non-destructive: due to the CSV header we can always manually recover
 	// from an accident (append mode)
-	ofstream results(results_filename, ios::out | ios::app);
+	ofstream results(filename_results("", "").c_str(), ios::out | ios::app); // FIXME one CSV for each variant/benchmark combination
 	if (!results.is_open()) {
-		log << "failed to open " << results_filename << endl;
+		log << "failed to open " << filename_results("", "") << endl;
 		return false;
 	}
 
@@ -118,9 +154,9 @@ bool EcosKernelTestCampaign::run()
 	boost::timer t;
 
 	// load trace
-	ifstream tracef(trace_filename);
+	ifstream tracef(filename_trace().c_str());
 	if (tracef.fail()) {
-		log << "couldn't open " << trace_filename << endl;
+		log << "couldn't open " << filename_trace() << endl;
 		return false;
 	}
 	ProtoIStream ps(&tracef);
@@ -131,7 +167,7 @@ bool EcosKernelTestCampaign::run()
 
 	// a map of addresses of ECC protected objects
 	MemoryMap mm;
-	EcosKernelTestCampaign::readMemoryMap(mm, mm_filename);
+	EcosKernelTestCampaign::readMemoryMap(mm, filename_memorymap().c_str());
 
 	// set of equivalence classes that need one (rather: eight, one for
 	// each bit in that byte) experiment to determine them all

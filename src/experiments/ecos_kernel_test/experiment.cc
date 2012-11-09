@@ -35,11 +35,6 @@ using namespace fail;
   #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
 
-
-char const * const mm_filename = "memory_map.txt";
-char const * const statename = "ecos_kernel_test.state";
-char const * const traceinfo_name = "trace_info.txt";
-
 #if PREREQUISITES
 bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
@@ -49,9 +44,9 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
 
 	// memory map serialization
-	ofstream mm(mm_filename, ios::out | ios::app);
+	ofstream mm(EcosKernelTestCampaign::filename_memorymap().c_str(), ios::out);
 	if (!mm.is_open()) {
-		log << "failed to open " << mm_filename << endl;
+		log << "failed to open " << EcosKernelTestCampaign::filename_memorymap() << endl;
 		return false;
 	}
 
@@ -118,7 +113,7 @@ bool EcosKernelTestExperiment::establishState() {
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(ECC_ERROR_CORRECTED)) << endl;
-	simulator.save(statename);
+	simulator.save(EcosKernelTestCampaign::filename_state());
 	assert(bp.getTriggerInstructionPointer() == ECOS_FUNC_ENTRY);
 	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
 
@@ -131,7 +126,7 @@ bool EcosKernelTestExperiment::performTrace() {
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
-	simulator.restore(statename);
+	simulator.restore(EcosKernelTestCampaign::filename_state());
 	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
 	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
 
@@ -140,7 +135,7 @@ bool EcosKernelTestExperiment::performTrace() {
 
 	// restrict memory access logging to injection target
 	MemoryMap mm;
-	EcosKernelTestCampaign::readMemoryMap(mm, mm_filename);
+	EcosKernelTestCampaign::readMemoryMap(mm, EcosKernelTestCampaign::filename_memorymap().c_str());
 
 	tp.restrictMemoryAddresses(&mm);
 
@@ -281,7 +276,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		    << " mem " << mem_addr << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
-		simulator.restore(statename);
+		simulator.restore(EcosKernelTestCampaign::filename_state(m_variant, m_benchmark));
 
 		// XXX debug
 /*
