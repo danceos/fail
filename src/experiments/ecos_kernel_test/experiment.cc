@@ -507,6 +507,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 #if !LOCAL
 	}
 #endif
+	return true;
 }
 #endif // PREREQUISITES
 
