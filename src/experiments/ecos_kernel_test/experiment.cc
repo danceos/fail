@@ -90,8 +90,6 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 	mm.flush();
 	mm.close();
 
-	// clean up simulator
-	simulator.clearListeners();
 	return true;
 }
 
@@ -118,8 +116,6 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 	assert(bp.getTriggerInstructionPointer() == addr_entry);
 	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
 
-	// clean up simulator
-	simulator.clearListeners();
 	return true;
 }
 
@@ -222,14 +218,11 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	// serialize trace to file
 	if (of.fail()) {
 		log << "failed to write " << tracefile << endl;
-		simulator.clearListeners(this);
 		return false;
 	}
 	of.close();
 	log << "trace written to " << tracefile << endl;
 	
-	// clean up simulator
-	simulator.clearListeners();
 	return true;
 }
 
@@ -340,7 +333,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
 
-			simulator.clearListeners();
 			continue;
 		}
 
