@@ -1,5 +1,6 @@
 #include "ElfReader.hpp"
 #include "elfinfo/elfinfo.h"
+#include "sal/SALConfig.hpp"
 #include <stdio.h>
 #include <cstdlib>
 
@@ -101,7 +102,7 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
 
 guest_address_t ElfReader::getAddressByName(const std::string& name) {
 				if( m_map.find(name) == m_map.end() ) {
-					return -1;
+					return ADDR_INV;
 				}else{
 					return m_map[name];
 				}
