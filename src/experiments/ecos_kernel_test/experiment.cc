@@ -16,6 +16,7 @@
 #include "sal/bochs/BochsRegister.hpp"
 #include "sal/bochs/BochsListener.hpp"
 #include "sal/Listener.hpp"
+#include "util/ElfReader.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -36,12 +37,12 @@ using namespace fail;
 #endif
 
 #if PREREQUISITES
-bool EcosKernelTestExperiment::retrieveGuestAddresses() {
+bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish) {
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
-	// run until 'ECOS_FUNC_FINISH' is reached
+	// run until func_finish is reached
 	BPSingleListener bp;
-	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
+	bp.setWatchInstructionPointer(addr_finish);
 
 	// memory map serialization
 	ofstream mm(EcosKernelTestCampaign::filename_memorymap().c_str(), ios::out);
@@ -82,7 +83,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 		}
 	}
 	assert(number_of_guest_events > 0);
-	log << "Breakpoint at 'ECOS_FUNC_FINISH' reached: created memory map (" << number_of_guest_events << " entries)" << endl;
+	log << "Breakpoint at func_finish reached: created memory map (" << number_of_guest_events << " entries)" << endl;
 	delete str;
 
 	// close serialized mm
@@ -94,7 +95,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses() {
 	return true;
 }
 
-bool EcosKernelTestExperiment::establishState() {
+bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_address_t addr_errors_corrected) {
 	log << "STEP 1: run until interesting function starts, and save state" << endl;
 
 	GuestListener g;
@@ -108,27 +109,27 @@ bool EcosKernelTestExperiment::establishState() {
 	}
 
 	BPSingleListener bp;
-	bp.setWatchInstructionPointer(ECOS_FUNC_ENTRY);
+	bp.setWatchInstructionPointer(addr_entry);
 	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
-	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(ECC_ERROR_CORRECTED)) << endl;
+	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(addr_errors_corrected)) << endl;
 	simulator.save(EcosKernelTestCampaign::filename_state());
-	assert(bp.getTriggerInstructionPointer() == ECOS_FUNC_ENTRY);
-	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
+	assert(bp.getTriggerInstructionPointer() == addr_entry);
+	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
 
 	// clean up simulator
 	simulator.clearListeners();
 	return true;
 }
 
-bool EcosKernelTestExperiment::performTrace() {
+bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_address_t addr_finish) {
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
 	simulator.restore(EcosKernelTestCampaign::filename_state());
 	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
-	assert(simulator.getRegisterManager().getInstructionPointer() == ECOS_FUNC_ENTRY);
+	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -148,7 +149,7 @@ bool EcosKernelTestExperiment::performTrace() {
 
 	// again, run until 'ECOS_FUNC_FINISH' is reached
 	BPSingleListener bp;
-	bp.setWatchInstructionPointer(ECOS_FUNC_FINISH);
+	bp.setWatchInstructionPointer(addr_finish);
 	simulator.addListener(&bp);
 
 	// on the way, count instructions // FIXME add SAL functionality for this?
@@ -236,9 +237,11 @@ bool EcosKernelTestExperiment::performTrace() {
 bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
-	// read trace info
+	// trace info
 	unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
-	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
+	// ELF symbol addresses
+	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
+	                addr_panic, addr_text_start, addr_text_end;
 
 	BPSingleListener bp;
 	
@@ -258,14 +261,23 @@ bool EcosKernelTestExperiment::faultInjection() {
 	}
 #else
 	// XXX debug
+	param.msg.set_variant("bitmap_CRC");
+	param.msg.set_benchmark("bin_sem0");
 	param.msg.set_instr_offset(7462);
 	//param.msg.set_instr_address(12345);
 	param.msg.set_mem_addr(44540);
 #endif
 
 	int id = param.getWorkloadID();
+	m_variant = param.msg.variant();
+	m_benchmark = param.msg.benchmark();
 	int instr_offset = param.msg.instr_offset();
 	int mem_addr = param.msg.mem_addr();
+
+	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
+		lowest_addr, highest_addr, m_variant, m_benchmark);
+	readELFSymbols(addr_entry, addr_finish, addr_test_output,
+		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end);
 
 	// for each job we're actually doing *8* experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
@@ -288,7 +300,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 */
 
 		// reaching finish() could happen before OR after FI
-		BPSingleListener func_finish(ECOS_FUNC_FINISH);
+		BPSingleListener func_finish(addr_finish);
 		simulator.addListener(&func_finish);
 
 		// no need to wait if offset is 0
@@ -350,8 +362,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addListener(&ev_trap);
 
 		// jump outside text segment
-		BPRangeListener ev_below_text(ANY_ADDR, ECOS_TEXT_START - 1);
-		BPRangeListener ev_beyond_text(ECOS_TEXT_END + 1, ANY_ADDR);
+		BPRangeListener ev_below_text(ANY_ADDR, addr_text_start - 1);
+		BPRangeListener ev_beyond_text(addr_text_end + 1, ANY_ADDR);
 		simulator.addListener(&ev_below_text);
 		simulator.addListener(&ev_beyond_text);
 
@@ -374,12 +386,14 @@ bool EcosKernelTestExperiment::faultInjection() {
 		//simulator.addListener(&ev_end);
 		
 		// eCos' test output function, which will show if the test PASSed or FAILed
-		BPSingleListener func_test_output(ECOS_FUNC_TEST_OUTPUT);
+		BPSingleListener func_test_output(addr_test_output);
 		simulator.addListener(&func_test_output);
 
 		// function called by ecc aspects, when an uncorrectable error is detected
-		BPSingleListener func_ecc_panic(ECC_FUNC_PANIC);
-		simulator.addListener(&func_ecc_panic);
+		BPSingleListener func_ecc_panic(addr_panic);
+		if (addr_panic != ADDR_INV) {
+			simulator.addListener(&func_ecc_panic);
+		}
 
 #if LOCAL && 0
 		// XXX debug
@@ -433,8 +447,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
 
 		// record error_corrected regardless of result
-		int32_t error_corrected = simulator.getMemoryManager().getByte(ECC_ERROR_CORRECTED);
-		result->set_error_corrected(error_corrected);
+		if (addr_errors_corrected != ADDR_INV) {
+			int32_t error_corrected = simulator.getMemoryManager().getByte(addr_errors_corrected);
+			result->set_error_corrected(error_corrected);
+		} else {
+			result->set_error_corrected(0);
+		}
 		
 		// record ecos_test_result
 		if ( (ecos_test_passed == true) && (ecos_test_failed == false) ) {
@@ -492,24 +510,59 @@ bool EcosKernelTestExperiment::faultInjection() {
 }
 #endif // PREREQUISITES
 
+bool EcosKernelTestExperiment::readELFSymbols(
+	fail::guest_address_t& entry,
+	fail::guest_address_t& finish,
+	fail::guest_address_t& test_output,
+	fail::guest_address_t& errors_corrected,
+	fail::guest_address_t& panic,
+	fail::guest_address_t& text_start,
+	fail::guest_address_t& text_end)
+{
+	ElfReader elfreader(EcosKernelTestCampaign::filename_elf(m_variant, m_benchmark).c_str());
+	entry            = elfreader.getAddressByName("cyg_start");
+	finish           = elfreader.getAddressByName("cyg_test_exit");
+	test_output      = elfreader.getAddressByName("cyg_test_output");
+	errors_corrected = elfreader.getAddressByName("errors_corrected");
+	panic            = elfreader.getAddressByName("_Z9ecc_panicv");
+	text_start       = elfreader.getAddressByName("_stext");
+	text_end         = elfreader.getAddressByName("_etext");
+
+	// it's OK if errors_corrected or ecc_panic are missing
+	if (entry == ADDR_INV || finish == ADDR_INV || test_output == ADDR_INV ||
+	    text_start == ADDR_INV || text_end == ADDR_INV) {
+		return false;
+	}
+	return true;
+}
+
 bool EcosKernelTestExperiment::run()
 {
 	log << "startup" << endl;
 
 	#if PREREQUISITES
+	log << "retrieving ELF symbol addresses ..." << endl;
+	guest_address_t entry, finish, test_output, errors_corrected,
+	                panic, text_start, text_end;
+	if (!readELFSymbols(entry, finish, test_output, errors_corrected,
+	               panic, text_start, text_end)) {
+		log << "failed, essential symbols are missing!" << endl;
+		simulator.terminate(1);
+	}
+
 	// step 0
-	if(retrieveGuestAddresses()) {
+	if(retrieveGuestAddresses(finish)) {
 		log << "STEP 0 finished: rebooting ..." << endl;
 		simulator.reboot();
 	} else { return false; }
 
 	// step 1
-	if(establishState()) {
+	if(establishState(entry, errors_corrected)) {
 		log << "STEP 1 finished: proceeding ..." << endl;
 	} else { return false; }
 
 	// step 2
-	if(performTrace()) {
+	if(performTrace(entry, finish)) {
 		log << "STEP 2 finished: terminating ..." << endl;
 	} else { return false; }
 

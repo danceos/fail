@@ -2,12 +2,17 @@ message EcosKernelTestProtoMsg {
 	// Input: experiment parameters
 	// (client executes 8 experiments, one for each bit at mem_addr)
 
+	// EDM/ERM variant
+	required string variant = 1;
+	// benchmark
+	required string benchmark = 2;
+
 	// FI at #instructions from experiment start
-	required int32 instr_offset = 1;
+	required int32 instr_offset = 3;
 	// the exact IP value at this point in time (from golden run)
-	optional int32 instr_address = 2; // for sanity checks
+	optional int32 instr_address = 4; // for sanity checks
 	// address of the byte to inject bit-flips
-	required int32 mem_addr = 3;
+	required int32 mem_addr = 5;
 
 	// ----------------------------------------------------
 
@@ -15,9 +20,9 @@ message EcosKernelTestProtoMsg {
 
 	// IP where we did the injection: for debugging purposes, must be identical
 	// to instr_address
-	optional int32 injection_ip = 4;
+	optional int32 injection_ip = 6;
 
-	repeated group Result = 5 {
+	repeated group Result = 7 {
 		// single experiment bit offset
 		required int32 bit_offset = 1;
 

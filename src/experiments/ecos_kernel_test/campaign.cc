@@ -57,8 +57,9 @@ bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned tim
 	return true;
 }
 
-bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr) {
-	ifstream file(filename_traceinfo().c_str());
+bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr,
+	const std::string& variant, const std::string& benchmark) {
+	ifstream file(filename_traceinfo(variant, benchmark).c_str());
 	if (!file.is_open()) {
 		cout << "failed to open " << filename_traceinfo() << endl;
 		return false;
@@ -125,6 +126,14 @@ std::string EcosKernelTestCampaign::filename_traceinfo(const std::string& varian
 std::string EcosKernelTestCampaign::filename_results(const std::string& variant, const std::string& benchmark)
 {
 	return dir_results + "/" + variant + "_" + benchmark + "_" + "results.csv";
+}
+
+std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_images + "/" + variant + "/" + benchmark + ".elf";
+	}
+	return "kernel.elf";
 }
 
 // equivalence class type: addr, [i1, i2]
@@ -355,6 +364,9 @@ bool EcosKernelTestCampaign::run()
 				// instantly enqueue job: that way the job clients can already
 				// start working in parallel
 				EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
+				// FIXME use correct variant/benchmark
+				d->msg.set_variant("");
+				d->msg.set_benchmark("");
 				// we pick the rightmost instruction in that interval
 				d->msg.set_instr_offset(current_ec.instr2);
 				d->msg.set_instr_address(current_ec.instr2_absolute);
@@ -460,7 +472,7 @@ bool EcosKernelTestCampaign::run()
 	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
 
 	// CSV header
-	results << "ec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tecos_test_result\tlatest_ip\terror_corrected\tdetails" << endl;
+	results << "variant\tbenchmark\tec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tecos_test_result\tlatest_ip\terror_corrected\tdetails" << endl;
 
 	// store no-effect "experiment" results
 	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
@@ -509,6 +521,8 @@ bool EcosKernelTestCampaign::run()
 		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
 			results
 			// repeated for all single experiments:
+			 << res->msg.variant() << "\t"
+			 << res->msg.benchmark() << "\t"
 			 << ec.instr1 << "\t"
 			 << ec.instr2 << "\t"
 			 << ec.instr2_absolute << "\t"
