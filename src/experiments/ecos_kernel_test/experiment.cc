@@ -137,8 +137,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	char const *tracefile = "trace.tc";
-	ofstream of(tracefile);
+	ofstream of(EcosKernelTestCampaign::filename_trace().c_str());
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
@@ -217,11 +216,11 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// serialize trace to file
 	if (of.fail()) {
-		log << "failed to write " << tracefile << endl;
+		log << "failed to write " << EcosKernelTestCampaign::filename_trace() << endl;
 		return false;
 	}
 	of.close();
-	log << "trace written to " << tracefile << endl;
+	log << "trace written to " << EcosKernelTestCampaign::filename_trace() << endl;
 	
 	return true;
 }
