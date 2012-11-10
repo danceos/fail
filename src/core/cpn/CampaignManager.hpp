@@ -20,18 +20,21 @@ namespace fail {
  */
 class CampaignManager {
 private:
-	JobServer m_jobserver;
+	JobServer *m_jobserver;
 	Campaign* m_currentCampaign;
 public:
-	CampaignManager() { }
+	CampaignManager() : m_jobserver(0) { }
 	/**
 	 * Executes a user campaign
 	 */
 	bool runCampaign(Campaign* c)
 	{ 
+		if (!m_jobserver) {
+			m_jobserver = new JobServer;
+		}
 		m_currentCampaign = c;
 		bool ret = c->run(); 
-		m_jobserver.done(); 
+		m_jobserver->done();
 		return ret;
 	}
 	/**
@@ -49,21 +52,21 @@ public:
 	 * A Parameter set includes space for results.
 	 * @param exp A pointer to a ExperimentData set.
 	 */
-	void addParam(ExperimentData* exp) { m_jobserver.addParam(exp); }
+	void addParam(ExperimentData* exp) { m_jobserver->addParam(exp); }
 	/**
 	 * A user campaign can request a single result (blocking) from the queue.
 	 * @return Pointer to a parameter object with filled result data
 	 * @see addParam()
 	 */
-	ExperimentData* getDone() { return m_jobserver.getDone(); }
+	ExperimentData* getDone() { return m_jobserver->getDone(); }
 	/**
 	 * Signal, that there will not come any further parameter sets.
 	 */
-	void noMoreParameters() { m_jobserver.setNoMoreExperiments(); }
+	void noMoreParameters() { m_jobserver->setNoMoreExperiments(); }
 	 /**
 	 * User campaign has finished.
 	 */
-	void done() { m_jobserver.done(); }
+	void done() { m_jobserver->done(); }
 	/**
 	 * Wait actively, until all experiments expired.
 	 */
