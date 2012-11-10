@@ -24,6 +24,7 @@ private:
 	Campaign* m_currentCampaign;
 public:
 	CampaignManager() : m_jobserver(0) { }
+	~CampaignManager() { delete m_jobserver; }
 	/**
 	 * Executes a user campaign
 	 */
