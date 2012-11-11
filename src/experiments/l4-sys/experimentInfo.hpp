@@ -19,7 +19,6 @@
 #define L4SYS_CORRECT_OUTPUT	"golden.out"
 
 // flags
-#define HEADLESS_EXPERIMENT
 //  0 - preparation complete
 // >0 - next step to execute
 #define PREPARATION_STEP		0

@@ -73,8 +73,12 @@ private:
 	void logInjection(fail::Logger &log, const L4SysExperimentData &param);
 	/**
 	 * Proceeds by one single instruction.
+	 * @param preserveAddressSpace if set, the address space of the next instruction
+	 *                             must match with the current address space
+	 *                             (for example, this is important when debugging in the kernel)
+	 * @returns the listener that was triggered, in case there were more than one
 	 */
-	void singleStep();
+	fail::BaseListener *singleStep(bool preserveAddressSpace);
 	/**
 	 * Injects a new instruction into the Bochs instruction stream and restores the previous one
 	 * @param oldInstr address of the instruction to be replaced

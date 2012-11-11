@@ -122,11 +122,13 @@ void L4SysExperiment::logInjection(Logger &log,
 			<< ")" << " bit " << bit_offset << endl;
 }
 
-void L4SysExperiment::singleStep() {
-	BPSingleListener singlestepping_event(ANY_ADDR, L4SYS_ADDRESS_SPACE);
+BaseListener *L4SysExperiment::singleStep(bool preserveAddressSpace) {
+	address_t aspace = (preserveAddressSpace ? L4SYS_ADDRESS_SPACE : ANY_ADDR);
+	BPSingleListener singlestepping_event(ANY_ADDR, aspace);
 	simulator.addListener(&singlestepping_event);
-	waitIOOrOther(false);
+	BaseListener *ev = waitIOOrOther(false);
 	simulator.removeListener(&singlestepping_event);
+	return ev;
 }
 
 void L4SysExperiment::injectInstruction(bxInstruction_c *oldInstr, bxInstruction_c *newInstr) {
@@ -136,7 +138,7 @@ void L4SysExperiment::injectInstruction(bxInstruction_c *oldInstr, bxInstruction
 	memcpy(oldInstr, newInstr, sizeof(bxInstruction_c));
 
 	// execute the faulty instruction, then return
-	singleStep();
+	singleStep(false);
 
 	//restore the old instruction
 	memcpy(oldInstr, &backupInstr, sizeof(bxInstruction_c));
@@ -461,7 +463,7 @@ bool L4SysExperiment::run() {
 
 			if (opcount == 0) {
 				// try the next instruction
-				singleStep();
+				singleStep(true);
 			} else {
 				// assign the necessary variables
 				rnd = rand() % opcount;
@@ -527,24 +529,43 @@ bool L4SysExperiment::run() {
 			rm.getRegister(bochs_reg)->setData(newdata);
 		}
 
+		/* prepare for the case that the kernel panics and never
+		   switches back to this thread by introducing a scheduling timeout
+		   of 10 seconds */
+		TimerListener schedTimeout(10000);
+		simulator.addListener(&schedTimeout);
 		// execute the instruction
-		singleStep();
+		BaseListener *triggeredListener = singleStep(true);
+		simulator.removeListener(&schedTimeout);
 
-		// restore
-		if (rnd == 0) {
-			// output register - do the fault injection here
-			if (exchg_reg >= 0) {
-				// write the result into the wrong local register
-				regdata_t newdata = rm.getRegister(bochs_reg)->getData();
-				rm.getRegister(exchg_reg)->setData(newdata);
+		if (triggeredListener != &schedTimeout) {
+			// restore the register if we are still in the thread
+			if (rnd == 0) {
+				// output register - do the fault injection here
+				if (exchg_reg >= 0) {
+					// write the result into the wrong local register
+					regdata_t newdata = rm.getRegister(bochs_reg)->getData();
+					rm.getRegister(exchg_reg)->setData(newdata);
+				}
+				// otherwise, just assume it is stored in an unused register
 			}
-			// otherwise, just assume it is stored in an unused register
-		}
-		// restore the actual value of the register
-		// in reality, it would never have been overwritten
-		rm.getRegister(bochs_reg)->setData(data);
+			// restore the actual value of the register
+			// in reality, it would never have been overwritten
+			rm.getRegister(bochs_reg)->setData(data);
+		} else {
+			// otherwise we just assume this thread is never scheduled again
+			log << "Result TIMEOUT" << endl;
+			param.msg.set_resulttype(param.msg.TIMEOUT);
+			param.msg.set_resultdata(
+					simulator.getRegisterManager().getInstructionPointer());
+			param.msg.set_output(sanitised(output.c_str()));
+			param.msg.set_details("Timed out immediately after injecting");
 
-		// and log the injection
+			m_jc.sendResult(param);
+			simulator.terminate(0);
+		}
+
+		// log the injection
 		logInjection(log, param);
 
 	} else if (exp_type == param.msg.ALUINSTR) {
@@ -555,7 +576,7 @@ bool L4SysExperiment::run() {
 		while (!aluInstrObject.isALUInstruction(
 		       currInstr = simulator.getCurrentInstruction()) &&
 			   simulator.getRegisterManager().getInstructionPointer() != L4SYS_FUNC_EXIT) {
-			singleStep();
+			singleStep(true);
 		}
 
 		if (simulator.getRegisterManager().getInstructionPointer() == L4SYS_FUNC_EXIT) {
@@ -622,27 +643,27 @@ bool L4SysExperiment::run() {
 	 */
 	if (ev == &ev_done) {
 		if (strcmp(output.c_str(), golden_run.c_str()) == 0) {
-			log << dec << "Result DONE" << endl;
+			log << "Result DONE" << endl;
 			param.msg.set_resulttype(param.msg.DONE);
 		} else {
-			log << dec << "Result WRONG" << endl;
+			log << "Result WRONG" << endl;
 			param.msg.set_resulttype(param.msg.WRONG);
 			param.msg.set_output(sanitised(output.c_str()));
 		}
 	} else if (ev == &ev_incomplete) {
-		log << dec << "Result INCOMPLETE" << endl;
+		log << "Result INCOMPLETE" << endl;
 		param.msg.set_resulttype(param.msg.INCOMPLETE);
 		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
 		param.msg.set_output(sanitised(output.c_str()));
 	} else if (ev == &ev_timeout) {
-		log << hex << "Result TIMEOUT" << endl;
+		log << "Result TIMEOUT" << endl;
 		param.msg.set_resulttype(param.msg.TIMEOUT);
 		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
 		param.msg.set_output(sanitised(output.c_str()));
 	} else {
-		log << dec << "Result WTF?" << endl;
+		log << "Result WTF?" << endl;
 		param.msg.set_resulttype(param.msg.UNKNOWN);
 		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
@@ -657,9 +678,8 @@ bool L4SysExperiment::run() {
 	simulator.clearListeners();
 	m_jc.sendResult(param);
 #endif
-#ifdef HEADLESS_EXPERIMENT
+
 	simulator.terminate(0);
-#endif
 
 	// experiment successfully conducted
 	return true;
