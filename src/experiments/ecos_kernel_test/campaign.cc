@@ -201,6 +201,8 @@ bool EcosKernelTestCampaign::run()
 
 			// instruction counter within trace
 			unsigned instr = 0;
+			// "rightmost" instr where we did a FI experiment
+			unsigned instr_rightmost = 0;
 
 			// fill open_ecs with one EC for every address
 			for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
@@ -247,6 +249,7 @@ bool EcosKernelTestCampaign::run()
 						// a sequence ending with READ: we need to do one experiment to
 						// cover it completely
 						add_experiment_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
+						instr_rightmost = instr2;
 					} else if (ev.accesstype() == ev.WRITE) {
 						// a sequence ending with WRITE: an injection anywhere here
 						// would have no effect.
@@ -267,12 +270,17 @@ bool EcosKernelTestCampaign::run()
 				address_t data_address = lastuse_it->first;
 				int instr1 = lastuse_it->second;
 
+#if 0
 				// Why -1?  In most cases it does not make sense to inject before the
 				// very last instruction, as we won't execute it anymore.  This *only*
 				// makes sense if we also inject into parts of the result vector.  This
 				// is not the case in this experiment, and with -1 we'll get a result
 				// comparable to the non-pruned campaign.
 				int instr2 = instr - 1;
+#else
+				// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
+				int instr2 = instr_rightmost;
+#endif
 				int instr_absolute = 0; // unknown
 
 				// zero-sized?  skip.
@@ -299,6 +307,7 @@ bool EcosKernelTestCampaign::run()
 			m_log << variant << "/" << benchmark
 			      << " exp " << (count_exp - local_count_exp) << " (" << (count_exp_jobs - local_count_exp_jobs) << " jobs)"
 				  << " known " << (count_known - local_count_known) << " (" << (count_known_jobs - local_count_known_jobs) << " jobs)"
+				  << " faultspace cutoff @ " << instr_rightmost << " out of " << instr
 				  << endl;
 		}
 	}
