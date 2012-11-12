@@ -25,4 +25,6 @@ else(${COMPILER} STREQUAL "clang")
   message(FATAL_ERROR "COMPILER must be exactly one of clang/gcc/ag++.  If unsure, use 'ag++'.")
 endif(${COMPILER} STREQUAL "clang")
 
+add_definitions(-D_FILE_OFFSET_BITS=64)
+
 message(STATUS "[${PROJECT_NAME}] Compiler: ${CMAKE_C_COMPILER}/${CMAKE_CXX_COMPILER}" )
