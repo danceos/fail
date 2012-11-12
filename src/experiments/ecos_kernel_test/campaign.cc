@@ -3,12 +3,9 @@
 #include <vector>
 #include <map>
 
-#include <boost/timer.hpp>
-
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
 #include "cpn/CampaignManager.hpp"
-#include "util/Logger.hpp"
 #include "util/ProtoStream.hpp"
 #include "util/MemoryMap.hpp"
 
@@ -61,7 +58,7 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 	const std::string& variant, const std::string& benchmark) {
 	ifstream file(filename_traceinfo(variant, benchmark).c_str());
 	if (!file.is_open()) {
-		cout << "failed to open " << filename_traceinfo() << endl;
+		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
 		return false;
 	}
 
@@ -125,7 +122,10 @@ std::string EcosKernelTestCampaign::filename_traceinfo(const std::string& varian
 
 std::string EcosKernelTestCampaign::filename_results(const std::string& variant, const std::string& benchmark)
 {
-	return dir_results + "/" + variant + "-" + benchmark + "-" + "results.csv";
+	if (variant.size() && benchmark.size()) {
+		return dir_results + "/" + variant + "-" + benchmark + "-" + "results.csv";
+	}
+	return "results.csv";
 }
 
 std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, const std::string& benchmark)
@@ -140,408 +140,357 @@ std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, con
 // addr: byte to inject a bit-flip into
 // [i1, i2]: interval of instruction numbers, counted from experiment
 //           begin
-struct equivalence_class {
-	address_t data_address;
-	int instr1, instr2;
-	address_t instr2_absolute; // FIXME we could record them all here
+typedef std::map<address_t, int> AddrLastaccessMap;
+
+char const *variants[] = {
+	"bitmap_vanilla",
+	"bitmap_SUM+DMR",
+	"bitmap_CRC",
+	"bitmap_CRC+DMR",
+	"bitmap_TMR",
+	// "bitmap_Hamming"
+	0
+};
+
+char const *benchmarks[] = {
+	"bin_sem0", "bin_sem1", "bin_sem2", "bin_sem3", "clock1", "clockcnv",
+	"clocktruth", "cnt_sem1", "except1", "flag1", "kill", "mqueue1", "mutex1",
+	"mutex2", "mutex3", "release", "sched1", "sync2", "sync3", "thread0",
+	"thread1", "thread2",
+	0
 };
 
 bool EcosKernelTestCampaign::run()
 {
-	Logger log("EcosKernelTest Campaign");
+	m_log << "startup" << endl;
 
-	// non-destructive: due to the CSV header we can always manually recover
-	// from an accident (append mode)
-	ofstream results(filename_results("", "").c_str(), ios::out | ios::app); // FIXME one CSV for each variant/benchmark combination
-	if (!results.is_open()) {
-		log << "failed to open " << filename_results("", "") << endl;
+	if (!init_results()) {
 		return false;
 	}
 
-	log << "startup" << endl;
+	for (int variant_nr = 0; variants[variant_nr]; ++variant_nr) {
+		char const *variant = variants[variant_nr];
+		for (int benchmark_nr = 0; benchmarks[benchmark_nr]; ++benchmark_nr) {
+			char const *benchmark = benchmarks[benchmark_nr];
 
-	boost::timer t;
+			// local copies of experiment/job count (to calculate differences)
+			int local_count_exp = count_exp, local_count_exp_jobs = count_exp_jobs,
+				local_count_known = count_known, local_count_known_jobs = count_known_jobs;
 
-	// load trace
-	ifstream tracef(filename_trace().c_str());
-	if (tracef.fail()) {
-		log << "couldn't open " << filename_trace() << endl;
-		return false;
-	}
-	ProtoIStream ps(&tracef);
+			// load trace
+			ifstream tracef(filename_trace(variant, benchmark).c_str());
+			if (tracef.fail()) {
+				m_log << "couldn't open " << filename_trace(variant, benchmark) << endl;
+				return false;
+			}
+			ProtoIStream ps(&tracef);
 
-	// read trace info
-	unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
-	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
+			// read trace info
+			unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
+			EcosKernelTestCampaign::readTraceInfo(instr_counter,
+				estimated_timeout, lowest_addr, highest_addr, variant, benchmark);
 
-	// a map of addresses of ECC protected objects
-	MemoryMap mm;
-	EcosKernelTestCampaign::readMemoryMap(mm, filename_memorymap().c_str());
+			// a map of addresses of ECC protected objects
+			MemoryMap mm;
+			EcosKernelTestCampaign::readMemoryMap(mm,
+				filename_memorymap(variant, benchmark).c_str());
 
-	// set of equivalence classes that need one (rather: eight, one for
-	// each bit in that byte) experiment to determine them all
-	vector<equivalence_class> ecs_need_experiment;
-	// set of equivalence classes that need no experiment, because we know
-	// they'd be identical to the golden run
-	vector<equivalence_class> ecs_no_effect;
+			// map for keeping one "open" EC for every address
+			// (maps injection data address => equivalence class)
+			AddrLastaccessMap open_ecs;
+
+			// instruction counter within trace
+			unsigned instr = 0;
+
+			// fill open_ecs with one EC for every address
+			for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
+				open_ecs[*it] = instr;
+			}
+
+			// absolute address of current trace instruction
+			address_t instr_absolute = 0;
+
+			Trace_Event ev;
+			// for every event in the trace ...
+			while (ps.getNext(&ev) && instr < instr_counter) {
+				// instruction events just get counted
+				if (!ev.has_memaddr()) {
+					// new instruction
+					instr++;
+					instr_absolute = ev.ip();
+					continue;
+				}
+
+				// for each single byte in this memory access ...
+				for (address_t data_address = ev.memaddr();
+					data_address < ev.memaddr() + ev.width();
+					++data_address) {
+					// skip accesses to data outside our map of interesting addresses
+					AddrLastaccessMap::iterator lastuse_it;
+					if ((lastuse_it = open_ecs.find(data_address)) == open_ecs.end()) {
+						continue;
+					}
+					int instr1 = lastuse_it->second;
+					int instr2 = instr;
+
+					// skip zero-sized intervals: these can occur when an instruction
+					// accesses a memory location more than once (e.g., INC, CMPXCHG)
+					if (instr1 > instr2) {
+						continue;
+					}
+
+					// we now have an interval-terminating R/W event to the memaddr
+					// we're currently looking at; the EC is defined by
+					// data_address [instr1, instr2] (instr_absolute)
+
+					if (ev.accesstype() == ev.READ) {
+						// a sequence ending with READ: we need to do one experiment to
+						// cover it completely
+						add_experiment_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
+					} else if (ev.accesstype() == ev.WRITE) {
+						// a sequence ending with WRITE: an injection anywhere here
+						// would have no effect.
+						add_known_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
+					} else {
+						m_log << "WAT" << endl;
+					}
+
+					// next interval must start at next instruction; the aforementioned
+					// skipping mechanism wouldn't work otherwise
+					lastuse_it->second = instr2 + 1;
+				}
+			}
+
+			// close all open intervals (right end of the fault-space)
+			for (AddrLastaccessMap::iterator lastuse_it = open_ecs.begin();
+				 lastuse_it != open_ecs.end(); ++lastuse_it) {
+				address_t data_address = lastuse_it->first;
+				int instr1 = lastuse_it->second;
+
+				// Why -1?  In most cases it does not make sense to inject before the
+				// very last instruction, as we won't execute it anymore.  This *only*
+				// makes sense if we also inject into parts of the result vector.  This
+				// is not the case in this experiment, and with -1 we'll get a result
+				// comparable to the non-pruned campaign.
+				int instr2 = instr - 1;
+				int instr_absolute = 0; // unknown
+
+				// zero-sized?  skip.
+				if (instr1 > instr2) {
+					continue;
+				}
 
 #if 0
-	equivalence_class current_ec;
+				// the run continues after the FI window, so do this experiment
+				// XXX this creates at least one experiment for *every* bit!
+				//     fix: full trace, limited FI window
 
-	// map for efficient access when results come in
-	map<EcosKernelTestExperimentData *, unsigned> experiment_ecs;
-	// experiment count
-	int count = 0;
-
-	// XXX do it the other way around: iterate over trace, search addresses
-	//   -> one "open" EC for every address
-	// for every injection address ...
-	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
-		//cerr << ".";
-		address_t data_address = *it;
-		current_ec.instr1 = 0;
-		int instr = 0;
-		address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
-		Trace_Event ev;
-		ps.reset();
-
-		// for every section in the trace between subsequent memory
-		// accesses to that address ...
-		while (ps.getNext(&ev) && instr < OOSTUBS_NUMINSTR) {
-			// instruction events just get counted
-			if (!ev.has_memaddr()) {
-				// new instruction
-				instr++;
-				instr_absolute = ev.ip();
-				continue;
-
-			// skip accesses to other data
-			// FIXME again, do it the other way around, and use mm.isMatching()!
-			} else if (ev.memaddr() + ev.width() <= data_address
-			        || ev.memaddr() > data_address) {
-				continue;
-
-			// skip zero-sized intervals: these can
-			// occur when an instruction accesses a
-			// memory location more than once
-			// (e.g., INC, CMPXCHG)
-			} else if (current_ec.instr1 > instr) {
-				continue;
-			}
-
-			// we now have an interval-terminating R/W
-			// event to the memaddr we're currently looking
-			// at:
-
-			// complete the equivalence interval
-			current_ec.instr2 = instr;
-			current_ec.instr2_absolute = instr_absolute;
-			current_ec.data_address = data_address;
-
-			if (ev.accesstype() == ev.READ) {
-				// a sequence ending with READ: we need
-				// to do one experiment to cover it
-				// completely
 				ecs_need_experiment.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-				cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-
-				// instantly enqueue job: that way the job clients can already
-				// start working in parallel
-				EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
-				// we pick the rightmost instruction in that interval
-				d->msg.set_instr_offset(current_ec.instr2);
-				d->msg.set_instr_address(current_ec.instr2_absolute);
-				d->msg.set_mem_addr(current_ec.data_address);
-
-				// store index into ecs_need_experiment
-				experiment_ecs[d] = ecs_need_experiment.size() - 1;
-
-				campaignmanager.addParam(d);
-				++count;
-			} else if (ev.accesstype() == ev.WRITE) {
-				// a sequence ending with WRITE: an
-				// injection anywhere here would have
-				// no effect.
-				ecs_no_effect.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-				cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-			} else {
-				log << "WAT" << endl;
-			}
-
-			// next interval must start at next
-			// instruction; the aforementioned
-			// skipping mechanism wouldn't work
-			// otherwise
-			current_ec.instr1 = instr + 1;
-		}
-
-		// close the last interval:
-		// Why -1?  In most cases it does not make sense to inject before the
-		// very last instruction, as we won't execute it anymore.  This *only*
-		// makes sense if we also inject into parts of the result vector.  This
-		// is not the case in this experiment, and with -1 we'll get a
-		// result comparable to the non-pruned campaign.
-		// XXX still true for checksum-oostubs?
-		current_ec.instr2 = instr - 1;
-		current_ec.instr2_absolute = 0; // unknown
-		current_ec.data_address = data_address;
-		// zero-sized?  skip.
-		if (current_ec.instr1 > current_ec.instr2) {
-			continue;
-		}
-		// as the experiment ends, this byte is a "don't care":
-		ecs_no_effect.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-		cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-	}
+				add_experiment_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
 #else
-	// map for efficient access when results come in
-	map<EcosKernelTestExperimentData *, unsigned> experiment_ecs;
-	// map for keeping one "open" EC for every address
-	map<address_t, equivalence_class> open_ecs;
-	// experiment count
-	unsigned count = 0;
-
-	// instruction counter within trace
-	unsigned instr = 0;
-
-	// fill open_ecs with one EC for every address
-	for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
-		open_ecs[*it].instr1 = instr;
-	}
-
-	// absolute address of current trace instruction
-	address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
-
-	Trace_Event ev;
-	// for every event in the trace ...
-	while (ps.getNext(&ev) && instr < instr_counter) {
-		// instruction events just get counted
-		if (!ev.has_memaddr()) {
-			// new instruction
-			instr++;
-			instr_absolute = ev.ip();
-			continue;
-		}
-
-		// for each single byte in this memory access ...
-		for (address_t data_address = ev.memaddr(); data_address < ev.memaddr() + ev.width();
-			++data_address) {
-			// skip accesses to data outside our map of interesting addresses
-			map<address_t, equivalence_class>::iterator current_ec_it;
-			if ((current_ec_it = open_ecs.find(data_address)) == open_ecs.end()) {
-				continue;
-			}
-			equivalence_class& current_ec = current_ec_it->second;
-
-			// skip zero-sized intervals: these can occur when an instruction
-			// accesses a memory location more than once (e.g., INC, CMPXCHG)
-			if (current_ec.instr1 > instr) {
-				continue;
-			}
-
-			// we now have an interval-terminating R/W event to the memaddr
-			// we're currently looking at:
-
-			// complete the equivalence interval
-			current_ec.instr2 = instr;
-			current_ec.instr2_absolute = instr_absolute;
-			current_ec.data_address = data_address;
-
-			if (ev.accesstype() == ev.READ) {
-				// a sequence ending with READ: we need to do one experiment to
-				// cover it completely
-				ecs_need_experiment.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-				cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
+				// as the experiment ends, this byte is a "don't care":
+				add_known_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
 #endif
-
-				// instantly enqueue job: that way the job clients can already
-				// start working in parallel
-				EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
-				// FIXME use correct variant/benchmark
-				d->msg.set_variant("");
-				d->msg.set_benchmark("");
-				// we pick the rightmost instruction in that interval
-				d->msg.set_instr_offset(current_ec.instr2);
-				d->msg.set_instr_address(current_ec.instr2_absolute);
-				d->msg.set_mem_addr(current_ec.data_address);
-
-				// store index into ecs_need_experiment
-				experiment_ecs[d] = ecs_need_experiment.size() - 1;
-
-				campaignmanager.addParam(d);
-				++count;
-			} else if (ev.accesstype() == ev.WRITE) {
-				// a sequence ending with WRITE: an injection anywhere here
-				// would have no effect.
-				ecs_no_effect.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-				cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-			} else {
-				log << "WAT" << endl;
 			}
+			// conserve some memory
+			open_ecs.clear();
 
-			// next interval must start at next instruction; the aforementioned
-			// skipping mechanism wouldn't work otherwise
-			current_ec.instr1 = instr + 1;
+			// progress report
+			m_log << variant << "/" << benchmark
+			      << " exp " << (count_exp - local_count_exp) << " (" << (count_exp_jobs - local_count_exp_jobs) << " jobs)"
+				  << " known " << (count_known - local_count_known) << " (" << (count_known_jobs - local_count_known_jobs) << " jobs)"
+				  << endl;
 		}
 	}
-
-	// close all open intervals (right end of the fault-space)
-	for (map<address_t, equivalence_class>::iterator current_ec_it = open_ecs.begin();
-	     current_ec_it != open_ecs.end(); ++current_ec_it) {
-		address_t data_address = current_ec_it->first;
-		equivalence_class& current_ec = current_ec_it->second;
-
-		// Why -1?  In most cases it does not make sense to inject before the
-		// very last instruction, as we won't execute it anymore.  This *only*
-		// makes sense if we also inject into parts of the result vector.  This
-		// is not the case in this experiment, and with -1 we'll get a result
-		// comparable to the non-pruned campaign.
-		// XXX still true for checksum-oostubs?
-
-		current_ec.instr2 = instr - 1;
-		current_ec.instr2_absolute = 0; // unknown
-		current_ec.data_address = data_address;
-
-		// zero-sized?  skip.
-		if (current_ec.instr1 > current_ec.instr2) {
-			continue;
-		}
-
-#if 0
-		// the run continues after the FI window, so do this experiment
-		// XXX this creates at least one experiment for *every* bit!
-		//     fix: full trace, limited FI window
-		ecs_need_experiment.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-		cerr << dec << "EX " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-
-		// FIXME copy/paste, encapsulate this:
-		// instantly enqueue job: that way the job clients can already start
-		// working in parallel
-		EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
-		// we pick the rightmost instruction in that interval
-		d->msg.set_instr_offset(current_ec.instr2);
-		//d->msg.set_instr_address(current_ec.instr2_absolute); // unknown!
-		d->msg.set_mem_addr(current_ec.data_address);
-
-		// store index into ecs_need_experiment
-		experiment_ecs[d] = ecs_need_experiment.size() - 1;
-
-		campaignmanager.addParam(d);
-		++count;
-#else
-		// as the experiment ends, this byte is a "don't care":
-		ecs_no_effect.push_back(current_ec);
-#ifdef PRUNING_DEBUG_OUTPUT
-		cerr << dec << "NE " << current_ec.instr1 << " " << current_ec.instr2 << " " << current_ec.data_address << "\n";
-#endif
-#endif
-	}
-	// conserve some memory
-	open_ecs.clear();
-#endif
 
 	campaignmanager.noMoreParameters();
-	log << "done enqueueing parameter sets (" << count << ")." << endl;
-
-	log << "equivalence classes generated:"
-	    << " need_experiment = " << ecs_need_experiment.size()
-	    << " no_effect = " << ecs_no_effect.size() << endl;
-
-	// statistics
-	unsigned long num_dumb_experiments = 0;
-	for (vector<equivalence_class>::const_iterator it = ecs_need_experiment.begin();
-	     it != ecs_need_experiment.end(); ++it) {
-		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
-	}
-	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
-	     it != ecs_no_effect.end(); ++it) {
-		num_dumb_experiments += (*it).instr2 - (*it).instr1 + 1;
-	}
-	log << "pruning: reduced " << num_dumb_experiments * 8 <<
-	       " experiments to " << ecs_need_experiment.size() * 8 << endl;
-
-	// CSV header
-	results << "variant\tbenchmark\tec_instr1\tec_instr2\tec_instr2_absolute\tec_data_address\tbitnr\tbit_width\tresulttype\tecos_test_result\tlatest_ip\terror_corrected\tdetails" << endl;
-
-	// store no-effect "experiment" results
-	for (vector<equivalence_class>::const_iterator it = ecs_no_effect.begin();
-	     it != ecs_no_effect.end(); ++it) {
-		results
-		 << (*it).instr1 << "\t"
-		 << (*it).instr2 << "\t"
-		 << (*it).instr2_absolute << "\t" // incorrect in all but one case!
-		 << (*it).data_address << "\t"
-		 << "0\t" // this entry starts at bit 0 ...
-		 << "8\t" // ... and is 8 bits wide
-		 << "1\t"
-		 << "1\t" // dummy value (PASS): we didn't do any real experiments
-		 << "99\t" // dummy value: we didn't do any real experiments
-		 << "0\t\n";
-	}
+	m_log << "total"
+		  << " exp " << count_exp << " (" << count_exp_jobs << " jobs)"
+		  << " known " << count_known << " (" << count_known_jobs << " jobs)"
+		  << endl;
 
 	// collect results
 	EcosKernelTestExperimentData *res;
-	int rescount = 0;
 	while ((res = static_cast<EcosKernelTestExperimentData *>(campaignmanager.getDone()))) {
-		rescount++;
-
-		map<EcosKernelTestExperimentData *, unsigned>::iterator it =
-			experiment_ecs.find(res);
-		if (it == experiment_ecs.end()) {
-			results << "WTF, didn't find res!" << endl;
-			log << "WTF, didn't find res!" << endl;
+		// sanity check
+		if (res->msg.result_size() != 8) {
+			m_log << "wtf, result_size = " << res->msg.result_size() << endl;
 			continue;
 		}
-		equivalence_class &ec = ecs_need_experiment[it->second];
 
-		// sanity check
-		if (ec.instr2 != res->msg.instr_offset()) {
-			results << "ec.instr2 != instr_offset" << endl;
-			log << "ec.instr2 != instr_offset" << endl;
-		}
-		if (res->msg.result_size() != 8) {
-			results << "result_size " << res->msg.result_size()
-			        << " instr2 " << ec.instr2
-			        << " data_address " << ec.data_address << endl;
-			log << "result_size " << res->msg.result_size() << endl;
-		}
+		EcosKernelTestProtoMsg_Result const *prev_singleres = 0;
+		int first_bit = 0, bit_width = 0;
 
 		// one job contains 8 experiments
 		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
-			results
-			// repeated for all single experiments:
-			 << res->msg.variant() << "\t"
-			 << res->msg.benchmark() << "\t"
-			 << ec.instr1 << "\t"
-			 << ec.instr2 << "\t"
-			 << ec.instr2_absolute << "\t"
-			 << ec.data_address << "\t"
-			// individual results:
-			 << res->msg.result(idx).bit_offset() << "\t"
-			 << "1\t" // 1 bit wide
-			 << res->msg.result(idx).resulttype() << "\t"
-			 << res->msg.result(idx).ecos_test_result() << "\t"
-			 << res->msg.result(idx).latest_ip() << "\t"
-			 << res->msg.result(idx).error_corrected() << "\t"
-			 << res->msg.result(idx).details() << "\n";
+			EcosKernelTestProtoMsg_Result const *cur_singleres = &res->msg.result(idx);
+			if (!prev_singleres) {
+				prev_singleres = cur_singleres;
+				first_bit = cur_singleres->bit_offset();
+				bit_width = 1;
+				continue;
+			}
+			// compatible?  merge.
+			if (cur_singleres->bit_offset() == first_bit + bit_width // neighbor?
+			 && prev_singleres->resulttype() == cur_singleres->resulttype()
+			 && prev_singleres->latest_ip() == cur_singleres->latest_ip()
+			 && prev_singleres->ecos_test_result() == cur_singleres->ecos_test_result()
+			 && prev_singleres->error_corrected() == cur_singleres->error_corrected()
+			 && prev_singleres->details() == cur_singleres->details()) {
+				bit_width++;
+				continue;
+			}
+			add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+				res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
+				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
+				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details());
+			first_bit = cur_singleres->bit_offset();
+			bit_width = 1;
 		}
-		//delete res;	// currently racy if jobs are reassigned
-
+		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
+			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
+			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details());
+		delete res;
 	}
-	results.close();
-	log << "done.  sent " << count << " received " << rescount << endl;
-	log << "elapsed: " << t.elapsed() << "s" << endl;
+	finalize_results();
+	m_log << "done." << endl;
 
 	return true;
+}
+
+bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const std::string& benchmark,
+	address_t data_address, int instr1, int instr2, address_t instr_absolute)
+{
+	if (check_available(data_address, instr2)) {
+		return false;
+	}
+
+	count_exp_jobs++;
+	count_exp += 8;
+
+	// enqueue job
+#if 0
+	EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
+	d->msg.set_variant(variant);
+	d->msg.set_benchmark(benchmark);
+	d->msg.set_instr1_offset(instr1);
+	d->msg.set_instr2_offset(instr2);
+	d->msg.set_instr2_address(instr_absolute);
+	d->msg.set_mem_addr(data_address);
+	campaignmanager.addParam(d);
+#endif
+
+	return true;
+}
+
+bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std::string& benchmark,
+	address_t data_address, int instr1, int instr2, address_t instr_absolute)
+{
+	if (check_available(data_address, instr2)) {
+		return false;
+	}
+
+	count_known_jobs++;
+	count_known += 8;
+
+#if 0
+	add_result(variant, benchmark, instr1, instr2, instr_absolute, data_address,
+		0, 8, // bitnr, bit_width
+		1, // resulttype
+		1, // ecos_test_result
+		99, // latest_ip
+		0, // error_corrected
+		"" // details
+	);
+#endif
+	return true;
+}
+
+bool EcosKernelTestCampaign::init_results()
+{
+	// read already existing results
+	bool file_exists = false;
+	ifstream oldresults(filename_results().c_str(), ios::in);
+	if (oldresults.is_open()) {
+		file_exists = true;
+/* TODO
+		char buf[16*1024];
+		unsigned ignore;
+		unsigned instr_offset;
+		int register_id;
+		uint64_t bitmask;
+		int rowcount = 0;
+		int expcount = 0;
+		m_log << "scanning existing results ..." << endl;
+		file_exists = true;
+		while (oldresults.getline(buf, sizeof(buf)).good()) {
+			stringstream ss;
+			ss << buf;
+			ss >> hex >> ignore >> instr_offset >> ignore >> register_id >> ignore
+			   >> ignore >> bitmask;
+			if (ss.fail()) {
+				continue;
+			}
+			++rowcount;
+			expcount += count_1bits(bitmask);
+			// TODO: sanity check (duplicates?)
+			available_results
+				[std::pair<unsigned, int>(instr_offset, register_id)]
+				|= bitmask;
+		}
+		m_log << "found " << dec << expcount << " existing experiment results ("
+		      << rowcount << " CSV rows)" << endl;
+*/
+		oldresults.close();
+	}
+
+	// non-destructive: due to the CSV header we can always manually recover
+	// from an accident (append mode)
+	resultstream.open(filename_results().c_str(), ios::out | ios::app);
+	if (!resultstream.is_open()) {
+		m_log << "failed to open " << filename_results() << endl;
+		return false;
+	}
+	// only write CSV header if file didn't exist before
+	if (!file_exists) {
+		resultstream << "variant\tbenchmark\tec_instr1\tec_instr2\t"
+		                "ec_instr2_absolute\tec_data_address\tbitnr\tbit_width\t"
+						"resulttype\tecos_test_result\tlatest_ip\t"
+						"error_corrected\tdetails" << endl;
+	}
+	return true;
+}
+
+bool EcosKernelTestCampaign::check_available(address_t data_address, int instr2)
+{
+	// TODO
+	return false;
+}
+
+void EcosKernelTestCampaign::add_result(const std::string& variant, const std::string& benchmark,
+	int instr1, int instr2, address_t instr2_absolute, address_t ec_data_address,
+	int bitnr, int bit_width, int resulttype, int ecos_test_result, address_t latest_ip,
+	int error_corrected, const std::string& details)
+{
+	resultstream << hex
+		<< variant << "\t"
+		<< benchmark << "\t"
+		<< instr1 << "\t"
+		<< instr2 << "\t"
+		<< instr2_absolute << "\t"
+		<< ec_data_address << "\t"
+		<< bitnr << "\t"
+		<< bit_width << "\t"
+		<< resulttype << "\t"
+		<< ecos_test_result << "\t"
+		<< latest_ip << "\t"
+		<< error_corrected << "\t"
+		<< details << "\n";
+	//resultstream.flush(); // for debugging purposes
+}
+
+void EcosKernelTestCampaign::finalize_results()
+{
+	resultstream.close();
 }

@@ -255,7 +255,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	// XXX debug
 	param.msg.set_variant("bitmap_CRC");
 	param.msg.set_benchmark("bin_sem0");
-	param.msg.set_instr_offset(7462);
+	param.msg.set_instr2_offset(7462);
 	//param.msg.set_instr_address(12345);
 	param.msg.set_mem_addr(44540);
 #endif
@@ -263,7 +263,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	int id = param.getWorkloadID();
 	m_variant = param.msg.variant();
 	m_benchmark = param.msg.benchmark();
-	int instr_offset = param.msg.instr_offset();
+	int instr_offset = param.msg.instr2_offset();
 	int mem_addr = param.msg.mem_addr();
 
 	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
@@ -322,11 +322,11 @@ bool EcosKernelTestExperiment::faultInjection() {
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
-		if (param.msg.has_instr_address() &&
-			injection_ip != param.msg.instr_address()) {
+		if (param.msg.has_instr2_address() &&
+			injection_ip != param.msg.instr2_address()) {
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip
-			   << " != " << param.msg.instr_address();
+			   << " != " << param.msg.instr2_address();
 			log << ss.str() << endl;
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
