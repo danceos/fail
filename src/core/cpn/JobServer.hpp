@@ -55,6 +55,7 @@ private:
 	boost::thread* m_measureThread; //! the performance measurement thread
 #endif
 #endif
+	SynchronizedCounter m_inOutCounter;
 	//! Atomic counter for Workload IDs.
 	SynchronizedCounter m_counter;
 	//! Map of running jobs (referenced by Workload ID
@@ -139,9 +140,6 @@ class CommThread {
 private:
 	int m_sock; //! Socket descriptor of the connection
 	JobServer& m_js; //! Calling jobserver
-#ifndef __puma
-	static boost::mutex m_CommMutex; //! to synchronise the communication
-#endif // __puma
 
 	// FIXME: Concerns are not really separated yet ;)
 	/**
@@ -160,6 +158,9 @@ private:
 	 */	
 	void receiveExperimentResults(Minion& minion, uint32_t workloadID);
 public:
+#ifndef __puma
+	static boost::mutex m_CommMutex; //! to synchronise the communication
+#endif // __puma
 	CommThread(int sockfd, JobServer& p)
 		: m_sock(sockfd), m_js(p) { }
 	/**

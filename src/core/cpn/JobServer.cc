@@ -27,6 +27,7 @@ void JobServer::addParam(ExperimentData* exp)
 {
 #ifndef __puma
 	m_undoneJobs.Enqueue(exp);
+	m_inOutCounter.increment();
 #endif
 }
 
@@ -34,24 +35,28 @@ void JobServer::addParam(ExperimentData* exp)
 volatile unsigned JobServer::m_DoneCount = 0;
 #endif
 
+#ifndef __puma
+boost::mutex CommThread::m_CommMutex;
+#endif
+
 ExperimentData *JobServer::getDone()
 {
-	// FIXME race condition, need to synchronize with
-	// sendPendingExperimentData() and receiveExperimentResults()
+	
 #ifndef __puma
+	boost::unique_lock<boost::mutex> lock(CommThread::m_CommMutex);
+
 	if (m_undoneJobs.Size() == 0
 	 && noMoreExperiments()
 	 && m_runningJobs.Size() == 0
-	 && m_doneJobs.Size() == 0) {
-		// FRICKEL workaround
-		sleep(1);
-		ExperimentData *exp = NULL;
-		if (m_doneJobs.Dequeue_nb(exp)) {
-			return exp;
-		}
+	 && m_doneJobs.Size() == 0
+	 && m_inOutCounter.getValue() == 0) {
 		return 0;
 	}
-	return m_doneJobs.Dequeue();
+	
+	ExperimentData *exp = NULL;
+	exp = m_doneJobs.Dequeue();
+	m_inOutCounter.decrement();
+	return exp;
 #endif
 }
 
@@ -232,10 +237,6 @@ void CommThread::operator()()
 	close(m_sock);
 }
 
-#ifndef __puma
-boost::mutex CommThread::m_CommMutex;
-#endif // __puma
-
 void CommThread::sendPendingExperimentData(Minion& minion)
 {
 	FailControlMessage ctrlmsg;
@@ -297,10 +298,6 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 
 void CommThread::receiveExperimentResults(Minion& minion, uint32_t workloadID)
 {
-#ifndef __puma
-	boost::unique_lock<boost::mutex> lock(m_CommMutex);
-#endif
-
 	ExperimentData* exp = NULL; // Get exp* from running jobs
 	//cout << "<<[Server] Received result for workload id [" << workloadID << "]" << endl;
 	cout << "<<[" << workloadID << "] " << flush;
