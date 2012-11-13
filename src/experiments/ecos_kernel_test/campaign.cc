@@ -383,7 +383,7 @@ bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const
 	count_exp += 8;
 
 	// enqueue job
-#if 0
+#if 1
 	EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
 	d->msg.set_variant(variant);
 	d->msg.set_benchmark(benchmark);
@@ -407,7 +407,7 @@ bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std:
 	count_known_jobs++;
 	count_known += 8;
 
-#if 0
+#if 1
 	add_result(variant, benchmark, instr1, instr2, instr_absolute, data_address,
 		0, 8, // bitnr, bit_width
 		1, // resulttype
