@@ -30,7 +30,7 @@ class EcosKernelTestCampaign : public fail::Campaign {
 	void add_result(const std::string& variant, const std::string& benchmark,
 		int instr1, int instr2, fail::address_t instr2_absolute, fail::address_t ec_data_address,
 		int bitnr, int bit_width, int resulttype, int ecos_test_result, fail::address_t latest_ip,
-		int error_corrected, const std::string& details);
+		int error_corrected, const std::string& details, float runtime);
 	void finalize_results();
 	bool check_available(const std::string& variant, const std::string& benchmark, fail::address_t data_address, int instr2);
 	std::ofstream resultstream;

@@ -17,6 +17,7 @@
 #include "sal/bochs/BochsListener.hpp"
 #include "sal/Listener.hpp"
 #include "util/ElfReader.hpp"
+#include "util/WallclockTimer.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -260,6 +261,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 	param.msg.set_mem_addr(44540);
 #endif
 
+	WallclockTimer timer;
+	timer.startTimer();
+
 	int id = param.getWorkloadID();
 	m_variant = param.msg.variant();
 	m_benchmark = param.msg.benchmark();
@@ -500,6 +504,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	if (param.msg.result_size() != 8) {
 		log << "WTF? param.msg.result_size() != 8" << endl;
 	} else {
+		param.msg.set_runtime(timer);
 #if !LOCAL
 		m_jc.sendResult(param);
 #endif

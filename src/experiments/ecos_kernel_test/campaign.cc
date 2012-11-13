@@ -354,14 +354,16 @@ bool EcosKernelTestCampaign::run()
 			add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
 				res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
 				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
-				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details());
+				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
+				res->msg.runtime() * bit_width / 8.0);
 			first_bit = cur_singleres->bit_offset();
 			bit_width = 1;
 		}
 		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
 			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
 			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
-			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details());
+			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
+			res->msg.runtime() * bit_width / 8.0);
 		delete res;
 	}
 	finalize_results();
@@ -412,7 +414,8 @@ bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std:
 		1, // ecos_test_result
 		99, // latest_ip
 		0, // error_corrected
-		"" // details
+		"", // details
+		0 // runtime
 	);
 #endif
 	return true;
@@ -466,7 +469,7 @@ bool EcosKernelTestCampaign::init_results()
 		resultstream << "variant\tbenchmark\tec_instr1\tec_instr2\t"
 		                "ec_instr2_absolute\tec_data_address\tbitnr\tbit_width\t"
 						"resulttype\tecos_test_result\tlatest_ip\t"
-						"error_corrected\tdetails" << endl;
+						"error_corrected\tdetails\truntime" << endl;
 	}
 	return true;
 }
@@ -495,7 +498,7 @@ bool EcosKernelTestCampaign::check_available(const std::string& variant, const s
 void EcosKernelTestCampaign::add_result(const std::string& variant, const std::string& benchmark,
 	int instr1, int instr2, address_t instr2_absolute, address_t ec_data_address,
 	int bitnr, int bit_width, int resulttype, int ecos_test_result, address_t latest_ip,
-	int error_corrected, const std::string& details)
+	int error_corrected, const std::string& details, float runtime)
 {
 	resultstream << hex
 		<< variant << "\t"
@@ -510,7 +513,8 @@ void EcosKernelTestCampaign::add_result(const std::string& variant, const std::s
 		<< ecos_test_result << "\t"
 		<< latest_ip << "\t"
 		<< error_corrected << "\t"
-		<< details << "\n";
+		<< details << "\t"
+		<< runtime << "\n";
 	//resultstream.flush(); // for debugging purposes
 }
 

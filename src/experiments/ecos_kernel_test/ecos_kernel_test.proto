@@ -59,4 +59,7 @@ message EcosKernelTestProtoMsg {
 		// optional textual description of what happened
 		optional string details = 7;
 	}
+
+	// aggregated runtime for this job (FIXME: this should be part of the basic campaign communication instead)
+	optional float runtime = 9;
 }
