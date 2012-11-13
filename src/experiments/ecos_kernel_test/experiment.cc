@@ -400,38 +400,48 @@ bool EcosKernelTestExperiment::faultInjection() {
 		bool ecos_test_passed = false;
 		bool ecos_test_failed = false;
 
-		BaseListener* ev = simulator.resume();
+		BaseListener* ev;
 
-		// wait until doing no more test_output
-		while (ev == &func_test_output) {
-			// re-add this listener
-			simulator.addListener(&func_test_output);
-
-			// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
-			address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
-			int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
-
-			log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
-
-			/*
-			typedef enum {
-				CYGNUM_TEST_FAIL,
-				CYGNUM_TEST_PASS,
-				CYGNUM_TEST_EXIT,
-				CYGNUM_TEST_INFO,
-				CYGNUM_TEST_GDBCMD,
-				CYGNUM_TEST_NA
-			} Cyg_test_code;
-			*/
-
-			if (cyg_test_output_argument == 0) {
-				ecos_test_failed = true;
-			} else if (cyg_test_output_argument == 1) {
-				ecos_test_passed = true;
-			}
-
-			// wait for ev_trap/ev_done
+		// wait until experiment-terminating event occurs
+		while (true) {
 			ev = simulator.resume();
+			if (ev == &func_test_output) {
+				// re-add this listener
+				simulator.addListener(&func_test_output);
+
+				// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
+				address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
+				int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
+
+				log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
+
+				/*
+				typedef enum {
+					CYGNUM_TEST_FAIL,
+					CYGNUM_TEST_PASS,
+					CYGNUM_TEST_EXIT,
+					CYGNUM_TEST_INFO,
+					CYGNUM_TEST_GDBCMD,
+					CYGNUM_TEST_NA
+				} Cyg_test_code;
+				*/
+
+				if (cyg_test_output_argument == 0) {
+					ecos_test_failed = true;
+				} else if (cyg_test_output_argument == 1) {
+					ecos_test_passed = true;
+				}
+
+			// special case: except1 and clockcnv actively generate traps
+			} else if (ev == &ev_trap
+			        && ((m_benchmark == "except1" && ev_trap.getTriggerNumber() == 13)
+					 || (m_benchmark == "clockcnv" && ev_trap.getTriggerNumber() == 7))) {
+				// re-add this listener
+				simulator.addListener(&ev_trap);
+			} else {
+				// in any other case, the experiment is finished
+				break;
+			}
 		}
 
 		// record latest IP regardless of result
