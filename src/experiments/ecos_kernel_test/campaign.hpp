@@ -32,9 +32,10 @@ class EcosKernelTestCampaign : public fail::Campaign {
 		int bitnr, int bit_width, int resulttype, int ecos_test_result, fail::address_t latest_ip,
 		int error_corrected, const std::string& details);
 	void finalize_results();
-	bool check_available(fail::address_t data_address, int instr2);
+	bool check_available(const std::string& variant, const std::string& benchmark, fail::address_t data_address, int instr2);
 	std::ofstream resultstream;
-	std::map<std::pair<unsigned, int>, uint64_t> available_results;
+	typedef std::map<std::pair<const std::string, const std::string>, std::map<fail::address_t, std::set<int> > > AvailableResultMap;
+	AvailableResultMap available_results;
 public:
 	EcosKernelTestCampaign() : m_log("EcosKernelTest Campaign"),
 		count_exp(0), count_exp_jobs(0), count_known(0), count_known_jobs(0) {}

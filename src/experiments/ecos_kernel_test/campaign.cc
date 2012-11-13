@@ -312,6 +312,8 @@ bool EcosKernelTestCampaign::run()
 		}
 	}
 
+	available_results.clear();
+
 	campaignmanager.noMoreParameters();
 	m_log << "total"
 		  << " exp " << count_exp << " (" << count_exp_jobs << " jobs)"
@@ -371,7 +373,7 @@ bool EcosKernelTestCampaign::run()
 bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const std::string& benchmark,
 	address_t data_address, int instr1, int instr2, address_t instr_absolute)
 {
-	if (check_available(data_address, instr2)) {
+	if (check_available(variant, benchmark, data_address, instr2)) {
 		return false;
 	}
 
@@ -396,7 +398,7 @@ bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const
 bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std::string& benchmark,
 	address_t data_address, int instr1, int instr2, address_t instr_absolute)
 {
-	if (check_available(data_address, instr2)) {
+	if (check_available(variant, benchmark, data_address, instr2)) {
 		return false;
 	}
 
@@ -423,34 +425,32 @@ bool EcosKernelTestCampaign::init_results()
 	ifstream oldresults(filename_results().c_str(), ios::in);
 	if (oldresults.is_open()) {
 		file_exists = true;
-/* TODO
 		char buf[16*1024];
+		std::string variant, benchmark;
 		unsigned ignore;
-		unsigned instr_offset;
-		int register_id;
-		uint64_t bitmask;
+		int instr2;
+		address_t data_address;
+		int bit_width;
 		int rowcount = 0;
 		int expcount = 0;
 		m_log << "scanning existing results ..." << endl;
-		file_exists = true;
 		while (oldresults.getline(buf, sizeof(buf)).good()) {
 			stringstream ss;
 			ss << buf;
-			ss >> hex >> ignore >> instr_offset >> ignore >> register_id >> ignore
-			   >> ignore >> bitmask;
+			ss >> hex >> variant >> benchmark >> ignore >> instr2 >> ignore
+			   >> data_address >> ignore >> bit_width;
 			if (ss.fail()) {
 				continue;
 			}
 			++rowcount;
-			expcount += count_1bits(bitmask);
+			expcount += bit_width;
 			// TODO: sanity check (duplicates?)
 			available_results
-				[std::pair<unsigned, int>(instr_offset, register_id)]
-				|= bitmask;
+				[AvailableResultMap::key_type(variant, benchmark)]
+				[data_address].insert(instr2);
 		}
 		m_log << "found " << dec << expcount << " existing experiment results ("
 		      << rowcount << " CSV rows)" << endl;
-*/
 		oldresults.close();
 	}
 
@@ -471,10 +471,25 @@ bool EcosKernelTestCampaign::init_results()
 	return true;
 }
 
-bool EcosKernelTestCampaign::check_available(address_t data_address, int instr2)
+bool EcosKernelTestCampaign::check_available(const std::string& variant, const std::string& benchmark,
+	address_t data_address, int instr2)
 {
-	// TODO
-	return false;
+	AvailableResultMap::const_iterator it_variant =
+		available_results.find(AvailableResultMap::key_type(variant, benchmark));
+	if (it_variant == available_results.end()) {
+		return false;
+	}
+	AvailableResultMap::mapped_type::const_iterator it_address =
+		it_variant->second.find(data_address);
+	if (it_address == it_variant->second.end()) {
+		return false;
+	}
+	AvailableResultMap::mapped_type::mapped_type::const_iterator it_instr =
+		it_address->second.find(instr2);
+	if (it_instr == it_address->second.end()) {
+		return false;
+	}
+	return true;
 }
 
 void EcosKernelTestCampaign::add_result(const std::string& variant, const std::string& benchmark,
