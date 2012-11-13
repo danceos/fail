@@ -55,6 +55,11 @@ public:
 	 */
 	operator double() { return getRuntimeAsDouble(); }
 	/**
+	 * Returns the elapsed time as \c float. This works while the
+	 * timer is running, and if it is stopped.
+	 */
+	operator float() { return (float)getRuntimeAsDouble(); }
+	/**
 	 * Returns the elapsed time as \c int. This works while the timer
 	 * is running, and if it is stopped.
 	 */
