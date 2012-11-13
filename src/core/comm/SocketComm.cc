@@ -80,7 +80,7 @@ ssize_t SocketComm::safe_read(int fd, void *buf, size_t count)
 		}
 		count -= ret;
 		cbuf += ret;
-	} while (count);
+	} while (ret && count);
 	return cbuf - (const char *) buf;
 }
 
