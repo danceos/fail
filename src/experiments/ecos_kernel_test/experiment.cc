@@ -334,6 +334,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 			log << ss.str() << endl;
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
+			result->set_ecos_test_result(result->FAIL);
 			result->set_details(ss.str());
 
 			continue;
