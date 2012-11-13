@@ -129,8 +129,8 @@ For the first time:
  2. Configure the Bochs simulator (auto-tools).
      - Sufficient:
          $ ./configure --prefix=$(echo ~/localroot/usr) --enable-{cpu-level=6,ne2000,trace-cache,gdb-stub} --disable-docbook
-     - More optimised:
-         $ ./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,trace-cache,fast-function-calls,host-specific-asms,disasm,all-optimizations,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --disable-docbook --with-all-libs
+     - More simulator features:
+         $ ./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,trace-cache,fast-function-calls,host-specific-asms,disasm,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --disable-docbook --with-all-libs
     Instead of --with-all-libs, you could use --with-nogui for "headless" experiments,
     additionally removing lots of library dependencies (thus reducing startup overhead).
     --with-x11 enables only the "x" (X11), --with-wx only the "wx" (wxWidgets) GUI.
@@ -139,6 +139,9 @@ For the first time:
     Once you know everything works as it should, you may want to add the
     following flags before running larger campaigns:
       --disable-logging --disable-assert-checks
+    Make sure --enable-repeat-speedups (--enable-all-optimizations implicitly
+    enables this) is not enabled; you will otherwise encounter funny effects
+    when tracing REP-prefixed instructions.
     FIXME: Remove more redundant flags/libraries
 
 
