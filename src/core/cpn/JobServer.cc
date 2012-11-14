@@ -254,8 +254,9 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		ctrlmsg.set_workloadid(workloadID); // set workload id
 		//cout << ">>[Server] Sending workload [" << workloadID << "]" << endl;
 		cout << ">>[" << workloadID << "] " << flush;
-		SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
-		SocketComm::sendMsg(minion.getSocketDescriptor(), exp->getMessage());
+		if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
+			SocketComm::sendMsg(minion.getSocketDescriptor(), exp->getMessage());
+		}
 		return;
 	}
 
@@ -280,8 +281,9 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		ctrlmsg.set_workloadid(workloadID); // set workload id
 		//cout << ">>[Server] Re-sending workload [" << workloadID << "]" << endl;
 		cout << ">>R[" << workloadID << "] " << flush;
-		SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
-		SocketComm::sendMsg(minion.getSocketDescriptor(), exp->getMessage());
+		if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
+			SocketComm::sendMsg(minion.getSocketDescriptor(), exp->getMessage());
+		}
 	} else if (m_js.noMoreExperiments() == false) { 
 		// Currently we have no workload (even the running-job-queue is empty!), but
 		// the campaign is not over yet. Minion can try again later.
@@ -302,8 +304,12 @@ void CommThread::receiveExperimentResults(Minion& minion, uint32_t workloadID)
 	//cout << "<<[Server] Received result for workload id [" << workloadID << "]" << endl;
 	cout << "<<[" << workloadID << "] " << flush;
 	if (m_js.m_runningJobs.remove(workloadID, exp)) { // ExperimentData* found
-		SocketComm::rcvMsg(minion.getSocketDescriptor(), exp->getMessage() ); // deserialize results.
-		m_js.m_doneJobs.Enqueue(exp); // Put results in done queue..
+		// deserialize results, expect failures
+		if (!SocketComm::rcvMsg(minion.getSocketDescriptor(), exp->getMessage())) {
+			m_js.m_runningJobs.insert(workloadID, exp);
+		} else {
+			m_js.m_doneJobs.Enqueue(exp); // Put results in done queue
+		}
 	  #ifdef SERVER_PERFORMANCE_MEASURE
 		++JobServer::m_DoneCount;
 	  #endif

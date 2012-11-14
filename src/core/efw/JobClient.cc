@@ -71,9 +71,9 @@ bool JobClient::getParam(ExperimentData& exp)
 	while (1) { // Here we try to acquire a parameter set
 		switch (tryToGetExperimentData(exp)) {
 			// Jobserver will sent workload, params are set in \c exp
-		case FailControlMessage_Command_WORK_FOLLOWS: return true;
+		case FailControlMessage::WORK_FOLLOWS: return true;
 			// Nothing to do right now, but maybe later
-		case FailControlMessage_Command_COME_AGAIN:
+		case FailControlMessage::COME_AGAIN:
 			sleep(1);
 			continue;
 		default:
@@ -84,29 +84,43 @@ bool JobClient::getParam(ExperimentData& exp)
 
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
+	FailControlMessage ctrlmsg;
+
 	// Connection failed, minion can die
-	if (!connectToServer())
-		return FailControlMessage_Command_DIE;
+	if (!connectToServer()) {
+		return FailControlMessage::DIE;
+	}
 
 	// Retrieve ExperimentData
-	FailControlMessage ctrlmsg;
-	ctrlmsg.set_command(FailControlMessage_Command_NEED_WORK);
+	ctrlmsg.set_command(FailControlMessage::NEED_WORK);
 	ctrlmsg.set_build_id(42);
 	ctrlmsg.set_run_id(m_server_runid);
 
-	SocketComm::sendMsg(m_sockfd, ctrlmsg);
+	if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
+		// Failed to send message?  Retry.
+		close(m_sockfd);
+		return FailControlMessage::COME_AGAIN;
+	}
 	ctrlmsg.Clear();
-	SocketComm::rcvMsg(m_sockfd, ctrlmsg);
+	if (!SocketComm::rcvMsg(m_sockfd, ctrlmsg)) {
+		// Failed to receive message?  Retry.
+		close(m_sockfd);
+		return FailControlMessage::COME_AGAIN;
+	}
 
 	// now we know the current run ID
 	m_server_runid = ctrlmsg.run_id();
 
 	switch (ctrlmsg.command()) {
-	case FailControlMessage_Command_WORK_FOLLOWS:
-		SocketComm::rcvMsg(m_sockfd, exp.getMessage());
+	case FailControlMessage::WORK_FOLLOWS:
+		if (!SocketComm::rcvMsg(m_sockfd, exp.getMessage())) {
+			// Failed to receive message?  Retry.
+			close(m_sockfd);
+			return FailControlMessage::COME_AGAIN;
+		}
 		exp.setWorkloadID(ctrlmsg.workloadid()); // Store workload id of experiment data
 		break;
-	case FailControlMessage_Command_COME_AGAIN:
+	case FailControlMessage::COME_AGAIN:
 		break;
 	default:
 		break;  
@@ -122,7 +136,7 @@ bool JobClient::sendResult(ExperimentData& result)
 
 	// Send back results
 	FailControlMessage ctrlmsg;
-	ctrlmsg.set_command(FailControlMessage_Command_RESULT_FOLLOWS);
+	ctrlmsg.set_command(FailControlMessage::RESULT_FOLLOWS);
 	ctrlmsg.set_build_id(42);
 	ctrlmsg.set_run_id(m_server_runid);
 	ctrlmsg.set_workloadid(result.getWorkloadID());	
