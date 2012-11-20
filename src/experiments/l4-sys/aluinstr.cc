@@ -136,6 +136,9 @@ void BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
 	if (dest.opcodeRegisterOffset < BochsALUInstr::REG_COUNT) {
 		result.setRm(dest.opcodeRegisterOffset);
 	}
+	if (dest.reg < BochsALUInstr::REG_COUNT) {
+		result.setNnn(dest.reg);
+	}
 }
 
 #ifdef DEBUG

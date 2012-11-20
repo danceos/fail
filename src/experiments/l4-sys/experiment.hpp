@@ -25,10 +25,20 @@ typedef struct TraceInstrType {
 typedef std::vector<TraceInstr> TraceVector;
 
 class L4SysExperiment : public fail::ExperimentFlow {
-	fail::JobClient m_jc;
+private:
+	fail::JobClient m_jc; //!< the job client connecting to the campaign server
+	fail::Logger log; //<! the logger
+	//! our current parameter set is globally available among the object
+	L4SysExperimentData *param;
 public:
-	L4SysExperiment() : m_jc("localhost") {}
+	L4SysExperiment() : m_jc("localhost"), log("L4Sys", false), param(NULL) {}
 	bool run();
+protected:
+	/**
+	 * Frees all attached resources and terminates the simulator.
+	 * @param reason the exit reason, i.e. exit code, passed on to simulator::terminate
+	 */
+	void terminate(int reason);
 private:
 	/**
 	 * Sanitises the output string of the serial device monitored.
@@ -66,11 +76,9 @@ private:
 	 */
 	bx_bool fetchInstruction(BX_CPU_C *instance, const Bit8u *instr, bxInstruction_c *iStorage);
 	/**
-	 * Write out the injection parameters to the given logger.
-	 * @param log A reference to the Logger object
-	 * @param param The experiment parameter object to log data from
+	 * Write out the injection parameters to the logger.
 	 */
-	void logInjection(fail::Logger &log, const L4SysExperimentData &param);
+	void logInjection();
 	/**
 	 * Proceeds by one single instruction.
 	 * @param preserveAddressSpace if set, the address space of the next instruction
