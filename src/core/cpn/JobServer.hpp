@@ -78,7 +78,7 @@ private:
 
 public:	
 	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
-		m_maxThreads(128), m_threadtimeout(0)
+		m_maxThreads(128), m_threadtimeout(0), m_undoneJobs(SERVER_OUT_QUEUE_SIZE)
 	{ 
 		m_runid = std::time(0);
 #ifndef __puma
