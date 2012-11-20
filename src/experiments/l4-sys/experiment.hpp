@@ -28,10 +28,10 @@ class L4SysExperiment : public fail::ExperimentFlow {
 private:
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
 	fail::Logger log; //<! the logger
-	//! our current parameter set is globally available among the object
-	L4SysExperimentData *currentParam;
+	L4SysExperimentData *param; //<! the parameter set currently in use by the client
 public:
-	L4SysExperiment() : m_jc("localhost"), log("L4Sys", false), currentParam(NULL) {}
+	L4SysExperiment();
+	~L4SysExperiment();
 	bool run();
 protected:
 	/**
