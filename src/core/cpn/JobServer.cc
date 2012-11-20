@@ -211,6 +211,7 @@ void CommThread::operator()()
 			ctrlmsg.set_command(FailControlMessage::DIE);
 			ctrlmsg.set_build_id(42);
 			SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg);
+			break;
 		}
 		// give minion something to do..
 		sendPendingExperimentData(minion);
