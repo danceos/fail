@@ -356,6 +356,7 @@ bool EcosKernelTestCampaign::run()
 				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
 				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
 				res->msg.runtime() * bit_width / 8.0);
+			prev_singleres = cur_singleres;
 			first_bit = cur_singleres->bit_offset();
 			bit_width = 1;
 		}
