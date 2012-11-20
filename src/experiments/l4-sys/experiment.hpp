@@ -29,9 +29,9 @@ private:
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
 	fail::Logger log; //<! the logger
 	//! our current parameter set is globally available among the object
-	L4SysExperimentData *param;
+	L4SysExperimentData *currentParam;
 public:
-	L4SysExperiment() : m_jc("localhost"), log("L4Sys", false), param(NULL) {}
+	L4SysExperiment() : m_jc("localhost"), log("L4Sys", false), currentParam(NULL) {}
 	bool run();
 protected:
 	/**

@@ -110,11 +110,11 @@ bx_bool L4SysExperiment::fetchInstruction(BX_CPU_C *instance,
 
 void L4SysExperiment::logInjection() {
 	// explicit type assignment necessary before sending over output stream
-	int id = param->getWorkloadID();
-	int instr_offset = param->msg.instr_offset();
-	int bit_offset = param->msg.bit_offset();
-	int exp_type = param->msg.exp_type();
-	address_t injection_ip = param->msg.injection_ip();
+	int id = currentParam->getWorkloadID();
+	int instr_offset = currentParam->msg.instr_offset();
+	int bit_offset = currentParam->msg.bit_offset();
+	int exp_type = currentParam->msg.exp_type();
+	address_t injection_ip = currentParam->msg.injection_ip();
 
 	log << "job " << id << " exp_type " << exp_type << endl;
 	log << "inject @ ip " << injection_ip << " (offset " << dec << instr_offset
@@ -137,13 +137,13 @@ BaseListener *L4SysExperiment::singleStep(bool preserveAddressSpace) {
 	if (ev == &schedTimeout) {
 		// otherwise we just assume this thread is never scheduled again
 		log << "Result TIMEOUT" << endl;
-		param->msg.set_resulttype(param->msg.TIMEOUT);
-		param->msg.set_resultdata(
+		currentParam->msg.set_resulttype(currentParam->msg.TIMEOUT);
+		currentParam->msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
-		param->msg.set_output(sanitised(output.c_str()));
-		param->msg.set_details("Timed out immediately after injecting");
+		currentParam->msg.set_output(sanitised(output.c_str()));
+		currentParam->msg.set_details("Timed out immediately after injecting");
 
-		m_jc.sendResult(*param);
+		m_jc.sendResult(*currentParam);
 		terminate(0);
 	}
 	return ev;
@@ -171,7 +171,6 @@ unsigned L4SysExperiment::calculateTimeout(unsigned instr_left) {
 }
 
 void L4SysExperiment::terminate(int reason) {
-	delete param;
 	simulator.terminate(reason);
 }
 
@@ -312,17 +311,18 @@ bool L4SysExperiment::run() {
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
 
-	param = new L4SysExperimentData;
+	L4SysExperimentData param;
+	currentParam = &param;
 	log << "asking job server for experiment parameters" << endl;
-	if (!m_jc.getParam(*param)) {
+	if (!m_jc.getParam(param)) {
 		log << "Dying." << endl;
 		// communicate that we were told to die
 		terminate(1);
 	}
 
-	int instr_offset = param->msg.instr_offset();
-	int bit_offset = param->msg.bit_offset();
-	int exp_type = param->msg.exp_type();
+	int instr_offset = param.msg.instr_offset();
+	int bit_offset = param.msg.bit_offset();
+	int exp_type = param.msg.exp_type();
 
 #ifdef L4SYS_FILTER_INSTRUCTIONS
 	ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
@@ -350,7 +350,7 @@ bool L4SysExperiment::run() {
 	// note at what IP we will do the injection
 	address_t injection_ip =
 			simulator.getRegisterManager().getInstructionPointer();
-	param->msg.set_injection_ip(injection_ip);
+	param.msg.set_injection_ip(injection_ip);
 
 #ifdef L4SYS_FILTER_INSTRUCTIONS
 	// only works if we filter instructions
@@ -360,31 +360,31 @@ bool L4SysExperiment::run() {
 		ss << "SANITY CHECK FAILED: " << injection_ip << " != "
 		<< curr_instr.trigger_addr;
 		log << ss.str() << endl;
-		param->msg.set_resulttype(param->msg.UNKNOWN);
-		param->msg.set_resultdata(injection_ip);
-		param->msg.set_details(ss.str());
+		param.msg.set_resulttype(param.msg.UNKNOWN);
+		param.msg.set_resultdata(injection_ip);
+		param.msg.set_details(ss.str());
 
 		simulator.clearListeners();
-		m_jc.sendResult(*param);
+		m_jc.sendResult(param);
 		terminate(20);
 	}
 #endif
 
 	// inject
-	if (exp_type == param->msg.GPRFLIP) {
-		if (!param->msg.has_register_offset()) {
-			param->msg.set_resulttype(param->msg.UNKNOWN);
-			param->msg.set_resultdata(
+	if (exp_type == param.msg.GPRFLIP) {
+		if (!param.msg.has_register_offset()) {
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
-			param->msg.set_output(sanitised(output.c_str()));
+			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
 			ss << "Sent package did not contain the injection location (register offset)";
-			param->msg.set_details(ss.str());
-			m_jc.sendResult(*param);
+			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
 			terminate(30);
 		}
-		int reg_offset = param->msg.register_offset();
+		int reg_offset = param.msg.register_offset();
 		RegisterManager& rm = simulator.getRegisterManager();
 		Register *reg_target = rm.getRegister(reg_offset - 1);
 		regdata_t data = reg_target->getData();
@@ -395,7 +395,7 @@ bool L4SysExperiment::run() {
 		logInjection();
 		log << "register data: 0x" << hex << ((int) data) << " -> 0x"
 				<< ((int) newdata) << endl;
-	} else if (exp_type == param->msg.IDCFLIP) {
+	} else if (exp_type == param.msg.IDCFLIP) {
 		// this is a twisted one
 
 		// initial definitions
@@ -413,7 +413,7 @@ bool L4SysExperiment::run() {
 		// CampaignManager has no idea of the instruction length
 		// (neither do we), therefore this small adaption
 		bit_offset %= length_in_bits;
-		param->msg.set_bit_offset(bit_offset);
+		param.msg.set_bit_offset(bit_offset);
 
 		// do some access calculation
 		int byte_index = bit_offset >> 3;
@@ -433,7 +433,7 @@ bool L4SysExperiment::run() {
 
 		// do the logging
 		logInjection();
-	} else if (exp_type == param->msg.RATFLIP) {
+	} else if (exp_type == param.msg.RATFLIP) {
 		ud_type_t which = UD_NONE;
 		unsigned rnd = 0;
 		Udis86 udis(injection_ip);
@@ -441,15 +441,15 @@ bool L4SysExperiment::run() {
 			bxInstruction_c *currInstr = simulator.getCurrentInstruction();
 			udis.setInputBuffer(calculateInstructionAddress(), currInstr->ilen());
 			if (!udis.fetchNextInstruction()) {
-				param->msg.set_resulttype(param->msg.UNKNOWN);
-				param->msg.set_resultdata(
+				param.msg.set_resulttype(param.msg.UNKNOWN);
+				param.msg.set_resultdata(
 						simulator.getRegisterManager().getInstructionPointer());
-				param->msg.set_output(sanitised(output.c_str()));
+				param.msg.set_output(sanitised(output.c_str()));
 
 				stringstream ss;
 				ss << "Could not decode instruction using UDIS86";
-				param->msg.set_details(ss.str());
-				m_jc.sendResult(*param);
+				param.msg.set_details(ss.str());
+				m_jc.sendResult(param);
 				terminate(32);
 			}
 			ud_t _ud = udis.getCurrentState();
@@ -503,20 +503,20 @@ bool L4SysExperiment::run() {
 				 simulator.getRegisterManager().getInstructionPointer() != L4SYS_FUNC_EXIT);
 
 		if (simulator.getRegisterManager().getInstructionPointer() == L4SYS_FUNC_EXIT) {
-			param->msg.set_resulttype(param->msg.UNKNOWN);
-			param->msg.set_resultdata(
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
-			param->msg.set_output(sanitised(output.c_str()));
+			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
 			ss << "Reached the end of the experiment without finding an appropriate instruction";
-			param->msg.set_details(ss.str());
-			m_jc.sendResult(*param);
+			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
 			terminate(33);
 		}
 
 		// store the real injection point
-		param->msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
+		param.msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
 
 		// so we are able to flip the associated registers
 		// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
@@ -571,7 +571,7 @@ bool L4SysExperiment::run() {
 		// log the injection
 		logInjection();
 
-	} else if (exp_type == param->msg.ALUINSTR) {
+	} else if (exp_type == param.msg.ALUINSTR) {
 		static BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
 		// find the closest ALU instruction after the current IP
 
@@ -583,20 +583,20 @@ bool L4SysExperiment::run() {
 		}
 
 		if (simulator.getRegisterManager().getInstructionPointer() == L4SYS_FUNC_EXIT) {
-			param->msg.set_resulttype(param->msg.UNKNOWN);
-			param->msg.set_resultdata(
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
-			param->msg.set_output(sanitised(output.c_str()));
+			param.msg.set_output(sanitised(output.c_str()));
 
 			stringstream ss;
 			ss << "Reached the end of the experiment without finding an appropriate instruction";
-			param->msg.set_details(ss.str());
-			m_jc.sendResult(*param);
+			param.msg.set_details(ss.str());
+			m_jc.sendResult(param);
 			terminate(33);
 		}
 
 		// store the real injection point
-		param->msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
+		param.msg.set_injection_ip(simulator.getRegisterManager().getInstructionPointer());
 
 		// now exchange it with a random equivalent
 		bxInstruction_c newInstr;
@@ -604,19 +604,19 @@ bool L4SysExperiment::run() {
 		aluInstrObject.randomEquivalent(newInstr, details);
 		if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
 			// something went wrong - exit experiment
-			param->msg.set_resulttype(param->msg.UNKNOWN);
-			param->msg.set_resultdata(
+			param.msg.set_resulttype(param.msg.UNKNOWN);
+			param.msg.set_resultdata(
 					simulator.getRegisterManager().getInstructionPointer());
-			param->msg.set_output(sanitised(output.c_str()));
+			param.msg.set_output(sanitised(output.c_str()));
 
 			ostringstream oss;
 			oss << "Did not hit an ALU instruction - correct the source code please!";
-			param->msg.set_details(oss.str());
-			m_jc.sendResult(*param);
+			param.msg.set_details(oss.str());
+			m_jc.sendResult(param);
 			terminate(40);
 		}
 		// record information on the new instruction
-		param->msg.set_details(details);
+		param.msg.set_details(details);
 
 		// inject it
 		injectInstruction(currInstr, &newInstr);
@@ -647,39 +647,39 @@ bool L4SysExperiment::run() {
 	if (ev == &ev_done) {
 		if (strcmp(output.c_str(), golden_run.c_str()) == 0) {
 			log << "Result DONE" << endl;
-			param->msg.set_resulttype(param->msg.DONE);
+			param.msg.set_resulttype(param.msg.DONE);
 		} else {
 			log << "Result WRONG" << endl;
-			param->msg.set_resulttype(param->msg.WRONG);
-			param->msg.set_output(sanitised(output.c_str()));
+			param.msg.set_resulttype(param.msg.WRONG);
+			param.msg.set_output(sanitised(output.c_str()));
 		}
 	} else if (ev == &ev_incomplete) {
 		log << "Result INCOMPLETE" << endl;
-		param->msg.set_resulttype(param->msg.INCOMPLETE);
-		param->msg.set_resultdata(
+		param.msg.set_resulttype(param.msg.INCOMPLETE);
+		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
-		param->msg.set_output(sanitised(output.c_str()));
+		param.msg.set_output(sanitised(output.c_str()));
 	} else if (ev == &ev_timeout) {
 		log << "Result TIMEOUT" << endl;
-		param->msg.set_resulttype(param->msg.TIMEOUT);
-		param->msg.set_resultdata(
+		param.msg.set_resulttype(param.msg.TIMEOUT);
+		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
-		param->msg.set_output(sanitised(output.c_str()));
+		param.msg.set_output(sanitised(output.c_str()));
 	} else {
 		log << "Result WTF?" << endl;
-		param->msg.set_resulttype(param->msg.UNKNOWN);
-		param->msg.set_resultdata(
+		param.msg.set_resulttype(param.msg.UNKNOWN);
+		param.msg.set_resultdata(
 				simulator.getRegisterManager().getInstructionPointer());
-		param->msg.set_output(sanitised(output.c_str()));
+		param.msg.set_output(sanitised(output.c_str()));
 
 		stringstream ss;
 		ss << "eventid " << ev << " EIP "
 				<< simulator.getRegisterManager().getInstructionPointer();
-		param->msg.set_details(ss.str());
+		param.msg.set_details(ss.str());
 	}
 
 	simulator.clearListeners();
-	m_jc.sendResult(*param);
+	m_jc.sendResult(param);
 #endif
 
 	terminate(0);
