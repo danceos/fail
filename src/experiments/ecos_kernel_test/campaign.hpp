@@ -3,6 +3,10 @@
 #include <string>
 #include <fstream>
 
+#ifndef __puma
+#include <boost/thread.hpp>
+#endif
+
 #include "cpn/Campaign.hpp"
 #include "comm/ExperimentData.hpp"
 #include "ecos_kernel_test.pb.h"
@@ -32,10 +36,14 @@ class EcosKernelTestCampaign : public fail::Campaign {
 		int bitnr, int bit_width, int resulttype, int ecos_test_result, fail::address_t latest_ip,
 		int error_corrected, const std::string& details, float runtime);
 	void finalize_results();
+	void collect_results();
 	bool check_available(const std::string& variant, const std::string& benchmark, fail::address_t data_address, int instr2);
 	std::ofstream resultstream;
 	typedef std::map<std::pair<const std::string, const std::string>, std::map<fail::address_t, std::set<int> > > AvailableResultMap;
 	AvailableResultMap available_results;
+#ifndef __puma
+	boost::mutex m_result_mutex;
+#endif
 public:
 	EcosKernelTestCampaign() : m_log("EcosKernelTest Campaign"),
 		count_exp(0), count_exp_jobs(0), count_known(0), count_known_jobs(0) {}

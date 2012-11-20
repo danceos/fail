@@ -170,6 +170,11 @@ bool EcosKernelTestCampaign::run()
 		return false;
 	}
 
+	// collect results in parallel to avoid deadlock
+#ifndef __puma
+	boost::thread collect_thread(&EcosKernelTestCampaign::collect_results, this);
+#endif
+
 	for (int variant_nr = 0; variants[variant_nr]; ++variant_nr) {
 		char const *variant = variants[variant_nr];
 		for (int benchmark_nr = 0; benchmarks[benchmark_nr]; ++benchmark_nr) {
@@ -323,52 +328,9 @@ bool EcosKernelTestCampaign::run()
 		  << endl;
 
 	// collect results
-	EcosKernelTestExperimentData *res;
-	while ((res = static_cast<EcosKernelTestExperimentData *>(campaignmanager.getDone()))) {
-		// sanity check
-		if (res->msg.result_size() != 8) {
-			m_log << "wtf, result_size = " << res->msg.result_size() << endl;
-			continue;
-		}
-
-		EcosKernelTestProtoMsg_Result const *prev_singleres = 0;
-		int first_bit = 0, bit_width = 0;
-
-		// one job contains 8 experiments
-		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
-			EcosKernelTestProtoMsg_Result const *cur_singleres = &res->msg.result(idx);
-			if (!prev_singleres) {
-				prev_singleres = cur_singleres;
-				first_bit = cur_singleres->bit_offset();
-				bit_width = 1;
-				continue;
-			}
-			// compatible?  merge.
-			if (cur_singleres->bit_offset() == first_bit + bit_width // neighbor?
-			 && prev_singleres->resulttype() == cur_singleres->resulttype()
-			 && prev_singleres->latest_ip() == cur_singleres->latest_ip()
-			 && prev_singleres->ecos_test_result() == cur_singleres->ecos_test_result()
-			 && prev_singleres->error_corrected() == cur_singleres->error_corrected()
-			 && prev_singleres->details() == cur_singleres->details()) {
-				bit_width++;
-				continue;
-			}
-			add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
-				res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
-				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
-				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
-				res->msg.runtime() * bit_width / 8.0);
-			prev_singleres = cur_singleres;
-			first_bit = cur_singleres->bit_offset();
-			bit_width = 1;
-		}
-		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
-			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
-			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
-			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
-			res->msg.runtime() * bit_width / 8.0);
-		delete res;
-	}
+#ifndef __puma
+	collect_thread.join();
+#endif
 	finalize_results();
 	m_log << "done." << endl;
 
@@ -503,6 +465,9 @@ void EcosKernelTestCampaign::add_result(const std::string& variant, const std::s
 	int bitnr, int bit_width, int resulttype, int ecos_test_result, address_t latest_ip,
 	int error_corrected, const std::string& details, float runtime)
 {
+#ifndef __puma
+	boost::lock_guard<boost::mutex> guard(m_result_mutex);
+#endif
 	resultstream << hex
 		<< variant << "\t"
 		<< benchmark << "\t"
@@ -524,4 +489,54 @@ void EcosKernelTestCampaign::add_result(const std::string& variant, const std::s
 void EcosKernelTestCampaign::finalize_results()
 {
 	resultstream.close();
+}
+
+void EcosKernelTestCampaign::collect_results()
+{
+	EcosKernelTestExperimentData *res;
+	while ((res = static_cast<EcosKernelTestExperimentData *>(campaignmanager.getDone()))) {
+		// sanity check
+		if (res->msg.result_size() != 8) {
+			m_log << "wtf, result_size = " << res->msg.result_size() << endl;
+			continue;
+		}
+
+		EcosKernelTestProtoMsg_Result const *prev_singleres = 0;
+		int first_bit = 0, bit_width = 0;
+
+		// one job contains 8 experiments
+		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
+			EcosKernelTestProtoMsg_Result const *cur_singleres = &res->msg.result(idx);
+			if (!prev_singleres) {
+				prev_singleres = cur_singleres;
+				first_bit = cur_singleres->bit_offset();
+				bit_width = 1;
+				continue;
+			}
+			// compatible?  merge.
+			if (cur_singleres->bit_offset() == first_bit + bit_width // neighbor?
+			 && prev_singleres->resulttype() == cur_singleres->resulttype()
+			 && prev_singleres->latest_ip() == cur_singleres->latest_ip()
+			 && prev_singleres->ecos_test_result() == cur_singleres->ecos_test_result()
+			 && prev_singleres->error_corrected() == cur_singleres->error_corrected()
+			 && prev_singleres->details() == cur_singleres->details()) {
+				bit_width++;
+				continue;
+			}
+			add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+				res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
+				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
+				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
+				res->msg.runtime() * bit_width / 8.0);
+			prev_singleres = cur_singleres;
+			first_bit = cur_singleres->bit_offset();
+			bit_width = 1;
+		}
+		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
+			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
+			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
+			res->msg.runtime() * bit_width / 8.0);
+		delete res;
+	}
 }
