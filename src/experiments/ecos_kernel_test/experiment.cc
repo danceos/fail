@@ -280,7 +280,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
-		log << dec << "job " << id << " instr " << instr_offset
+		log << dec << "job " << id << " " << m_variant << "/" << m_benchmark
+		    << " instr " << instr_offset
 		    << " mem " << mem_addr << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
