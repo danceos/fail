@@ -96,12 +96,14 @@ std::string EcosKernelTestCampaign::filename_memorymap(const std::string& varian
 	return "memorymap.txt";
 }
 
-std::string EcosKernelTestCampaign::filename_state(const std::string& variant, const std::string& benchmark)
+std::string EcosKernelTestCampaign::filename_state(unsigned instr_offset, const std::string& variant, const std::string& benchmark)
 {
+	stringstream ss;
+	ss << instr_offset;
 	if (variant.size() && benchmark.size()) {
-		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "state";
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "state" + "-" + ss.str();
 	}
-	return "state";
+	return "state-" + ss.str();
 }
 
 std::string EcosKernelTestCampaign::filename_trace(const std::string& variant, const std::string& benchmark)

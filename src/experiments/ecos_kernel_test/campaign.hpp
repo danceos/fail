@@ -44,7 +44,7 @@ public:
 	static bool writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr);
 	static bool readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_memorymap(const std::string& variant = "", const std::string& benchmark = "");
-	static std::string filename_state(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_state(unsigned instr_offset, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_trace(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_traceinfo(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_results(const std::string& variant = "", const std::string& benchmark = "");

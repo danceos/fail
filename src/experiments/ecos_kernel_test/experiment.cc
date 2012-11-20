@@ -28,6 +28,11 @@
   #define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
 #endif
 
+// create/use multiple snapshots to speed up long experiments
+// FIXME: doesn't work properly, trace changes! (reason unknown; incorrectly restored serial timers?)
+#define MULTIPLE_SNAPSHOTS 0
+#define MULTIPLE_SNAPSHOTS_DISTANCE 1000000
+
 using namespace std;
 using namespace fail;
 
@@ -94,7 +99,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 	return true;
 }
 
-bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_address_t addr_errors_corrected) {
+bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_address_t addr_finish, guest_address_t addr_errors_corrected) {
 	log << "STEP 1: run until interesting function starts, and save state" << endl;
 
 	GuestListener g;
@@ -113,9 +118,32 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	//log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(addr_errors_corrected)) << endl;
-	simulator.save(EcosKernelTestCampaign::filename_state());
-	assert(bp.getTriggerInstructionPointer() == addr_entry);
-	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
+
+	// run until 'ECOS_FUNC_FINISH' is reached
+	BPSingleListener finish;
+	finish.setWatchInstructionPointer(addr_finish);
+
+	// one save every MULTIPLE_SNAPSHOTS_DISTANCE instructions
+	BPSingleListener step;
+	step.setWatchInstructionPointer(ANY_ADDR);
+	step.setCounter(MULTIPLE_SNAPSHOTS_DISTANCE);
+
+	for (unsigned i = 0; ; ++i) {
+		log << "saving state at offset " << dec << (i * MULTIPLE_SNAPSHOTS_DISTANCE) << endl;
+		simulator.save(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE));
+#if MULTIPLE_SNAPSHOTS
+		simulator.restore(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE));
+
+		simulator.addListener(&step);
+		simulator.addListener(&finish);
+
+		if (simulator.resume() == &finish) {
+			break;
+		}
+#else
+		break;
+#endif
+	}
 
 	return true;
 }
@@ -124,7 +152,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
-	simulator.restore(EcosKernelTestCampaign::filename_state());
+	simulator.restore(EcosKernelTestCampaign::filename_state(0));
 	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
 	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
 
@@ -275,17 +303,33 @@ bool EcosKernelTestExperiment::faultInjection() {
 	readELFSymbols(addr_entry, addr_finish, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end);
 
+	int state_instr_offset = instr_offset - (instr_offset % MULTIPLE_SNAPSHOTS_DISTANCE);
+	string statename;
+#if MULTIPLE_SNAPSHOTS
+	if (access(EcosKernelTestCampaign::filename_state(state_instr_offset, m_variant, m_benchmark).c_str(), R_OK) == 0) {
+		statename = EcosKernelTestCampaign::filename_state(state_instr_offset, m_variant, m_benchmark);
+		log << "using state at offset " << state_instr_offset << endl;
+		instr_offset -= state_instr_offset;
+	} else { // fallback
+#endif
+		statename = EcosKernelTestCampaign::filename_state(0, m_variant, m_benchmark);
+		state_instr_offset = 0;
+		log << "using state at offset 0 (fallback)" << endl;
+#if MULTIPLE_SNAPSHOTS
+	}
+#endif
+
 	// for each job we're actually doing *8* experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
 		log << dec << "job " << id << " " << m_variant << "/" << m_benchmark
-		    << " instr " << instr_offset
+		    << " instr " << (instr_offset + state_instr_offset)
 		    << " mem " << mem_addr << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
-		simulator.restore(EcosKernelTestCampaign::filename_state(m_variant, m_benchmark));
+		simulator.restore(statename);
 
 		// XXX debug
 /*
@@ -566,7 +610,7 @@ bool EcosKernelTestExperiment::run()
 	} else { return false; }
 
 	// step 1
-	if(establishState(entry, errors_corrected)) {
+	if(establishState(entry, finish, errors_corrected)) {
 		log << "STEP 1 finished: proceeding ..." << endl;
 	} else { return false; }
 
