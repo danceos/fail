@@ -178,9 +178,7 @@ L4SysExperiment::L4SysExperiment()
 }
 
 L4SysExperiment::~L4SysExperiment() {
-	// FIXME: this should actually work, but it seems that the job server
-	// needs the param record even after the program has terminated
-//	delete param;
+	delete param;
 }
 
 void L4SysExperiment::terminate(int reason) {
