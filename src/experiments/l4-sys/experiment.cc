@@ -183,6 +183,7 @@ L4SysExperiment::~L4SysExperiment() {
 
 void L4SysExperiment::destroy() {
 	delete param;
+	param = NULL;
 }
 
 void L4SysExperiment::terminate(int reason) {
