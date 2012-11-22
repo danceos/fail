@@ -39,6 +39,11 @@ protected:
 	 * @param reason the exit reason, i.e. exit code, passed on to simulator::terminate
 	 */
 	void terminate(int reason);
+	/**
+	 * Frees all resources allocated by this object.
+	 * This function is called by terminate as well as the destructor.
+	 */
+	inline void destroy();
 private:
 	/**
 	 * Sanitises the output string of the serial device monitored.

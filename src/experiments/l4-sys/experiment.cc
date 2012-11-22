@@ -178,10 +178,15 @@ L4SysExperiment::L4SysExperiment()
 }
 
 L4SysExperiment::~L4SysExperiment() {
+	destroy();
+}
+
+void L4SysExperiment::destroy() {
 	delete param;
 }
 
 void L4SysExperiment::terminate(int reason) {
+	destroy();
 	simulator.terminate(reason);
 }
 
