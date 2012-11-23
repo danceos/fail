@@ -1,8 +1,10 @@
 set(SRCS
-  ElfReader.cc
-  ElfReader.hpp
-  elfinfo/elfinfo.cc
-  elfinfo/elfinfo.h
+	ElfReader.cc
+	ElfReader.hpp
+	elfinfo/elfinfo.cc
+	elfinfo/elfinfo.h
+	gzstream/gzstream.C
+	gzstream/gzstream.h
 	Logger.cc
 	Logger.hpp
 	MemoryMap.hpp
