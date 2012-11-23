@@ -8,6 +8,7 @@
 #include "cpn/CampaignManager.hpp"
 #include "util/ProtoStream.hpp"
 #include "util/MemoryMap.hpp"
+#include "util/gzstream/gzstream.h"
 
 #include "../plugins/tracing/TracingPlugin.hpp"
 
@@ -185,7 +186,7 @@ bool EcosKernelTestCampaign::run()
 				local_count_known = count_known, local_count_known_jobs = count_known_jobs;
 
 			// load trace
-			ifstream tracef(filename_trace(variant, benchmark).c_str());
+			igzstream tracef(filename_trace(variant, benchmark).c_str());
 			if (tracef.fail()) {
 				m_log << "couldn't open " << filename_trace(variant, benchmark) << endl;
 				return false;

@@ -18,6 +18,7 @@
 #include "sal/Listener.hpp"
 #include "util/ElfReader.hpp"
 #include "util/WallclockTimer.hpp"
+#include "util/gzstream/gzstream.h"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -166,7 +167,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	ofstream of(EcosKernelTestCampaign::filename_trace().c_str());
+	ogzstream of(EcosKernelTestCampaign::filename_trace().c_str());
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
