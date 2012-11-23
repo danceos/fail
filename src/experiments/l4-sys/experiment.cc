@@ -128,7 +128,7 @@ BaseListener *L4SysExperiment::singleStep(bool preserveAddressSpace) {
 	/* prepare for the case that the kernel panics and never
 	   switches back to this thread by introducing a scheduling timeout
 	   of 10 seconds */
-	TimerListener schedTimeout(10000);
+	TimerListener schedTimeout(10000000);
 	simulator.addListener(&schedTimeout);
 	BaseListener *ev = waitIOOrOther(false);
 	simulator.removeListener(&singlestepping_event);
@@ -168,7 +168,7 @@ unsigned L4SysExperiment::calculateTimeout(unsigned instr_left) {
 	// [instr] / [instr / s] = [s]
 	unsigned seconds = instr_left / L4SYS_BOCHS_IPS + 1;
 	// 1.1 (+10 percent) * 1000 ms/s * [s]
-	return 1100 * seconds;
+	return 1100000 * seconds;
 }
 
 L4SysExperiment::L4SysExperiment()

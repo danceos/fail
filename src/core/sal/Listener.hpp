@@ -584,14 +584,14 @@ public:
  */
 class TimerListener : public BaseListener {
 protected:
-	unsigned m_Timeout; //!< timeout interval in milliseconds
+	unsigned m_Timeout; //!< timeout interval in microseconds
 	GenericTimerEvent m_Data;
 public:
 	/**
 	 * Creates a new timer listener. This can be used to implement a timeout-
 	 * mechanism in the experiment-flow. The timer starts automatically when
 	 * added to the simulator backend.
-	 * @param timeout the time interval in milliseconds (ms)
+	 * @param timeout the (simulated) time interval in microseconds
 	 * @see SimulatorController::addListener
 	 */
 	TimerListener(unsigned timeout) : m_Timeout(timeout) { }
@@ -608,7 +608,7 @@ public:
 	void setId(timer_id_t id) { m_Data.setId(id); }
 	/**
 	 * Retrieves the timer's timeout value.
-	 * @return the timout in milliseconds
+	 * @return the timout in microseconds
 	 */
 	unsigned getTimeout() const { return m_Timeout; }
 };

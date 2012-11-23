@@ -40,7 +40,7 @@ aspect BochsListener {
 			assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
 			return static_cast<timer_id_t>(
 				bx_pc_system.register_timer(pev, fail::onTimerTrigger,
-				    pev->getTimeout() * 1000 /*timeout in microseconds*/,
+				    pev->getTimeout() /*timeout in microseconds*/,
 				    false /*non-continuous*/,
 				    true /*start immediately*/, "Fail*: BochsController"/*name*/));
 		}

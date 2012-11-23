@@ -34,6 +34,8 @@
 #define MULTIPLE_SNAPSHOTS 0
 #define MULTIPLE_SNAPSHOTS_DISTANCE 1000000
 
+#define TIMER_GRANULARITY 10 // microseconds
+
 using namespace std;
 using namespace fail;
 
@@ -183,7 +185,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	unsigned instr_counter = 0;
 
 	// on the way, count elapsed time
-	TimerListener time_step(10); //TODO: granularity?
+	TimerListener time_step(TIMER_GRANULARITY); //TODO: granularity?
 	//elapsed_time.setCounter(0xFFFFFFFFU); // not working for TimerListener
 	simulator.addListener(&time_step);
 	unsigned elapsed_time = 1; // always run 1 step
@@ -237,7 +239,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ]" << endl;
-	log << dec << "elapsed time: " << estimated_timeout << " [TimerListener units]" << endl;
+	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
 
 	// save these values for experiment STEP 3
 	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
