@@ -12,7 +12,7 @@ using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
 char const *l4sys_output_result_strings[] = { "Unknown", "Done", "Incomplete", "Timeout", "Wrong output", "Error" };
-char const *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "Instr Flip", "ALU Instr Flip" };
+char const *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "IDC Flip", "ALU Instr Flip" };
 char const *l4sys_output_register_strings[] = { "Unknown", "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
 
 #define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_result_strings[L4SysProtoMsg::OUTPUT];
