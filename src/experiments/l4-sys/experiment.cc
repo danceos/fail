@@ -167,7 +167,7 @@ unsigned L4SysExperiment::calculateTimeout(unsigned instr_left) {
 	// the timeout in seconds, plus one backup second (avoids rounding overhead)
 	// [instr] / [instr / s] = [s]
 	unsigned seconds = instr_left / L4SYS_BOCHS_IPS + 1;
-	// 1.1 (+10 percent) * 1000 ms/s * [s]
+	// 1.1 (+10 percent) * 1000000 mus/s * [s]
 	return 1100000 * seconds;
 }
 
