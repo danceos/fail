@@ -96,7 +96,6 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 	delete str;
 
 	// close serialized mm
-	mm.flush();
 	mm.close();
 
 	return true;
