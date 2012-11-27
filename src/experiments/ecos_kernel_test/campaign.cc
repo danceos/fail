@@ -346,7 +346,11 @@ bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const
 	}
 
 	count_exp_jobs++;
-	count_exp += 8;
+	if (ECOS_FAULTMODEL_BURST) {
+		count_exp++;
+	} else {
+		count_exp += 8;
+	}
 
 	// enqueue job
 #if 1
@@ -357,6 +361,7 @@ bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const
 	d->msg.set_instr2_offset(instr2);
 	d->msg.set_instr2_address(instr_absolute);
 	d->msg.set_mem_addr(data_address);
+	d->msg.set_faultmodel(ECOS_FAULTMODEL_BURST ? d->msg.BURST : d->msg.SINGLEBITFLIP);
 	campaignmanager.addParam(d);
 #endif
 
@@ -371,7 +376,11 @@ bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std:
 	}
 
 	count_known_jobs++;
-	count_known += 8;
+	if (ECOS_FAULTMODEL_BURST) {
+		count_known++;
+	} else {
+		count_known += 8;
+	}
 
 #if 1
 	add_result(variant, benchmark, instr1, instr2, instr_absolute, data_address,
@@ -497,7 +506,8 @@ void EcosKernelTestCampaign::collect_results()
 	EcosKernelTestExperimentData *res;
 	while ((res = static_cast<EcosKernelTestExperimentData *>(campaignmanager.getDone()))) {
 		// sanity check
-		if (res->msg.result_size() != 8) {
+		if ((!ECOS_FAULTMODEL_BURST && res->msg.result_size() != 8)
+		 || (ECOS_FAULTMODEL_BURST && res->msg.result_size() != 1)) {
 			m_log << "wtf, result_size = " << res->msg.result_size() << endl;
 			continue;
 		}
@@ -505,6 +515,7 @@ void EcosKernelTestCampaign::collect_results()
 		EcosKernelTestProtoMsg_Result const *prev_singleres = 0;
 		int first_bit = 0, bit_width = 0;
 
+#if !ECOS_FAULTMODEL_BURST
 		// one job contains 8 experiments
 		for (int idx = 0; idx < res->msg.result_size(); ++idx) {
 			EcosKernelTestProtoMsg_Result const *cur_singleres = &res->msg.result(idx);
@@ -533,6 +544,12 @@ void EcosKernelTestCampaign::collect_results()
 			first_bit = cur_singleres->bit_offset();
 			bit_width = 1;
 		}
+#else
+		// burst fault: bits 0-7, one experiment
+		first_bit = 0;
+		bit_width = 8;
+		prev_singleres = &res->msg.result(0);
+#endif
 		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
 			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
 			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),

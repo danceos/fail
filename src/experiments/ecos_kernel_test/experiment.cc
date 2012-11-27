@@ -321,7 +321,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	}
 #endif
 
-	// for each job we're actually doing *8* experiments (one for each bit)
+	// for each job with the SINGLEBITFLIP fault model we're actually doing *8*
+	// experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
@@ -365,7 +366,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// --- fault injection ---
 		MemoryManager& mm = simulator.getMemoryManager();
 		byte_t data = mm.getByte(mem_addr);
-		byte_t newdata = data ^ (1 << bit_offset);
+		byte_t newdata;
+		if (param.msg.has_faultmodel() && param.msg.faultmodel() == param.msg.BURST) {
+			newdata = data ^ 0xff;
+			bit_offset = 8; // enforce loop termination
+		} else if (!param.msg.has_faultmodel() || param.msg.faultmodel() == param.msg.SINGLEBITFLIP) {
+			newdata = data ^ (1 << bit_offset);
+		}
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
 		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
@@ -549,7 +556,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 		}
 	}
 	// sanity check: do we have exactly 8 results?
-	if (param.msg.result_size() != 8) {
+	if ((!param.msg.has_faultmodel() || param.msg.faultmodel() == param.msg.SINGLEBITFLIP)
+	 && param.msg.result_size() != 8) {
 		log << "WTF? param.msg.result_size() != 8" << endl;
 	} else {
 		param.msg.set_runtime(timer);

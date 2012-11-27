@@ -24,6 +24,12 @@ message EcosKernelTestProtoMsg {
 	// to instr_address
 	optional int32 injection_ip = 7;
 
+	enum FaultModel {
+		SINGLEBITFLIP = 1;
+		BURST = 2;
+	}
+	optional FaultModel faultmodel = 10;
+
 	repeated group Result = 8 {
 		// single experiment bit offset
 		required int32 bit_offset = 1;
