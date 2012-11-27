@@ -434,7 +434,7 @@ bool L4SysExperiment::run() {
 		Bit8u bit_index = bit_offset & 7;
 
 		// apply the fault
-		curr_instr_plain[byte_index] ^= 1 << bit_index;
+		curr_instr_plain[byte_index] ^= 0x80 >> bit_index;
 
 		// decode the instruction
 		bxInstruction_c bochs_instr;
