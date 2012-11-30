@@ -67,7 +67,7 @@ public:
 };
 
 inline std::ostream& operator<< (std::ostream& os, const WallclockTimer& w)
-{ return os << w.getRuntimeAsString(); }
+{ return os << w.getRuntimeAsString().c_str(); }
 
 } // end-of-namespace: fail
 
