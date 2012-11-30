@@ -148,15 +148,17 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		}
 		
 		close(m_sockfd);
-		//Take front from m_parameters and copy to exp.
-		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
-		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
-		//Delete front element of m_parameters
-		delete &m_parameters.front()->getMessage();
-		delete m_parameters.front();
-		m_parameters.erase(m_parameters.begin());
-		//start time measurement for throughput calculation
-		m_job_runtime.startTimer();
+		if (m_parameters.size() != 0) {
+			//Take front from m_parameters and copy to exp.
+			exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
+			exp.setWorkloadID(m_parameters.front()->getWorkloadID());
+			//Delete front element of m_parameters
+			delete &m_parameters.front()->getMessage();
+			delete m_parameters.front();
+			m_parameters.erase(m_parameters.begin());
+			//start time measurement for throughput calculation
+			m_job_runtime.startTimer();
+		}
 		
 		return ctrlmsg.command();
 	}

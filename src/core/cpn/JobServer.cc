@@ -247,40 +247,45 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	ctrlmsg.set_build_id(42);
 	ctrlmsg.set_run_id(m_js.m_runid);
 	ctrlmsg.set_command(FailControlMessage::WORK_FOLLOWS);
-	
-	for(i = 0; i < m_job_size ; i++) {
-		if (m_js.m_undoneJobs.Dequeue_nb(temp_exp) == true) { 
-			// Got an element from queue, assign ID to workload and send to minion
-			workloadID = m_js.m_counter.increment(); // increment workload counter
-			temp_exp->setWorkloadID(workloadID); // store ID for identification when receiving result
-			ctrlmsg.add_workloadid(workloadID);
-			exp.push_back(temp_exp);
-		}
-		
-		if (!m_js.m_runningJobs.insert(workloadID, temp_exp)) {
-			cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
-		}
-	}
-	ctrlmsg.set_job_size(exp.size());
-	
-	cout << " >>[";
-	for ( i = 0; i < exp.size() ; i++) {
-		cout << " "<<   ctrlmsg.workloadid(i) <<" ";
-	}
-	cout << "] " << flush;
-	
-	
-	if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
-		for (i = 0; i < ctrlmsg.job_size() ; i++) {
-			if(SocketComm::sendMsg(minion.getSocketDescriptor(), exp.front()->getMessage())) {
-				exp.erase(exp.begin());
+
+		for(i = 0; i < m_job_size ; i++) {
+			if (m_js.m_undoneJobs.Dequeue_nb(temp_exp) == true) { 
+				// Got an element from queue, assign ID to workload and send to minion
+				workloadID = m_js.m_counter.increment(); // increment workload counter
+				temp_exp->setWorkloadID(workloadID); // store ID for identification when receiving result
+				ctrlmsg.add_workloadid(workloadID);
+				exp.push_back(temp_exp);
 			} else {
 				break;
 			}
 			
+			if (!m_js.m_runningJobs.insert(workloadID, temp_exp)) {
+				cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
+				sleep(10);
+			}
 		}
-		return;
-	}
+		if (exp.size() != 0) {
+			ctrlmsg.set_job_size(exp.size());
+			
+			cout << " >>[";
+			for ( i = 0; i < exp.size() ; i++) {
+				cout << " "<<   ctrlmsg.workloadid(i) <<" ";
+			}
+			cout << "] " << flush;
+			
+			
+			if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
+				for (i = 0; i < ctrlmsg.job_size() ; i++) {
+					if(SocketComm::sendMsg(minion.getSocketDescriptor(), exp.front()->getMessage())) {
+						exp.erase(exp.begin());
+					} else {
+						break;
+					}
+					
+				}
+				return;
+			}
+		}
 
 #ifndef __puma
 	// Prevent receiveExperimentResults from modifying (or indirectly, via
