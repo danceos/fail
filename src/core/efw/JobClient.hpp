@@ -11,6 +11,7 @@
 #include "comm/ExperimentData.hpp"
 #include "comm/FailControlMessage.pb.h"
 #include "config/FailConfig.hpp"
+#include "util/WallclockTimer.hpp"
 
 namespace fail {
 
@@ -27,7 +28,12 @@ private:
 	struct hostent* m_server_ent;
 	int m_sockfd;
 	uint64_t m_server_runid;
-
+	
+	WallclockTimer m_job_runtime;
+	int m_job_throughput;
+	std::vector<ExperimentData*> m_parameters;
+	std::vector<ExperimentData*> m_results;
+	
 	bool connectToServer();
 
 	FailControlMessage_Command tryToGetExperimentData(ExperimentData& exp);

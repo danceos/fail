@@ -5,15 +5,16 @@ message FailControlMessage {
     RESULT_FOLLOWS = 1;	// followed by experiment-specific ExperimentData message (holding both original parameters and experiment result)
 
     // JobServer may send these:
-    WORK_FOLLOWS = 5;	// followed by experiment-specific ExperimentData message
-    COME_AGAIN = 6;	// no experiment-specific ExperimentData at the moment, but Campaign is not over yet
-    DIE = 7;		// tells the client to terminate
+    WORK_FOLLOWS = 6;	// followed by experiment-specific ExperimentData message
+    COME_AGAIN = 7;	// no experiment-specific ExperimentData at the moment, but Campaign is not over yet
+    DIE = 8;		// tells the client to terminate
   }
 
   required Command command = 1;
-  optional uint32 workloadID = 2;
+  repeated uint32 workloadID = 2;
   // identifying the client/server build (e.g., build time in unixtime format)
   required uint64 build_id = 3;
   // campaign server run ID: prevents old clients talking to new servers
   optional uint64 run_id = 4;
+  optional uint32 job_size = 5;
 }

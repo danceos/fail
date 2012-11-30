@@ -16,6 +16,7 @@ JobClient::JobClient(const std::string& server, int port)
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
 	m_server_runid = 0; // server accepts this for virgin clients
+	m_job_throughput = 1; // client gets only one job at the first request
 }
 
 bool JobClient::connectToServer()
@@ -71,7 +72,8 @@ bool JobClient::getParam(ExperimentData& exp)
 	while (1) { // Here we try to acquire a parameter set
 		switch (tryToGetExperimentData(exp)) {
 			// Jobserver will sent workload, params are set in \c exp
-		case FailControlMessage::WORK_FOLLOWS: return true;
+		case FailControlMessage::WORK_FOLLOWS: 
+			return true;
 			// Nothing to do right now, but maybe later
 		case FailControlMessage::COME_AGAIN:
 			sleep(1);
@@ -84,70 +86,144 @@ bool JobClient::getParam(ExperimentData& exp)
 
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
-	FailControlMessage ctrlmsg;
+	//Are there other jobs for the experiment
+	if (m_parameters.size() != 0) {
+		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
+		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
+		
+		delete &m_parameters.front()->getMessage();
+		delete m_parameters.front();
+		m_parameters.erase(m_parameters.begin());
+		
+		return FailControlMessage::WORK_FOLLOWS;
+	} else {
+		FailControlMessage ctrlmsg;
 
-	// Connection failed, minion can die
-	if (!connectToServer()) {
-		return FailControlMessage::DIE;
-	}
+		// Connection failed, minion can die
+		if (!connectToServer()) {
+			return FailControlMessage::DIE;
+		}
 
-	// Retrieve ExperimentData
-	ctrlmsg.set_command(FailControlMessage::NEED_WORK);
-	ctrlmsg.set_build_id(42);
-	ctrlmsg.set_run_id(m_server_runid);
+		// Retrieve ExperimentData
+		ctrlmsg.set_command(FailControlMessage::NEED_WORK);
+		ctrlmsg.set_build_id(42);
+		ctrlmsg.set_run_id(m_server_runid);
+		ctrlmsg.set_job_size(m_job_throughput); //Request for a number of jobs
 
-	if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
-		// Failed to send message?  Retry.
-		close(m_sockfd);
-		return FailControlMessage::COME_AGAIN;
-	}
-	ctrlmsg.Clear();
-	if (!SocketComm::rcvMsg(m_sockfd, ctrlmsg)) {
-		// Failed to receive message?  Retry.
-		close(m_sockfd);
-		return FailControlMessage::COME_AGAIN;
-	}
-
-	// now we know the current run ID
-	m_server_runid = ctrlmsg.run_id();
-
-	switch (ctrlmsg.command()) {
-	case FailControlMessage::WORK_FOLLOWS:
-		if (!SocketComm::rcvMsg(m_sockfd, exp.getMessage())) {
+		if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
+			// Failed to send message?  Retry.
+			close(m_sockfd);
+			return FailControlMessage::COME_AGAIN;
+		}
+		ctrlmsg.Clear();
+		if (!SocketComm::rcvMsg(m_sockfd, ctrlmsg)) {
 			// Failed to receive message?  Retry.
 			close(m_sockfd);
 			return FailControlMessage::COME_AGAIN;
 		}
-		exp.setWorkloadID(ctrlmsg.workloadid()); // Store workload id of experiment data
-		break;
-	case FailControlMessage::COME_AGAIN:
-		break;
-	default:
-		break;  
+
+		// now we know the current run ID
+		m_server_runid = ctrlmsg.run_id();
+
+		switch (ctrlmsg.command()) {
+		case FailControlMessage::WORK_FOLLOWS:
+			uint32_t i;
+			for (i = 0 ; i < ctrlmsg.job_size() ; i++) {
+				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
+				
+				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
+					// Failed to receive message?  Retry.
+					close(m_sockfd);
+					return FailControlMessage::COME_AGAIN;
+				}
+
+				temp_exp->setWorkloadID(ctrlmsg.workloadid(i)); //Store workload id of experiment data
+				m_parameters.push_back(temp_exp);
+			}
+			break;
+		case FailControlMessage::COME_AGAIN:
+			break;
+		default:
+			break;  
+		}
+		
+		close(m_sockfd);
+		//Take front from m_parameters and copy to exp.
+		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
+		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
+		//Delete front element of m_parameters
+		delete &m_parameters.front()->getMessage();
+		delete m_parameters.front();
+		m_parameters.erase(m_parameters.begin());
+		//start time measurement for throughput calculation
+		m_job_runtime.startTimer();
+		
+		return ctrlmsg.command();
 	}
-	close(m_sockfd);
-	return ctrlmsg.command();
 }
 
 bool JobClient::sendResult(ExperimentData& result)
 {
-	if (!connectToServer())
-		return false;
+	//Create new ExperimentData for result
+	ExperimentData* temp_exp = new ExperimentData(result.getMessage().New());
+	temp_exp->getMessage().CopyFrom(result.getMessage());
+	temp_exp->setWorkloadID(result.getWorkloadID());
+	
+	if (m_parameters.size() != 0) {
+		//If there are more jobs for the experiment store result
+		m_results.push_back( temp_exp );
+		
+		return true;
+	} else {
+		m_results.push_back( temp_exp );
+		
+		//Stop time measurement and calculate new throughput 
+		m_job_runtime.stopTimer();
+		m_job_throughput = CLIENT_JOB_REQUEST_SEC/((double)m_job_runtime/m_results.size());
+		
+		if (m_job_throughput > CLIENT_JOB_LIMIT_SEC)
+			m_job_throughput = CLIENT_JOB_LIMIT_SEC;
+			
+		if (m_job_throughput < 1)
+			m_job_throughput = 1;
+		
+		//Reset timer for new time measurement
+		m_job_runtime.reset();
+		
+		if (!connectToServer())
+			return false;
 
-	// Send back results
-	FailControlMessage ctrlmsg;
-	ctrlmsg.set_command(FailControlMessage::RESULT_FOLLOWS);
-	ctrlmsg.set_build_id(42);
-	ctrlmsg.set_run_id(m_server_runid);
-	ctrlmsg.set_workloadid(result.getWorkloadID());	
-	cout << "[Client] Sending back result [" << std::dec << result.getWorkloadID() << "]..."  << endl;
-	// TODO: Log-level?
-	SocketComm::sendMsg(m_sockfd, ctrlmsg);
-	SocketComm::sendMsg(m_sockfd, result.getMessage());
+		//Send back results
+		FailControlMessage ctrlmsg;
+		ctrlmsg.set_command(FailControlMessage::RESULT_FOLLOWS);
+		ctrlmsg.set_build_id(42);
+		ctrlmsg.set_run_id(m_server_runid);
+		ctrlmsg.set_job_size(m_results.size()); //Store how many results will be sent
+		
+		cout << "[Client] Sending back result [";
+		
+		uint32_t i;
+		for (i = 0; i < m_results.size() ; i++) {
+			ctrlmsg.add_workloadid(m_results[i]->getWorkloadID());
+			cout << std::dec << m_results[i]->getWorkloadID();
+			cout << " ";
+		}
+		cout << "]";
+		
+		// TODO: Log-level?
+		SocketComm::sendMsg(m_sockfd, ctrlmsg);
+		
+		for (i = 0; i < ctrlmsg.job_size() ; i++) {
+			SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage());
+			delete &m_results.front()->getMessage();
+			delete m_results.front();
+			m_results.erase(m_results.begin());
+		}
 
-	// Close connection.
-	close(m_sockfd);
-	return true;
+		// Close connection.
+		close(m_sockfd);
+		return true;
+	}
 }
 
 } // end-of-namespace: fail

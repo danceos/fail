@@ -6,6 +6,7 @@
 #include "util/SynchronizedCounter.hpp"
 #include "util/SynchronizedMap.hpp"
 #include "config/FailConfig.hpp"
+#include "comm/FailControlMessage.pb.h"
 
 #include <list>
 #include <ctime>
@@ -139,6 +140,7 @@ public:
 class CommThread {
 private:
 	int m_sock; //! Socket descriptor of the connection
+	uint32_t m_job_size;
 	JobServer& m_js; //! Calling jobserver
 
 	// FIXME: Concerns are not really separated yet ;)
@@ -156,13 +158,13 @@ private:
 	 * @param minion The minion offering results
 	 * @param workloadID The workload id of the result message
 	 */	
-	void receiveExperimentResults(Minion& minion, uint32_t workloadID);
+	void receiveExperimentResults(Minion& minion, FailControlMessage ctrlmsg);
 public:
 #ifndef __puma
 	static boost::mutex m_CommMutex; //! to synchronise the communication
 #endif // __puma
 	CommThread(int sockfd, JobServer& p)
-		: m_sock(sockfd), m_js(p) { }
+		: m_sock(sockfd), m_job_size(1), m_js(p) { }
 	/**
 	 * The thread's entry point.
 	 */
