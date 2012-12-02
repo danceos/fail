@@ -33,6 +33,9 @@ OPTION( BUILD_OVP    "Build OVP Variant?" OFF)
 OPTION( BUILD_QEMU   "Build QEMU Variant?" OFF)
 OPTION( BUILD_T32   "Build Lauterbach Trace32 Variant?" OFF)
 
+OPTION( BUILD_X86  "Build for x86 guests?" ON)
+OPTION( BUILD_ARM  "Build for ARM guests?" OFF)
+
 # FIXME: only add simulators/ to include_directories, and include, e.g.,
 # bochs/bochs.h in Fail*. -> avoids naming conflicts (e.g., /usr/include/elf.h
 # vs. qemu/elf.h)

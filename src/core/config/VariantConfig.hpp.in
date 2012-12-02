@@ -7,4 +7,7 @@
 #cmakedefine BUILD_QEMU
 #cmakedefine BUILD_T32
 
+#cmakedefine BUILD_X86
+#cmakedefine BUILD_ARM
+
 #endif // __VARIANT_CONFIG_HPP__

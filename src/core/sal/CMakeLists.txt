@@ -1,5 +1,7 @@
 if(BUILD_BOCHS)
 	set(SRCS
+		CPU.cc
+		CPUState.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -10,6 +12,8 @@ if(BUILD_BOCHS)
 	)
 elseif(BUILD_GEM5)
 	set(SRCS
+		CPU.cc
+		CPUState.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -17,8 +21,15 @@ elseif(BUILD_GEM5)
 		SimulatorController.cc
 		gem5/Gem5Controller.cc
 	)
+	if(BUILD_ARM)
+		set(SRCS ${SRCS}
+			gem5/Gem5ArmCPU.cc
+		)
+	endif(BUILD_ARM)
 elseif(BUILD_OVP)
 	set(SRCS
+		CPU.cc
+		CPUState.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -28,6 +39,8 @@ elseif(BUILD_OVP)
 	)
 elseif(BUILD_QEMU)
 	set(SRCS
+		CPU.cc
+		CPUState.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -38,6 +51,8 @@ elseif(BUILD_QEMU)
 	)
 elseif(BUILD_T32)
 	set(SRCS
+		CPU.cc
+		CPUState.cc
 		Listener.cc
 		ListenerManager.cc
 		SALConfig.cc
@@ -47,6 +62,16 @@ elseif(BUILD_T32)
 		t32/wrappers.cc
 	)
 endif(BUILD_BOCHS)
+
+if(BUILD_X86)
+	set(SRCS ${SRCS}
+
+	)
+elseif(BUILD_ARM)
+	set(SRCS ${SRCS}
+		arm/arch.cc
+	)
+endif(BUILD_X86)
 
 # Don't include these sources if perf-stuff is disabled
 # (reduces compiler overhead):

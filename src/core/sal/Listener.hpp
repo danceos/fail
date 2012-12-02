@@ -9,6 +9,7 @@
 
 #include "SALConfig.hpp"
 #include "Event.hpp"
+#include "ConcreteCPU.hpp"
 #include "perf/BufferInterface.hpp"
 
 namespace fail {
@@ -26,9 +27,11 @@ protected:
 	ExperimentFlow* m_Parent; //!< this listener belongs to experiment m_Parent
 	index_t m_Loc; //!< location of this listener object within the buffer-list
 	PerfBufferBase* m_Home; //!< ptr to performance buffer-list impl. or NULL of not existing
+	ConcreteCPU* m_CPU; //!< this listener should only fire for events from this cpu (all cpus if NULL)
 public:
-	BaseListener()
-		: m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL), m_Loc(INVALID_INDEX), m_Home(NULL)
+	BaseListener(ConcreteCPU* cpu = NULL)
+		: m_OccCounter(1), m_OccCounterInit(1), m_Parent(NULL), m_Loc(INVALID_INDEX), m_Home(NULL),
+		  m_CPU(cpu)
 	{ }
 	virtual ~BaseListener();
 	/**
@@ -96,6 +99,15 @@ public:
 	 */
 	void setParent(ExperimentFlow* pFlow) { m_Parent = pFlow; }
 	/**
+	 * Returns the CPU for which the listener should fire it's events. Can be \c NULL for any cpu.
+	 */
+	ConcreteCPU* getCPU() const { return m_CPU; }
+	/**
+	 * Sets the CPU for which the listener should fire it's events. \c Null can be used as a
+	 * wildcard.
+	 */
+	void setCPU(ConcreteCPU* cpu) { m_CPU = cpu; }
+	/**
 	 * Sets the location of this listener within the buffer-list (which itself
 	 * part of the buffer-list).
 	 * @param idx the new index or \c INVALID_INDEX if not managed by (= added to)
@@ -146,8 +158,8 @@ public:
 	 *        ANY_ADDR can be used as a placeholder to allow debugging
 	 *        in a random address space.
 	 */
-	BPListener(address_t address_space = ANY_ADDR)
-		: m_Data(ANY_ADDR, address_space) { }
+	BPListener(address_t address_space = ANY_ADDR, ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_Data(ANY_ADDR, address_space) { }
 	/**
 	 * Returns the address space register of this listener.
 	 */
@@ -160,6 +172,14 @@ public:
 	 * Checks whether a given address space is matching.
 	 */
 	bool aspaceIsMatching(address_t address_space = ANY_ADDR) const;
+	/**
+	 * Sets the CPU that triggered this listener. Should not be used by experiment code.
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_Data.setTriggerCPU(cpu); }
+	/**
+	 * Returns the CPU that triggered this listener.
+	 */
+	ConcreteCPU* getTriggerCPU() { return m_Data.getTriggerCPU(); }
 	/**
 	 * Returns the instruction pointer that triggered this listener.
 	 */
@@ -194,8 +214,8 @@ public:
 	 * @param address_space the address space to be oberserved.
 	 *        \see BPListener
 	 */
-	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR)
-		: BPListener(address_space), m_WatchInstrPtr(ip) { }
+	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR, ConcreteCPU* cpu = NULL)
+		: BPListener(address_space, cpu), m_WatchInstrPtr(ip) { }
 	/**
 	 * Returns the instruction pointer this listener waits for.
 	 * @return the instruction pointer specified in the constructor or by
@@ -230,8 +250,10 @@ public:
 	 * ANY_ADDR denotes the lower respectively the upper end of the address
 	 * space.
 	 */
-	BPRangeListener(address_t start = 0, address_t end = 0, address_t address_space = ANY_ADDR)
-		: BPListener(address_space), m_WatchStartAddr(start), m_WatchEndAddr(end) { }
+	BPRangeListener(address_t start = 0, address_t end = 0, address_t address_space = ANY_ADDR,
+					ConcreteCPU* cpu = NULL)
+		: BPListener(address_space, cpu), m_WatchStartAddr(start), m_WatchEndAddr(end)
+	{ }
 	/**
 	 * Returns the instruction pointer watch range of this listener.
 	 * @return the listener's range
@@ -272,11 +294,13 @@ protected:
 	MemAccessEvent::access_type_t m_WatchType;
 	MemAccessEvent m_Data;
 public:
-	MemAccessListener(MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE)
-		: m_WatchAddr(ANY_ADDR), m_WatchWidth(1), m_WatchType(type) { }
+	MemAccessListener(MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
+					  ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchWidth(1), m_WatchType(type) { }
 	MemAccessListener(address_t addr,
-	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE)
-		: m_WatchAddr(addr), m_WatchWidth(1), m_WatchType(type) { }
+	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
+					  ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_WatchAddr(addr), m_WatchWidth(1), m_WatchType(type) { }
 	/**
 	 * Returns the physical memory address to be observed.
 	 */
@@ -293,6 +317,14 @@ public:
 	 * Sets the width of the memory area being watched (defaults to 1).
 	 */
 	void setWatchWidth(size_t width) { m_WatchWidth = width; }
+	/**
+	 * Sets the CPU that triggered this listener. Should not be used by experiment code.
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_Data.setTriggerCPU(cpu); }
+	/**
+	 * Returns the CPU that triggered this listener.
+	 */
+	ConcreteCPU* getTriggerCPU() { return m_Data.getTriggerCPU(); }
 	/**
 	 * Returns the specific physical memory address that actually triggered the
 	 * listener.
@@ -351,10 +383,10 @@ public:
  */
 class MemReadListener : public MemAccessListener {
 public:
-	MemReadListener()
-		: MemAccessListener(MemAccessEvent::MEM_READ) { }
-	MemReadListener(address_t addr)
-		: MemAccessListener(addr, MemAccessEvent::MEM_READ) { }
+	MemReadListener(ConcreteCPU* cpu = NULL)
+		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
+	MemReadListener(address_t addr, ConcreteCPU* cpu = NULL)
+		: MemAccessListener(addr, MemAccessEvent::MEM_READ, cpu) { }
 };
 
 /**
@@ -363,10 +395,10 @@ public:
  */
 class MemWriteListener : public MemAccessListener {
 public:
-	MemWriteListener()
-		: MemAccessListener(MemAccessEvent::MEM_READ) { }
-	MemWriteListener(address_t addr)
-		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE) { }
+	MemWriteListener(ConcreteCPU* cpu = NULL)
+		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
+	MemWriteListener(address_t addr, ConcreteCPU* cpu = NULL)
+		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE, cpu) { }
 };
 
 /**
@@ -382,8 +414,9 @@ protected:
 	 */
 	std::vector<unsigned> m_WatchNumbers;
 public:
-	TroubleListener() { }
-	TroubleListener(unsigned troubleNumber)	{ addWatchNumber(troubleNumber); }
+	TroubleListener(ConcreteCPU* cpu = NULL) : BaseListener(cpu) { }
+	TroubleListener(unsigned troubleNumber, ConcreteCPU* cpu = NULL) : BaseListener(cpu)
+	{ addWatchNumber(troubleNumber); }
 	/**
 	 * Add an interrupt/trap-number which should be observed.
 	 * @param troubleNumber number of an interrupt or trap
@@ -409,6 +442,14 @@ public:
 	*/
 	bool isMatching(const TroubleEvent* pEv) const;
 	/**
+	 * Sets the CPU that triggered this listener. Should not be used by experiment code.
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_Data.setTriggerCPU(cpu); }
+	/**
+	 * Returns the CPU that triggered this listener.
+	 */
+	ConcreteCPU* getTriggerCPU() { return m_Data.getTriggerCPU(); }
+	/**
 	* Sets the specific interrupt-/trap-number that actually triggered
 	* the listener. Should not be used by experiment code.
 	*/
@@ -428,8 +469,9 @@ class InterruptListener : public TroubleListener {
 protected:
 	InterruptEvent m_Data; //!< event related data, e.g. NMI flag
 public:
-	InterruptListener() { }
-	InterruptListener(unsigned interrupt) { addWatchNumber(interrupt); }                                                      
+	InterruptListener(ConcreteCPU* cpu = NULL) : TroubleListener(cpu) { }
+	InterruptListener(unsigned interrupt, ConcreteCPU* cpu = NULL) : TroubleListener(cpu)
+	{ addWatchNumber(interrupt); }
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 */
@@ -446,8 +488,9 @@ public:
  */
 class TrapListener : public TroubleListener {
 public:
-	TrapListener() { }
-	TrapListener(unsigned trap) { addWatchNumber(trap); }
+	TrapListener(ConcreteCPU* cpu = NULL) : TroubleListener(cpu) { }
+	TrapListener(unsigned trap, ConcreteCPU* cpu = NULL) : TroubleListener(cpu)
+	{ addWatchNumber(trap); }
 };
 
 /**
@@ -498,7 +541,8 @@ public:
 	 * \arg \c true Output on the given port is captured.
 	 * \arg \c false Input on the given port is captured.
 	 */
-	IOPortListener(unsigned port, bool out) : m_Port(port), m_Out(out) { }
+	IOPortListener(unsigned port, bool out, ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_Port(port), m_Out(out) { }
 	/**
 	 * Returns the data sent to the specified port
 	 */
@@ -515,6 +559,14 @@ public:
 	 * Sets the port which this listener is bound to.
 	 */
 	void setPort(unsigned port) { m_Port = port; }
+	/**
+	 * Sets the CPU that triggered this listener. Should not be used by experiment code.
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_Data.setTriggerCPU(cpu); }
+	/**
+	 * Returns the CPU that triggered this listener.
+	 */
+	ConcreteCPU* getTriggerCPU() { return m_Data.getTriggerCPU(); }
 	/**
 	* Checks whether a given port number is matching.
 	* @param p The port number an I/O listener occured on
@@ -547,11 +599,20 @@ public:
 	 * @param opcode the opcode of the jump-instruction to be observed
 	 *        or \c ANY_INSTR to match all jump-instructions
 	 */
-	JumpListener(unsigned opcode = ANY_INSTR) : m_Data(opcode) { }
+	JumpListener(unsigned opcode = ANY_INSTR, ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_Data(opcode) { }
 	/**
 	 * Retrieves the opcode of the jump-instruction.
 	 */
 	unsigned getOpcode() const { return m_Data.getTriggerOpcode(); }
+	/**
+	 * Sets the CPU that triggered this listener. Should not be used by experiment code.
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_Data.setTriggerCPU(cpu); }
+	/**
+	 * Returns the CPU that triggered this listener.
+	 */
+	ConcreteCPU* getTriggerCPU() { return m_Data.getTriggerCPU(); }
 	/**
 	 * Returns \c true, if the listener was triggered due to specific register
 	 * content, \c false otherwise.

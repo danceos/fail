@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "SALConfig.hpp"
+#include "ConcreteCPU.hpp"
 
 namespace fail {
 
@@ -19,8 +20,21 @@ namespace fail {
  */
 class BaseEvent {
 public:
-	BaseEvent() { }
+	BaseEvent(ConcreteCPU* cpu = NULL) : m_CPU(cpu) { }
 	virtual ~BaseEvent() { }
+
+	/**
+	 * Returns a pointer to the CPU that triggered this event.
+	 * @return triggering CPU
+	 */
+	ConcreteCPU* getTriggerCPU() const { return m_CPU; }
+	/**
+	 * Sets the pointer the CPU that triggered this event.
+	 * @param cpu new CPU which caused this event
+	 */
+	void setTriggerCPU(ConcreteCPU* cpu) { m_CPU = cpu; }
+protected:
+	ConcreteCPU* m_CPU;
 };
 // ----------------------------------------------------------------------------
 // Specialized events:
@@ -41,8 +55,8 @@ public:
 	 * @param trigger the triggering address of the breakpoint event
 	 * @param address_space the address space identifier for this event
 	 */
-	BPEvent(address_t trigger, address_t address_space)
-	: m_TriggerInstrPtr(trigger), m_AddressSpace(address_space) { }
+	BPEvent(address_t trigger, address_t address_space, ConcreteCPU* cpu = NULL)
+	: BaseEvent(cpu), m_TriggerInstrPtr(trigger), m_AddressSpace(address_space) { }
 	/**
 	 * Returns the instruction pointer that triggered this event.
 	 * @return triggering IP
@@ -88,8 +102,8 @@ private:
 public:
 	/**
 	 * Creates a new \c MemAccessEvent using default initialization values, i.e.
-	 * \c setTriggerAddress(ANY_ADDR), \c setTriggerWidth(0), \c setTriggerAccessType(MEM_UNKNOWN)
-	 * and \c setTriggerInstructionPointer(ANY_ADDR).
+	 * \c setTriggerAddress(ANY_ADDR), \c setTriggerWidth(0), \c setTriggerAccessType(MEM_UNKNOWN),
+	 * \c setTriggerInstructionPointer(ANY_ADDR) and setTriggerCPU(NULL).
 	 */
 	MemAccessEvent()
 		: m_TriggerAddr(ANY_ADDR), m_TriggerWidth(0),
@@ -100,9 +114,11 @@ public:
 	 * @param width width of memory access (= # Bytes)
 	 * @param triggerIP the instruction pointer that actually triggered the memory access
 	 * @param type the type of memory access (r, w, rw)
+	 * @param cpu the cpu that triggered the event
 	 */
-	MemAccessEvent(address_t triggerAddr, size_t width, address_t triggerIP, access_type_t type)
-		: m_TriggerAddr(triggerAddr), m_TriggerWidth(width),
+	MemAccessEvent(address_t triggerAddr, size_t width, address_t triggerIP, access_type_t type,
+				   ConcreteCPU* cpu = NULL)
+		: BaseEvent(cpu), m_TriggerAddr(triggerAddr), m_TriggerWidth(width),
 		  m_TriggerIP(triggerIP), m_AccessType(type) { }
 	/**
 	 * Returns the specific memory address that actually triggered the event.
@@ -163,16 +179,17 @@ private:
 public:
 	/**
 	 * Constructs a default initialized \c TroubleEvent, setting the trigger-number
-	 * to -1.
+	 * to -1 and the trigger-CPU to NULL.
 	 */
 	TroubleEvent() : m_TriggerNumber(-1) { }
 	/**
 	 * Constructs a new \c TroubleEvent.
 	 * @param triggerNum system and type specific number identifying the requestet
 	 *        "trouble-type"
+	 * @param cpu the CPU that triggered the event
 	 */
-	TroubleEvent(int triggerNum)
-		: m_TriggerNumber(triggerNum) { }
+	TroubleEvent(int triggerNum, ConcreteCPU* cpu = NULL)
+		: BaseEvent(cpu), m_TriggerNumber(triggerNum) { }
 	/**
 	 * Sets the specific interrupt-/trap-number that actually triggered the event.
 	 * @param triggerNum system and type specific number identifying the requested
@@ -196,7 +213,7 @@ private:
 public:
 	/**
 	 * Constructs a default initialized \c InterruptEvent, setting the non maskable
-	 * interrupt flag to \c false.
+	 * interrupt flag to \c false and the CPU to NULL.
 	 */
 	InterruptEvent() : m_IsNMI(false) { }
 	/**
@@ -204,8 +221,10 @@ public:
 	 * @param nmi the new NMI (non maskable interrupt) flag state
 	 * @param triggerNum system and type specific number identifying the requestet
 	 *        "trouble-type"
+	 * @param cpu the cpu that triggered the event
 	 */
-	InterruptEvent(bool nmi, int triggerNum) : TroubleEvent(triggerNum), m_IsNMI(nmi) { }
+	InterruptEvent(bool nmi, int triggerNum, ConcreteCPU* cpu = NULL)
+		: TroubleEvent(triggerNum, cpu), m_IsNMI(nmi) { }
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 * @return \c true if NMI flag is set, \c false otherwise
@@ -258,8 +277,9 @@ public:
 	/**
 	 * Initialises an IOPortEvent
 	 * @param data the data which has been communicated through the I/O port
+	 * @param cpu the cpu that triggered the event
 	 */
-	IOPortEvent(unsigned char data = 0) : m_Data(data) { }
+	IOPortEvent(unsigned char data = 0, ConcreteCPU* cpu = NULL) : BaseEvent(cpu), m_Data(data) { }
 	/**
 	 * Returns the data sent to the specified port
 	 */
@@ -285,9 +305,10 @@ public:
 	 *        or ANY_INSTR to match all jump-instructions
 	 * @param flagreg \c true if the event has been triggered due to a
 	 *        specific FLAG register content, \c false otherwise
+	 * @param cpu the CPU that triggered the event
 	 */
-	JumpEvent(unsigned opcode = ANY_INSTR, bool flagreg = false)
-		: m_OpcodeTrigger(opcode), m_FlagTriggered(flagreg) { }
+	JumpEvent(unsigned opcode = ANY_INSTR, bool flagreg = false, ConcreteCPU* cpu = NULL)
+		: BaseEvent(cpu), m_OpcodeTrigger(opcode), m_FlagTriggered(flagreg) { }
 	/**
 	 * Retrieves the opcode of the jump-instruction.
 	 */

@@ -17,9 +17,11 @@ void BaseListener::onTrigger()
 bool TroubleListener::isMatching(const TroubleEvent* pEv) const
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
-		if (m_WatchNumbers[i] == pEv->getTriggerNumber() ||
-		   m_WatchNumbers[i] == ANY_TRAP)
-			return true;
+		if (m_CPU == NULL || m_CPU == pEv->getTriggerCPU()) {
+			if (m_WatchNumbers[i] == pEv->getTriggerNumber() ||
+			   m_WatchNumbers[i] == ANY_TRAP)
+				return true;
+		}
 	}
 	return false;
 }
@@ -53,6 +55,8 @@ bool MemAccessListener::isMatching(const MemAccessEvent* pEv) const
 	           && (m_WatchAddr >= pEv->getTriggerAddress() + pEv->getTriggerWidth()
 	           || m_WatchAddr + m_WatchWidth <= pEv->getTriggerAddress())) {
 		return false;
+	} else if (m_CPU != NULL && m_CPU != pEv->getTriggerCPU()) {
+		return false;
 	}
 	return true;
 }
@@ -74,6 +78,9 @@ bool BPRangeListener::isMatching(const BPEvent* pEv) const
 {
 	if (!aspaceIsMatching(pEv->getAddressSpace()))
 		return false;
+	if (m_CPU != NULL && m_CPU != pEv->getTriggerCPU()) {
+		return false;
+	}
 	if ((m_WatchStartAddr != ANY_ADDR && pEv->getTriggerInstructionPointer() < m_WatchStartAddr) ||
 		(m_WatchEndAddr != ANY_ADDR && pEv->getTriggerInstructionPointer() > m_WatchEndAddr))
 		return false;
@@ -83,8 +90,10 @@ bool BPRangeListener::isMatching(const BPEvent* pEv) const
 bool BPSingleListener::isMatching(const BPEvent* pEv) const
 {
 	if (aspaceIsMatching(pEv->getAddressSpace())) {
-		if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == pEv->getTriggerInstructionPointer())
-			return true;
+		if (m_CPU == NULL || m_CPU == pEv->getTriggerCPU()) {
+			if (m_WatchInstrPtr == ANY_ADDR || m_WatchInstrPtr == pEv->getTriggerInstructionPointer())
+				return true;
+		}
 	}
 	return false;
 }

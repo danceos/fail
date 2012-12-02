@@ -29,3 +29,4 @@ simulators/bochs/ltdlconf.h
 !simulators/bochs/plex86/kernel/freebsd/Makefile
 
 simulators/gem5/.hg
+simulators/gem5/m5out/

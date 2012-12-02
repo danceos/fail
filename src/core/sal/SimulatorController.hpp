@@ -9,12 +9,12 @@
 #include "efw/CoroutineManager.hpp"
 #include "ListenerManager.hpp"
 #include "SALConfig.hpp"
+#include "ConcreteCPU.hpp"
 
 namespace fail {
 
 // Incomplete types suffice here:
 class ExperimentFlow;
-class RegisterManager;
 class MemoryManager;
 
 /**
@@ -34,16 +34,23 @@ class SimulatorController {
 protected:
 	ListenerManager m_LstList; //!< storage where listeners are being buffered
 	CoroutineManager m_Flows; //!< managed experiment flows
-	RegisterManager *m_Regs; //!< access to cpu register
 	MemoryManager *m_Mem; //!< access to memory pool
-	std::vector<unsigned> m_SuppressedInterrupts; //!< list of suppressed interrupts
+	std::vector< ConcreteCPU* > m_CPUs; //!< list of cpus in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
 public:
 	SimulatorController()
-		: m_Regs(NULL), m_Mem(NULL) { }
-	SimulatorController(RegisterManager* regs, MemoryManager* mem)
-		: m_Regs(regs), m_Mem(mem) { }
-	virtual ~SimulatorController() { }
+		: m_Mem(NULL) { }
+	SimulatorController(MemoryManager* mem)
+		: m_Mem(mem) { }
+	virtual ~SimulatorController()
+	{
+		std::vector< ConcreteCPU* >::iterator it = m_CPUs.begin();
+		while(it != m_CPUs.end())
+		{
+			delete *it;
+			it = m_CPUs.erase(it);
+		}
+	}
 	/**
 	 * @brief Initialization function each implementation needs to call on
 	 *        startup
@@ -63,12 +70,14 @@ public:
 	/**
 	 * Breakpoint handler. This routine needs to be called in the simulator
 	 * specific backend each time a breakpoint occurs.
+	 * @param cpu the CPU that reached the breakpoint
 	 * @param instrPtr the instruction pointer of the breakpoint
 	 * @param address_space the address space it should occur in
 	 */
-	void onBreakpoint(address_t instrPtr, address_t address_space);
+	void onBreakpoint(ConcreteCPU* cpu, address_t instrPtr, address_t address_space);
 	/**
 	 * Memory access handler (read/write).
+	 * @param cpu the CPU that accessed the memory
 	 * @param addr the accessed memory address
 	 * @param len the length of the accessed memory
 	 * @param is_write \c true if memory is written, \c false if read
@@ -77,18 +86,20 @@ public:
 	 * 
 	 * FIXME: should instrPtr be part of this interface?
 	 */
-	void onMemoryAccess(address_t addr, size_t len, bool is_write, address_t instrPtr);
+	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len, bool is_write, address_t instrPtr);
 	/**
 	 * Interrupt handler.
+	 * @param cpu the CPU that caused the interrupt
 	 * @param interruptNum the interrupt-type id
 	 * @param nmi nmi-value from guest-system
 	 */
-	void onInterrupt(unsigned interruptNum, bool nmi);
+	void onInterrupt(ConcreteCPU* cpu, unsigned interruptNum, bool nmi);
 	/**
 	 * Trap handler.
+	 * @param cpu the CPU that caused the trap
 	 * @param trapNum the trap-type id
 	 */
-	void onTrap(unsigned trapNum);
+	void onTrap(ConcreteCPU* cpu, unsigned trapNum);
 	/**
 	 * Guest system communication handler.
 	 * @param data the "message" from the guest system
@@ -97,11 +108,12 @@ public:
 	void onGuestSystem(char data, unsigned port);
 	/**
 	 * (Conditional) Jump-instruction handler.
+	 * @param cpu the CPU that did the jump
 	 * @param flagTriggered \c true if the jump was triggered due to a
 	 *        specific FLAG (zero/carry/sign/overflow/parity flag)
 	 * @param opcode the opcode of the conrecete jump instruction
 	 */
-	void onJump(bool flagTriggered, unsigned opcode);
+	void onJump(ConcreteCPU* cpu, bool flagTriggered, unsigned opcode);
 	/* ********************************************************************
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/
@@ -127,35 +139,17 @@ public:
 	 */
 	void terminate(int exCode = EXIT_SUCCESS) __attribute__ ((noreturn));
 	/**
-	 * Check whether the interrupt should be suppressed.
-	 * @param interruptNum the interrupt-type id
-	 * @return \c true if the interrupt is suppressed, \c false oterwise
+	 * Adds a new CPU to the CPU list. Listener/Events and experiment code can require that all
+	 * CPUs of the simulated system are added. So it's recommend to add them early in the backend
+	 * implementation (especially before the experiment code runs).
+	 * @param cpu the cpu that should be added to the list
 	 */
-	bool isSuppressedInterrupt(unsigned interruptNum);
+	bool addCPU(ConcreteCPU* cpu);
 	/**
-	 * Add a Interrupt to the list of suppressed.
-	 * @param interruptNum the interrupt-type id
-	 * @return \c true if sucessfully added, \c false otherwise (already
-	 *         existing)
+	 * Gets the CPU with the provided id.
+	 * @oaram id the id of the CPU to get
 	 */
-	bool addSuppressedInterrupt(unsigned interruptNum);
-	/**
-	 * Remove a Interrupt from the list of suppressed.
-	 * @param interruptNum the interrupt-type id
-	 * @return \c true if sucessfully removed, \c false otherwise (not found)
-	 */
-	bool removeSuppressedInterrupt(unsigned interruptNum);
-	/**
-	 * Returns the (constant) initialized register manager.
-	 * @return a reference to the register manager
-	 */
-	RegisterManager& getRegisterManager() { return *m_Regs; }
-	const RegisterManager& getRegisterManager() const { return *m_Regs; }
-	/**
-	 * Sets the register manager.
-	 * @param pReg the new register manager (or a concrete derived class of \c RegisterManager)
-	 */
-	void setRegisterManager(RegisterManager* pReg) { m_Regs = pReg; }
+	ConcreteCPU& getCPU(size_t id) const;
 	/**
 	 * Returns the (constant) initialized memory manager.
 	 * @return a reference to the memory manager
@@ -242,9 +236,6 @@ public:
 	 */
 	void toggle(ExperimentFlow* pfl) { m_Flows.toggle(pfl); }
 };
-
-// FIXME (see SimulatorController.cc): Weird, homeless global variable
-extern int interrupt_to_fire;
 
 } // end-of-namespace: fail
 

@@ -20,7 +20,8 @@ namespace fail {
  */
 enum RegisterType {
 	RT_GP, //!< general purpose
-	RT_PC, //!< program counter / instruction pointer
+	RT_FP, //!< floating point register
+	RT_IP, //!< program counter / instruction pointer
 	RT_ST  //!< status register
 };
 
@@ -61,17 +62,6 @@ public:
 	 * @return the width in bits
 	 */
 	regwidth_t getWidth() const { return m_Width; }
-	/**
-	 * Returns the data referenced by this register. In a concrete
-	 * derived class this method has to be defined appropriately.
-	 * @return the current data
-	 */
-	virtual regdata_t getData() /*!const*/ = 0;
-	/**
-	 * Sets new data to be stored in this register.
-	 * @param data the data to be written to the register
-	 */
-	virtual void setData(regdata_t data) = 0;
 	/**
 	 * Sets the (optional) name of this register.
 	 * @param name the textual register name, e.g. "EAX"
@@ -116,7 +106,7 @@ private:
 	std::vector< Register* > m_Regs; //!< the unique set of registers
 	RegisterType m_Type; //!< the overall type of this container (set)
 	void m_add(Register* preg);
-	friend class RegisterManager;
+	friend class CPUArchitecture;
 public:
 	/**
 	 * The iterator of this class used to loop through the list of
@@ -171,104 +161,6 @@ public:
 	 */
 	virtual Register* first() { return getRegister(0); }
 };
-
-/**
- * \class RegisterManager
- * Represents a complete set of (inhomogeneous) registers specific to a concrete
- * architecture, e.g. x86 or ARM.
- */
-class RegisterManager {
-protected:
-	std::vector< Register* > m_Registers;
-	//!< the managed set of homogeneous sets
-	std::vector< UniformRegisterSet* > m_Subsets;
-public:
-	/**
-	 * The iterator of this class used to loop through the list of
-	 * added registers. To retrieve an iterator to the first element, call
-	 * begin(). end() returns the iterator, pointing after the last element.
-	 * (This behaviour equals the STL iterator in C++.)
-	 */
-	typedef std::vector< Register* >::iterator iterator;
-	/**
-	 * Returns an iterator to the beginning of the internal data structure.
-	 * \code
-	 * [1|2| ... |n]
-	 *  ^
-	 * \endcode
-	 */
-	iterator begin() { return m_Registers.begin(); }
-	/**
-	 * Returns an iterator to the end of the interal data structure.
-	 * \code
-	 * [1|2| ... |n]X
-	 *              ^
-	 * \endcode
-	 */
-	iterator end() { return m_Registers.end(); }
-
-	RegisterManager() { }
-	~RegisterManager() { clear(); }
-	/**
-	 * Retrieves the total number of registers over all homogeneous sets.
-	 * @return the total register count
-	 */
-	virtual size_t count() const;
-	/**
-	 * Retrieves the number of managed homogeneous register sets.
-	 * @return the number of sets
-	 */
-	virtual size_t subsetCount() const { return m_Subsets.size(); }
-	/**
-	 * Gets the \a i-th register set.
-	 * @param i the index of the set to be returned
-	 * @return a reference to the uniform register set
-	 * @see subsetCount()
-	 */
-	virtual UniformRegisterSet& getSet(size_t i);
-	/**
-	 * Returns the set with register type \a t. The set can be used to
-	 * loop over all registers of type \a t.
-	 * @param t the type to check for
-	 * @return a pointer to the retrieved register set (if found), NULL
-	 *         otherwise
-	 */
-	virtual UniformRegisterSet* getSetOfType(RegisterType t);
-	/**
-	 * Adds a new register to this set. The register object needs to be
-	 * typed (see Register::getType).
-	 * @param reg a pointer to the register object to be added
-	 * @see getType()
-	 */
-	void add(Register* reg);
-	/**
-	 * Retrieves the \a i-th register.
-	 * @return a pointer to the \a i-th register; if \a i is invalid, an
-	 *         assertion is thrown
-	 */
-	Register* getRegister(size_t i);
-	/**
-	 * Removes all registers and sets from the RegisterManager.
-	 */
-	virtual void clear();
-	/**
-	 * Returns the current instruction pointer.
-	 * @return the current eip
-	 */
-	virtual address_t getInstructionPointer() = 0;
-	/**
-	 * Returns the top address of the stack.
-	 * @return the starting address of the stack
-	 */
-	virtual address_t getStackPointer() = 0;
-	/**
-	 * Retrieves the base ptr (holding the address of the
-	 * current stack frame).
-	 * @return the base pointer
-	 */
-	virtual address_t getBasePointer() = 0;
-};
-
 } // end-of-namespace: fail
 
 #endif // __REGISTER_HPP__

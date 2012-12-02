@@ -7,8 +7,6 @@ namespace fail {
 
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
-// FIXME: Bochs specific?  If not, at least get rid of this global variable.
-int interrupt_to_fire = -1;
 
 bool SimulatorController::addListener(BaseListener* li)
 {
@@ -52,15 +50,16 @@ void SimulatorController::initExperiments()
 	/* empty. */
 }
 
-void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_space)
+void SimulatorController::onBreakpoint(ConcreteCPU* cpu, address_t instrPtr, address_t address_space)
 {
 	// Check for active breakpoint-events:
 	ListenerManager::iterator it = m_LstList.begin();
-	BPEvent tmp(instrPtr, address_space);
+	BPEvent tmp(instrPtr, address_space, cpu);
 	while (it != m_LstList.end()) {
 		BaseListener* pLi = *it;
 		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
 		if (pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
+			pBreakpt->setTriggerCPU(cpu);
 			pBreakpt->setTriggerInstructionPointer(instrPtr);
 			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
@@ -72,14 +71,14 @@ void SimulatorController::onBreakpoint(address_t instrPtr, address_t address_spa
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onMemoryAccess(address_t addr, size_t len,
+void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len,
                                          bool is_write, address_t instrPtr)
 {
 	MemAccessEvent::access_type_t accesstype =
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
 
-	MemAccessEvent tmp(addr, len, instrPtr, accesstype);
+	MemAccessEvent tmp(addr, len, instrPtr, accesstype, cpu);
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
@@ -93,15 +92,16 @@ void SimulatorController::onMemoryAccess(address_t addr, size_t len,
 		ev->setTriggerWidth(len);
 		ev->setTriggerInstructionPointer(instrPtr);
 		ev->setTriggerAccessType(accesstype);
+		ev->setTriggerCPU(cpu);
 		it = m_LstList.makeActive(it);
 	}
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onInterrupt(unsigned interruptNum, bool nmi)
+void SimulatorController::onInterrupt(ConcreteCPU* cpu, unsigned interruptNum, bool nmi)
 {
 	ListenerManager::iterator it = m_LstList.begin();
-	InterruptEvent tmp(nmi, interruptNum);
+	InterruptEvent tmp(nmi, interruptNum, cpu);
 	while (it != m_LstList.end()) { // check for active listeners 
 		BaseListener* pev = *it;
 		InterruptListener* pie = dynamic_cast<InterruptListener*>(pev);
@@ -111,53 +111,15 @@ void SimulatorController::onInterrupt(unsigned interruptNum, bool nmi)
 		}
 		pie->setTriggerNumber(interruptNum);
 		pie->setNMI(nmi);
+		pie->setTriggerCPU(cpu);
 		it = m_LstList.makeActive(it);
 	}
 	m_LstList.triggerActiveListeners();
 }
 
-bool SimulatorController::isSuppressedInterrupt(unsigned interruptNum)
+void SimulatorController::onTrap(ConcreteCPU* cpu, unsigned trapNum)
 {
-	for (size_t i = 0; i < m_SuppressedInterrupts.size(); i++)
-		if ((m_SuppressedInterrupts[i] == interruptNum ||
-		    m_SuppressedInterrupts[i] == ANY_INTERRUPT) &&
-		    interruptNum != (unsigned)interrupt_to_fire + 32) {
-				if ((int)interruptNum == interrupt_to_fire + 32) {
-					interrupt_to_fire = -1;
-					return true;
-				}
-			return true;
-		}
-	return false;
-}
-
-bool SimulatorController::addSuppressedInterrupt(unsigned interruptNum)
-{
-	// Check if already existing:
-	if (isSuppressedInterrupt(interruptNum+32))
-		return false; // already added: nothing to do here
-		
-	if (interruptNum == ANY_INTERRUPT)
-		m_SuppressedInterrupts.push_back(interruptNum);
-	else
-		m_SuppressedInterrupts.push_back(interruptNum+32);
-	return true;
-}
-
-bool SimulatorController::removeSuppressedInterrupt(unsigned interruptNum)
-{
-	for (size_t i = 0; i < m_SuppressedInterrupts.size(); i++) {	
-		if (m_SuppressedInterrupts[i] == interruptNum+32 ||
-		    m_SuppressedInterrupts[i] == ANY_INTERRUPT)
-			m_SuppressedInterrupts.erase(m_SuppressedInterrupts.begin() + i);
-			return true;
-	}
-	return false;
-}
-
-void SimulatorController::onTrap(unsigned trapNum)
-{
-	TroubleEvent tmp(trapNum);
+	TroubleEvent tmp(trapNum, cpu);
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
@@ -167,6 +129,7 @@ void SimulatorController::onTrap(unsigned trapNum)
 			continue; // skip listener activation
 		}
 		pte->setTriggerNumber(trapNum);
+		pte->setTriggerCPU(cpu);
 		it = m_LstList.makeActive(it);
 	}
 	m_LstList.triggerActiveListeners();
@@ -189,7 +152,7 @@ void SimulatorController::onGuestSystem(char data, unsigned port)
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onJump(bool flagTriggered, unsigned opcode)
+void SimulatorController::onJump(ConcreteCPU* cpu, bool flagTriggered, unsigned opcode)
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
@@ -197,12 +160,26 @@ void SimulatorController::onJump(bool flagTriggered, unsigned opcode)
 		if (pje != NULL) {
 			pje->setOpcode(opcode);
 			pje->setFlagTriggered(flagTriggered);
+			pje->setTriggerCPU(cpu);
 			it = m_LstList.makeActive(it);
 			continue; // dito.
 		}
 		++it;
 	}
 	m_LstList.triggerActiveListeners();
+}
+
+bool SimulatorController::addCPU(ConcreteCPU* cpu)
+{
+	assert(cpu != NULL && "FATAL ERROR: Argument (cpu) cannot be NULL!");
+	m_CPUs.push_back(cpu);
+	return true;
+}
+
+ConcreteCPU& SimulatorController::getCPU(size_t i) const
+{
+	assert(i < m_CPUs.size() && "FATAL ERROR: Invalid index provided!");
+	return *m_CPUs[i];
 }
 
 void SimulatorController::addFlow(ExperimentFlow* flow)

@@ -14,14 +14,7 @@ namespace fail {
  */
 class Gem5Controller : public SimulatorController {
 public:
-	void startup()
-	{
-		SimulatorController::startup();
-		
-		m_Mem = new Gem5MemoryManager(System::systemList.front());
-	}
-
-	void onBreakpoint(address_t instrPtr, address_t address_space);
+	void startup();
 
 	bool save(const std::string &path);
 	void restore(const std::string &path);

@@ -15,7 +15,7 @@ class Gem5Breakpoint : public PCEvent
 public:
 	Gem5Breakpoint(PCEventQueue* queue, Addr ip)
 		: PCEvent(queue, "Fail* experiment breakpoint", ip) {}
-	virtual void process(ThreadContext *tc) { fail::simulator.onBreakpoint(this->evpc, fail::ANY_ADDR); }
+	virtual void process(ThreadContext *tc) { fail::simulator.onBreakpoint(&fail::simulator.getCPU(tc->cpuId()), this->evpc, fail::ANY_ADDR); }
 };
 
 aspect Gem5Listener

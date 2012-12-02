@@ -57,6 +57,9 @@
 #include "sim/system.hh"
 #include "sim/full_system.hh"
 
+#include "config/FailConfig.hpp"
+#include "sal/SALInst.hpp"
+
 using namespace std;
 using namespace TheISA;
 
@@ -288,6 +291,12 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t * data,
 
             assert(!pkt.isError());
 
+			// FAIL*
+			#ifdef CONFIG_EVENT_MEMREAD
+			fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+			fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), false, 0);
+			#endif
+
             if (req->isLLSC()) {
                 TheISA::handleLockedRead(thread, req);
             }
@@ -389,6 +398,12 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size,
                 dcache_access = true;
                 assert(!pkt.isError());
 
+				// FAIL*
+				#ifdef CONFIG_EVENT_MEMWRITE
+				fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+				fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), true, 0);
+				#endif
+
                 if (req->isSwap()) {
                     assert(res);
                     memcpy(res, pkt.getPtr<uint8_t>(), fullSize);
@@ -482,6 +497,11 @@ AtomicSimpleCPU::tick()
                         icache_latency = icachePort.sendAtomic(&ifetch_pkt);
 
                     assert(!ifetch_pkt.isError());
+					// FAIL*
+					#ifdef CONFIG_EVENT_MEMREAD
+					fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+					fail::simulator.onMemoryAccess(cpu, ifetch_pkt.getAddr(), ifetch_pkt.getSize(), false, 0);
+					#endif
 
                     // ifetch_req is initialized to read the instruction directly
                     // into the CPU object's inst field.

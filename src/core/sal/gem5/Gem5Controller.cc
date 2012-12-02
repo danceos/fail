@@ -3,7 +3,24 @@
 
 #include "../Listener.hpp"
 
+#include "sim/system.hh"
+
 namespace fail {
+
+void Gem5Controller::startup()
+{
+	// Assuming there is only one defined system should be sufficient for most cases. More systems
+	// are only used for switching cpu model or caches during a simulation run.
+	System* sys = System::systemList.front();
+	m_Mem = new Gem5MemoryManager(sys);
+
+	for (int i = 0; i < sys->numContexts(); i++) {
+		ConcreteCPU* cpu = new ConcreteCPU(sys->getThreadContext(i)->cpuId(), System::systemList.front());
+		addCPU(cpu);
+	}
+
+	SimulatorController::startup();
+}
 
 bool Gem5Controller::save(const std::string &path)
 {
@@ -21,29 +38,6 @@ void Gem5Controller::restore(const std::string &path)
 void Gem5Controller::reboot()
 {
 
-}
-
-void Gem5Controller::onBreakpoint(address_t instrPtr, address_t address_space)
-{
-	bool do_fire = false;
-	// Check for active breakpoint-events:
-	ListenerManager::iterator it = m_LstList.begin();
-	BPEvent tmp(instrPtr, address_space);
-	while (it != m_LstList.end()) {
-		BaseListener* pLi = *it;
-		BPListener* pBreakpt = dynamic_cast<BPListener*>(pLi);
-		if (pBreakpt != NULL && pBreakpt->isMatching(&tmp)) {
-			pBreakpt->setTriggerInstructionPointer(instrPtr);
-			it = m_LstList.makeActive(it);
-			do_fire = true;
-			// "it" has already been set to the next element (by calling
-			// makeActive()):
-			continue; // -> skip iterator increment
-		}
-		it++;
-	}
-	if (do_fire)
-		m_LstList.triggerActiveListeners();
 }
 
 } // end-of-namespace: fail
