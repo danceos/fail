@@ -10,18 +10,16 @@
 #include "sim/system.hh"
 #include "cpu/pc_event.hh"
 
-class Gem5Breakpoint : public PCEvent
-{
+class Gem5Breakpoint : public PCEvent {
 public:
 	Gem5Breakpoint(PCEventQueue* queue, Addr ip)
-		: PCEvent(queue, "Fail* experiment breakpoint", ip) {}
-	virtual void process(ThreadContext *tc) { fail::simulator.onBreakpoint(&fail::simulator.getCPU(tc->cpuId()), this->evpc, fail::ANY_ADDR); }
+		: PCEvent(queue, "Fail* experiment breakpoint", ip) { }
+	virtual void process(ThreadContext *tc)
+	{ fail::simulator.onBreakpoint(&fail::simulator.getCPU(tc->cpuId()), this->evpc, fail::ANY_ADDR); }
 };
 
-aspect Gem5Listener
-{
-	advice "fail::BPSingleListener" : slice class
-	{
+aspect Gem5Listener {
+	advice "fail::BPSingleListener" : slice class {
 	private:
 		Gem5Breakpoint* m_Breakpoint;
 	public:
@@ -35,8 +33,7 @@ aspect Gem5Listener
 
 		virtual void onDeletion()
 		{
-			if(m_Breakpoint)
-			{
+			if (m_Breakpoint) {
 				delete m_Breakpoint;
 				m_Breakpoint = 0;
 			}
@@ -44,5 +41,6 @@ aspect Gem5Listener
 	};
 };
 
-#endif
+#endif // defined(BUILD_GEM5)
+
 #endif // __GEM5_LISTENER_AH__

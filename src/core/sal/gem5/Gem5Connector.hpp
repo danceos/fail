@@ -8,8 +8,7 @@
  * This class will be compiled inside the gem5 context and provides the
  * Gem5Controller a way to call gem5 functions.
  */
-class Gem5Connector
-{
+class Gem5Connector {
 public:
 	void save(const std::string &path);
 	void restore(const std::string &path);
