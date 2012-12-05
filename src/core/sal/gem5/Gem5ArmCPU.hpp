@@ -1,7 +1,8 @@
 #ifndef __GEM5_ARM_CPU_HPP__
   #define __GEM5_ARM_CPU_HPP__
 
-#include "../arm/arch.hpp"
+#include "../arm/Architecture.hpp"
+#include "../arm/CPUState.hpp"
 
 #include "sim/system.hh"
 

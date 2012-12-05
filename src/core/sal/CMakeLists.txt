@@ -69,7 +69,7 @@ if(BUILD_X86)
 	)
 elseif(BUILD_ARM)
 	set(SRCS ${SRCS}
-		arm/arch.cc
+		arm/Architecture.cc
 	)
 endif(BUILD_X86)
 

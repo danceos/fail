@@ -1,10 +1,11 @@
-#ifndef __ARM_ARCH_HPP__
-  #define __ARM_ARCH_HPP__
+#ifndef __ARM_ARCHITECURE_HPP__
+  #define __ARM_ARCHITECURE_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"
 
 namespace fail {
+
 /**
  * \class ArmArchitecture
  * This class adds ARM specific functionality to the base architecture.
@@ -16,19 +17,6 @@ public:
 	~ArmArchitecture();
 private:
 	void fillRegisterList();
-};
-
-class ArmCPUState : public CPUState {
-public:
-	virtual regdata_t getRegisterContent(Register* reg) = 0;
-
-	virtual address_t getInstructionPointer() = 0;
-	virtual address_t getStackPointer() = 0;
-	/**
-	 * Returns the current Link Register.
-	 * @return the current lr
-	 */
-	virtual address_t getLinkRegister() = 0;
 };
 
 enum GPRegIndex {
