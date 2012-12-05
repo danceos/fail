@@ -1,5 +1,5 @@
 #ifndef __ARM_ARCH_HPP__
-	#define __ARM_ARCH_HPP__
+  #define __ARM_ARCH_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"
@@ -7,21 +7,18 @@
 namespace fail {
 /**
  * \class ArmArchitecture
- * This class adds ARM specific functionality to the base architecture. This can be used for every
- * simulator backend that runs on ARM.
+ * This class adds ARM specific functionality to the base architecture.
+ * This can be used for every simulator backend that runs on ARM.
  */
-class ArmArchitecture : public CPUArchitecture
-{
+class ArmArchitecture : public CPUArchitecture {
 public:
 	ArmArchitecture();
 	~ArmArchitecture();
-
 private:
 	void fillRegisterList();
 };
 
-class ArmCPUState : public CPUState
-{
+class ArmCPUState : public CPUState {
 public:
 	virtual regdata_t getRegisterContent(Register* reg) = 0;
 
@@ -34,8 +31,7 @@ public:
 	virtual address_t getLinkRegister() = 0;
 };
 
-enum GPRegIndex
-{
+enum GPRegIndex {
 	RI_R0,
 	RI_R1,
 	RI_R2,

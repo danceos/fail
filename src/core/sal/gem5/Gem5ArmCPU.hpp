@@ -1,5 +1,5 @@
 #ifndef __GEM5_ARM_CPU_HPP__
-	#define __GEM5_ARM_CPU_HPP__
+  #define __GEM5_ARM_CPU_HPP__
 
 #include "../arm/arch.hpp"
 
@@ -7,9 +7,9 @@
 
 namespace fail {
 
-class Gem5ArmCPU : public ArmArchitecture, public ArmCPUState
-{
+class Gem5ArmCPU : public ArmArchitecture, public ArmCPUState {
 public:
+	// TODO: comments
 	Gem5ArmCPU(unsigned int id, System* system) : m_Id(id), m_System(system) {}
 	regdata_t getRegisterContent(Register* reg);
 	void setRegisterContent(Register* reg, regdata_t value);

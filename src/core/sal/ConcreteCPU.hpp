@@ -1,5 +1,5 @@
 #ifndef __CONCRETE_CPU_HPP__
-	#define __CONCRETE_CPU_HPP__
+  #define __CONCRETE_CPU_HPP__
 
 #if defined BUILD_BOCHS
   #include "bochs/BochsCPU.hpp"

@@ -1,5 +1,5 @@
 #ifndef __CPU_HPP__
-	#define __CPU_HPP__
+  #define __CPU_HPP__
 
 #include <cstring>
 #include <vector>
@@ -17,8 +17,7 @@ namespace fail {
  * directly derived from this are especially meant to be usable in campaigns, so they shouldn't
  * contain any backend specific code.
  */
-class CPUArchitecture
-{
+class CPUArchitecture {
 public:
 	/**
 	 * Retrieves the total number of registers over all homogeneous sets.
@@ -54,14 +53,12 @@ public:
 	 * Returns the set with register type \a t. The set can be used to
 	 * loop over all registers of type \a t.
 	 * @param t the type to check for
-	 * @return a pointer to the retrieved register set (if found), NULL
-	 *         otherwise
+	 * @return a pointer to the retrieved register set (if found), \c NULL otherwise
 	 */
 	UniformRegisterSet* getRegisterSetOfType(RegisterType t) const;
-
 protected:
-	std::vector< Register* > m_Registers;
-	std::vector< UniformRegisterSet* > m_RegisterSubsets;
+	std::vector<Register*> m_Registers;
+	std::vector<UniformRegisterSet*> m_RegisterSubsets;
 };
 
 } // end-of-namespace: fail

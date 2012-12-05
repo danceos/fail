@@ -19,6 +19,7 @@ regdata_t Gem5ArmCPU::getRegisterContent(Register* reg)
 	}
 
 	// This shouldn't be reached if a valid register is passed
+	// TODO: assertion?
 	return 0;
 }
 
@@ -39,6 +40,7 @@ void Gem5ArmCPU::setRegisterContent(Register* reg, regdata_t value)
 	case RT_IP:
 		return setRegisterContent(getRegister(RI_IP), value);
 	}
+	// TODO: assertion?
 }
 
 address_t Gem5ArmCPU::getInstructionPointer()

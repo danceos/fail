@@ -1,5 +1,5 @@
 #ifndef __CPU_STATE_HPP__
-	#define __CPU_STATE_HPP__
+  #define __CPU_STATE_HPP__
 
 #include <cstring>
 #include <vector>
@@ -11,11 +11,10 @@ namespace fail {
 /**
  * \class CPUArchitecture
  * This is the base class for the CPU state without any architecture specific additions. It contains
- * pure virtual functions for e.g. register acces and have to be overridden in the backend
+ * pure virtual functions for e.g. register access and have to be overridden in the backend
  * implementation.
  */
-class CPUState
-{
+class CPUState {
 public:
 	/**
 	 * Gets the content of the passed Register.
@@ -57,7 +56,6 @@ public:
 	 * @return \c true if sucessfully removed, \c false otherwise (not found)
 	 */
 	bool removeSuppressedInterrupt(unsigned interruptNum);
-
 protected:
 	std::vector<unsigned> m_SuppressedInterrupts;
 };
@@ -67,4 +65,4 @@ extern int interrupt_to_fire;
 
 } // end-of-namespace: fail
 
-#endif
+#endif // __CPU_STATE_HPP__
