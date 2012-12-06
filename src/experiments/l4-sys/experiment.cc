@@ -448,6 +448,11 @@ bool L4SysExperiment::run() {
 		// do the logging
 		logInjection();
 	} else if (exp_type == param->msg.RATFLIP) {
+        /*
+        TODO: provide information on the affected register
+        in param->msg.register and on its destination in
+        param->msg.details
+        */
 		ud_type_t which = UD_NONE;
 		unsigned rnd = 0;
 		Udis86 udis(injection_ip);

@@ -11,7 +11,7 @@ using namespace std;
 using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
-char const *l4sys_output_result_strings[] = { "Unknown", "Done", "Incomplete", "Timeout", "Wrong output", "Error" };
+char const *l4sys_output_result_strings[] = { "Unknown", "No effect", "Incomplete execution", "Crash", "Silent data corruption", "Error" };
 char const *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "IDC Flip", "ALU Instr Flip" };
 char const *l4sys_output_register_strings[] = { "Unknown", "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
 
