@@ -1,4 +1,4 @@
-#include "ArmArchitecture.hpp"
+#include "Architecture.hpp"
 #include "../Register.hpp"
 
 namespace fail {
