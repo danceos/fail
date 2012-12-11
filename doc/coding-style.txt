@@ -25,6 +25,7 @@ The following style rules apply to C/C++/AspectC++ code:
     * Constant variables: uppercase
     * (no convention for local variables)
     * typedefs: lowercase, underscores (good_name_t)
+    * abbreviations (even in identifiers): uppercase
 
  - Comments:
     * Doxygen comments:
