@@ -39,7 +39,8 @@ bool HSCSimpleExperiment::run()
 	simulator.addListenerAndResume(&breakpoint);
 	log << "injecting hellish fault" << endl;
 	// RID_CAX is the RAX register in 64 bit mode and EAX in 32 bit mode:
-	simulator.getRegisterManager().getRegister(RID_CAX)->setData(666);
+	Register* reg = simulator.getCPU(0).getRegister(RID_CAX);
+	simulator.getCPU(0).setRegisterContent(reg, 666);
 	log << "waiting for last main() instruction" << endl;
 	breakpoint.setWatchInstructionPointer(0x3c92);
 	simulator.addListenerAndResume(&breakpoint);
@@ -49,6 +50,6 @@ bool HSCSimpleExperiment::run()
 	simulator.addListenerAndResume(&breakpoint);
 #endif
 
-	simulator.clearListeners(this);
+	simulator.terminate();
 	return true;
 }
