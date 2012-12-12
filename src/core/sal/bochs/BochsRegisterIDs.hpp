@@ -1,3 +1,4 @@
+#if 0
 #ifndef __BOCHS_REGISTER_IDS_HPP__
   #define __BOCHS_REGISTER_IDS_HPP__
 
@@ -42,4 +43,5 @@ enum FlagsRegisterId { RID_FLAGS = RID_LAST_PC_ID };
 
 }
 
+#endif
 #endif

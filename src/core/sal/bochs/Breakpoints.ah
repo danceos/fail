@@ -8,6 +8,7 @@
 
 #include "bochs.h"
 #include "cpu/cpu.h"
+#include "gui/siminterface.h" // for BX_SMP_PROCESSORS
 
 #include "../SALInst.hpp"
 
@@ -22,9 +23,20 @@ aspect Breakpoints {
 		// Points to the *current* bxInstruction-object
 		bxInstruction_c* pInstr = *(tjp->arg<1>());
 
+		// Detect the CPU that triggered the change:
+		unsigned i = 0;
+	  #if BX_SUPPORT_SMP
+	    for (; i < BX_SMP_PROCESSORS; i++) {
+			if (BX_CPU_C[i] == pThis) // cmp this ptr with all possible CPU objects
+				break; // index "i" found! -> stop!
+		}
+	  #endif
+		fail::ConcreteCPU& triggerCPU = fail::simulator.getCPU(i);
+		// FIXME: slice ConcreteCPU object reference into BOCHS_CPU -> simplified
+
 		// Report this event to the Bochs controller:
 		fail::simulator.updateBPEventInfo(pThis, pInstr);
-		fail::simulator.onBreakpoint(pThis->get_instruction_pointer(), pThis->cr3);
+		fail::simulator.onBreakpoint(&triggerCPU, pThis->get_instruction_pointer(), pThis->cr3);
 		// Note: get_bx_opcode_name(pInstr->getIaOpcode()) retrieves the mnemonics.
 	}
 };

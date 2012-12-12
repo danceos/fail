@@ -2,8 +2,8 @@
 
 #include "BochsController.hpp"
 #include "BochsMemory.hpp"
-#include "BochsRegister.hpp"
-#include "../Register.hpp"
+//#include "BochsRegister.hpp"
+//#include "../Register.hpp"
 #include "../SALInst.hpp"
 #include "../Listener.hpp"
 
@@ -19,58 +19,15 @@ bx_bool reboot_bochs_request        = false;
 bx_bool interrupt_injection_request = false;
 
 BochsController::BochsController()
-	: SimulatorController(new BochsRegisterManager(), new BochsMemoryManager()),
+	: SimulatorController(new BochsMemoryManager()),
 	  m_CPUContext(NULL), m_CurrentInstruction(NULL)
 {
-	// -------------------------------------
-	// Add the general purpose register:
-  #if BX_SUPPORT_X86_64
-	// -- 64 bit register --
-  	const  std::string names[] = { "RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI",
-  	                               "RDI", "R8", "R9", "R10", "R11", "R12", "R13",
-  	                               "R14", "R15" };
-	for (unsigned short i = 0; i < 16; i++) {
-		BxGPReg* pReg = new BxGPReg(i, 64, &(BX_CPU(0)->gen_reg[i].rrx));
-		pReg->setName(names[i]);
-		m_Regs->add(pReg);
-	}
-  #else
-  	// -- 32 bit register --
-  	const std::string names[] = { "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI",
-							      "EDI" };
-	for (unsigned short i = 0; i < 8; i++) {
-		BxGPReg* pReg = new BxGPReg(i, 32, &(BX_CPU(0)->gen_reg[i].dword.erx));
-		pReg->setName(names[i]);
-		m_Regs->add(pReg);
-	}
-  #endif // BX_SUPPORT_X86_64
-	// -------------------------------------
-	// Add the Program counter register:
-  #if BX_SUPPORT_X86_64
-	BxPCReg* pPCReg = new BxPCReg(RID_PC, 64, &(BX_CPU(0)->gen_reg[BX_64BIT_REG_RIP].rrx));
-	pPCReg->setName("RIP");
-  #else
-    BxPCReg* pPCReg = new BxPCReg(RID_PC, 32, &(BX_CPU(0)->gen_reg[BX_32BIT_REG_EIP].dword.erx));
-	pPCReg->setName("EIP");
-  #endif // BX_SUPPORT_X86_64
-    // -------------------------------------
-	// Add the Status register (x86 cpu FLAGS):
-	BxFlagsReg* pFlagReg = new BxFlagsReg(RID_FLAGS, reinterpret_cast<regdata_t*>(&(BX_CPU(0)->eflags)));
-	// Note: "eflags" is (always) of type Bit32u which matches the regdata_t only in
-	//       case of the 32 bit version (id est !BX_SUPPORT_X86_64). Therefor we need
-	//       to ensure to assign only 32 bit to the Bochs internal register variable
-	//       (see SAL/bochs/BochsRegister.hpp, setData) if we are in 64 bit mode.
-	pFlagReg->setName("FLAGS");
-	m_Regs->add(pFlagReg);
-	m_Regs->add(pPCReg);
+	for (unsigned i = 0; i < BX_SMP_PROCESSORS; i++)
+		addCPU(new ConcreteCPU(i));
 }
 
 BochsController::~BochsController()
 {
-	for (RegisterManager::iterator it = m_Regs->begin(); it != m_Regs->end(); it++)
-			delete (*it); // free the memory, allocated in the constructor
-	m_Regs->clear();
-	delete m_Regs;
 	delete m_Mem;
 }
 

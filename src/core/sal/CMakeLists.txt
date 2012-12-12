@@ -9,6 +9,7 @@ if(BUILD_BOCHS)
 		SimulatorController.cc
 		bochs/BochsController.cc
 		bochs/BochsListener.cc
+		bochs/BochsCPU.cc
 	)
 elseif(BUILD_GEM5)
 	set(SRCS
@@ -65,7 +66,7 @@ endif(BUILD_BOCHS)
 
 if(BUILD_X86)
 	set(SRCS ${SRCS}
-
+		x86/Architecture.cc
 	)
 elseif(BUILD_ARM)
 	set(SRCS ${SRCS}

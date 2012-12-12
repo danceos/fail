@@ -1,3 +1,4 @@
+#if 0
 #ifndef __BOCHS_REGISTER_HPP__
   #define __BOCHS_REGISTER_HPP__
 
@@ -199,3 +200,4 @@ public:
 } // end-of-namespace: fail
 
 #endif // __BOCHS_REGISTER_HPP__
+#endif
