@@ -143,7 +143,7 @@ public:
 	 * implementation (especially before the experiment code runs).
 	 * @param cpu the cpu that should be added to the list
 	 */
-	bool addCPU(ConcreteCPU* cpu);
+	void addCPU(ConcreteCPU* cpu);
 	/**
 	 * Gets the CPU with the provided \c id.
 	 * @param id the id of the CPU to get

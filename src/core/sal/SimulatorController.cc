@@ -169,11 +169,10 @@ void SimulatorController::onJump(ConcreteCPU* cpu, bool flagTriggered, unsigned 
 	m_LstList.triggerActiveListeners();
 }
 
-bool SimulatorController::addCPU(ConcreteCPU* cpu)
+void SimulatorController::addCPU(ConcreteCPU* cpu)
 {
 	assert(cpu != NULL && "FATAL ERROR: Argument (cpu) cannot be NULL!");
 	m_CPUs.push_back(cpu);
-	return true;
 }
 
 ConcreteCPU& SimulatorController::getCPU(size_t i) const
