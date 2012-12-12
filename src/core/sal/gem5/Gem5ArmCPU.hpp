@@ -11,7 +11,7 @@ namespace fail {
 class Gem5ArmCPU : public ArmArchitecture, public ArmCPUState {
 public:
 	// TODO: comments
-	Gem5ArmCPU(unsigned int id, System* system) : m_Id(id), m_System(system) {}
+	Gem5ArmCPU(unsigned int id, System* system) : m_Id(id), m_System(system) { }
 	regdata_t getRegisterContent(Register* reg);
 	void setRegisterContent(Register* reg, regdata_t value);
 
@@ -20,7 +20,6 @@ public:
 	address_t getLinkRegister();
 
 	unsigned int getId() { return m_Id; }
-
 private:
 	unsigned int m_Id;
 	System* m_System;

@@ -35,21 +35,20 @@ protected:
 	ListenerManager m_LstList; //!< storage where listeners are being buffered
 	CoroutineManager m_Flows; //!< managed experiment flows
 	MemoryManager *m_Mem; //!< access to memory pool
-	std::vector< ConcreteCPU* > m_CPUs; //!< list of cpus in the target system
+	std::vector<ConcreteCPU*> m_CPUs; //!< list of CPUs in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
 public:
-	SimulatorController()
-		: m_Mem(NULL) { }
-	SimulatorController(MemoryManager* mem)
-		: m_Mem(mem) { }
+	SimulatorController() : m_Mem(NULL) { }
+	SimulatorController(MemoryManager* mem) : m_Mem(mem) { }
 	virtual ~SimulatorController()
 	{
-		std::vector< ConcreteCPU* >::iterator it = m_CPUs.begin();
-		while(it != m_CPUs.end())
-		{
+		std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
+		while (it != m_CPUs.end()) {
 			delete *it;
 			it = m_CPUs.erase(it);
 		}
+		// FIXME: This expects the "ConcreteCPU" objects to be allocated on the heap...
+		// This should be part of the derived class...?
 	}
 	/**
 	 * @brief Initialization function each implementation needs to call on
@@ -146,8 +145,9 @@ public:
 	 */
 	bool addCPU(ConcreteCPU* cpu);
 	/**
-	 * Gets the CPU with the provided id.
-	 * @oaram id the id of the CPU to get
+	 * Gets the CPU with the provided \c id.
+	 * @param id the id of the CPU to get
+	 * @return a reference to the requested CPU object
 	 */
 	ConcreteCPU& getCPU(size_t id) const;
 	/**

@@ -43,7 +43,9 @@ private:
 	BX_CPU_C *m_CPUContext; //!< Additional information that is passed on occurence of a BPEvent
 	bxInstruction_c *m_CurrentInstruction; //!< dito.
 public:
-	// Initialize the controller.
+	/**
+	 * Initialize the controller, i.e. add the number of simulated CPUs.
+	 */
 	BochsController();
 	~BochsController();
 	/* ********************************************************************

@@ -20,8 +20,8 @@ void ArmArchitecture::fillRegisterList()
 
 ArmArchitecture::~ArmArchitecture()
 {
-	std::vector< Register* >::iterator it = m_Registers.begin();
-	while (it != m_Registers.end()) {
+	for (std::vector<Register*>::iterator it = m_Registers.begin();
+		 it != m_Registers.end(); it++)
 		delete *it;
 		it = m_Registers.erase(it);
 	}

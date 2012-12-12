@@ -22,8 +22,7 @@ public:
 	/**
 	 * Constructs a new register object.
 	 * @param id the global unique id
-	 * @param width width of the register (8, 16, 32 or 64 bit should
-	 *        suffice)
+	 * @param width width of the register (8, 16, 32 or 64 bit should suffice)
 	 * @param link pointer to bochs interal register memory
 	 * @param t type of the register
 	 */

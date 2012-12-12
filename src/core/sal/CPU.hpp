@@ -36,6 +36,7 @@ public:
 	 * @see getType()
 	 */
 	void addRegister(Register* reg);
+	// FIXME: make this protected? no need to modify the register config at runtime...
 	/**
 	 * Retrieves the \a i-th register.
 	 * @return a pointer to the \a i-th register; if \a i is invalid, an

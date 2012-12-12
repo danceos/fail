@@ -19,6 +19,10 @@ private:
 	void fillRegisterList();
 };
 
+/**
+ * \enum GPRegIndex
+ * TODO.
+ */
 enum GPRegIndex {
 	RI_R0,
 	RI_R1,
