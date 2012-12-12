@@ -9,9 +9,6 @@ namespace fail {
 class ArmCPUState : public CPUState {
 public:
 	virtual regdata_t getRegisterContent(Register* reg) = 0;
-
-	virtual address_t getInstructionPointer() = 0;
-	virtual address_t getStackPointer() = 0;
 	/**
 	 * Returns the current Link Register.
 	 * @return the current lr
