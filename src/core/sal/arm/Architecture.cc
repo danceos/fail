@@ -28,8 +28,7 @@ ArmArchitecture::~ArmArchitecture()
 	for (std::vector<Register*>::iterator it = m_Registers.begin();
 		 it != m_Registers.end(); it++)
 		delete *it;
-		it = m_Registers.erase(it);
-	}
+	m_Registers.clear();
 }
 
 } // end-of-namespace: fail
