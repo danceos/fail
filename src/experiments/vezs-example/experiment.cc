@@ -24,108 +24,122 @@ using namespace fail;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-	!defined(CONFIG_SR_SAVE) || !defined(CONFIG_EVENT_TRAP)
+  !defined(CONFIG_SR_SAVE)
 #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
 
 bool VEZSExperiment::run()
 {
-	Logger log("VEZS-Example", false);
-	ElfReader elf("./system");
-	log << elf.getAddressByName("main") << endl;
-  	
-	BPSingleListener bp;
+  Logger log("VEZS-Example", false);
+  ElfReader elf("./x86_bare_test");
+  log << "STARTING EXPERIMENT" << endl;
+  log << "main() address: " <<   elf.getAddressByName("main") << endl;
+
+  BPSingleListener bp;
 #if 0
-	// STEP 1: run until interesting function starts, and save state
-	bp.setWatchInstructionPointer(elf.getAddressByName("main"));
-	if(simulator.addListenerAndResume(&bp) == &bp){
-		log << "test function entry reached, saving state" << endl;
-	}
-	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << " or " << simulator.getRegisterManager().getInstructionPointer() << endl;
-	//simulator.terminate();
-	simulator.save("vezs.state");
+  // STEP 1: run until interesting function starts, and save state
+  bp.setWatchInstructionPointer(elf.getAddressByName("main"));
+  if(simulator.addListenerAndResume(&bp) == &bp){
+    log << "test function entry reached, saving state" << endl;
+  }
+  log << "EIP = " << hex << bp.getTriggerInstructionPointer()   << endl;
+  //simulator.terminate();
+  simulator.save("vezs.state");
   simulator.terminate();
 #endif
 #if 1
 
-	int bit_offset = 2;	
-	for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
+  //int bit_offset = 2;	
+  //for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
 
-		// STEP 3: The actual experiment.
-		log << "restoring state" << endl;
-		simulator.restore("vezs.state");
+  // STEP 3: The actual experiment.
+  log << "restoring state" << endl;
+  simulator.restore("vezs.state");
 
-		log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+  log << " current EIP = " << simulator.getCPU(0).getInstructionPointer() << endl;
+  log << " Task0 start: " <<  elf.getAddressByName("_ZN5Alpha17functionTaskTask0Ev") << endl;
+  BPSingleListener bpt0;
+  BPSingleListener bpt1;
+  bpt0.setWatchInstructionPointer(elf.getAddressByName("_ZN5Alpha17functionTaskTask0Ev"));
+  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN4Beta17functionTaskTask1Ev"));
 
-		bp.setWatchInstructionPointer(ANY_ADDR);
-		for (int count = 0; count < instr_offset; ++count) {
-			simulator.addListenerAndResume(&bp);
-		}
-	
-	
-		int32_t data = simulator.getRegisterManager().getRegister(RID_CAX)->getData();
-		// The INJECTION:
-		int32_t newdata = data ^ (1<<bit_offset);
-		simulator.getRegisterManager().getRegister(RID_CAX)->setData(newdata);
-		 
-		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
-		log << "inject @ ip " << injection_ip
-	    	<< " (offset " << dec << instr_offset << ")"
-	    	<< " bit " << bit_offset << ": 0x"
-	    	<< hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
-	
-		// --- aftermath ---
-		// possible outcomes:
-		// - trap, "crash"
-		// - jump outside text segment
-		// - reaches THE END
-		// - error detected, stop
-		// additional info:
-		// - #loop iterations before/after FI
+  simulator.addListener(&bpt1);
+  simulator.addListenerAndResume(&bpt0);
+  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+  simulator.resume();
+  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
 
-		// catch traps as "extraordinary" ending
-		TroubleListener ev_trap(ANY_TRAP);
-		simulator.addListener(&ev_trap);
-		// jump outside text segment
-		BPRangeListener ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
-		BPRangeListener ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
-		simulator.addListener(&ev_below_text);
-		simulator.addListener(&ev_beyond_text);
-		// timeout (e.g., stuck in a HLT instruction)
-		// 10000us = 500000 instructions
-		GenericTimerListener ev_timeout(1000000); // 50,000,000 instructions !!
-		simulator.addListener(&ev_timeout);
+  simulator.clearListeners();
+  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN2os3krn9SchedImpl18superDispatch_implEPS1_hh"));
+  for(int i = 0; i < 10; i++){
+    simulator.addListenerAndResume(&bpt1); 
+    log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+  }
+#endif
+#if 0	
+  int32_t data = simulator.getCPU(0).getRegister(RID_CAX)->getData();
+  // The INJECTION:
+  int32_t newdata = data ^ (1<<bit_offset);
+  simulator.getCPU(0).getRegister(RID_CAX)->setData(newdata);
 
-		// remaining instructions until "normal" ending
-		BPSingleListener ev_end(ANY_ADDR);
-		ev_end.setCounter(OOSTUBS_NUMINSTR - instr_offset);
-		simulator.addListener(&ev_end);
+  int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
+  log << "inject @ ip " << injection_ip
+    << " (offset " << dec << instr_offset << ")"
+    << " bit " << bit_offset << ": 0x"
+    << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 
-		// Start simulator and wait for any result
-		BaseListener* ev = simulator.resume();
+  // --- aftermath ---
+  // possible outcomes:
+  // - trap, "crash"
+  // - jump outside text segment
+  // - reaches THE END
+  // - error detected, stop
+  // additional info:
+  // - #loop iterations before/after FI
 
-		// record latest IP regardless of result
-		injection_ip =  simulator.getRegisterManager().getInstructionPointer();
+  // catch traps as "extraordinary" ending
+  TroubleListener ev_trap(ANY_TRAP);
+  simulator.addListener(&ev_trap);
+  // jump outside text segment
+  BPRangeListener ev_below_text(ANY_ADDR, OOSTUBS_TEXT_START - 1);
+  BPRangeListener ev_beyond_text(OOSTUBS_TEXT_END + 1, ANY_ADDR);
+  simulator.addListener(&ev_below_text);
+  simulator.addListener(&ev_beyond_text);
+  // timeout (e.g., stuck in a HLT instruction)
+  // 10000us = 500000 instructions
+  GenericTimerListener ev_timeout(1000000); // 50,000,000 instructions !!
+  simulator.addListener(&ev_timeout);
+
+  // remaining instructions until "normal" ending
+  BPSingleListener ev_end(ANY_ADDR);
+  ev_end.setCounter(OOSTUBS_NUMINSTR - instr_offset);
+  simulator.addListener(&ev_end);
+
+  // Start simulator and wait for any result
+  BaseListener* ev = simulator.resume();
+
+  // record latest IP regardless of result
+  injection_ip =  simulator.getCPU(0).getInstructionPointer();
 
 
-		if (ev == &ev_end) {
-			log << dec << "Result FINISHED" << endl;
-		} else if (ev == &ev_timeout) {
-			log << "Result TIMEOUT" << endl;
-		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
-			log << "Result OUTSIDE" << endl;
-		} else if (ev == &ev_trap) {
-			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
-		} else {
-			log << "Result WTF?" << endl;
-		}
-		log << "@ ip 0x" << hex << injection_ip << endl;
-		// explicitly remove all events before we leave their scope
-		// FIXME event destructors should remove them from the queues
-		simulator.clearListeners();
+  if (ev == &ev_end) {
+    log << dec << "Result FINISHED" << endl;
+  } else if (ev == &ev_timeout) {
+    log << "Result TIMEOUT" << endl;
+  } else if (ev == &ev_below_text || ev == &ev_beyond_text) {
+    log << "Result OUTSIDE" << endl;
+  } else if (ev == &ev_trap) {
+    log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
+  } else {
+    log << "Result WTF?" << endl;
+  }
+  log << "@ ip 0x" << hex << injection_ip << endl;
+  // explicitly remove all events before we leave their scope
+  // FIXME event destructors should remove them from the queues
+  simulator.clearListeners();
 }
 
 #endif
-	// Explicitly terminate, or the simulator will continue to run.
-	simulator.terminate();
+// Explicitly terminate, or the simulator will continue to run.
+simulator.terminate();
 }
