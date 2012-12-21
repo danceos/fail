@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <cstdlib>
 
+#include "Demangler.hpp"
+
 namespace fail {
+
+const std::string ElfReader::NOTFOUND = "[ELFReader] Function not found.";
 
   ElfReader::ElfReader(const char* path) : m_log("Fail*Elfinfo", false){
     // Try to open the ELF file
@@ -31,7 +35,7 @@ namespace fail {
       }
       else
       {
-        if((sec_hdr.sh_type==SHT_SYMTAB)||(sec_hdr.sh_type==SHT_DYNSYM))                        
+        if((sec_hdr.sh_type==SHT_SYMTAB)||(sec_hdr.sh_type==SHT_DYNSYM))
         {
           process_symboltable(i,fp);
 
@@ -80,7 +84,6 @@ namespace fail {
     //so we have the namebuf now seek to symtab data
     fseek(fp,sym_data_offset,SEEK_SET);
 
-    //m_log << "[section " << sect_num << "] contains " << num_sym << " symbols." << std::endl;
     for(i=0;i<num_sym;i++)
     {
 
@@ -89,9 +92,10 @@ namespace fail {
 
       int type = ELF32_ST_TYPE(mysym.st_info);
       if((type != STT_SECTION) && (type != STT_FILE)){
-        m_log << " " <<  (i) << " " << name_buf+idx  << " @ "  << mysym.st_value << std::endl;
 #ifndef __puma
-        m_bimap.insert( entry(name_buf+idx, mysym.st_value)  );
+        m_bimap_mangled.insert( entry(name_buf+idx, mysym.st_value)  );
+        m_bimap_demangled.insert( entry ( Demangler::demangle(name_buf+idx), mysym.st_value) );
+
 #endif
       }
     }
@@ -99,33 +103,66 @@ namespace fail {
     return 0;
   }
 
-
   guest_address_t ElfReader::getAddressByName(const std::string& name) {
 #ifndef __puma
-  typedef bimap_t::left_map::const_iterator const_iterator_t;
+    guest_address_t res = getAddress(m_bimap_demangled, name);
+    if(res == ADDR_INV){
+      res = getAddress(m_bimap_mangled, name);
+    }
+    return res;
+#endif
+  }
 
-  const_iterator_t iterator = m_bimap.left.find(name);
-  if(iterator == m_bimap.left.end()){
-    return ADDR_INV;
-  }else{
-    return iterator->second;
+#ifndef __puma
+  guest_address_t ElfReader::getAddress(const bimap_t& map, const std::string& name){
+    typedef bimap_t::left_map::const_iterator const_iterator_t;
+
+    const_iterator_t iterator = map.left.find(name);
+    if(iterator == map.left.end()){
+      return ADDR_INV;
+    }else{
+      return iterator->second;
+    }
   }
 #endif
+
+#ifndef __puma
+  std::string ElfReader::getName(const bimap_t& map, guest_address_t address){
+    // .right switches key/value
+    typedef bimap_t::right_map::const_iterator const_iterator_t;
+
+    const_iterator_t iterator = map.right.find(address);
+    if(iterator != map.right.end()){
+      return iterator->second;
+    }
+    return NOTFOUND;
   }
 
   std::string ElfReader::getNameByAddress(guest_address_t address) {
-#ifndef __puma
-  // .right switches key/value
-  typedef bimap_t::right_map::const_iterator const_iterator_t;
+    std::string res = getName(m_bimap_demangled, address);
+    if(res == NOTFOUND){
+      return getName(m_bimap_mangled, address);
+    }
+    return res;
+  }
 
-  const_iterator_t iterator = m_bimap.right.find(address);
-  if(iterator == m_bimap.right.end()){
-    return "[ElfReader] FUNCTION NOT FOUND";
-  }else{
-    return iterator->second;
+  std::string ElfReader::getMangledNameByAddress(guest_address_t address) {
+    return getName(m_bimap_mangled, address);
+  }
+
+  std::string ElfReader::getDemangledNameByAddress(guest_address_t address) {
+    return getName(m_bimap_demangled, address);
+  }
+
+  void ElfReader::printDemangled(){
+    print_map(m_bimap_demangled.right); // print Address as first element
+  }
+
+  void ElfReader::printMangled(){
+    print_map(m_bimap_mangled.right); // print Address as first element
   }
 #endif
-  }
+
 
 } // end-of-namespace fail
 

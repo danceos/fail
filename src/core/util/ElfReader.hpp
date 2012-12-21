@@ -2,23 +2,13 @@
 #define __ELFREADER_HPP__
 
 #include <string>
+
 #ifndef __puma
 #include <boost/bimap.hpp>
 #endif
 
-#include "sal/SALConfig.hpp"
+#include "sal/SALConfig.hpp" // for ADDR_INV
 #include "Logger.hpp"
-
-template< class MapType >
-void print_map(const MapType & map)
-{
-  typedef typename MapType::const_iterator const_iterator;
-
-  for( const_iterator i = map.begin(), iend = map.end(); i != iend; ++i )
-  {
-    std::cout << i->first << " -- " << i->second << std::endl;
-  }
-}
 
 namespace fail {
 
@@ -39,34 +29,76 @@ namespace fail {
       ElfReader(const char* path);
 
       /**
-       * Get guest address by symbol name
+       * Get guest address by symbol name.
+       * Both mangled an demangled symbols are searched.
        * @param name The symbol name as string
-       * @return The according addres if found, else -1
+       * @return The according address if found, else ADDR_INV
        */	
       guest_address_t getAddressByName(const std::string& name) ;
 
-
       /**
-       * Get symbol name associated to an address
+       * Get demangled symbol name associated to an address
        * This is interesting when checking instruction pointers.
        * @param name The address of a symbol (or around a symbol -> instruction pointer)
-       * @return The according address if found, else -1
-       * 
-       * \todo multimap sorted by addresses
-       * Name is at first key <= address
+       * @return The according address if found, else ElfReader::NOTFOUND
        */
       std::string getNameByAddress(guest_address_t address) ; 
 
+      /**
+       * Get the mangled symbol name associated to an address
+
+       * @param name The address of a symbol (or around a symbol -> instruction pointer)
+       * @return The according address if found, else ElfReader::NOTFOUND
+       */
+      std::string getMangledNameByAddress(guest_address_t address) ; 
+
+      /**
+       * Get the demangled symbol name associated to an address
+       * Note the the demangled name is simplified, not showing any types! 
+       * @param name The address of a symbol (or around a symbol -> instruction pointer)
+       * @return The according address if found, else ElfReader::NOTFOUND
+       */
+      std::string getDemangledNameByAddress(guest_address_t address) ; 
+
+      /**
+       * Print the list of available mangled symbols
+       * @note This includes both C and C++ symbols
+       */
+       void printMangled();
+
+      /**
+       * Print the list of all available demangled symbols
+       * @note These are only C++ symbols.
+       */
+       void printDemangled();
+
+       //! Default string, if symbol is not found
+       static const std::string NOTFOUND;
 
     private:
       Logger m_log;
 
+
+      int process_symboltable(int sect_num, FILE* fp);
 #ifndef __puma
       typedef boost::bimap< std::string, guest_address_t > bimap_t;
       typedef bimap_t::value_type entry;
-      bimap_t m_bimap;
+      
+      bimap_t m_bimap_mangled;
+      bimap_t m_bimap_demangled;
+
+      template < typename MapType >
+        void print_map(const MapType  & m){
+          typedef typename MapType::const_iterator const_iterator;
+          for( const_iterator iter = m.begin(), iend = m.end(); iter != iend; ++iter )
+          {
+            m_log << std::hex  <<  iter->first << " - "<< std::hex << iter->second << std::endl;
+          }
+        }
+
+      guest_address_t getAddress(const bimap_t& map, const std::string& name);
+      std::string getName(const bimap_t& map, guest_address_t address);
 #endif
-      int process_symboltable(int sect_num, FILE* fp);
   };
 
 } // end-of-namespace fail

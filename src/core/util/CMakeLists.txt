@@ -1,6 +1,8 @@
 set(SRCS
 	ElfReader.cc
 	ElfReader.hpp
+  Demangler.hpp
+  Demangler.cc
 	elfinfo/elfinfo.cc
 	elfinfo/elfinfo.h
 	gzstream/gzstream.C
@@ -28,5 +30,8 @@ find_package(Boost 1.42 COMPONENTS thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
+# libiberty required by Demangler.cc:
+find_library(LIB_IBERTY iberty)
+
 add_library(fail-util ${SRCS})
-target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} ${LIB_IBERTY})

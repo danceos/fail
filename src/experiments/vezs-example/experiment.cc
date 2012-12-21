@@ -34,6 +34,8 @@ bool VEZSExperiment::run()
   ElfReader elf("./x86_bare_test");
   log << "STARTING EXPERIMENT" << endl;
   log << "main() address: " <<   elf.getAddressByName("main") << endl;
+  elf.printMangled();
+  elf.printDemangled();
 
   BPSingleListener bp;
 #if 0
@@ -57,23 +59,22 @@ bool VEZSExperiment::run()
   simulator.restore("vezs.state");
 
   log << " current EIP = " << simulator.getCPU(0).getInstructionPointer() << endl;
-  log << " Task0 start: " <<  elf.getAddressByName("_ZN5Alpha17functionTaskTask0Ev") << endl;
   BPSingleListener bpt0;
   BPSingleListener bpt1;
-  bpt0.setWatchInstructionPointer(elf.getAddressByName("_ZN5Alpha17functionTaskTask0Ev"));
-  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN4Beta17functionTaskTask1Ev"));
+  bpt0.setWatchInstructionPointer(elf.getAddressByName("Alpha::functionTaskTask0"));
+  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN4Beta17functionTaskTask1Ev")); // both mangled and demangled name a working.
 
   simulator.addListener(&bpt1);
   simulator.addListenerAndResume(&bpt0);
-  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getMangledNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
   simulator.resume();
-  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl; 
 
   simulator.clearListeners();
-  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN2os3krn9SchedImpl18superDispatch_implEPS1_hh"));
+  bpt1.setWatchInstructionPointer(elf.getAddressByName("os::krn::SchedImpl::superDispatch_impl"));
   for(int i = 0; i < 10; i++){
     simulator.addListenerAndResume(&bpt1); 
-    log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+    log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<< elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
   }
 #endif
 #if 0	
