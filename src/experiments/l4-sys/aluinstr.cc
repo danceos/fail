@@ -32,9 +32,10 @@ void BochsALUInstructions::buildEquivalenceClasses() {
 		InstrList &currVector = equivalenceClasses[allInstr[i].aluClass];
 		if (allInstr[i].opcodeRegisterOffset <= BochsALUInstr::REG_COUNT) {
 			// add an entry for each possible opcode
-			for (int j = 0; j < allInstr[i].opcodeRegisterOffset; j++) {
+			for (Bit8u j = 0; j < allInstr[i].opcodeRegisterOffset; j++) {
+				Bit8u new_opcode = allInstr[i].opcode + j;
 				BochsALUInstr newInstr = { allInstr[i].bochs_operation,
-						allInstr[i].opcode + j,
+						new_opcode,
 						allInstr[i].reg,
 						j,
 						allInstr[i].aluClass };
