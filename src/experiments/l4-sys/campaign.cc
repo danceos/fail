@@ -13,50 +13,6 @@ using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
 
-#if 0
-#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_result_strings[L4SysProtoMsg::OUTPUT];
-std::string L4SysCampaign::output_result(L4SysProtoMsg_ResultType res) {
-	switch (res) {
-	OUTPUT_CASE(DONE);
-	OUTPUT_CASE(INCOMPLETE);
-	OUTPUT_CASE(TIMEOUT);
-	OUTPUT_CASE(WRONG);
-	OUTPUT_CASE(UNKNOWN);
-	default:
-		return l4sys_output_result_strings[0];
-	}
-}
-#undef OUTPUT_CASE
-#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_experiment_strings[L4SysProtoMsg::OUTPUT];
-std::string L4SysCampaign::output_experiment(L4SysProtoMsg_ExperimentType res) {
-	switch (res) {
-	OUTPUT_CASE(GPRFLIP)
-	OUTPUT_CASE(RATFLIP)
-	OUTPUT_CASE(IDCFLIP)
-	OUTPUT_CASE(ALUINSTR)
-	default:
-		return l4sys_output_experiment_strings[0];
-	}
-}
-#undef OUTPUT_CASE
-#define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_register_strings[L4SysProtoMsg::OUTPUT];
-std::string L4SysCampaign::output_register(L4SysProtoMsg_RegisterType res) {
-	switch (res) {
-	OUTPUT_CASE(EAX);
-	OUTPUT_CASE(ECX);
-	OUTPUT_CASE(EDX);
-	OUTPUT_CASE(EBX);
-	OUTPUT_CASE(ESP);
-	OUTPUT_CASE(EBP);
-	OUTPUT_CASE(ESI);
-	OUTPUT_CASE(EDI);
-	default:
-		return l4sys_output_register_strings[0];
-	}
-}
-#undef OUTPUT_CASE
-#endif
-
 extern L4SysConversion l4sysResultConversion;
 extern L4SysConversion l4sysExperimentConversion;
 extern L4SysConversion l4sysRegisterConversion;
@@ -81,7 +37,6 @@ bool L4SysCampaign::run() {
 	int count = 0;
 	srand(time(NULL));
 
-#if 0
 	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
@@ -124,8 +79,7 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-	#endif
-	for (int i = 0; i < 5000; ++i) {
+	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.RATFLIP);
 		// modify for a random instruction
