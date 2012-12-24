@@ -12,17 +12,17 @@ message L4SysProtoMsg {
 	required int32 bit_offset = 3;
 
 	// registers
-    enum RegisterType {
-        EAX = 1;
-        ECX = 2;
-        EDX = 3;
-        EBX = 4;
-        ESP = 5;
-        EBP = 6;
-        ESI = 7;
-        EDI = 8;
-    }
-    optional RegisterType register_offset = 4;
+	enum RegisterType {
+		EAX = 1;
+		ECX = 2;
+		EDX = 3;
+		EBX = 4;
+		ESP = 5;
+		EBP = 6;
+		ESI = 7;
+		EDI = 8;
+	}
+	optional RegisterType register_offset = 4;
 
 	// results
 	// make these optional to reduce overhead for server->client communication

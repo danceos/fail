@@ -102,6 +102,10 @@ private:
 	 * Calculate the timeout of the current workload in milliseconds.
 	 */
 	unsigned calculateTimeout(unsigned instr_left);
+	/**
+	 * Send back the experiment parameter set with a description of the error.
+	 */
+	void terminateWithError(std::string details, int reason);
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__

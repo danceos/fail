@@ -3,6 +3,7 @@
 
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
+#include "conversion.hpp"
 #include "cpn/CampaignManager.hpp"
 #include "util/Logger.hpp"
 #include "sal/SALConfig.hpp"
@@ -11,10 +12,8 @@ using namespace std;
 using namespace fail;
 
 char const * const results_csv = "l4sys.csv";
-char const *l4sys_output_result_strings[] = { "Unknown", "No effect", "Incomplete execution", "Crash", "Silent data corruption", "Error" };
-char const *l4sys_output_experiment_strings[] = { "Unknown", "GPR Flip", "RAT Flip", "IDC Flip", "ALU Instr Flip" };
-char const *l4sys_output_register_strings[] = { "Unknown", "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
 
+#if 0
 #define OUTPUT_CASE(OUTPUT) case L4SysProtoMsg::OUTPUT: return l4sys_output_result_strings[L4SysProtoMsg::OUTPUT];
 std::string L4SysCampaign::output_result(L4SysProtoMsg_ResultType res) {
 	switch (res) {
@@ -56,6 +55,11 @@ std::string L4SysCampaign::output_register(L4SysProtoMsg_RegisterType res) {
 	}
 }
 #undef OUTPUT_CASE
+#endif
+
+extern L4SysConversion l4sysResultConversion;
+extern L4SysConversion l4sysExperimentConversion;
+extern L4SysConversion l4sysRegisterConversion;
 
 bool L4SysCampaign::run() {
 	Logger log("L4SysCampaign");
@@ -77,6 +81,7 @@ bool L4SysCampaign::run() {
 	int count = 0;
 	srand(time(NULL));
 
+#if 0
 	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
@@ -119,7 +124,8 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-	for (int i = 0; i < 20000; ++i) {
+	#endif
+	for (int i = 0; i < 5000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.RATFLIP);
 		// modify for a random instruction
@@ -144,13 +150,15 @@ bool L4SysCampaign::run() {
 	while ((res = static_cast<L4SysExperimentData *>(campaignmanager.getDone()))) {
 		rescount++;
 
-		results << output_experiment(res->msg.exp_type()) << "," << hex << res->msg.injection_ip() << dec << ",";
+		results << l4sysExperimentConversion.output(res->msg.exp_type())
+		        << "," << hex << res->msg.injection_ip() << dec << ",";
 		if (res->msg.has_register_offset())
-			results << output_register(res->msg.register_offset());
+			results << l4sysRegisterConversion.output(res->msg.register_offset());
 		else
 			results << "None";
 		results	<< "," << res->msg.instr_offset() << "," << res->msg.bit_offset()
-				<< "," << output_result(res->msg.resulttype()) << ","
+				<< ","
+				<< l4sysResultConversion.output(res->msg.resulttype()) << ","
 				<< res->msg.resultdata();
 		if (res->msg.has_output())
 			results << "," << res->msg.output();

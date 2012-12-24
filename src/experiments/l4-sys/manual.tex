@@ -81,8 +81,8 @@ you may set \verb+L4SYS_ADDRESS_SPACE+ to \verb+ANY_ADDR+. Keep in mind that in
 that case, your instruction addresses must be unique among all those
 executed in the system, which in general is not the case.
 
-Basically, there are two ways to find out the identifier of a certain
-address space in Fail*: You can look up the value in
+To find out the value of the address space identifier, you will have to
+look up the value in
 the emulator using a debugger. In the case of Bochs, you may want to
 study
 \href{http://bochs.sourceforge.net/doc/docbook/user/internal-debugger.html}{this page},
@@ -90,37 +90,7 @@ and, according to its instructions,
 dump the content of the CR3 control register at the
 beginning of your program.
 
-You can also utilise the Fail* framework, which is easier and more reliable,
-but as there is no real reason to include this ``feature'' in the framework,
-in order to do so, you need to patch it. Namely,
-\texttt{src/core/sal/Listener.cc} and
-\texttt{src/experiments/l4-sys/experiment.cc}
-need to be modified using the two patch files supplied alongside with this
-manual in the current directory.
-You should check the patch files for their release date and content:
-In case the framework's
-event handling structure has changed, the line numbers in
-\texttt{Listener.cc} are incorrect,
-and you need to apply the patch manually.
-
-As soon as you have applied the patch, set \verb+PREPARATION_STEP+
-to \texttt{1} in \texttt{experimentInfo.hpp} and recompile the framework.
-Now start the experiment client (\texttt{fail-client}) in your
-emulator directory, and
-it will show you which address space is active whenever a
-breakpoint triggers.
-Ideally, you still have a graphical interface enabled to
-monitor your system's progress and check if the breakpoints
-are triggered at the right points in time.
-
-When your program has reached the function entry point,
-note the address space and exit the program simply by pressing Ctrl+C.
-
 \subsection{Step 1: Save the initial state of the machine}
-
-If you have modified the Fail* framework in Step 0,
-you should now restore the original framework
-data using \texttt{svn revert}.
 
 Make sure \verb+PREPARATION_STEP+ is still set to \texttt{1}, and
 you have set \verb+L4SYS_ADDRESS_SPACE+ accordingly.
@@ -297,10 +267,7 @@ the campaign server, from left to right.
 
 \section{Known bugs}
 
-At the moment, RATFlip does not provide enough information
-to reconstruct the injected fault
-(see also the \texttt{TODO} in \texttt{experiment.cc}).
-Also, if you need support for more than one processor,
+If you need support for more than one processor,
 you will have to extend the code accordingly:
 at the moment, when in doubt, it uses the first CPU.
 

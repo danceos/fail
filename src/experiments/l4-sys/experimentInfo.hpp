@@ -5,11 +5,11 @@
 #define MAX_INSTR_BYTES 15
 
 // the bounds of the program (space, instructions and time)
-#define L4SYS_ADDRESS_SPACE		0x203d000
+#define L4SYS_ADDRESS_SPACE		0x1fe0000
 #define L4SYS_FUNC_ENTRY		0x10025ca
 #define L4SYS_FUNC_EXIT			0x1002810
-// kernel: 3597806, userland: 79484908
-#define L4SYS_NUMINSTR			83082714
+// kernel: 2377547, userland: 79405472
+#define L4SYS_NUMINSTR			81783019
 #define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
