@@ -48,10 +48,10 @@ struct BochsALUInstr {
 	 * in bxInstruction_c), pointing to several bits of information,
 	 * for instance what simulator function to execute
 	 */
-    Bit16u bochs_operation;
-    /**
-     * the x86 opcode, as stored by Bochs (known as b1 in bxInstruction_c)
-     */
+	Bit16u bochs_operation;
+	/**
+	 * the x86 opcode, as stored by Bochs (known as b1 in bxInstruction_c)
+	 */
 	Bit8u opcode;
 	/**
 	 * the reg part of the modr/m field (known as "nnn" in bxInstruction_c)
@@ -82,10 +82,11 @@ struct BochsALUInstr {
 	 */
 	bool operator==(BochsALUInstr const &obj) const
 	{
-		return opcode == obj.opcode &&
-		        reg == obj.reg &&
-		        opcodeRegisterOffset == obj.opcodeRegisterOffset &&
-		        aluClass == obj.aluClass;
+		return bochs_operation == obj.bochs_operation &&
+			opcode == obj.opcode &&
+			reg == obj.reg &&
+			opcodeRegisterOffset == obj.opcodeRegisterOffset &&
+			aluClass == obj.aluClass;
 	}
 	/**
 	 * returns false if obj equals this object
@@ -363,6 +364,7 @@ private:
 	 * A function to build the equivalence classes from the given instructions.
 	 */
 	void buildEquivalenceClasses();
+	void checkEquivClasses(); //!< checks if the equivalence classes are valid
 #ifdef DEBUG
 	void printNestedMap(); //!< prints the \a EquivClassMap of the oject
 #endif

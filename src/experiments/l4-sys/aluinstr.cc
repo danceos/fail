@@ -25,6 +25,7 @@ BochsALUInstructions::BochsALUInstructions(BochsALUInstr const *initial_array, s
 	allInstrSize = array_size / sizeof(BochsALUInstr);
 	srand(time(NULL));
 	buildEquivalenceClasses();
+	checkEquivClasses();
 }
 
 void BochsALUInstructions::buildEquivalenceClasses() {
@@ -48,11 +49,33 @@ void BochsALUInstructions::buildEquivalenceClasses() {
 	}
 }
 
+void BochsALUInstructions::checkEquivClasses() {
+	for (EquivClassMap::iterator it = equivalenceClasses.begin();
+	    it != equivalenceClasses.end();
+	    it++) {
+		InstrList &curr_vector = it->second;
+		size_t curr_size = curr_vector.size();
+		for (size_t i = 0; i < curr_size; i++) {
+			for (size_t j = i + 1; j < curr_size; j++) {
+				if (curr_vector[i] == curr_vector[j]) {
+					std::cerr << "Two instructions in one equivalence class"
+					    << "are equal to each other. Correct the"
+					    << "source code." << std::endl;
+					exit(50);
+				}
+			}
+		}
+	}
+}
+
 void BochsALUInstructions::bochsInstrToInstrStruct(bxInstruction_c const &src, BochsALUInstr &dest) const {
 	//Note: it may be necessary to introduce a solution for two-byte
 	//opcodes once they overlap with one-byte ones
 	for (size_t i = 0; i < allInstrSize; i++) {
 		// first, check the opcode
+		if (allInstr[i].bochs_operation != src.getIaOpcode()) {
+			continue;
+		}
 		if (allInstr[i].opcodeRegisterOffset <= BochsALUInstr::REG_COUNT) {
 			// the opcode listed in allInstr is the starting value for a range
 			if (src.b1() < allInstr[i].opcode ||
@@ -105,6 +128,7 @@ void BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
 
 	InstrList const &destList = equivalenceClasses.at(equClassID);
 	BochsALUInstr dest;
+
 	// make sure the two are not equal by chance
 	do {
 		int index = rand() % destList.size();
@@ -132,7 +156,7 @@ void BochsALUInstructions::randomEquivalent(bxInstruction_c &result,
 		result.execute2 = entry.execute2;
 	}
 	// opcodes
-	result.metaInfo.ia_opcode = dest.bochs_operation;
+	result.setIaOpcode(dest.bochs_operation);
 	result.setB1(dest.opcode);
 	if (dest.opcodeRegisterOffset < BochsALUInstr::REG_COUNT) {
 		result.setRm(dest.opcodeRegisterOffset);

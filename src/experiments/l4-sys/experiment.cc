@@ -555,6 +555,9 @@ bool L4SysExperiment::run() {
 			} else {
 				// the data comes from an uninitialised register
 				newdata = rand();
+				stringstream ss;
+				ss << "0x" << hex << newdata;
+				param->msg.set_details(ss.str());
 			}
 			cpu.setRegisterContent(bochsRegister, newdata);
 		}
