@@ -8,7 +8,7 @@
 #include "util/Logger.hpp"
 
 #include "util/ElfReader.hpp"
-
+#include <stdlib.h>
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "sal/SALConfig.hpp"
@@ -31,11 +31,18 @@ using namespace fail;
 bool VEZSExperiment::run()
 {
   Logger log("VEZS-Example", false);
-  ElfReader elf("./x86_bare_test");
+  // Elf image path must be set in a environment variable.
+  char * elfpath = getenv("CIAO_ELF_PATH");
+  if(elfpath == NULL){
+    log << " CIAO_ELF_PATH not set :(" << std::endl;
+    simulator.terminate();
+  }
+
+  ElfReader elf(elfpath);
   log << "STARTING EXPERIMENT" << endl;
   log << "main() address: " <<   elf.getAddressByName("main") << endl;
-  elf.printMangled();
-  elf.printDemangled();
+  //elf.printMangled();
+  //elf.printDemangled();
 
   BPSingleListener bp;
 #if 0
