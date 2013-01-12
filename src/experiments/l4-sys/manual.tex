@@ -33,6 +33,30 @@ in the register allocation table, IDCFLip to corrupt a specific instruction
 and ALUInstrFlip to modify the behaviour of the arithmetic logic unit,
 so that it performs a different calculation using the same parameters.
 
+\section{Framework Setup}
+
+Configure Fail* as described in \texttt{doc/how-to-build.txt}. In addition,
+the following CMake flags need to be set:
+
+\begin{itemize}
+\item \verb+BUILD_BOCHS = ON+
+\item \verb+BUILD_X86 = ON+
+\item \verb+CONFIG_BOCHS_NO_ABORT = ON+
+\item \verb+CONFIG_EVENT_BREAKPOINTS = ON+
+\item \verb+CONFIG_EVENT_IOPORT = ON+
+\item \verb+CONFIG_SR_RESTORE = ON+
+\item \verb+CONFIG_SR_SAVE = ON+
+\item \verb+EXPERIMENTS_ACTIVATED = l4-sys+
+\end{itemize}
+
+Enabling \verb+CONFIG_FAST_BREAKPOINTS+ may speed up the experiment clients
+significantly. Enabling \verb+CONFIG_BOCHS_NO_ABORT+ is necessary to detect
+whether Bochs stopped because of a bad instruction induced by IDCFlip.
+Keep in mind that this implies the risk of a deadlock
+in the campaign system, because packets (i.e. experiment descriptions)
+are resent if the client does not answer and finally, all clients
+might fail because they tried to execute the same faulty instruction.
+
 \section{Emulator Setup}
 
 These experiments work with Bochs only. This is partly due to some
