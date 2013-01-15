@@ -5,9 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "util/Logger.hpp"
 
-#include "util/ElfReader.hpp"
 #include <stdlib.h>
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
@@ -28,61 +26,58 @@ using namespace fail;
 #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
 
+#define SAVESTATE (1)
+
+void VEZSExperiment::printEIP() {
+  m_log << "EIP = 0x" << hex << simulator.getCPU(0).getInstructionPointer() <<" "<< m_elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl; 
+}
+
 bool VEZSExperiment::run()
 {
-  Logger log("VEZS-Example", false);
-  // Elf image path must be set in a environment variable.
-  char * elfpath = getenv("CIAO_ELF_PATH");
-  if(elfpath == NULL){
-    log << " CIAO_ELF_PATH not set :(" << std::endl;
-    simulator.terminate();
-  }
+  m_log << "STARTING EXPERIMENT" << endl;
+  printEIP();
 
-  ElfReader elf(elfpath);
-  log << "STARTING EXPERIMENT" << endl;
-  log << "main() address: " <<   elf.getAddressByName("main") << endl;
-  //elf.printMangled();
-  //elf.printDemangled();
-
+#if(SAVESTATE)
+  m_log << "Booting, and saving state at ";
   BPSingleListener bp;
-#if 0
   // STEP 1: run until interesting function starts, and save state
-  bp.setWatchInstructionPointer(elf.getAddressByName("main"));
+  bp.setWatchInstructionPointer(m_elf.getAddressByName("main"));
   if(simulator.addListenerAndResume(&bp) == &bp){
-    log << "test function entry reached, saving state" << endl;
+    m_log << "test function entry reached, saving state" << endl;
   }
-  log << "EIP = " << hex << bp.getTriggerInstructionPointer()   << endl;
+  printEIP();
   //simulator.terminate();
   simulator.save("vezs.state");
   simulator.terminate();
-#endif
-#if 1
+#else
 
   //int bit_offset = 2;	
   //for (int instr_offset = 0; instr_offset < OOSTUBS_NUMINSTR; ++instr_offset) {
 
   // STEP 3: The actual experiment.
-  log << "restoring state" << endl;
+  m_log << "restoring state" << endl;
   simulator.restore("vezs.state");
 
-  log << " current EIP = " << simulator.getCPU(0).getInstructionPointer() << endl;
-  BPSingleListener bpt0;
-  BPSingleListener bpt1;
-  bpt0.setWatchInstructionPointer(elf.getAddressByName("Alpha::functionTaskTask0"));
-  bpt1.setWatchInstructionPointer(elf.getAddressByName("_ZN4Beta17functionTaskTask1Ev")); // both mangled and demangled name a working.
+  printEIP();
 
-  simulator.addListener(&bpt1);
-  simulator.addListenerAndResume(&bpt0);
-  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getMangledNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+//  BPSingleListener bpt0;
+//  BPSingleListener bpt1;
+//  m_elf.printDemangled();
+//  bpt0.setWatchInstructionPointer(m_elf.getAddressByName("DOM1::functionTaskmainTask"));
+//  bpt1.setWatchInstructionPointer(m_elf.getAddressByName("DOM1::functionTaskpersistentDetectorScopeEntryTask")); // both mangled and demangled name a working.
+//
+//  simulator.addListener(&bpt1);
+//  simulator.addListenerAndResume(&bpt0);
+//  printEIP();
   simulator.resume();
-  log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<<elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl; 
-
-  simulator.clearListeners();
-  bpt1.setWatchInstructionPointer(elf.getAddressByName("os::krn::SchedImpl::superDispatch_impl"));
-  for(int i = 0; i < 10; i++){
-    simulator.addListenerAndResume(&bpt1); 
-    log << "EIP = " << simulator.getCPU(0).getInstructionPointer() <<" "<< elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
-  }
+//
+//  printEIP();
+//  simulator.clearListeners();
+//  bpt1.setWatchInstructionPointer(m_elf.getAddressByName("os::krn::SchedImpl::superDispatch_impl"));
+//  for(;;){
+//    simulator.addListenerAndResume(&bpt1); 
+//    printEIP();
+//  }
 #endif
 #if 0	
   int32_t data = simulator.getCPU(0).getRegister(RID_CAX)->getData();

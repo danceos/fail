@@ -22,13 +22,19 @@ namespace fail {
 
     public:
 
-      /** 
+      /**
        * Constructor.
        * @param path Path to the ELF file.
        */
       ElfReader(const char* path);
 
       /**
+       * Constructor.
+       * @note The path is guessed from a FAIL_ELF_PATH environment variable
+       */
+      ElfReader();
+
+     /**
        * Get guest address by symbol name.
        * Both mangled an demangled symbols are searched.
        * @param name The symbol name as string
@@ -79,11 +85,12 @@ namespace fail {
       Logger m_log;
 
 
+      void setup(const char*);
       int process_symboltable(int sect_num, FILE* fp);
 #ifndef __puma
       typedef boost::bimap< std::string, guest_address_t > bimap_t;
       typedef bimap_t::value_type entry;
-      
+
       bimap_t m_bimap_mangled;
       bimap_t m_bimap_demangled;
 
