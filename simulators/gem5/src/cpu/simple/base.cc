@@ -377,6 +377,12 @@ BaseSimpleCPU::preExecute()
 
     TheISA::PCState pcState = thread->pcState();
 
+	// FAIL*
+	#if defined(CONFIG_EVENT_BREAKPOINTS) && defined(CONFIG_EVENT_RANGEBREAKPOINTS)
+		fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+		fail::simulator.onBreakpoint(cpu, instAddr(), -1);
+	#endif
+
     if (isRomMicroPC(pcState.microPC())) {
         stayAtPC = false;
         curStaticInst = microcodeRom.fetchMicroop(pcState.microPC(),

@@ -3,6 +3,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/VariantConfig.hpp.in
                ${CMAKE_CURRENT_BINARY_DIR}/VariantConfig.hpp)
 
 OPTION(CONFIG_EVENT_BREAKPOINTS         "Event source: Breakpoints" OFF)
+OPTION(CONFIG_EVENT_RANGEBREAKPOINTS	"Event source: Range Breakpoints" OFF)
 OPTION(CONFIG_EVENT_MEMREAD             "Event source: Memory reads" OFF)
 OPTION(CONFIG_EVENT_MEMWRITE            "Event source: Memory writes" OFF)
 OPTION(CONFIG_EVENT_GUESTSYS            "Event source: Outbound guest-system communication" OFF)

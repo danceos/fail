@@ -1,9 +1,10 @@
 #ifndef __GEM5_LISTENER_AH__
   #define __GEM5_LISTENER_AH__
 
+#include "config/FailConfig.hpp"
 #include "config/VariantConfig.hpp"
 
-#if defined(BUILD_GEM5)
+#if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_RANGEBREAKPOINTS)
 
 #include "../SALInst.hpp"
 
@@ -27,7 +28,7 @@ aspect Gem5Listener {
 		{
 			System* sys = *System::systemList.begin();
 			m_Breakpoint = new Gem5Breakpoint(&sys->pcEventQueue, this->m_WatchInstrPtr);
-			
+
 			return true;
 		}
 
@@ -41,6 +42,6 @@ aspect Gem5Listener {
 	};
 };
 
-#endif // defined(BUILD_GEM5)
+#endif // defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_RANGEBREAKPOINTS)
 
 #endif // __GEM5_LISTENER_AH__
