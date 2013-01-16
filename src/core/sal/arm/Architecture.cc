@@ -18,9 +18,16 @@ void ArmArchitecture::fillRegisterList()
 		// Build and set the register name:
 		std::stringstream sstr;
 		sstr << "R" << i+1;
-		reg->setName(str.str());
+		// FIXME This doesn't work because no matching setName is found.
+		// Not sure why this happens.
+		//reg->setName(sstr.str());
 		addRegister(reg);
 	}
+
+	// Instruction Pointer
+	Register *reg = new Register(RI_IP, RT_IP, 32);
+	reg->setName("IP");
+	addRegister(reg);
 }
 
 ArmArchitecture::~ArmArchitecture()

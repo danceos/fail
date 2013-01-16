@@ -6,6 +6,10 @@ regdata_t Gem5ArmCPU::getRegisterContent(Register* reg)
 {
 	switch (reg->getType())	{
 	case RT_GP:
+		if (reg->getIndex() == 15) {
+			return m_System->getThreadContext(m_Id)->pcState().pc();
+		}
+			
 		return m_System->getThreadContext(m_Id)->readIntReg(reg->getIndex());
 			
 	case RT_FP:
@@ -15,7 +19,7 @@ regdata_t Gem5ArmCPU::getRegisterContent(Register* reg)
 		return m_System->getThreadContext(m_Id)->readMiscReg(reg->getIndex());
 
 	case RT_IP:
-		return getRegisterContent(getRegister(RI_IP));
+		return m_System->getThreadContext(m_Id)->pcState().pc();
 	}
 
 	// This shouldn't be reached if a valid register is passed
