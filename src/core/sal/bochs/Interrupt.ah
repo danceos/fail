@@ -26,12 +26,15 @@ aspect Interrupt {
 		//    - BX_SOFTWARE_EXCEPTION = 6
 		// Only the first and the second types are relevant for this aspect.  
 
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+
 		unsigned vector = *(tjp->arg<0>());
 		unsigned type = *(tjp->arg<1>());
 		if (type == BX_EXTERNAL_INTERRUPT)
-			fail::simulator.onInterrupt(vector, false);
+			fail::simulator.onInterrupt(&triggerCPU, vector, false);
 		else if (type == BX_NMI)
-			fail::simulator.onInterrupt(vector, true);
+			fail::simulator.onInterrupt(&triggerCPU, vector, true);
 	}
 };
 

@@ -10,7 +10,6 @@
 #include "cpu/cpu.h"
 
 #include "../SALInst.hpp"
-
 #include "BochsHelpers.hpp"
 
 // TODO: ATM only capturing bytewise output (most common, I suppose)
@@ -22,7 +21,10 @@ aspect IOPortCom {
 	{
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
-		fail::simulator.onIOPort(rAL, rDX, true);
+		
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, true);
 	}
 
 	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX(...)";
@@ -31,7 +33,8 @@ aspect IOPortCom {
 	{
 		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
 		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
-		fail::simulator.onIOPort(rAL, rDX, false);
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, false);
 	}
 };
 

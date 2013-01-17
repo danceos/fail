@@ -63,14 +63,16 @@ aspect MemAccess {
 #ifdef CONFIG_EVENT_MEMWRITE
 	advice execution (write_methods()) : after ()
 	{
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<2>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (write_methods_RMW()) : after ()
 	{
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			rmw_address, sizeof(*(tjp->arg<0>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -79,7 +81,8 @@ aspect MemAccess {
 	{
 		//std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
 		// TODO: Log-level?
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<1>()), sizeof(*(tjp->arg<3>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -88,7 +91,8 @@ aspect MemAccess {
 	{
 		//std::cerr << "WOOOOOT write_methods_new_stack_64" << std::endl;
 		// TODO: Log-level?
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<0>()), sizeof(*(tjp->arg<2>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -100,7 +104,8 @@ aspect MemAccess {
 		// memory (e.g., to read vectors from the interrupt vector
 		// table).
 /*
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<0>()), sizeof(*(tjp->arg<1>())), true,
 			getCPU(tjp->that())->prev_rip);
 */
@@ -116,14 +121,16 @@ aspect MemAccess {
 #ifdef CONFIG_EVENT_MEMREAD
 	advice execution (read_methods()) : before ()
 	{
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (read_methods_dqword()) : before ()
 	{
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<1>()), 16, false,
 			getCPU(tjp->that())->prev_rip);
 	}
@@ -135,7 +142,8 @@ aspect MemAccess {
 		rmw_address = *(tjp->arg<1>());
 #endif
 #ifdef CONFIG_EVENT_MEMREAD
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 #endif
@@ -149,7 +157,8 @@ aspect MemAccess {
 		// memory (e.g., to read vectors from the interrupt vector
 		// table).
 /*
-		fail::simulator.onMemoryAccess(
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
 			*(tjp->arg<0>()), sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 */

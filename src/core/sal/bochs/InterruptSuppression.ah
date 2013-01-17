@@ -15,11 +15,15 @@ aspect InterruptSuppression {
 	pointcut interrupt_method() = "void bx_cpu_c::interrupt(...)";
 
 	advice execution (interrupt_method()) : around ()
-	{	
+	{
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+
 		unsigned vector = *(tjp->arg<0>());
-		if (!fail::simulator.isSuppressedInterrupt(vector)) {
+		if (!triggerCPU.isSuppressedInterrupt(vector)) {
 			tjp->proceed();
 		}
+		// else: do not process the interrupt
 	}
 };
 
