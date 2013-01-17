@@ -56,10 +56,11 @@ aspect FastWatchpoints {
 		// Note: "BPListener" is an abstract class anyway.
 		fail::ListenerManager& ref = tjp->target()->m_LstList;
 
-		#define TJPARG(i) *(tjp->arg<i>())
-		fail::MemAccessEvent tmp(TJPARG(0), TJPARG(1), TJPARG(3),
-			TJPARG(2) ? fail::MemAccessEvent::MEM_WRITE : fail::MemAccessEvent::MEM_READ);
-		#undef TJPARG
+		#define ARG(i) *(tjp->arg<i>())
+		fail::MemAccessEvent tmp(ARG(1), ARG(2), ARG(4),
+			ARG(3) ? fail::MemAccessEvent::MEM_WRITE : fail::MemAccessEvent::MEM_READ,
+			ARG(0));
+		#undef ARG
 		
 		// Check for matching MemAccessListener:
 		fail::ResultSet& res = ref.getMemoryListeners().gather(&tmp);

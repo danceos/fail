@@ -19,6 +19,7 @@ ResultSet& PerfVectorWatchpoints::gather(MemAccessEvent* pData)
 			pmal->setTriggerAddress(pData->getTriggerAddress());
 			pmal->setTriggerWidth(pData->getTriggerWidth());
 			pmal->setTriggerAccessType(pData->getTriggerAccessType());
+			pmal->setTriggerCPU(pData->getTriggerCPU());
 			res.add(*it);
 		}
 	}

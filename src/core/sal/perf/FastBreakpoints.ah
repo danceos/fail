@@ -60,7 +60,7 @@ aspect FastBreakpoints {
 		// Note: "BPListener" is an abstract class anyway.
 
 		fail::ListenerManager& ref = tjp->target()->m_LstList;
-		fail::BPEvent tmp(*(tjp->arg<0>()), *(tjp->arg<1>()));
+		fail::BPEvent tmp(*(tjp->arg<1>()), *(tjp->arg<2>()), *(tjp->arg<0>()));
 
 		// Check for matching BPSingleListeners:
 		fail::ResultSet& res1 = ref.getSingleListeners().gather(&tmp);
