@@ -55,11 +55,12 @@ public:
 	/**
 	 * I/O port communication handler. This method is called (from
 	 * the IOPortCom aspect) every time when Bochs performs a port I/O operation.
+	 * @param cpu the CPU that caused the IO port access
 	 * @param data the data transmitted
 	 * @param port the port it was transmitted on
 	 * @param out true if the I/O traffic has been outbound, false otherwise
 	 */
-	void onIOPort(unsigned char data, unsigned port, bool out);
+	void onIOPort(ConcreteCPU* cpu, unsigned char data, unsigned port, bool out);
 	/**
 	 * Internal handler for TimerListeners. This method is called when a previously
 	 * registered (Bochs) timer triggers. It searches for the provided TimerListener
@@ -144,6 +145,13 @@ public:
 	 * @param cacheEntry the Bochs internal CPU cache entry ptr
 	 */
 	void updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *instr);
+	/**
+	 * Retrieves the concrete CPU object, based on the given Bochs' internal pointer \a pCPU.
+	 * @param pCPU the Bochs' internal CPU object
+	 * @return the FailBochs CPU representation that corresponds to Bochs' internal CPU \a pCPU
+	 * @see The uses SimulatorController::getCPU().
+	 */
+	ConcreteCPU& detectCPU(BX_CPU_C* pCPU) const;
 };
 
 } // end-of-namespace: fail

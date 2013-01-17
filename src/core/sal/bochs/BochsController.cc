@@ -55,7 +55,7 @@ void BochsController::onTimerTrigger(void* thisPtr)
 	simulator.m_LstList.triggerActiveListeners();
 }
 
-void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
+void BochsController::onIOPort(ConcreteCPU* cpu, unsigned char data, unsigned port, bool out) {
 	// Check for active IOPortListeners:
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) {
@@ -63,6 +63,7 @@ void BochsController::onIOPort(unsigned char data, unsigned port, bool out) {
 		IOPortListener* pIOPt = dynamic_cast<IOPortListener*>(pLi);
 		if (pIOPt != NULL && pIOPt->isMatching(port, out)) {
 			pIOPt->setData(data);
+			pIOPt->setTriggerCPU(cpu);
 			it = m_LstList.makeActive(it);
 			// "it" has already been set to the next element (by calling
 			// makeActive()):
@@ -155,6 +156,18 @@ const std::string& BochsController::getMnemonic() const
 	else
 		str.clear();
 	return str;
+}
+
+ConcreteCPU& BochsController::detectCPU(BX_CPU_C* pCPU) const
+{
+	unsigned i = 0;
+  #if BX_SUPPORT_SMP
+	for (; i < BX_SMP_PROCESSORS; i++) {
+		if (BX_CPU_C[i] == pCPU) // cmp this ptr with all possible CPU objects
+			break; // index "i" found! -> stop!
+	}
+  #endif
+	return getCPU(i);
 }
 
 } // end-of-namespace: fail
