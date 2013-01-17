@@ -105,6 +105,7 @@ public:
 	 * @param port the port used for communications
 	 */
 	void onGuestSystem(char data, unsigned port);
+	// FIXME: ConcreteCPU* cpu is missing here...
 	/**
 	 * (Conditional) Jump-instruction handler.
 	 * @param cpu the CPU that did the jump

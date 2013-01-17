@@ -19,10 +19,11 @@ namespace fail {
  * about an event reported by the simulator backend.
  */
 class BaseEvent {
+protected:
+	ConcreteCPU* m_CPU; //!< the CPU object that triggered the event
 public:
 	BaseEvent(ConcreteCPU* cpu = NULL) : m_CPU(cpu) { }
 	virtual ~BaseEvent() { }
-
 	/**
 	 * Returns a pointer to the CPU that triggered this event.
 	 * @return triggering CPU
@@ -33,8 +34,6 @@ public:
 	 * @param cpu new CPU which caused this event
 	 */
 	void setTriggerCPU(ConcreteCPU* cpu) { m_CPU = cpu; }
-protected:
-	ConcreteCPU* m_CPU;
 };
 // ----------------------------------------------------------------------------
 // Specialized events:
@@ -54,6 +53,7 @@ public:
 	 * the subclasses.
 	 * @param trigger the triggering address of the breakpoint event
 	 * @param address_space the address space identifier for this event
+	 * @param cpu the Fail* CPU object that triggered the breakpoint
 	 */
 	BPEvent(address_t trigger, address_t address_space, ConcreteCPU* cpu = NULL)
 	: BaseEvent(cpu), m_TriggerInstrPtr(trigger), m_AddressSpace(address_space) { }
@@ -114,7 +114,7 @@ public:
 	 * @param width width of memory access (= # Bytes)
 	 * @param triggerIP the instruction pointer that actually triggered the memory access
 	 * @param type the type of memory access (r, w, rw)
-	 * @param cpu the cpu that triggered the event
+	 * @param cpu the CPU that triggered the event
 	 */
 	MemAccessEvent(address_t triggerAddr, size_t width, address_t triggerIP, access_type_t type,
 				   ConcreteCPU* cpu = NULL)
@@ -221,7 +221,7 @@ public:
 	 * @param nmi the new NMI (non maskable interrupt) flag state
 	 * @param triggerNum system and type specific number identifying the requestet
 	 *        "trouble-type"
-	 * @param cpu the cpu that triggered the event
+	 * @param cpu the CPU that triggered the event
 	 */
 	InterruptEvent(bool nmi, int triggerNum, ConcreteCPU* cpu = NULL)
 		: TroubleEvent(triggerNum, cpu), m_IsNMI(nmi) { }
@@ -277,7 +277,7 @@ public:
 	/**
 	 * Initialises an IOPortEvent
 	 * @param data the data which has been communicated through the I/O port
-	 * @param cpu the cpu that triggered the event
+	 * @param cpu the CPU that triggered the event
 	 */
 	IOPortEvent(unsigned char data = 0, ConcreteCPU* cpu = NULL) : BaseEvent(cpu), m_Data(data) { }
 	/**

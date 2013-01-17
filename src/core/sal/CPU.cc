@@ -2,9 +2,6 @@
 
 namespace fail {
 
-// FIXME: Bochs specific?  If not, at least get rid of this global variable.
-int interrupt_to_fire = -1;
-
 void CPUArchitecture::addRegister(Register* reg)
 {
 	assert(!reg->isAssigned() && "FATAL ERROR: The register is already assigned!");
