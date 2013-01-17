@@ -51,7 +51,7 @@ bool RegressionTest::run()
 	//Save state
 	file << "Saving state." << endl;
 	simulator.save("regression-save");
-	instrAddr_at_save = simulator.getRegisterManager().getInstructionPointer();
+	instrAddr_at_save = simulator.getCPU(0).getInstructionPointer();
 	
 	//Start Plugins
 	TracingPlugin tp;
@@ -187,14 +187,14 @@ bool RegressionTest::run()
 			
 			simulator.restore("regression-save");
 			
-			if (simulator.getRegisterManager().getInstructionPointer() == instrAddr_at_save) {
+			if (simulator.getCPU(0).getInstructionPointer() == instrAddr_at_save) {
 				file << "Save-/Restore-Test SUCCESSFUL." << endl;
 			} else {
 				file << "Save-/Restore-Test FAILED. The instructionpointer after restore is \
 				different to the ionstructionpointer after save! " << endl;
 				file << "Instructionpointer after save: " << instrAddr_at_save << endl;
 				file << "Instructionpointer after restore: " << \
-				simulator.getRegisterManager().getInstructionPointer() << endl;
+				simulator.getCPU(0).getInstructionPointer() << endl;
 			}
 			
 			// Reboot test
@@ -242,7 +242,7 @@ bool RegressionTest::run()
 			
 			file << "Jump-Instruction found: " << jump.getOpcode() << endl;
 			file << "current Instruction-Pointer: 0x" << hex <<\
-			simulator.getRegisterManager().getInstructionPointer() << dec << endl;
+			simulator.getCPU(0).getInstructionPointer() << dec << endl;
 			
 			file << "Jump-Test end" << endl;
 			
