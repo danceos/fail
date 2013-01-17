@@ -2,8 +2,6 @@
 
 #include "BochsController.hpp"
 #include "BochsMemory.hpp"
-//#include "BochsRegister.hpp"
-//#include "../Register.hpp"
 #include "../SALInst.hpp"
 #include "../Listener.hpp"
 

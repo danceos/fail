@@ -6,7 +6,6 @@
 
 #include "experiment.hpp"
 #include "sal/SALInst.hpp"
-#include "sal/bochs/BochsRegister.hpp"
 #include "util/Logger.hpp"
 
 using namespace std;

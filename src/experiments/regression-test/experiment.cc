@@ -8,7 +8,6 @@
 #include "sal/Listener.hpp"
 #include "sal/Memory.hpp"
 #include "config/FailConfig.hpp"
-#include "sal/bochs/BochsRegister.hpp"
 #include "../plugins/tracing/TracingPlugin.hpp"
 #include "../plugins/serialoutput/SerialOutput.hpp"
 

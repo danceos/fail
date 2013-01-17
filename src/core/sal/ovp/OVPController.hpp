@@ -28,7 +28,7 @@ private:
 
 	// FIXME: Perhaps this should be declared as a static member:
 	unsigned int m_currentRegId;
-	// NOTE: Constants (such as GPRegisterId in sal/bochs/BochsRegister.hpp)
+	// NOTE: Constants (such as GPRegisterId in sal/x86/Architecture.hpp)
 	//       are much easier to read...
 public:
 	/**

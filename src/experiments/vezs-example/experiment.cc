@@ -14,7 +14,6 @@
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
 
-#include "sal/bochs/BochsRegister.hpp"
 #include "sal/bochs/BochsListener.hpp"
 
 using namespace std;

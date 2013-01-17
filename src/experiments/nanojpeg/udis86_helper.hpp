@@ -7,7 +7,7 @@
 #include <utility>
 #include <map>
 
-#include "sal/bochs/BochsRegisterIDs.hpp"
+#include "sal/x86/Architecture.hpp"
 
 class Udis86Helper {
 public:

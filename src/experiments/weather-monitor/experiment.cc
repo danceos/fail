@@ -13,7 +13,6 @@
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
-#include "sal/bochs/BochsRegister.hpp"
 #include "sal/bochs/BochsListener.hpp"
 #include "sal/Listener.hpp"
 

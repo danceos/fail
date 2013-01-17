@@ -5,8 +5,6 @@
 #include "../CPUState.hpp"
 #include "../SALConfig.hpp"
 
-// TODO: Remove BochsRegister.* files ... shouldn't be required anymore...
-
 namespace fail {
 
 /**
@@ -36,8 +34,8 @@ enum GPRegisterId {
     RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI,
     RID_LAST_GP_ID
 };
-// FIXME: RID_RSP/RID_ESP/RID_CSP is not a GP register but this definition makes
-// it much easier to map the id to Bochs' internal register id.
+// FIXME: RID_RSP/RID_ESP/RID_CSP are not GP registers but this definition makes
+// it much easier to map the ids to Bochs' (!!!! -> FIXME!) internal register ids.
 
 /**
  * \enum PCRegisterId

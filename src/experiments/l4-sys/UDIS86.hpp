@@ -3,7 +3,6 @@
 
 #include <udis86.h>
 #include "sal/bochs/BochsController.hpp"
-#include "sal/bochs/BochsRegister.hpp"
 
 /**
  * \class Udis86
