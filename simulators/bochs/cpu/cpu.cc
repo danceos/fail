@@ -241,9 +241,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat(bxInstruction_c *i, BxExecutePtr_tR
       }
       if (RCX == 0) return;
 
-      // DanceOS
-      defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
       if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -263,9 +260,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat(bxInstruction_c *i, BxExecutePtr_tR
       }
       if (ECX == 0) return;
 
-      // DanceOS
-      defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
       if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -283,9 +277,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat(bxInstruction_c *i, BxExecutePtr_tR
         CX --;
       }
       if (CX == 0) return;
-
-      // DanceOS
-      defineCPULoopJoinPoint(BX_CPU_THIS, i);
 
 #if BX_DEBUGGER == 0
       if (BX_CPU_THIS_PTR async_event)
@@ -333,9 +324,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
         }
         if (! get_ZF() || RCX == 0) return;
 
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -355,9 +343,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
         }
         if (! get_ZF() || ECX == 0) return;
 
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -375,9 +360,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
           CX --;
         }
         if (! get_ZF() || CX == 0) return;
-
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
 
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
@@ -399,9 +381,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
         }
         if (get_ZF() || RCX == 0) return;
 
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -421,9 +400,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
         }
         if (get_ZF() || ECX == 0) return;
 
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
-
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
 #endif
@@ -441,9 +417,6 @@ void BX_CPP_AttrRegparmN(2) BX_CPU_C::repeat_ZF(bxInstruction_c *i, BxExecutePtr
           CX --;
         }
         if (get_ZF() || CX == 0) return;
-
-        // DanceOS
-        defineCPULoopJoinPoint(BX_CPU_THIS, i);
 
 #if BX_DEBUGGER == 0
         if (BX_CPU_THIS_PTR async_event)
