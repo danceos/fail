@@ -19,7 +19,7 @@ Required for the Bochs simulator backend:
 **********************************************************************
  - libpthread
  - Probably more, depending on, e.g., the GUI you configure (X11 ->
-   libxrandr-dev)
+   libsvga1-dev, libxrandr-dev)
    
 Required for the gem5 simulator backend:
 **********************************************************************
