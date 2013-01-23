@@ -31,8 +31,8 @@ private:
 	
 	WallclockTimer m_job_runtime;
 	int m_job_throughput;
-	std::vector<ExperimentData*> m_parameters;
-	std::vector<ExperimentData*> m_results;
+	std::deque<ExperimentData*> m_parameters;
+	std::deque<ExperimentData*> m_results;
 	
 	bool connectToServer();
 

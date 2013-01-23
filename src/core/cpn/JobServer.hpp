@@ -158,7 +158,7 @@ private:
 	 * @param minion The minion offering results
 	 * @param workloadID The workload id of the result message
 	 */	
-	void receiveExperimentResults(Minion& minion, FailControlMessage ctrlmsg);
+	void receiveExperimentResults(Minion& minion, FailControlMessage& ctrlmsg);
 public:
 #ifndef __puma
 	static boost::mutex m_CommMutex; //! to synchronise the communication

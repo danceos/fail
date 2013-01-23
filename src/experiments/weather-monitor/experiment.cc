@@ -40,7 +40,7 @@ bool WeatherMonitorExperiment::run()
 	
 	log << "startup" << endl;
 
-#if 1
+#if 0
 	// STEP 0: record memory map with vptr addresses
 	GuestListener g;
 	while (true) {
@@ -94,7 +94,7 @@ bool WeatherMonitorExperiment::run()
 	// -> campaign-ready traces with identical lengths
 	bp.setWatchInstructionPointer(ANY_ADDR);
 	bp.setCounter(WEATHER_NUMINSTR_TRACING);
-#endif
+#endif 
 	simulator.addListener(&bp);
 	BPSingleListener ev_count(ANY_ADDR);
 	simulator.addListener(&ev_count);
@@ -136,10 +136,10 @@ bool WeatherMonitorExperiment::run()
 	log << dec << "experiment finished after " << instr_counter
 	    << " instructions, seeing wait_end " << WEATHER_NUMITER_AFTER << " times" << endl;
 
-#elif 0
+#elif 1
 	// STEP 3: The actual experiment.
 #if !LOCAL
-	for (int i = 0; i < 50; ++i) { // only do 50 sequential experiments, to prevent swapping
+	for (int i = 0; i < 5000; ++i) { // only do 50 sequential experiments, to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
 #endif
 
@@ -159,20 +159,20 @@ bool WeatherMonitorExperiment::run()
 	param.msg.set_mem_addr(0x00103bdc);
 #endif
 
-	int id = param.getWorkloadID();
-	int instr_offset = param.msg.instr_offset();
-	int mem_addr = param.msg.mem_addr();
+	//int id = param.getWorkloadID();
+	//int instr_offset = param.msg.instr_offset();
+	//int mem_addr = param.msg.mem_addr();
 
 	// for each job we're actually doing *8* experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
-		result->set_bit_offset(bit_offset);
-		log << dec << "job " << id << " instr " << instr_offset
+		result->set_bit_offset(bit_offset);												//!!!!!!!!!
+		/*log << dec << "job " << id << " instr " << instr_offset
 		    << " mem " << mem_addr << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
-		simulator.restore(statename);
+		simulator.restore(statename);*/
 
 		// XXX debug
 /*
@@ -184,21 +184,21 @@ bool WeatherMonitorExperiment::run()
 */
 
 		// this marks THE END
-		BPSingleListener ev_end(ANY_ADDR);
+		/*BPSingleListener ev_end(ANY_ADDR);
 		ev_end.setCounter(WEATHER_NUMINSTR_TRACING + WEATHER_NUMINSTR_AFTER);
-		simulator.addListener(&ev_end);
+		simulator.addListener(&ev_end);*/
 
 		// count loop iterations by counting wait_begin() calls
 		// FIXME would be nice to have a callback API for this as this needs to
 		//       be done "in parallel"
-		BPSingleListener ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
+		/*BPSingleListener ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
 		simulator.addListener(&ev_wait_begin);
-		int count_loop_iter_before = 0;
+		int count_loop_iter_before = 0;*/
 
 		// no need to wait if offset is 0
-		if (instr_offset > 0) {
+		//if (instr_offset > 0) {
 			// XXX could be improved with intermediate states (reducing runtime until injection)
-			bp.setWatchInstructionPointer(ANY_ADDR);
+			/*bp.setWatchInstructionPointer(ANY_ADDR);
 			bp.setCounter(instr_offset);
 			simulator.addListener(&bp);
 
@@ -207,18 +207,18 @@ bool WeatherMonitorExperiment::run()
 				++count_loop_iter_before;
 				simulator.addListener(&ev_wait_begin);
 			}
-		}
+		}*/
 
 		// --- fault injection ---
-		MemoryManager& mm = simulator.getMemoryManager();
+		/*MemoryManager& mm = simulator.getMemoryManager();
 		byte_t data = mm.getByte(mem_addr);
 		byte_t newdata = data ^ (1 << bit_offset);
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
 		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
-		param.msg.set_injection_ip(injection_ip);
-		result->set_iter_before_fi(count_loop_iter_before);
-		log << "fault injected @ ip " << injection_ip
+		param.msg.set_injection_ip(injection_ip);*/
+		result->set_iter_before_fi(0);						//!!!!!!!!!!!!!!!!!
+		/*log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
 		if (param.msg.has_instr_address() &&
@@ -226,13 +226,13 @@ bool WeatherMonitorExperiment::run()
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip
 			   << " != " << param.msg.instr_address();
-			log << ss.str() << endl;
-			result->set_resulttype(result->UNKNOWN);
-			result->set_latest_ip(injection_ip);
-			result->set_details(ss.str());
-			result->set_iter_after_fi(0);
+			log << ss.str() << endl;*/
+			result->set_resulttype(result->UNKNOWN);							//!!!!!!!!!!!!!!!!
+			result->set_latest_ip(42);								//!!!!!!!!!!!!!!!!
+			result->set_details("test");										//!!!!!!!!!!!!!!!!
+			result->set_iter_after_fi(0);										//!!!!!!!!!!!!!!!!
 
-			simulator.clearListeners();
+			//simulator.clearListeners();
 			continue;
 		}
 
@@ -250,7 +250,7 @@ bool WeatherMonitorExperiment::run()
 		// - (XXX "sane" display?)
 
 		// catch traps as "extraordinary" ending
-		TrapListener ev_trap(ANY_TRAP);
+		/*TrapListener ev_trap(ANY_TRAP);
 		simulator.addListener(&ev_trap);
 		// jump outside text segment
 		BPRangeListener ev_below_text(ANY_ADDR, WEATHER_TEXT_START - 1);
@@ -263,7 +263,7 @@ bool WeatherMonitorExperiment::run()
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
 		TimerListener ev_timeout(10000);
-		simulator.addListener(&ev_timeout);
+		simulator.addListener(&ev_timeout); */
 
 #if LOCAL && 0
 		// XXX debug
@@ -275,57 +275,60 @@ bool WeatherMonitorExperiment::run()
 		simulator.addFlow(&tp);
 #endif
 
-		BaseListener* ev;
+		/*BaseListener* ev;
 
 		// count loop iterations
 		int count_loop_iter_after = 0;
 		while ((ev = simulator.resume()) == &ev_wait_begin) {
 			++count_loop_iter_after;
 			simulator.addListener(&ev_wait_begin);
-		}
-		result->set_iter_after_fi(count_loop_iter_after);
+		}*/
+		//result->set_iter_after_fi(42);						//!!!!!!!!!!!!
 
 		// record latest IP regardless of result
-		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
+		//result->set_latest_ip(0x42); //!!!!!!!!!!
 
-		if (ev == &ev_end) {
+		//result->set_resulttype(result->FINISHED);
+
+		/*if (ev == &ev_end) {
 			log << "Result FINISHED (" << dec
 			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
-			result->set_resulttype(result->FINISHED);
+			result->set_resulttype(result->FINISHED);									//!!!!!!!!!
 		} else if (ev == &ev_timeout) {
 			log << "Result TIMEOUT (" << dec
 			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
-			result->set_resulttype(result->TIMEOUT);
+			result->set_resulttype(result->TIMEOUT);									//!!!!!!!!!
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
-			result->set_resulttype(result->OUTSIDE);
+			result->set_resulttype(result->OUTSIDE);									//!!!!!!!!!
 		} else if (ev == &ev_trap) {
 			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
-			result->set_resulttype(result->TRAP);
+			result->set_resulttype(result->TRAP);										//!!!!!!!!!
 
 			stringstream ss;
 			ss << ev_trap.getTriggerNumber();
-			result->set_details(ss.str());
+			result->set_details(ss.str());												//!!!!!!!!
 		} else if (ev == &ev_detected) {
 			log << dec << "Result DETECTED" << endl;
-			result->set_resulttype(result->DETECTED);
+			result->set_resulttype(result->DETECTED);									//!!!!!!!!
 		} else {
 			log << "Result WTF?" << endl;
-			result->set_resulttype(result->UNKNOWN);
+			result->set_resulttype(result->UNKNOWN);									//!!!!!!!!
 
 			stringstream ss;
-			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
-			result->set_details(ss.str());
-		}
-	}
+			ss << "eventid " << /*ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();*/
+			//result->set_details(ss.str());												//!!!!!!!
+		
+		//result->set_details("test");
+	
 	// sanity check: do we have exactly 8 results?
-	if (param.msg.result_size() != 8) {
+	/*if (param.msg.result_size() != 8) {
 		log << "WTF? param.msg.result_size() != 8" << endl;
-	} else {
+	} else {*/
 #if !LOCAL
 		m_jc.sendResult(param);
 #endif
-	}
+	//}
 
 #if !LOCAL
 	}

@@ -86,18 +86,11 @@ bool JobClient::getParam(ExperimentData& exp)
 
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
+	
+	FailControlMessage ctrlmsg;
+	
 	//Are there other jobs for the experiment
-	if (m_parameters.size() != 0) {
-		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
-		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
-		
-		delete &m_parameters.front()->getMessage();
-		delete m_parameters.front();
-		m_parameters.erase(m_parameters.begin());
-		
-		return FailControlMessage::WORK_FOLLOWS;
-	} else {
-		FailControlMessage ctrlmsg;
+	if (m_parameters.size() == 0) {
 
 		// Connection failed, minion can die
 		if (!connectToServer()) {
@@ -134,6 +127,7 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
 					// Failed to receive message?  Retry.
 					close(m_sockfd);
+					delete temp_exp;
 					return FailControlMessage::COME_AGAIN;
 				}
 
@@ -146,22 +140,26 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		default:
 			break;  
 		}
-		
 		close(m_sockfd);
-		if (m_parameters.size() != 0) {
-			//Take front from m_parameters and copy to exp.
-			exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
-			exp.setWorkloadID(m_parameters.front()->getWorkloadID());
-			//Delete front element of m_parameters
-			delete &m_parameters.front()->getMessage();
-			delete m_parameters.front();
-			m_parameters.erase(m_parameters.begin());
-			//start time measurement for throughput calculation
-			m_job_runtime.startTimer();
-		}
 		
+		//start time measurement for throughput calculation
+		m_job_runtime.startTimer();
+	}
+	
+	if (m_parameters.size() != 0) {
+		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
+		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
+		
+		delete &m_parameters.front()->getMessage();
+		delete m_parameters.front();
+		m_parameters.pop_front();
+		
+		return FailControlMessage::WORK_FOLLOWS;
+	} else {
 		return ctrlmsg.command();
 	}
+	
+	
 }
 
 bool JobClient::sendResult(ExperimentData& result)
@@ -171,29 +169,30 @@ bool JobClient::sendResult(ExperimentData& result)
 	temp_exp->getMessage().CopyFrom(result.getMessage());
 	temp_exp->setWorkloadID(result.getWorkloadID());
 	
+	m_results.push_back( temp_exp );
+	
 	if (m_parameters.size() != 0) {
 		//If there are more jobs for the experiment store result
-		m_results.push_back( temp_exp );
-		
 		return true;
 	} else {
-		m_results.push_back( temp_exp );
-		
 		//Stop time measurement and calculate new throughput 
 		m_job_runtime.stopTimer();
 		m_job_throughput = CLIENT_JOB_REQUEST_SEC/((double)m_job_runtime/m_results.size());
 		
-		if (m_job_throughput > CLIENT_JOB_LIMIT_SEC)
+		if (m_job_throughput > CLIENT_JOB_LIMIT_SEC) {
 			m_job_throughput = CLIENT_JOB_LIMIT_SEC;
+		}
 			
-		if (m_job_throughput < 1)
+		if (m_job_throughput < 1) {
 			m_job_throughput = 1;
+		}
 		
 		//Reset timer for new time measurement
 		m_job_runtime.reset();
 		
-		if (!connectToServer())
+		if (!connectToServer()) {
 			return false;
+		}
 
 		//Send back results
 		FailControlMessage ctrlmsg;
@@ -219,7 +218,7 @@ bool JobClient::sendResult(ExperimentData& result)
 			SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage());
 			delete &m_results.front()->getMessage();
 			delete m_results.front();
-			m_results.erase(m_results.begin());
+			m_results.pop_front();
 		}
 
 		// Close connection.

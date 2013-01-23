@@ -240,7 +240,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 {
 	uint32_t i;
 	uint32_t workloadID;
-	std::vector<ExperimentData*> exp;
+	std::deque<ExperimentData*> exp;
 	ExperimentData* temp_exp = 0;
 	FailControlMessage ctrlmsg;
 	
@@ -248,7 +248,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	ctrlmsg.set_run_id(m_js.m_runid);
 	ctrlmsg.set_command(FailControlMessage::WORK_FOLLOWS);
 
-		for(i = 0; i < m_job_size ; i++) {
+		for (i = 0; i < m_job_size ; i++) {
 			if (m_js.m_undoneJobs.Dequeue_nb(temp_exp) == true) { 
 				// Got an element from queue, assign ID to workload and send to minion
 				workloadID = m_js.m_counter.increment(); // increment workload counter
@@ -261,7 +261,6 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 			
 			if (!m_js.m_runningJobs.insert(workloadID, temp_exp)) {
 				cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
-				sleep(10);
 			}
 		}
 		if (exp.size() != 0) {
@@ -276,15 +275,15 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 			
 			if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
 				for (i = 0; i < ctrlmsg.job_size() ; i++) {
-					if(SocketComm::sendMsg(minion.getSocketDescriptor(), exp.front()->getMessage())) {
-						exp.erase(exp.begin());
+					if (SocketComm::sendMsg(minion.getSocketDescriptor(), exp.front()->getMessage())) {
+						exp.pop_front();
 					} else {
 						break;
 					}
 					
 				}
-				return;
 			}
+			return;
 		}
 
 #ifndef __puma
@@ -329,7 +328,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	}
 }
 
-void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage ctrlmsg)
+void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ctrlmsg)
 {
 	int i;
 	ExperimentData* exp = NULL; // Get exp* from running jobs
