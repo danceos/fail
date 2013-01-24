@@ -55,13 +55,13 @@ bool WeatherMonitorExperiment::run()
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	simulator.save(statename);
 	assert(bp.getTriggerInstructionPointer() == WEATHER_FUNC_MAIN);
-	assert(simulator.getRegisterManager().getInstructionPointer() == WEATHER_FUNC_MAIN);
+	assert(simulator.getCPU(0).getInstructionPointer() == WEATHER_FUNC_MAIN);
 
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
 	simulator.restore(statename);
-	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
-	assert(simulator.getRegisterManager().getInstructionPointer() == WEATHER_FUNC_MAIN);
+	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
+	assert(simulator.getCPU(0).getInstructionPointer() == WEATHER_FUNC_MAIN);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -215,7 +215,7 @@ bool WeatherMonitorExperiment::run()
 		byte_t newdata = data ^ (1 << bit_offset);
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
+		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		result->set_iter_before_fi(count_loop_iter_before);
 		log << "fault injected @ ip " << injection_ip
@@ -286,7 +286,7 @@ bool WeatherMonitorExperiment::run()
 		result->set_iter_after_fi(count_loop_iter_after);
 
 		// record latest IP regardless of result
-		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
+		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		if (ev == &ev_end) {
 			log << "Result FINISHED (" << dec
@@ -314,7 +314,7 @@ bool WeatherMonitorExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "eventid " << ev->getId() << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "eventid " << ev << " EIP " << simulator.getCPU(0).getInstructionPointer();
 			result->set_details(ss.str());
 		}
 	}
