@@ -179,8 +179,8 @@ bool JobClient::sendResult(ExperimentData& result)
 		m_job_runtime.stopTimer();
 		m_job_throughput = CLIENT_JOB_REQUEST_SEC/((double)m_job_runtime/m_results.size());
 		
-		if (m_job_throughput > CLIENT_JOB_LIMIT_SEC) {
-			m_job_throughput = CLIENT_JOB_LIMIT_SEC;
+		if (m_job_throughput > CLIENT_JOB_LIMIT) {
+			m_job_throughput = CLIENT_JOB_LIMIT;
 		}
 			
 		if (m_job_throughput < 1) {
