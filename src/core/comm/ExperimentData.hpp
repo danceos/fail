@@ -1,6 +1,6 @@
 /**
  * \brief This is the base class for all user-defined data types for
- *        expirement parameter and results.
+ *        experiment parameter and results.
  */
 
 #ifndef __EXPERIMENT_DATA_HPP__
