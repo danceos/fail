@@ -49,6 +49,5 @@ bool HSCSimpleExperiment::run()
 	simulator.addListenerAndResume(&breakpoint);
 #endif
 
-	simulator.terminate();
 	return true;
 }
