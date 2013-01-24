@@ -31,7 +31,7 @@ SET(CLIENT_RAND_BACKOFF_TSTART  "3"          CACHE STRING "Lower limit of client
 SET(CLIENT_RAND_BACKOFF_TEND    "8"          CACHE STRING "Upper limit of client's backoff phase in seconds")
 SET(CLIENT_RETRY_COUNT          "3"          CACHE STRING "Client's number of reconnect retries")
 SET(CLIENT_JOB_REQUEST_SEC      "30"         CACHE STRING "Time in seconds a client tries to get work for (to reduce client/server communication frequency)")
-SET(CLIENT_JOB_LIMIT            "1000"       CACHE STRING "How many jobs can a client ask for")
+SET(CLIENT_JOB_LIMIT_SEC        "1000"       CACHE STRING "How many jobs can a client ask for")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FailConfig.hpp.in
                ${CMAKE_CURRENT_BINARY_DIR}/FailConfig.hpp)
