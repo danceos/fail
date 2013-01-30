@@ -1,0 +1,12 @@
+Working:
+ - Breakpoints
+ - MemAccess
+ - Traps (limited to traps that are triggered in the weather-monitor experiment)
+
+On Breakpoints:
+ - BPRangeBreakpoints and BPSingleBreakpoints(ANY_ADDRESS) are only working with
+   range breakpoints enabled.
+
+On MemAccess:
+ - MemAccess is only working on the simple cpu models (atomic simple, 
+   timing simple...)

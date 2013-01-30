@@ -175,3 +175,13 @@ Some useful things to note:
    overflow the server with requests. You may need to bundle parameters for
    more than one experiment if a single experiment only takes a few hundred
    milliseconds.  (See existing experiments for examples.)
+
+=========================================================================================
+Steps to run an experiment with gem5:
+=========================================================================================
+ 1. Create a directory which will be used as gem5 system directory (which
+    will contain the guest system and boot image). Further called $SYSTEM.
+ 2. Create two directories $SYSTEM/binaries and $SYSTEM/disks.
+ 3. Put guestsystem kernel to $SYSTEM/binaries and boot image to $SYSTEM/disks
+ 4. Run gem5 with:
+      $ M5_PATH=$SYSTEM build/ARM/gem5.debug configs/example/fs.py --bare-metal --kernel kernelname

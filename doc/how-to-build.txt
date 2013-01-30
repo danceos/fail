@@ -213,15 +213,18 @@ Building gem5:
 Fail* configuration:
 ------------------------------------------------------------
  - BUILD_GEM5 ON
+ - BUILD_ARM ON
  - all configuration options specific for other simulators OFF
- - COMPILER: gcc (not ag++)
+ - Release or Debug choice must match gem5 in the following
 
 For the first time:
 ------------------------------------------------------------
  1. Change to the gem5 simulator directory (expects to be in ${FAIL_DIR}):
       $ cd simulators/gem5
- 2. Get the gem5 sourcecode from the stable repository (Mercurial needed)
-      $ hg clone http://repo.gem5.org/gem5-stable ./
+ 2. Build gem5 using the commands below until it fails finding the fail-libs
+ 3. Build fail
+ 4. Select an experiment (see below)
+ 5. Build gem5 again. THe fail-libs should be found now.
 
 Optimized build:
 ------------------------------------------------------------
@@ -234,3 +237,11 @@ Debug build:
       $ cd ../simulator/gem5
       $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.debug
 (add -jN for a parallel build)
+
+Selecting an experiment:
+------------------------------------------------------------
+ 1. Edit ../src/core/sal/gem5/SConscript
+    In line starting with (gStaticLibs = ...) change -lfail-arch-test to 
+    -lfail-EXPERIMENTNAME
+      
+
