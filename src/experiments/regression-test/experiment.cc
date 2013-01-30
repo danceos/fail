@@ -231,6 +231,9 @@ bool RegressionTest::run()
 			
 			file << "Serial-Output: " << so.getOutput() << endl;
 			
+			file.flush();
+			of.flush();
+			
 			simulator.terminate();
 
 		} else if (ev == &jump_test) {
