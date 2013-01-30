@@ -62,9 +62,6 @@
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
 
-#include "config/FailConfig.hpp"
-#include "sal/SALInst.hpp"
-
 using namespace std;
 
 AbstractMemory::AbstractMemory(const Params *p) :

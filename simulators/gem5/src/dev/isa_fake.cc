@@ -39,6 +39,9 @@
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
 
+#include "config/FailConfig.hpp"
+#include "sal/SALInst.hpp"
+
 using namespace std;
 
 IsaFake::IsaFake(Params *p)
@@ -113,7 +116,14 @@ IsaFake::write(PacketPtr pkt)
             data = pkt->get<uint8_t>();
             break;
           default:
-            panic("invalid access size!\n");
+			// FAIL*
+			#ifdef CONFIG_EVENT_TRAP
+			fail::ConcreteCPU* cpu = &fail::simulator.getCPU(0);
+			fail::simulator.onTrap(cpu, 0);
+			#endif			
+			panic("invalid access size!\n");
+			
+            
         }
         warn("Device %s accessed by write to address %#x size=%d data=%#x\n",
                 name(), pkt->getAddr(), pkt->getSize(), data);

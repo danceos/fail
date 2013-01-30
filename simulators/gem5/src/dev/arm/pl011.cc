@@ -51,6 +51,10 @@
 #include "mem/packet_access.hh"
 #include "sim/sim_exit.hh"
 
+#include "config/FailConfig.hpp"
+#include "sal/SALInst.hpp"
+
+
 Pl011::Pl011(const Params *p)
     : Uart(p), control(0x300), fbrd(0), ibrd(0), lcrh(0), ifls(0x12), imsc(0),
       rawInt(0), maskInt(0), intNum(p->int_num), gic(p->gic),
@@ -180,8 +184,14 @@ Pl011::write(PacketPtr pkt)
 
     switch (daddr) {
         case UART_DR:
-          if ((data & 0xFF) == 0x04 && endOnEOT)
+          if ((data & 0xFF) == 0x04 && endOnEOT) {
+			// FAIL*
+			#ifdef CONFIG_EVENT_TRAP
+				fail::ConcreteCPU* cpu = &fail::simulator.getCPU(0);
+				fail::simulator.onTrap(cpu, 0);
+			#endif
             exitSimLoop("UART received EOT", 0);
+		  }
 
         term->out(data & 0xFF);
 
