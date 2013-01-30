@@ -1,5 +1,5 @@
 #!/bin/bash
-declare testsuccess=$true;
+declare testsuccess=true;
 declare script_dir=$(dirname $0);
 declare fail_dir=$script_dir/../;
 declare build_dir=$PWD;
@@ -35,7 +35,7 @@ $build_dir/bin/fail-client -q;
 diff -q regression-trace.results golden_run/regression-trace.results
 if [ ! $? -eq 0 ]
 then
-    testsuccess=$false;
+    testsuccess=false;
 fi
 
 #diff Main results
@@ -43,21 +43,23 @@ fi
 diff -q regression-test.results golden_run/regression-test.results
 if [ ! $? -eq 0 ]
 then
-    echo -e  '\033[37;44m Regression-Test FAILED. Look at regression-test.results for more information. \033[0m'
+    echo -e  '\033[37;44m Regression-Test FAILED.\033[0m'
     if $testsuccess;
     then
         echo -e  '\033[37;44m Tracing-Plugin Test SUCCESSFUL. \033[0m'
+        echo -e  '\033[37;44m The output of regression-test differs from that of the golden-run.\033[0m'
     else
         echo -e  '\033[37;44m Tracing-Plugin Test FAILED. Look at regression-trace.results for more information. \033[0m'
+        echo -e  '\033[37;44m The output of regression-test and the trace differs from those of the golden-run.\033[0m'
     fi
 else
+    echo -e  '\033[37;44m Regression-Test SUCCESSFUL. \033[0m'
     if $testsuccess;
     then
-        echo -e  '\033[37;44m Regression-Test SUCCESSFUL. \033[0m'
         echo -e  '\033[37;44m Tracing-Plugin Test SUCCESSFUL. \033[0m'
     else
-        echo -e  '\033[37;44m Regression-Test FAILED.  Look at regression-test.results for more information. \033[0m'
         echo -e  '\033[37;44m Tracing-Plugin Test FAILED. \033[0m'
+        echo -e  '\033[37;44m The regression-test was successful, but the trace differs from that of the golden-run. \033[0m'
     fi
 fi
 
