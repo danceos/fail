@@ -29,7 +29,7 @@ bool MHTestExperiment::run()
 			nextbp.setCounter(num);
 			simulator.addListenerAndResume(&nextbp);
 		}
-		address_t instr = simulator.getRegisterManager().getInstructionPointer();
+		address_t instr = simulator.getCPU(0).getInstructionPointer();
 		cout << "[MHTestExperiment] Reached instruction: "
 		<< hex << instr
 		<< endl;
