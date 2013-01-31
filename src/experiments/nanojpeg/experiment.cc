@@ -51,7 +51,7 @@ bool NanoJPEGExperiment::run()
 	// record trace
 	log << "restoring state" << endl;
 	simulator.restore(NANOJPEG_STATE);
-	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
+	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
 	tp.setLogIPOnly(true);
@@ -120,7 +120,7 @@ bool NanoJPEGExperiment::run()
 
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
-	Register *reg = simulator.getRegisterManager().getRegister(param.msg.register_id());
+	Register *reg = simulator.getCPU(0).getRegister(param.msg.register_id());
 	uint64_t bitmask = param.msg.bitmask();
 	int timeout = param.msg.timeout();
 
@@ -156,7 +156,7 @@ bool NanoJPEGExperiment::run()
 		uint32_t newdata = data ^ (1 << bitnr);
 		reg->setData(newdata);
 		// note at what IP we did it
-		uint32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
+		uint32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		log << "fault injected @ ip " << injection_ip << " reg " << reg->getName()
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
@@ -212,7 +212,7 @@ bool NanoJPEGExperiment::run()
 
 		BaseListener *ev = simulator.resume();
 		// record latest IP regardless of result
-		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
+		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		if (ev == &ev_io) {
 			log << "Result FINISHED/BROKEN (" << ev_io.getData() << ")" << endl;
@@ -262,7 +262,7 @@ bool NanoJPEGExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "eventid " << hex << ((unsigned long) ev) << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "eventid " << hex << ((unsigned long) ev) << " EIP " << simulator.getCPU(0).getInstructionPointer();
 			result->set_details(ss.str());
 		}
 	}
