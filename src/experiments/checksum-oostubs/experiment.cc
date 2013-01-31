@@ -55,13 +55,13 @@ bool ChecksumOOStuBSExperiment::run()
 	log << "error_corrected = " << dec << ((int)simulator.getMemoryManager().getByte(OOSTUBS_ERROR_CORRECTED)) << endl;
 	simulator.save(statename);
 	assert(bp.getTriggerInstructionPointer() == OOSTUBS_FUNC_ENTRY);
-	assert(simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
+	assert(simulator.getCPU(0).getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 #elif 0
 	// STEP 2: record trace for fault-space pruning
 	log << "restoring state" << endl;
 	simulator.restore(statename);
-	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
-	assert(simulator.getRegisterManager().getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
+	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
+	assert(simulator.getCPU(0).getInstructionPointer() == OOSTUBS_FUNC_ENTRY);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -201,7 +201,7 @@ bool ChecksumOOStuBSExperiment::run()
 		byte_t newdata = data ^ (1 << bit_offset);
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
+		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
@@ -273,7 +273,7 @@ bool ChecksumOOStuBSExperiment::run()
 		}
 
 		// record latest IP regardless of result
-		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
+		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		// record resultdata, finish_reached and error_corrected regardless of result
 		uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
@@ -307,7 +307,7 @@ bool ChecksumOOStuBSExperiment::run()
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "event addr " << ev << " EIP " << simulator.getCPU(0).getInstructionPointer();
 			result->set_details(ss.str());
 		}
 		// explicitly remove all events before we leave their scope
