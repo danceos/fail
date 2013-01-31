@@ -4,7 +4,7 @@
 #include "config/FailConfig.hpp"
 #include "config/VariantConfig.hpp"
 
-#if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_RANGEBREAKPOINTS)
+#if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
 
 #include "../SALInst.hpp"
 
@@ -42,6 +42,6 @@ aspect Gem5Listener {
 	};
 };
 
-#endif // defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_RANGEBREAKPOINTS)
+#endif // defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
 
 #endif // __GEM5_LISTENER_AH__

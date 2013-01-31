@@ -378,7 +378,7 @@ BaseSimpleCPU::preExecute()
     TheISA::PCState pcState = thread->pcState();
 
 	// FAIL*
-	#if defined(CONFIG_EVENT_BREAKPOINTS) && defined(CONFIG_EVENT_RANGEBREAKPOINTS)
+	#if defined(CONFIG_EVENT_BREAKPOINTS) && defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
 		fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
 		fail::simulator.onBreakpoint(cpu, instAddr(), -1);
 	#endif
