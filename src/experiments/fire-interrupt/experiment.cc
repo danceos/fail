@@ -38,10 +38,7 @@ bool FireInterruptExperiment::run()
 		}
 		simulator.fireInterrupt(1);
 	}
-#elif 1
-	simulator.dbgEnableInstrPtrOutput(500);
 #endif
 
-	simulator.clearListeners(this);
 	return true;
 }
