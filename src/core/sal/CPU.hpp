@@ -20,6 +20,20 @@ namespace fail {
 class CPUArchitecture {
 public:
 	/**
+	 * Iterator type to be used when iterating over the total register set.
+	 */
+	typedef std::vector<Register*>::iterator iterator;
+	/**
+	 * Returns an iterator pointing to the first register.
+	 * @return the first register
+	 */
+	iterator begin() { return m_Registers.begin(); }
+	/**
+	 * Returns an iterator pointing behind the last register.
+	 * @return an iterator past the last register
+	 */
+	iterator end() { return m_Registers.end(); }
+	/**
 	 * Retrieves the total number of registers over all homogeneous sets.
 	 * @return the total register count
 	 */
