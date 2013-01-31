@@ -13,25 +13,24 @@ using namespace fail;
 
 bool FaultCoverageExperiment::run()
 {
-	// FIXME: This should be translated (-> English)!
 	/*
-	Experimentskizze:
-	- starte Gastsystem
-	- setze Breakpoint auf Beginn der betrachteten Funktion; warte darauf
-	- sichere Zustand
-	- iteriere über alle Register
-	-- iteriere über alle 32 Bit in diesem Register
-	--- iteriere über alle Instruktionsadressen innerhalb der betrachteten Funktion
-	---- setze Breakpoint auf diese Adresse; warte darauf
-	---- flippe Bit x in Register y
-	---- setze Breakpoint auf Verlassen der Funktion; warte darauf
-	---- bei Erreichen des Breakpoint: sichere Funktionsergebnis (irgendein bestimmtes Register)
-	---- lege Ergebnisdaten ab:
-	    a) Ergebnis korrekt (im Vergleich zum bekannt korrekten Ergebnis für die Eingabe)
-	    b) Ergebnis falsch
-	    c) Breakpoint wird nicht erreicht, Timeout (z.B. gefangen in Endlosschleife)
-	    d) Trap wurde ausgelöst
-	---- stelle zuvor gesicherten Zustand wieder her
+	Sketch of experiment:
+	- start guest system
+	- set breakpoint to the beginning of the function under consideration
+	- wait until breakpoint triggers, save state
+	- loop over all registers
+	-- loop over all 32 bits of the each register
+	--- loop over all instruction addresses of the function of interest
+	---- set breakpoint to each address, wait until breakpoint triggers
+	---- toggle bit x in register y
+	---- set breakpoint to the last address of function, wait
+	---- if breakpoint triggers: save result (eax/rax register)
+	---- save result data:
+	    a) result correct (compared to the valid result for the current input)
+	    b) result wrong
+	    c) breakpoint never reached, timeout (e.g. caught in endless loop)
+	    d) trap triggered
+	---- restore previously saved simulator state
 	*/
 
 	// set breakpoint at start address of the function to be analyzed ("observed");
