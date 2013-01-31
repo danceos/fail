@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "experiment.hpp"
+#include "sal/Listener.hpp"
 #include "sal/SALInst.hpp"
 #include "util/Logger.hpp"
 
@@ -51,11 +52,15 @@ bool FaultCoverageExperiment::run()
 	simulator.save("./bochs_save_point");
 
 	log << "Logging results on std::cout." << endl;
-	RegisterManager& regMan = simulator.getRegisterManager();
+
+	// Note: This heavily uses the save-restore feature which causes
+	//       causes a memory leak after several rounds (seg-fault).
+	
 	// iterate over all registers
-	for (RegisterManager::iterator it = regMan.begin(); it != regMan.end(); it++) {
+	ConcreteCPU cpu = simulator.getCPU(0);
+	for (ConcreteCPU::iterator it = cpu.begin(); it != cpu.end(); it++) {
 		Register* pReg = *it; // get a ptr to the current register-object
-		// loop over the 32 bits within this register
+		// loop over the 32 (64) bits within this register
 		for (regwidth_t bitnr = 0; bitnr < pReg->getWidth(); ++bitnr) {
 			// loop over all instruction addresses of observed function
 			for (int instr = 0; ; ++instr) {
@@ -84,9 +89,9 @@ bool FaultCoverageExperiment::run()
 				}
 
 				// inject bit-flip at bit $bitnr in register $reg
-				regdata_t data = pReg->getData();
+				regdata_t data = cpu.getRegisterContent(pReg);
 				data ^= 1 << bitnr;
-				pReg->setData(data); // write back data to register
+				cpu.setRegisterContent(pReg, data); // write back data to register
 
 				// catch traps and timeout
 				TrapListener ev_trap; // any traps
@@ -99,14 +104,8 @@ bool FaultCoverageExperiment::run()
 				BaseListener* ev = simulator.resume();
 				if (ev == &ev_func_end) {
 					// log result
-				  #if BX_SUPPORT_X86_64
-					const size_t expected_size = sizeof(uint32_t)*8;
-				  #else
-					const size_t expected_size = sizeof(uint64_t)*8;
-				  #endif
-					Register* pCAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(RID_CAX);
-					assert(expected_size == pCAX->getWidth()); // we assume to get 32(64) bits...
-					regdata_t result = pCAX->getData();
+					Register* pCAX = cpu.getRegister(RID_CAX);
+					regdata_t result = cpu.getRegisterContent(pCAX);
 					log << "Reg: " << pCAX->getName() << ", #Bit: " << bitnr
 					    << ", Instr-Idx: " << instr << ", Data: " << result << endl;
 				}
