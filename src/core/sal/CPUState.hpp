@@ -9,7 +9,7 @@
 namespace fail {
 
 /**
- * \class CPUArchitecture
+ * \class CPUState
  * This is the base class for the CPU state without any architecture specific additions. It contains
  * pure virtual functions for e.g. register access and have to be overridden in the backend
  * implementation.

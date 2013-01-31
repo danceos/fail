@@ -12,7 +12,7 @@ namespace fail {
 
 /**
  * \class CPUArchitecture
- * This is the base class for CPU architectures that can be used to merge informations and
+ * This is the base class for CPU architectures that can be used to merge information and
  * functionallity that every backend with the same target architecture will share. The classes
  * directly derived from this are especially meant to be usable in campaigns, so they shouldn't
  * contain any backend specific code.
