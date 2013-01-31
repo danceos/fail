@@ -32,26 +32,25 @@ bool FaultCoverageExperiment::run()
 	    d) trap triggered
 	---- restore previously saved simulator state
 	*/
+	
+	// log the results on std::cout
+	Logger log("FaultCoverageExperiment", false);
 
 	// set breakpoint at start address of the function to be analyzed ("observed");
 	// wait until instruction pointer reaches that address
-	cout << "[FaultCoverageExperiment] Setting up experiment. Allowing to start now." << endl;
+	log << "Setting up experiment. Allowing to start now." << endl;
 	BPSingleListener ev_func_start(INST_ADDR_FUNC_START);
 	simulator.addListener(&ev_func_start);
 
-	cout << "[FaultCoverageExperiment] Waiting for function start address..." << endl;
+	log << "Waiting for function start address..." << endl;
 	while (simulator.resume() != &ev_func_start)
 		;
 
 	// store current state
-	cout << "[FaultCoverageExperiment] Saving state in ./bochs_save_point ..."; cout.flush();
+	log << "Saving state in ./bochs_save_point ..." << endl;
 	simulator.save("./bochs_save_point");
-	cout << "done!" << endl;
-	
-	// log the results on std::cout
-	Logger res;
-	cout << "[FaultCoverageExperiment] Logging results on std::cout." << endl;
 
+	log << "Logging results on std::cout." << endl;
 	RegisterManager& regMan = simulator.getRegisterManager();
 	// iterate over all registers
 	for (RegisterManager::iterator it = regMan.begin(); it != regMan.end(); it++) {
@@ -64,9 +63,8 @@ bool FaultCoverageExperiment::run()
 				simulator.clearListeners();
 
 				// restore previously saved simulator state
-				cout << "[FaultCoverageExperiment] Restoring previous simulator state..."; cout.flush();
+				log << "Restoring previous simulator state..." << endl;
 				simulator.restore("./bochs_save_point");
-				cout << "done!" << endl;
 
 				// breakpoint at function exit
 				BPSingleListener ev_func_end(INST_ADDR_FUNC_END);
@@ -109,20 +107,18 @@ bool FaultCoverageExperiment::run()
 					Register* pCAX = simulator.getRegisterManager().getSetOfType(RT_GP)->getRegister(RID_CAX);
 					assert(expected_size == pCAX->getWidth()); // we assume to get 32(64) bits...
 					regdata_t result = pCAX->getData();
-					res << "[FaultCoverageExperiment] Reg: " << pCAX->getName()
-					    << ", #Bit: " << bitnr << ", Instr-Idx: " << instr
-					    << ", Data: " << result;
+					log << "Reg: " << pCAX->getName() << ", #Bit: " << bitnr
+					    << ", Instr-Idx: " << instr << ", Data: " << result << endl;
 				}
 				else if (ev == &ev_trap)
-					res << "[FaultCoverageExperiment] Reg: " << pReg->getName()
-						<< ", #Bit: " << bitnr << ", Instr-Idx: " << instr
-						<< ", Trap#: " << ev_trap.getTriggerNumber() << " (Trap)";
+					log << "Reg: " << pReg->getName() << ", #Bit: " << bitnr
+					    << ", Instr-Idx: " << instr << ", Trap#: "
+					    << ev_trap.getTriggerNumber() << " (Trap)";
 				else if (ev == &ev_timeout)
-					res << "[FaultCoverageExperiment] Reg: " << pReg->getName()
-						<< ", #Bit: " << bitnr << ", Instr-Idx: " << instr
-						<< " (Timeout)";
+					log << "Reg: " << pReg->getName() << ", #Bit: "
+					    << bitnr << ", Instr-Idx: " << instr << " (Timeout)";
 				else
-					cout << "We've received an unkown event! "
+					log << "We've received an unkown event! "
 					     << "What the hell is going on?" << endl;
 			}
 		}
