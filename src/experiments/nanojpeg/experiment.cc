@@ -97,7 +97,7 @@ bool NanoJPEGExperiment::run()
 	elfreader.~ElfReader();
 
 #if !LOCAL
-	for (int experiment_count = 0; experiment_count < 200; ) { // only do 200 sequential experiments, to prevent swapping
+	for (int experiment_count = 0; experiment_count < 200 || (m_jc.getNumberOfUndoneJobs() != 0) ; ) { // only do 200 sequential experiments, to prevent swapping
 #endif
 
 	// get an experiment parameter set
