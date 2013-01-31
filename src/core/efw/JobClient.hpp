@@ -35,10 +35,12 @@ private:
 	std::deque<ExperimentData*> m_results;
 	
 	bool connectToServer();
-
+	bool sendResultsToServer();
 	FailControlMessage_Command tryToGetExperimentData(ExperimentData& exp);
+	
 public:
 	JobClient(const std::string& server = SERVER_COMM_HOSTNAME, int port = SERVER_COMM_TCP_PORT);
+	~JobClient();
 	/**
 	* Receive experiment data set from (remote) JobServer
 	* The caller (experiment developer) is responsible for

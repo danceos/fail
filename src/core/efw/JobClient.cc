@@ -19,6 +19,12 @@ JobClient::JobClient(const std::string& server, int port)
 	m_job_throughput = 1; // client gets only one job at the first request
 }
 
+JobClient::~JobClient()
+{
+	// Send back completed jobs to the server
+	sendResultsToServer();
+}
+
 bool JobClient::connectToServer()
 {
 	// Connect to server
@@ -190,6 +196,13 @@ bool JobClient::sendResult(ExperimentData& result)
 		//Reset timer for new time measurement
 		m_job_runtime.reset();
 		
+		return sendResultsToServer();
+	}
+}
+
+bool JobClient::sendResultsToServer()
+{
+	if (m_results.size() != 0) {
 		if (!connectToServer()) {
 			return false;
 		}
@@ -225,6 +238,7 @@ bool JobClient::sendResult(ExperimentData& result)
 		close(m_sockfd);
 		return true;
 	}
+	return true;
 }
 
 } // end-of-namespace: fail
