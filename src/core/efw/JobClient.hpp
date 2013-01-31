@@ -57,6 +57,12 @@ public:
 	* @return \c true Result successfully sent, \c false else. 
 	*/
 	bool sendResult(ExperimentData& result);
+	/**
+	 * Return the number of undone jobs that have already been fetched from the server.
+	 * 
+	 * @return the number of undone jobs.
+	 */
+	int getNumberOfUndoneJobs() { return m_parameters.size(); }
 };
 
 } // end-of-namespace: fail
