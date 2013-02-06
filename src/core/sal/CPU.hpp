@@ -44,14 +44,6 @@ public:
 	 */
 	size_t registerSubsetCount() const { return m_RegisterSubsets.size(); }
 	/**
-	 * Adds a new register to this set. The register object needs to be
-	 * typed (see Register::getType).
-	 * @param reg a pointer to the register object to be added
-	 * @see getType()
-	 */
-	void addRegister(Register* reg);
-	// FIXME: make this protected? no need to modify the register config at runtime...
-	/**
 	 * Retrieves the \a i-th register.
 	 * @return a pointer to the \a i-th register; if \a i is invalid, an
 	 *         assertion is thrown
@@ -74,6 +66,13 @@ public:
 protected:
 	std::vector<Register*> m_Registers;
 	std::vector<UniformRegisterSet*> m_RegisterSubsets;
+	/**
+	 * Adds a new register to this set. The register object needs to be
+	 * typed (see Register::getType).
+	 * @param reg a pointer to the register object to be added
+	 * @see getType()
+	 */
+	void m_addRegister(Register* reg);
 };
 
 } // end-of-namespace: fail

@@ -15,7 +15,7 @@ X86Architecture::X86Architecture()
 	for (unsigned short i = 0; i < 16; i++) {
 		Register* pReg = new Register(i, RT_GP, 64);
 		pReg->setName(names[i]);
-		addRegister(pReg);
+		m_addRegister(pReg);
 	}
   #else
   	// -- 32 bit register --
@@ -23,7 +23,7 @@ X86Architecture::X86Architecture()
 	for (unsigned short i = 0; i < 8; i++) {
 		Register* pReg = new Register(i, RT_GP, 32);
 		pReg->setName(names[i]);
-		addRegister(pReg);
+		m_addRegister(pReg);
 	}
   #endif // SIM_SUPPORT_64
 	// -------------------------------------
@@ -35,12 +35,12 @@ X86Architecture::X86Architecture()
     Register* pPCReg = new Register(RID_PC, RT_IP, 32);
 	pPCReg->setName("EIP");
   #endif // SIM_SUPPORT_64
-	addRegister(pPCReg);
+	m_addRegister(pPCReg);
     // -------------------------------------
 	// Add the status register (EFLAGS):
 	Register* pFlagReg = new Register(RID_FLAGS, RT_ST, 32);
 	pFlagReg->setName("EFLAGS");
-	addRegister(pFlagReg);
+	m_addRegister(pFlagReg);
 }
 
 X86Architecture::~X86Architecture()

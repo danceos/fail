@@ -21,13 +21,13 @@ void ArmArchitecture::fillRegisterList()
 		// FIXME This doesn't work because no matching setName is found.
 		// Not sure why this happens.
 		//reg->setName(sstr.str());
-		addRegister(reg);
+		m_addRegister(reg);
 	}
 
 	// Instruction Pointer
 	Register *reg = new Register(RI_IP, RT_IP, 32);
 	reg->setName("IP");
-	addRegister(reg);
+	m_addRegister(reg);
 }
 
 ArmArchitecture::~ArmArchitecture()

@@ -2,7 +2,7 @@
 
 namespace fail {
 
-void CPUArchitecture::addRegister(Register* reg)
+void CPUArchitecture::m_addRegister(Register* reg)
 {
 	assert(!reg->isAssigned() && "FATAL ERROR: The register is already assigned!");
 	m_Registers.push_back(reg);
