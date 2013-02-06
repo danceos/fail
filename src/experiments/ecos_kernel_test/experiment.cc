@@ -154,8 +154,8 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	log << "restoring state" << endl;
 	simulator.restore(EcosKernelTestCampaign::filename_state(0));
-	log << "EIP = " << hex << simulator.getRegisterManager().getInstructionPointer() << endl;
-	assert(simulator.getRegisterManager().getInstructionPointer() == addr_entry);
+	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
+	assert(simulator.getCPU(0).getInstructionPointer() == addr_entry);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -374,7 +374,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		}
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getRegisterManager().getInstructionPointer();
+		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		param.msg.set_injection_ip(injection_ip);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
@@ -468,7 +468,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 				simulator.addListener(&func_test_output);
 
 				// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
-				address_t stack_ptr = simulator.getRegisterManager().getStackPointer(); // esp
+				address_t stack_ptr = simulator.getCPU(0).getStackPointer(); // esp
 				int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
 
 				log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
@@ -503,7 +503,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		}
 
 		// record latest IP regardless of result
-		result->set_latest_ip(simulator.getRegisterManager().getInstructionPointer());
+		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		// record error_corrected regardless of result
 		if (addr_errors_corrected != ADDR_INV) {
@@ -550,7 +550,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
-			ss << "event addr " << ev << " EIP " << simulator.getRegisterManager().getInstructionPointer();
+			ss << "event addr " << ev << " EIP " << simulator.getCPU(0).getInstructionPointer();
 			result->set_details(ss.str());
 		}
 	}
