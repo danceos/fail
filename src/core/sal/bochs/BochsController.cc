@@ -27,6 +27,11 @@ BochsController::BochsController()
 BochsController::~BochsController()
 {
 	delete m_Mem;
+	std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
+	while (it != m_CPUs.end()) {
+		delete *it;
+		it = m_CPUs.erase(it);
+	}
 }
 
 void BochsController::updateBPEventInfo(BX_CPU_C *context, bxInstruction_c *instr)

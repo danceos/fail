@@ -15,6 +15,7 @@ namespace fail {
 class Gem5Controller : public SimulatorController {
 public:
 	void startup();
+	~Gem5Controller();
 
 	bool save(const std::string &path);
 	void restore(const std::string &path);

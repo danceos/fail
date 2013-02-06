@@ -22,6 +22,15 @@ void Gem5Controller::startup()
 	SimulatorController::startup();
 }
 
+Gem5Controller::~Gem5Controller()
+{
+	std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
+	while (it != m_CPUs.end()) {
+		delete *it;
+		it = m_CPUs.erase(it);
+	}
+}
+
 bool Gem5Controller::save(const std::string &path)
 {
 	connector.save(path); // FIXME: not working?!

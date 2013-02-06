@@ -40,16 +40,7 @@ protected:
 public:
 	SimulatorController() : m_Mem(NULL) { }
 	SimulatorController(MemoryManager* mem) : m_Mem(mem) { }
-	virtual ~SimulatorController()
-	{
-		std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
-		while (it != m_CPUs.end()) {
-			delete *it;
-			it = m_CPUs.erase(it);
-		}
-		// FIXME: This expects the "ConcreteCPU" objects to be allocated on the heap...
-		// This should be part of the derived class...?
-	}
+	virtual ~SimulatorController() { }
 	/**
 	 * @brief Initialization function each implementation needs to call on
 	 *        startup
