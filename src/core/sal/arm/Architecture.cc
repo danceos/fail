@@ -32,8 +32,7 @@ void ArmArchitecture::fillRegisterList()
 
 ArmArchitecture::~ArmArchitecture()
 {
-	for (std::vector<Register*>::iterator it = m_Registers.begin();
-		 it != m_Registers.end(); it++)
+	for (std::vector<Register*>::iterator it = m_Registers.begin(); it != m_Registers.end(); it++)
 		delete *it;
 	m_Registers.clear();
 }

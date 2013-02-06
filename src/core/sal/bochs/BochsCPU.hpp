@@ -11,15 +11,20 @@ namespace fail {
 
 /**
  * \class BochsCPU
- * TODO.
+ * 
+ * \c BochsCPU is the concrete CPU implementation for the Bochs x86 simulator. It
+ * implements the CPU interfaces \c X86Architecture and \c X86CPUState.
+ * \c X86Architecture refers to architectural information (e.g. register \a count)
+ * while \c X86CPUState encapsulates the CPU state (e.g. register \a content).
+ * 
  */
 class BochsCPU : public X86Architecture, public X86CPUState {
 private:
-	unsigned int m_Id; //!< TODO: Whats this for?
+	unsigned int m_Id; //!< the numeric CPU identifier (ID)
 public:
 	/**
 	 * Initializes the Bochs CPU with the provided \c id.
-	 * @param id TODO
+	 * @param id the CPU identifier (the 1st CPU is CPU0 -> id = 0, and so forth)
 	 */
 	BochsCPU(unsigned int id) : m_Id(id) { }
 	/**
@@ -100,7 +105,7 @@ public:
 	unsigned int getId() { return m_Id; }
 };
 
-typedef BochsCPU ConcreteCPU;
+typedef BochsCPU ConcreteCPU; //!< the concrete BochsCPU type
 
 } // end-of-namespace: fail
 

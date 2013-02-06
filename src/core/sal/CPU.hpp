@@ -64,7 +64,8 @@ public:
 	 */
 	UniformRegisterSet* getRegisterSetOfType(RegisterType t) const;
 protected:
-	std::vector<Register*> m_Registers;
+	std::vector<Register*> m_Registers; //!< the total (!) register set
+	/// a set of register subsets (each set has its own type)
 	std::vector<UniformRegisterSet*> m_RegisterSubsets;
 	/**
 	 * Adds a new register to this set. The register object needs to be

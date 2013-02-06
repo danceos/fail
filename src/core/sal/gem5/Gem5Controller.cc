@@ -24,14 +24,14 @@ void Gem5Controller::startup()
 
 bool Gem5Controller::save(const std::string &path)
 {
-	connector.save(path);
+	connector.save(path); // FIXME: not working?!
 
 	return true;
 }
 
 void Gem5Controller::restore(const std::string &path)
 {
-	connector.restore(path);
+	connector.restore(path); // FIXME: not working?!
 }
 
 // TODO: Implement reboot
