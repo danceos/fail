@@ -18,8 +18,6 @@
 #include "pc_system.h"
 #include "gui/siminterface.h" // for BX_SMP_PROCESSORS
 
-#define DEBUG
-
 namespace fail {
 
 class ExperimentFlow;
