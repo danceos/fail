@@ -235,7 +235,7 @@ guest_address_t ElfReader::getSectionEnd(const std::string& sectionname) {
   return pair.first + pair.second;
 }
 
-size_t ElfReader::getSectionSize(const std::string& sectionname) {
+guest_address_t ElfReader::getSectionSize(const std::string& sectionname) {
   SectionsMap::address_pair_t pair = m_sections_map.find_range_by(sectionname);
   return pair.second;
 }
