@@ -17,5 +17,6 @@
 
 void read_ELF_file_header(FILE* fp,Elf32_Ehdr *filehdr);
 int read_ELF_section_header(int sect_num,Elf32_Shdr *sect_hdr,FILE *fp);
+void display_sections(FILE *fp);
 
 #endif // ELFINFO_H

@@ -1,5 +1,4 @@
 #include "ElfReader.hpp"
-#include "elfinfo/elfinfo.h"
 #include "sal/SALConfig.hpp"
 #include <stdio.h>
 #include <cstdlib>
@@ -10,6 +9,20 @@ namespace fail {
 
 const std::string ElfReader::NOTFOUND = "[ELFReader] Function not found.";
 
+
+ElfReader::ElfReader() : m_log("Fail*Elfinfo", false){
+  // try to open elf file from environment variable
+  char * elfpath = getenv("FAIL_ELF_PATH");
+  if(elfpath == NULL){
+    m_log << "FAIL_ELF_PATH not set :(" << std::endl;
+  }else{
+    setup(elfpath);
+  }
+}
+
+ElfReader::ElfReader(const char* path) : m_log("Fail*Elfinfo", false){
+  setup(path);
+}
 
 void ElfReader::setup(const char* path) {
   // Try to open the ELF file
@@ -46,22 +59,47 @@ void ElfReader::setup(const char* path) {
       }
     }
   }
+  // Parse section information
+  if(read_ELF_section_header(ehdr.e_shstrndx,&sec_hdr,fp)==-1)
+  {
+    m_log << "Error: reading section string table sect_num = " << ehdr.e_shstrndx << std::endl;
+  }
+
+  char* buff=(char*)malloc(sec_hdr.sh_size);
+  if (!buff)
+  {
+    m_log << "Malloc failed to allocate buffer for shstrtab" << std::endl;
+    exit(0);
+  }
+  //seek to the offset in the file,
+  fseek(fp,(off_t)sec_hdr.sh_offset,SEEK_SET);
+  fread(buff,sec_hdr.sh_size,1,fp);
+  m_log << "Total number of sections: " << num_hdrs << std::endl;
+
+  for(i=0;i<num_hdrs;i++)
+  {
+    if(read_ELF_section_header(i,&sec_hdr,fp)==-1)
+    {
+      m_log << "Wrong Section to read\n" << std::endl;
+    }
+    else
+    {
+      process_section(&sec_hdr, buff);
+    }
+  }
+  if(buff)
+    free(buff);
 
   fclose(fp);
 }
 
-ElfReader::ElfReader() : m_log("Fail*Elfinfo", false){
-  // try to open elf file from environment variable
-  char * elfpath = getenv("FAIL_ELF_PATH");
-  if(elfpath == NULL){
-    m_log << "FAIL_ELF_PATH not set :(" << std::endl;
-  }else{
-    setup(elfpath);
-  }
-}
 
-ElfReader::ElfReader(const char* path) : m_log("Fail*Elfinfo", false){
-  setup(path);
+int ElfReader::process_section(Elf32_Shdr *sect_hdr, char* sect_name_buff){
+  // Add section name, start address and size to list
+  int idx=sect_hdr->sh_name;
+  m_sections_map.push_back( sect_hdr->sh_addr, sect_hdr->sh_size, sect_name_buff+idx );
+
+  return 0;
 }
 
 int ElfReader::process_symboltable(int sect_num, FILE* fp){
@@ -177,6 +215,32 @@ void ElfReader::printMangled(){
 }
 #endif
 
+#ifndef __puma
+std::string ElfReader::getSection(guest_address_t address) {
+  return m_sections_map.find_name_by(address);
+}
+
+guest_address_t ElfReader::getSectionStart(const std::string& sectionname) {
+  SectionsMap::address_pair_t pair;
+  pair = m_sections_map.find_range_by(sectionname);
+
+  return pair.first;
+}
+
+guest_address_t ElfReader::getSectionEnd(const std::string& sectionname) {
+  SectionsMap::address_pair_t pair = m_sections_map.find_range_by(sectionname);
+  if ( pair.first == ADDR_INV ) {
+    return ADDR_INV;
+  }
+  return pair.first + pair.second;
+}
+
+size_t ElfReader::getSectionSize(const std::string& sectionname) {
+  SectionsMap::address_pair_t pair = m_sections_map.find_range_by(sectionname);
+  return pair.second;
+}
+
+#endif
 
 } // end-of-namespace fail
 

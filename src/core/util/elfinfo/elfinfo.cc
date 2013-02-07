@@ -1,8 +1,8 @@
 /* DISCLAIMER :This is a FREE SOFTWARE You can Use it at your own RISK
-   that is if you are screwed by using this software, then 
+   that is if you are screwed by using this software, then
    accept the fact that you screwed yourself.
-## THIS HAS BEEN DEVELOPED AND TESTED UNDER FEDORA-9 HOPEFULLY IT WILL 
-## WORK ON OTHER SYSTEMS 
+## THIS HAS BEEN DEVELOPED AND TESTED UNDER FEDORA-9 HOPEFULLY IT WILL
+## WORK ON OTHER SYSTEMS
 ======================================================================
 elfinfo.c - Copyright (C)2008 Ashok Shankar Das ashok.s.das@gmail.com
 
@@ -28,10 +28,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string.h>
 #include <elf.h>
 
+
 void read_ELF_file_header(FILE* fp,Elf32_Ehdr *filehdr)
 {
-        
-        //rewind(fp);   
+        //rewind(fp);
         fread(filehdr,sizeof(Elf32_Ehdr),1,fp);
 }
 
@@ -50,7 +50,7 @@ int read_ELF_section_header(int sect_num,Elf32_Shdr *sect_hdr,FILE *fp)
         Elf32_Ehdr elfhdr;
         off_t sect_hdr_off;
         fseek(fp,(off_t)0,SEEK_SET);
-        read_ELF_file_header(fp,&elfhdr);       
+        read_ELF_file_header(fp,&elfhdr);
         numsect=elfhdr.e_shnum;
         if ((numsect<sect_num)||(sect_num<0))
                 return -1;
@@ -59,20 +59,21 @@ int read_ELF_section_header(int sect_num,Elf32_Shdr *sect_hdr,FILE *fp)
         sect_hdr_off+=elfhdr.e_shentsize*sect_num;
         fseek(fp,(off_t)sect_hdr_off,SEEK_SET);
         fread(sect_hdr,sizeof(Elf32_Shdr),1,fp);
-        return 1;       
+
+        return 1;
 }
 
 void process_sect_hdr(Elf32_Shdr *sect_hdr,char *sect_name_buff)
 {
         int idx;
         idx=sect_hdr->sh_name;
-        printf(" %-20s ",sect_name_buff+idx);
+        printf(" %-20s (0x%x++0x%x) ",sect_name_buff+idx, sect_hdr->sh_addr, sect_hdr->sh_size);
         if(sect_hdr->sh_entsize)
                 printf(" %c ",'*');
         else
                 printf(" %c ",' ');
         switch(sect_hdr->sh_type)
-        {       
+        {
                 case 0: printf("NULL           \t");
                         break;
                 case 1: printf("PROGBITS       \t");
@@ -120,7 +121,7 @@ void process_sect_hdr(Elf32_Shdr *sect_hdr,char *sect_name_buff)
                 case 0x6ffffff8: printf("CKSUM          \t");
                         break;
                 case 0x6ffffffa: printf("SUN SPECIFIC   \t");
-                        break;                  
+                        break;
                 case 0x6ffffffb: printf("SUNCOMDAT      \t");
                         break;
                 case 0x6ffffffc: printf("SUNSYMINFO     \t");
@@ -148,7 +149,7 @@ void display_sections(FILE *fp)
         Elf32_Ehdr ehdr;
         Elf32_Shdr sec_hdr;
         int num_hdrs,i;
-        char *buff=NULL;        
+        char *buff=NULL;
         fseek(fp,(off_t)0,SEEK_SET);
         read_ELF_file_header(fp, &ehdr);
         if(is_ELF(&ehdr)==-1)
@@ -173,7 +174,7 @@ void display_sections(FILE *fp)
         //seek to the offset in the file,
         fseek(fp,(off_t)sec_hdr.sh_offset,SEEK_SET);
         fread(buff,sec_hdr.sh_size,1,fp);
-        printf("There are [%d] sections\n",num_hdrs);   
+        printf("There are [%d] sections\n",num_hdrs);
         for(i=0;i<num_hdrs;i++)
         {
                 if(read_ELF_section_header(i,&sec_hdr,fp)==-1)
@@ -184,7 +185,7 @@ void display_sections(FILE *fp)
                 {
                         printf("[section %3d] ",i);
                         process_sect_hdr(&sec_hdr,buff);
-                        
+
                 }
         }
         if(buff)
@@ -193,7 +194,7 @@ void display_sections(FILE *fp)
 
 int process_symtab(int sect_num,FILE *fp)
 {
-        Elf32_Shdr sect_hdr;    
+        Elf32_Shdr sect_hdr;
         Elf32_Sym mysym;
         char *name_buf=NULL;
         int num_sym,link,i,idx;
@@ -207,32 +208,32 @@ int process_symtab(int sect_num,FILE *fp)
         link=sect_hdr.sh_link;
         sym_data_offset=sect_hdr.sh_offset;
         sym_data_size=sect_hdr.sh_size;
-        num_sym=sym_data_size/sizeof(Elf32_Sym);        
-        
+        num_sym=sym_data_size/sizeof(Elf32_Sym);
+
         //read the coresponding strtab
         if(read_ELF_section_header(link,&sect_hdr,fp)==-1)
         {
                 return -1;
         }
-        //get the size of strtab in file and allocate a buffer 
+        //get the size of strtab in file and allocate a buffer
         name_buf=(char*)malloc(sect_hdr.sh_size);
         if(!name_buf)
                 return -1;
         //get the offset of strtab in file and seek to it
         fseek(fp,sect_hdr.sh_offset,SEEK_SET);
         //read all data from the section to the buffer.
-        fread(name_buf,sect_hdr.sh_size,1,fp);  
+        fread(name_buf,sect_hdr.sh_size,1,fp);
         //so we have the namebuf now seek to symtab data
         fseek(fp,sym_data_offset,SEEK_SET);
         printf("[%d] symbols\n",num_sym);
         for(i=0;i<num_sym;i++)
         {
-                                
+
                 //memcpy((char *)&mysym,(char *)sym_buf,sizeof(Elf32_Sym));
                 fread(&mysym,sizeof(Elf32_Sym),1,fp);
                 //dump_sym(&mysym);
                 idx=mysym.st_name;
-                //printf("symbol %d index in strtab %d\n",i,idx);               
+                //printf("symbol %d index in strtab %d\n",i,idx);
                 printf("[%3d] %s ",i,name_buf+idx);
                 switch(ELF32_ST_BIND(mysym.st_info))
                 {
@@ -253,8 +254,8 @@ int process_symtab(int sect_num,FILE *fp)
                         case 15: printf("CPU-specific-end ");
                                 break;
                 }
-                        
-                        
+
+
                 switch(ELF32_ST_TYPE(mysym.st_info))
                 {
                         case 0: printf(" NOTYPE ");
@@ -302,14 +303,14 @@ int process_symtab(int sect_num,FILE *fp)
                                 break;
                         case SHN_XINDEX: printf(" XINDEX ");
                                 break;
-                        
-                }               
+
+                }
                 printf("\n");
-                                
+
         }
         if(name_buf)
                 free(name_buf);
-        
+
 				return 0;
 }
 
@@ -329,15 +330,16 @@ void dump_symbols(FILE *fp)
                 }
                 else
                 {
-                        if((sec_hdr.sh_type==SHT_SYMTAB)||(sec_hdr.sh_type==SHT_DYNSYM))                        
+                        if((sec_hdr.sh_type==SHT_SYMTAB)||(sec_hdr.sh_type==SHT_DYNSYM))
                         {
                                 printf("\n[section %3d] contains ",i);
                                 process_symtab(i,fp);
-                                
+
                         }
                         else
-                                continue;                       
+                                continue;
                 }
         }
 }
+
 
