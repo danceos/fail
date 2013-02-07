@@ -31,10 +31,10 @@ using namespace fail;
   !defined(CONFIG_SR_SAVE)
 #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
-
-void KESOrefs::printEIP() {
-  m_log << "EIP = 0x" << hex << simulator.getCPU(0).getInstructionPointer() <<" "<< m_elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
-}
+//
+//void KESOrefs::printEIP() {
+//  m_log << "EIP = 0x" << hex << simulator.getCPU(0).getInstructionPointer() <<" "<< m_elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
+//}
 
 unsigned KESOrefs::injectBitFlip(address_t data_address, unsigned bitpos){
 
@@ -82,8 +82,7 @@ bool KESOrefs::run()
 {
 //******* Boot, and store state *******//
   m_log << "STARTING EXPERIMENT" << endl;
-  printEIP();
-
+  ElfReader m_elf;
 #if SAFESTATE // define SS (SafeState) when building: make -DSS
 #warning "Building safe state variant"
   m_log << "Booting, and saving state at main";
@@ -93,7 +92,6 @@ bool KESOrefs::run()
   if(simulator.addListenerAndResume(&bp) == &bp){
     m_log << "main function entry reached, saving state" << endl;
   }
-  printEIP();
 
   simulator.save("keso.state");
   simulator.terminate();
@@ -116,7 +114,6 @@ bool KESOrefs::run()
   address_t data_address = param.msg.ram_address();
   unsigned bitpos = param.msg.bit_offset();
 
-
   simulator.restore("keso.state");
   // Goto injection point
   BPSingleListener injBP;
@@ -125,7 +122,6 @@ bool KESOrefs::run()
   injBP.setWatchInstructionPointer(injectionPC);
 
   simulator.addListenerAndResume(&injBP);
-  printEIP();
   /// INJECT BITFLIP:
   param.msg.set_original_value(injectBitFlip(data_address, bitpos));
 
@@ -135,18 +131,22 @@ bool KESOrefs::run()
   BPSingleListener l_parity(m_elf.getAddressByName("keso_throw_parity"));
   BPSingleListener l_oobounds(m_elf.getAddressByName("keso_throw_index_out_of_bounds"));
   BPSingleListener l_dump(m_elf.getAddressByName("c17_Main_m4_dumpResults_console"));
-	MemAccessListener l_memtext(99999); l_memtext.setWatchWidth(2);
+	MemAccessListener l_mem_text(m_elf.getSectionStart(".text"), MemAccessEvent::MEM_WRITE); l_mem_text.setWatchWidth(m_elf.getSectionSize(".text"));
+	MemAccessListener l_mem_textcdx_det( m_elf.getSectionStart(".text.cdx_det"), MemAccessEvent::MEM_WRITE ); l_mem_textcdx_det.setWatchWidth(m_elf.getSectionSize(".text.cdx_det"));
+	MemAccessListener l_mem_outerspace( m_elf.getSectionStart(".copy_sec") ); l_mem_outerspace.setWatchWidth(0xfffffff0);
   TrapListener l_trap(ANY_TRAP);
-
+cout << " outerspace : " << l_mem_outerspace.getWatchWidth() << " --- @ :" << l_mem_outerspace.getWatchAddress() << endl;
   simulator.addListener(&l_trap);
   simulator.addListener(&l_error);
   simulator.addListener(&l_nullp);
   simulator.addListener(&l_oobounds);
   simulator.addListener(&l_dump);
   simulator.addListener(&l_parity);
+  simulator.addListener(&l_mem_text);
+  simulator.addListener(&l_mem_outerspace);
+  simulator.addListener(&l_mem_textcdx_det);
   // resume and wait for results
   fail::BaseListener* l = simulator.resume();
-  printEIP();
 
   // Evaluate result
   if(l == &l_error) {
@@ -169,8 +169,14 @@ bool KESOrefs::run()
     sstr << "trap #" << l_trap.getTriggerNumber();
     handleEvent(param, param.msg.TRAP, sstr.str());
 
-  } else if (l == &l_memtext){
-    handleMemoryAccessEvent(param, l_memtext);
+  } else if (l == &l_mem_text){
+    handleMemoryAccessEvent(param, l_mem_text);
+
+  } else if (l == &l_mem_textcdx_det){
+    handleMemoryAccessEvent(param, l_mem_textcdx_det);
+
+  } else if (l == &l_mem_outerspace){
+    handleMemoryAccessEvent(param, l_mem_outerspace);
 
   } else {
     handleEvent(param, param.msg.UNKNOWN, "UNKNOWN event");

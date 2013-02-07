@@ -3,7 +3,7 @@ message KesoRefProtoMsg {
 	required int32 pc_address = 1;
 	required int32 ram_address = 2;
 	required int32 bit_offset = 3;
-  
+
 	// results
 	// make these optional to reduce overhead for server->client communication
 	enum ResultType {

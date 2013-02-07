@@ -22,7 +22,7 @@ char const * const results_csv = "kesorefs.csv";
 bool KesoRefCampaign::run()
 {
 	Logger log("KesoRefCampaign");
-  fail::ElfReader m_elf("/proj/mmtmp41/hoffmann/kesoeval/cdx_x86");
+  ElfReader elf;
 
 	ifstream test(results_csv);
 	if (test.is_open()) {
@@ -35,13 +35,12 @@ bool KesoRefCampaign::run()
 		return false;
 	}
 
-  ElfReader elf;
   address_t injip = elf.getAddressByName("c23_PersistentDetectorScopeEntry_m5_run");
 
   address_t rambase = elf.getAddressByName("__CIAO_APPDATA_cdx_det__heap");
-  address_t ramend = rambase + 0x80000;
-    cout << "bla: " << hex << ramend << endl;
-  //address_t ramend = rambase + 4;
+ // address_t ramend = rambase + 0x80000;
+  address_t ramend = rambase + 4;
+  cout << "ramend: " << hex << ramend << endl;
 
   log << "startup, injecting ram @ " << hex << rambase << endl;
 

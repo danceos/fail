@@ -11,7 +11,6 @@
 
 class KESOrefs : public fail::ExperimentFlow {
   fail::JobClient m_jc;
-  fail::ElfReader m_elf;
   fail::Logger m_log;
   fail::MemoryManager& m_mm;
 
