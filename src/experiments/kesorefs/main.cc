@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-	ChecksumOOStuBSCampaign c;
+	KesoRefCampaign c;
 	if (fail::campaignmanager.runCampaign(&c)) {
 		return 0;
 	} else {

@@ -18,6 +18,9 @@
 #include <string>
 #include <vector>
 
+#include "campaign.hpp"
+#include "kesoref.pb.h"
+
 using namespace std;
 using namespace fail;
 
@@ -33,71 +36,46 @@ void KESOrefs::printEIP() {
   m_log << "EIP = 0x" << hex << simulator.getCPU(0).getInstructionPointer() <<" "<< m_elf.getNameByAddress(simulator.getCPU(0).getInstructionPointer()) << endl;
 }
 
-static vector<BPSingleListener*> mg_exitbps;
-
-void KESOrefs::setupExitBPs(const string& funcname){
-  BPSingleListener* bp = new BPSingleListener();
-  bp->setWatchInstructionPointer(m_elf.getAddressByName(funcname));
-
-  mg_exitbps.push_back(bp);
-}
-
-void KESOrefs::enableBPs(){
-  vector<BPSingleListener*>::const_iterator it;
-  // add all BPs
-  for(it = mg_exitbps.begin(); it != mg_exitbps.end(); ++it){
-    simulator.addListener(*it);
-  }
-}
-
-void KESOrefs::clearExitBPs(){
-  for( size_t i = 0; i < mg_exitbps.size(); i++){
-    delete mg_exitbps[i];
-  }
-  mg_exitbps.clear();
-}
-
-const unsigned KESO_NUM_STATIC_REFS = 36; // from KESO globals.h
-
-address_t rev_byte(address_t dword){
-  return ((dword>>24)&0x000000FF) | ((dword>>8)&0x0000FF00) | ((dword<<8)&0x00FF0000) | ((dword<<24)&0xFF000000);
-}
-
-void KESOrefs::showStaticRefs(){
-  address_t sref_start = m_elf.getAddressByName("__CIAO_APPDATA_cdx_det__heap"); // guest_address_t -> uint32_t
-  MemoryManager& mm = simulator.getMemoryManager();
-  address_t value = 0;
-  m_log << "__CIAO_APPDATA_cdx_det__heap : 0x" << hex  << setw(8) << setfill('0') << sref_start << endl;
-
-  for(unsigned i = 0; i < KESO_NUM_STATIC_REFS; ++i){
-    mm.getBytes(sref_start+(i*4), 4, (void*)&value);
-    value = rev_byte(value);
-    cout << "0x" << hex << setw(8) << setfill('0')   << value << " | ";
-    if ((i+1) % 8 == 0) cout << "" <<  endl;
-  }
-  cout << "" << endl;
-}
-
-void KESOrefs::injectStaticRefs(unsigned referenceoffset, unsigned bitpos){
-  address_t sref_start = m_elf.getAddressByName("__CIAO_APPDATA_cdx_det__heap"); // guest_address_t -> uint32_t
+unsigned KESOrefs::injectBitFlip(address_t data_address, unsigned bitpos){
 
   MemoryManager& mm = simulator.getMemoryManager();
-  address_t value = 0, injectedval =0;
+  unsigned value, injectedval;
 
-  sref_start += (referenceoffset*4);
-
-  if(referenceoffset > KESO_NUM_STATIC_REFS){
-    m_log << "WARNING: reference offset to large!" << endl;
-  }
-  mm.getBytes(sref_start, 4, (void*)&value);
+  mm.getBytes(data_address, 4, (void*)&value);
   injectedval = value ^ bitpos;
-  mm.setBytes(sref_start, 4, (void*)&injectedval);
+  mm.setBytes(data_address, 4, (void*)&injectedval);
 
-  m_log << "INJECTION at: __CIAO_APPDATA_cdx_det__heap + " << referenceoffset << " : 0x" << hex  << setw(8) << setfill('0') << sref_start;
+  m_log << "INJECTION at: 0x" << hex  << setw(8) << setfill('0') << data_address;
   cout << " value: 0x" << setw(8) << setfill('0') << value << " -> 0x" << setw(8) << setfill('0') << injectedval << endl;
 
+  return value;
 }
 
+
+void handleEvent(KesoRefExperimentData& param, KesoRefProtoMsg_ResultType restype, const std::string &msg){
+    cout << msg << endl;
+    param.msg.set_resulttype(restype);
+    param.msg.set_details(msg);
+}
+
+void handleMemoryAccessEvent(KesoRefExperimentData& param, const fail::MemAccessListener& l_mem){
+    stringstream sstr;
+    sstr << "mem access (";
+    switch (l_mem.getTriggerAccessType()) {
+      case MemAccessEvent::MEM_READ:
+          sstr << "r";
+        break;
+      case MemAccessEvent::MEM_WRITE:
+          sstr << "w";
+        break;
+      default: break;
+    }
+    sstr << ") @ 0x" << hex << l_mem.getTriggerAddress();
+
+    sstr << " ip @ 0x" << hex << l_mem.getTriggerInstructionPointer();
+
+    handleEvent(param, param.msg.MEMACCESS, sstr.str());
+}
 
 
 bool KESOrefs::run()
@@ -108,7 +86,7 @@ bool KESOrefs::run()
 
 #if SAFESTATE // define SS (SafeState) when building: make -DSS
 #warning "Building safe state variant"
-  m_log << "Booting, and saving state at ";
+  m_log << "Booting, and saving state at main";
   BPSingleListener bp;
   // STEP 1: run until interesting function starts, and save state
   bp.setWatchInstructionPointer(m_elf.getAddressByName("main"));
@@ -123,36 +101,85 @@ bool KESOrefs::run()
 
 //******* Fault injection *******//
 #warning "Building restore state variant"
+
+	for (int experiment_count = 0; experiment_count < 200 || (m_jc.getNumberOfUndoneJobs() != 0) ; ) { // only do 200 sequential experiments, to prevent swapping
+
+  m_log << "asking jobserver for parameters" << endl;
+  KesoRefExperimentData param;
+  if(!m_jc.getParam(param)){
+    m_log << "Dying." << endl; // We were told to die.
+    simulator.terminate(1);
+  }
+
+  // Get input data from  Jobserver
+  address_t injectionPC = param.msg.pc_address();
+  address_t data_address = param.msg.ram_address();
+  unsigned bitpos = param.msg.bit_offset();
+
+
   simulator.restore("keso.state");
-
-
   // Goto injection point
   BPSingleListener injBP;
-  injBP.setWatchInstructionPointer(m_elf.getAddressByName("c23_PersistentDetectorScopeEntry_m5_run"));
+  m_log << "Trying to inject @ " << hex << m_elf.getNameByAddress(injectionPC) << endl;
+
+  injBP.setWatchInstructionPointer(injectionPC);
+
   simulator.addListenerAndResume(&injBP);
-  printEIP(); m_log << "Lets inject some stuff..." << endl;
-  showStaticRefs();
+  printEIP();
   /// INJECT BITFLIP:
-  injectStaticRefs(9, 9);
-  showStaticRefs();
+  param.msg.set_original_value(injectBitFlip(data_address, bitpos));
 
   // Setup exit points
-  setupExitBPs("keso_throw_error");
-  setupExitBPs("keso_throw_parity");
-  setupExitBPs("keso_throw_nullpointer");
-  setupExitBPs("keso_throw_index_out_of_bounds");
-  setupExitBPs("c17_Main_m4_dumpResults_console");
-  setupExitBPs("os::krn::OSControl::shutdownOS");
+  BPSingleListener l_error(m_elf.getAddressByName("keso_throw_error"));
+  BPSingleListener l_nullp(m_elf.getAddressByName("keso_throw_nullpointer"));
+  BPSingleListener l_parity(m_elf.getAddressByName("keso_throw_parity"));
+  BPSingleListener l_oobounds(m_elf.getAddressByName("keso_throw_index_out_of_bounds"));
+  BPSingleListener l_dump(m_elf.getAddressByName("c17_Main_m4_dumpResults_console"));
+	MemAccessListener l_memtext(99999); l_memtext.setWatchWidth(2);
+  TrapListener l_trap(ANY_TRAP);
 
-  enableBPs();
-
+  simulator.addListener(&l_trap);
+  simulator.addListener(&l_error);
+  simulator.addListener(&l_nullp);
+  simulator.addListener(&l_oobounds);
+  simulator.addListener(&l_dump);
+  simulator.addListener(&l_parity);
   // resume and wait for results
-  /* fail::BaseListener* l =*/ simulator.resume();
+  fail::BaseListener* l = simulator.resume();
   printEIP();
-  showStaticRefs();
-  // cleanup
-  clearExitBPs();
+
+  // Evaluate result
+  if(l == &l_error) {
+    handleEvent(param, param.msg.EXC_ERROR, "exc error");
+
+  } else if ( l == &l_nullp ) {
+    handleEvent(param, param.msg.EXC_NULLPOINTER, "exc nullpointer");
+
+  } else if ( l == &l_oobounds ) {
+    handleEvent(param, param.msg.EXC_OOBOUNDS, "exc out of bounds");
+
+  } else if (l == &l_dump) {
+    handleEvent(param, param.msg.CALCDONE, "calculation done");
+
+  } else if (l == &l_parity) {
+    handleEvent(param, param.msg.EXC_PARITY, "exc parity");
+
+  }  else if (l == &l_trap) {
+    stringstream sstr;
+    sstr << "trap #" << l_trap.getTriggerNumber();
+    handleEvent(param, param.msg.TRAP, sstr.str());
+
+  } else if (l == &l_memtext){
+    handleMemoryAccessEvent(param, l_memtext);
+
+  } else {
+    handleEvent(param, param.msg.UNKNOWN, "UNKNOWN event");
+  }
+  simulator.clearListeners();
+  m_jc.sendResult(param);
+} // end while (1)
 // Explicitly terminate, or the simulator will continue to run.
 #endif
 simulator.terminate();
 }
+

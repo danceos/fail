@@ -1,6 +1,8 @@
 #ifndef __KESO_REFS_EXPERIMENT_HPP__
   #define __KESO_REFS_EXPERIMENT_HPP__
 
+
+#include "sal/SALInst.hpp"
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
@@ -18,7 +20,9 @@ class KESOrefs : public fail::ExperimentFlow {
   void enableBPs();
   void clearExitBPs();
   void showStaticRefs();
-  void injectStaticRefs(unsigned referenceoffset, unsigned bitpos);
+
+  unsigned injectBitFlip(fail::address_t data_address, unsigned bitpos);
+
 public:
   KESOrefs() : m_log("KESOrefs", false), m_mm(fail::simulator.getMemoryManager()) {};
   bool run();
