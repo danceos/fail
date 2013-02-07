@@ -10,7 +10,8 @@ namespace fail {
 
 /**
  * \class Gem5Controller
- * gem5-specific implementation of a SimulatorController.
+ * 
+ * Gem5-specific implementation of a SimulatorController.
  */
 class Gem5Controller : public SimulatorController {
 public:
