@@ -28,6 +28,10 @@ public:
 	 */
 	BochsCPU(unsigned int id) : m_Id(id) { }
 	/**
+	 * Virtual Destructor is required.
+   */
+	virtual ~BochsCPU() { }
+		/**
 	 * Retrieves the content of the register \c reg.
 	 * @param reg the register pointer of interest (cannot be \c NULL)
 	 * @return the content of the register \c reg
