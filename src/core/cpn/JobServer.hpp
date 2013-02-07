@@ -18,21 +18,21 @@
 namespace fail {
 
 class CommThread;
-  
+
 /**
  * \class JobServer
  * The server supplies the Minions with ExperimentData's and receives the result data.
- * 
+ *
  * Manages the campaigns parameter distributions. The Campaign Controller can add
  * experiment parameter sets, which the Jobserver will distribute to requesting
  * clients. The campaign controller can wait for all results, or a timeout.
  */
 class JobServer {
 private:
-	//! The TCP Port number 
+	//! The TCP Port number
 	int m_port;
-	//! TODO nice termination concept 
-	bool m_finish;  
+	//! TODO nice termination concept
+	bool m_finish;
 	//!  Campaign signaled last expirement data set
 	bool m_noMoreExps;
 	//! the maximal number of threads spawned for TCP communication
@@ -43,7 +43,7 @@ private:
 #ifndef __puma
 	typedef std::list<boost::thread*> Tthreadlist;
 	Tthreadlist m_threadlist;
-	
+
 	boost::thread* m_serverThread;
 #endif // puma
 
@@ -77,13 +77,13 @@ private:
 #endif
 	void sendWork(int sockfd);
 
-public:	
+public:
 	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
 		m_maxThreads(128), m_threadtimeout(0), m_undoneJobs(SERVER_OUT_QUEUE_SIZE)
-	{ 
+	{
 		m_runid = std::time(0);
 #ifndef __puma
-		m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread. 
+		m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread.
 #ifdef SERVER_PERFORMANCE_MEASURE
 		m_measureThread = new boost::thread(&JobServer::measure, this);
 #endif
@@ -123,8 +123,8 @@ public:
 	 * @see setNoMoreExperiments
 	 */
 	bool noMoreExperiments() const { return m_noMoreExps; }
-	
-	/**
+
+  /**
 	 * The Campaign Controller can signalize, that the jobserver can
 	 * stop listening for client connections.
 	 */
@@ -134,7 +134,7 @@ public:
 /**
  * @class CommThread
  * Implementation of the communication threads.
- * This class implements the actual communication 
+ * This class implements the actual communication
  * with the minions.
  */
 class CommThread {
@@ -154,10 +154,10 @@ private:
 	/**
 	 * Called after minion offers a result message.
 	 * Evaluates the Workload ID and puts the corresponding
-	 * job result into the result queue. 
+	 * job result into the result queue.
 	 * @param minion The minion offering results
 	 * @param workloadID The workload id of the result message
-	 */	
+	 */
 	void receiveExperimentResults(Minion& minion, FailControlMessage& ctrlmsg);
 public:
 #ifndef __puma

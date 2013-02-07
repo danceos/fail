@@ -26,7 +26,7 @@ bool TroubleListener::isMatching(const TroubleEvent* pEv) const
 	return false;
 }
 
-bool TroubleListener::removeWatchNumber(unsigned troubleNum) 
+bool TroubleListener::removeWatchNumber(unsigned troubleNum)
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
 		if (m_WatchNumbers[i] == troubleNum) {
@@ -37,12 +37,12 @@ bool TroubleListener::removeWatchNumber(unsigned troubleNum)
 	return false;
 }
 
-bool TroubleListener::addWatchNumber(unsigned troubleNumber) 
+bool TroubleListener::addWatchNumber(unsigned troubleNumber)
 {
 	for (unsigned i = 0; i < m_WatchNumbers.size(); i++) {
 		if (m_WatchNumbers[i] == troubleNumber)
 			return false;
-	}	
+	}
 	m_WatchNumbers.push_back(troubleNumber);
 	return true;
 }

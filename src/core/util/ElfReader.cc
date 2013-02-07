@@ -26,7 +26,7 @@ void ElfReader::setup(const char* path) {
   fseek(fp,(off_t)0,SEEK_SET);
   read_ELF_file_header(fp, &ehdr);
   num_hdrs=ehdr.e_shnum;
-  m_log << "Evaluating ELF File: " << path << std::endl;	
+  m_log << "Evaluating ELF File: " << path << std::endl;
   // Parse symbol table and generate internal map
   for(i=0;i<num_hdrs;i++)
   {
@@ -39,7 +39,6 @@ void ElfReader::setup(const char* path) {
       if((sec_hdr.sh_type==SHT_SYMTAB)||(sec_hdr.sh_type==SHT_DYNSYM))
       {
         process_symboltable(i,fp);
-
       }
       else
       {
@@ -88,14 +87,14 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
   {
     return -1;
   }
-  //get the size of strtab in file and allocate a buffer 
+  //get the size of strtab in file and allocate a buffer
   name_buf=(char*)malloc(sect_hdr.sh_size);
   if(!name_buf)
     return -1;
   //get the offset of strtab in file and seek to it
   fseek(fp,sect_hdr.sh_offset,SEEK_SET);
   //read all data from the section to the buffer.
-  fread(name_buf,sect_hdr.sh_size,1,fp);  
+  fread(name_buf,sect_hdr.sh_size,1,fp);
   //so we have the namebuf now seek to symtab data
   fseek(fp,sym_data_offset,SEEK_SET);
 

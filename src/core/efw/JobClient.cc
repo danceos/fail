@@ -9,6 +9,7 @@ JobClient::JobClient(const std::string& server, int port)
 	m_server_port = port;
 	m_server = server;
 	m_server_ent = gethostbyname(m_server.c_str());
+  cout << "JobServer: " << m_server.c_str() << endl;
 	if(m_server_ent == NULL) {
 		perror("[Client@gethostbyname()]");
 		// TODO: Log-level?
@@ -39,12 +40,12 @@ bool JobClient::connectToServer()
 	/* Enable address reuse */
 	int on = 1;
 	setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
-	
+
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
 	memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
 	serv_addr.sin_port = htons(m_server_port);
-	
+
 	int retries = CLIENT_RETRY_COUNT;
 	while (true) {
 		if (connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -78,7 +79,7 @@ bool JobClient::getParam(ExperimentData& exp)
 	while (1) { // Here we try to acquire a parameter set
 		switch (tryToGetExperimentData(exp)) {
 			// Jobserver will sent workload, params are set in \c exp
-		case FailControlMessage::WORK_FOLLOWS: 
+		case FailControlMessage::WORK_FOLLOWS:
 			return true;
 			// Nothing to do right now, but maybe later
 		case FailControlMessage::COME_AGAIN:
@@ -92,9 +93,9 @@ bool JobClient::getParam(ExperimentData& exp)
 
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
-	
+
 	FailControlMessage ctrlmsg;
-	
+
 	//Are there other jobs for the experiment
 	if (m_parameters.size() == 0) {
 
@@ -129,7 +130,7 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 			uint32_t i;
 			for (i = 0 ; i < ctrlmsg.job_size() ; i++) {
 				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
-				
+
 				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
 					// Failed to receive message?  Retry.
 					close(m_sockfd);
@@ -144,28 +145,28 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		case FailControlMessage::COME_AGAIN:
 			break;
 		default:
-			break;  
+			break;
 		}
 		close(m_sockfd);
-		
+
 		//start time measurement for throughput calculation
 		m_job_runtime.startTimer();
 	}
-	
+
 	if (m_parameters.size() != 0) {
 		exp.getMessage().CopyFrom(m_parameters.front()->getMessage());
 		exp.setWorkloadID(m_parameters.front()->getWorkloadID());
-		
+
 		delete &m_parameters.front()->getMessage();
 		delete m_parameters.front();
 		m_parameters.pop_front();
-		
+
 		return FailControlMessage::WORK_FOLLOWS;
 	} else {
 		return ctrlmsg.command();
 	}
-	
-	
+
+
 }
 
 bool JobClient::sendResult(ExperimentData& result)
@@ -174,28 +175,28 @@ bool JobClient::sendResult(ExperimentData& result)
 	ExperimentData* temp_exp = new ExperimentData(result.getMessage().New());
 	temp_exp->getMessage().CopyFrom(result.getMessage());
 	temp_exp->setWorkloadID(result.getWorkloadID());
-	
+
 	m_results.push_back( temp_exp );
-	
+
 	if (m_parameters.size() != 0) {
 		//If there are more jobs for the experiment store result
 		return true;
 	} else {
-		//Stop time measurement and calculate new throughput 
+		//Stop time measurement and calculate new throughput
 		m_job_runtime.stopTimer();
 		m_job_throughput = CLIENT_JOB_REQUEST_SEC/((double)m_job_runtime/m_results.size());
-		
+
 		if (m_job_throughput > CLIENT_JOB_LIMIT) {
 			m_job_throughput = CLIENT_JOB_LIMIT;
 		}
-			
+
 		if (m_job_throughput < 1) {
 			m_job_throughput = 1;
 		}
-		
+
 		//Reset timer for new time measurement
 		m_job_runtime.reset();
-		
+
 		return sendResultsToServer();
 	}
 }
@@ -213,9 +214,9 @@ bool JobClient::sendResultsToServer()
 		ctrlmsg.set_build_id(42);
 		ctrlmsg.set_run_id(m_server_runid);
 		ctrlmsg.set_job_size(m_results.size()); //Store how many results will be sent
-		
+
 		cout << "[Client] Sending back result [";
-		
+
 		uint32_t i;
 		for (i = 0; i < m_results.size() ; i++) {
 			ctrlmsg.add_workloadid(m_results[i]->getWorkloadID());
@@ -223,10 +224,10 @@ bool JobClient::sendResultsToServer()
 			cout << " ";
 		}
 		cout << "]";
-		
+
 		// TODO: Log-level?
 		SocketComm::sendMsg(m_sockfd, ctrlmsg);
-		
+
 		for (i = 0; i < ctrlmsg.job_size() ; i++) {
 			SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage());
 			delete &m_results.front()->getMessage();

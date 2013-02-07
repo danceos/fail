@@ -39,7 +39,7 @@ namespace fail {
        * Both mangled an demangled symbols are searched.
        * @param name The symbol name as string
        * @return The according address if found, else ADDR_INV
-       */	
+       */
       guest_address_t getAddressByName(const std::string& name) ;
 
       /**
