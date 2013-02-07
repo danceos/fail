@@ -18,6 +18,7 @@
 #include "util/ElfReader.hpp"
 #include "util/WallclockTimer.hpp"
 #include "util/gzstream/gzstream.h"
+#include "config/FailConfig.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -39,9 +40,19 @@ using namespace std;
 using namespace fail;
 
 // Check if configuration dependencies are satisfied:
-#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-    !defined(CONFIG_SR_SAVE) || !defined(CONFIG_EVENT_TRAP)
-  #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
+#if PREREQUISITES == 1
+  #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
+      !defined(CONFIG_SR_SAVE) || !defined(CONFIG_EVENT_GUESTSYS) || \
+      !defined(CONFIG_SR_REBOOT) || !defined(CONFIG_EVENT_MEMREAD) || \
+      !defined(CONFIG_EVENT_MEMWRITE) // -> tracing plugin
+    #error This experiment needs: breakpoints, save, restore, memread, memwrite, reboot and guest.
+  #endif
+#else
+  #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
+      !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_MEMREAD) || \
+      !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
+    #error This experiment needs: breakpoints (+range), traps, memread, memwrite and restore.
+  #endif
 #endif
 
 #if PREREQUISITES
