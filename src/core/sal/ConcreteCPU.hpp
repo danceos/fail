@@ -6,6 +6,8 @@
 #elif defined BUILD_GEM5
   #if defined BUILD_ARM
     #include "gem5/Gem5ArmCPU.hpp"
+  #else
+    #error Active config currently not supported!
   #endif
 #elif defined BUILD_OVP
   #include "ovp/OVPConfig.hpp"
