@@ -8,7 +8,8 @@ namespace fail {
 
 /**
  * \class X86CPUState
- * TODO.
+ * This class represents the current state of a x86 based CPU. A final CPU class
+ * implemention need to implement \c X86CPUState and \c X86Architecture.
  */
 class X86CPUState : public CPUState {
 public:
