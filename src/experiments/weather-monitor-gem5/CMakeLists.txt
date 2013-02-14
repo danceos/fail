@@ -1,4 +1,4 @@
-set(EXPERIMENT_NAME weather-monitor)
+set(EXPERIMENT_NAME weather-monitor-gem5)
 set(EXPERIMENT_TYPE WeatherMonitorExperiment)
 configure_file(../instantiate-experiment.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
