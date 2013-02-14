@@ -1,0 +1,3 @@
+- Dokumentation korrigieren und überarbeiten
+- build-Prozess vereinfachen
+- funktionsfähiges restore implementieren
