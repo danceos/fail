@@ -6,11 +6,6 @@ namespace fail {
 
 ArmArchitecture::ArmArchitecture()
 {
-	fillRegisterList();
-}
-
-void ArmArchitecture::fillRegisterList()
-{
 	// TODO: Add missing registers
 	// 16x 32-Bit GP Registers
 	for (int i = 0; i < 16; i++) {

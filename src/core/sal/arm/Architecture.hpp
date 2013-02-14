@@ -15,8 +15,6 @@ class ArmArchitecture : public CPUArchitecture {
 public:
 	ArmArchitecture();
 	~ArmArchitecture();
-private:
-	void fillRegisterList();
 };
 
 /**
