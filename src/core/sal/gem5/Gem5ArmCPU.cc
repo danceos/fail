@@ -2,7 +2,7 @@
 
 namespace fail {
 
-regdata_t Gem5ArmCPU::getRegisterContent(Register* reg)
+regdata_t Gem5ArmCPU::getRegisterContent(Register* reg) const
 {
 	switch (reg->getType())	{
 	case RT_GP:
@@ -38,21 +38,6 @@ void Gem5ArmCPU::setRegisterContent(Register* reg, regdata_t value)
 		return setRegisterContent(getRegister(RI_IP), value);
 	}
 	// TODO: assertion?
-}
-
-address_t Gem5ArmCPU::getInstructionPointer()
-{
-	return getRegisterContent(getRegister(RI_IP));
-}
-
-address_t Gem5ArmCPU::getStackPointer()
-{
-	return getRegisterContent(getRegister(RI_SP));
-}
-
-address_t Gem5ArmCPU::getLinkRegister()
-{
-	return getRegisterContent(getRegister(RI_LR));
 }
 
 } // end-of-namespace: fail

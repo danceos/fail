@@ -16,12 +16,12 @@ public:
 	 * Returns the current content of the base pointer register.
 	 * @return the current (e)bp
 	 */
-	virtual address_t getBasePointer() = 0;
+	virtual address_t getBasePointer() const = 0;
 	/**
 	 * Returns the current (E)FLAGS.
 	 * @return the current (E)FLAGS processor register content
 	 */
-	virtual regdata_t getFlagsRegister() = 0;
+	virtual regdata_t getFlagsRegister() const = 0;
 };
 
 } // end-of-namespace: fail

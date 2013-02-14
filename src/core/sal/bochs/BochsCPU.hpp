@@ -36,7 +36,7 @@ public:
 	 * @param reg the register pointer of interest (cannot be \c NULL)
 	 * @return the content of the register \c reg
 	 */
-	regdata_t getRegisterContent(Register* reg);
+	regdata_t getRegisterContent(Register* reg) const;
 	/**
 	 * Sets the content of the register \c reg to \c value.
 	 * @param reg the destination register object pointer (cannot be \c NULL)
@@ -47,22 +47,22 @@ public:
 	 * Returns the current instruction pointer (aka program counter).
 	 * @return the current (e)ip register content
 	 */
-	address_t getInstructionPointer() { return getRegisterContent(getRegister(RID_PC)); }
+	address_t getInstructionPointer() const { return getRegisterContent(getRegister(RID_PC)); }
 	/**
 	 * Returns the current stack pointer.
 	 * @return the current (e)sp register content
 	 */
-	address_t getStackPointer() { return getRegisterContent(getRegister(RID_CSP)); }
+	address_t getStackPointer() const { return getRegisterContent(getRegister(RID_CSP)); }
 	/**
 	 * Returns the current base pointer.
 	 * @return the current (e)bp register content
 	 */
-	address_t getBasePointer() { return getRegisterContent(getRegister(RID_CBP)); }
+	address_t getBasePointer() const { return getRegisterContent(getRegister(RID_CBP)); }
 	/**
 	 * Returns the current (E)FLAGS.
 	 * @return the current (E)FLAGS processor register content
 	 */
-	regdata_t getFlagsRegister() { return getRegisterContent(getRegister(RID_FLAGS)); }
+	regdata_t getFlagsRegister() const { return getRegisterContent(getRegister(RID_FLAGS)); }
 	/**
 	 * Returns \c true if the corresponding flag is set, or \c false
 	 * otherwise.
@@ -106,7 +106,7 @@ public:
 	 * Returns the current id of this CPU.
 	 * @return the current id
 	 */
-	unsigned int getId() { return m_Id; }
+	unsigned int getId() const { return m_Id; }
 };
 
 typedef BochsCPU ConcreteCPU; //!< the concrete BochsCPU type

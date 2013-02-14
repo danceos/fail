@@ -20,7 +20,7 @@ public:
 	 * Gets the content of the passed Register.
 	 * @param reg the register to get the content from
 	 */
-	virtual regdata_t getRegisterContent(Register* reg) = 0;
+	virtual regdata_t getRegisterContent(Register* reg) const = 0;
 	/**
 	 * Writes the passed value into the given register.
 	 * @param reg the register that should be written to
@@ -31,18 +31,18 @@ public:
 	 * Returns the current instruction pointer.
 	 * @return the current eip
 	 */
-	virtual address_t getInstructionPointer() = 0;
+	virtual address_t getInstructionPointer() const = 0;
 	/**
 	 * Returns the top address of the stack.
 	 * @return the starting address of the stack
 	 */
-	virtual address_t getStackPointer() = 0;
+	virtual address_t getStackPointer() const = 0;
 	/**
 	 * Check whether the interrupt should be suppressed.
 	 * @param interruptNum the interrupt-type id
 	 * @return \c true if the interrupt is suppressed, \c false oterwise
 	 */
-	bool isSuppressedInterrupt(unsigned interruptNum);
+	bool isSuppressedInterrupt(unsigned interruptNum) const;
 	/**
 	 * Add a Interrupt to the list of suppressed.
 	 * @param interruptNum the interrupt-type id

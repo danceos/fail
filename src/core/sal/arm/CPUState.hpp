@@ -13,12 +13,11 @@ namespace fail {
  */
 class ArmCPUState : public CPUState {
 public:
-	virtual regdata_t getRegisterContent(Register* reg) = 0;
 	/**
 	 * Returns the current Link Register.
 	 * @return the current lr
 	 */
-	virtual address_t getLinkRegister() = 0;
+	virtual address_t getLinkRegister() const = 0;
 };
 
 // TODO: Enum for misc registers

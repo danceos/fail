@@ -5,7 +5,7 @@
 
 namespace fail {
 
-regdata_t BochsCPU::getRegisterContent(Register* reg)
+regdata_t BochsCPU::getRegisterContent(Register* reg) const
 {
 	assert(reg != NULL && "FATAL ERROR: reg-ptr cannot be NULL!");
 	// TODO: BX_CPU(0) *always* correct?

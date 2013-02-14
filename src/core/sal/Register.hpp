@@ -153,13 +153,13 @@ public:
 	 * @return a pointer to the \a i-th register; if \a i is invalid, an
 	 *         assertion is thrown
 	 */
-	Register* getRegister(size_t i);
+	Register* getRegister(size_t i) const;
 	/**
 	 * Retrieves the first register within this set (syntactical sugar).
 	 * @return a pointer to the first register (if existing -- otherwise an
 	 *         assertion is thrown)
 	 */
-	virtual Register* first() { return getRegister(0); }
+	virtual Register* first() const { return getRegister(0); }
 };
 
 } // end-of-namespace: fail

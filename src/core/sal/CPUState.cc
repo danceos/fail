@@ -4,7 +4,7 @@ namespace fail {
 
 int interrupt_to_fire = -1;
 
-bool CPUState::isSuppressedInterrupt(unsigned interruptNum)
+bool CPUState::isSuppressedInterrupt(unsigned interruptNum) const
 {
 	for (size_t i = 0; i < m_SuppressedInterrupts.size(); i++)
 		if ((m_SuppressedInterrupts[i] == interruptNum ||

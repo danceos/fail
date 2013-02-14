@@ -29,7 +29,7 @@ public:
 	 * @param reg the destination register whose content should be retrieved
 	 * @return the content of register \c reg
 	 */
-	regdata_t getRegisterContent(Register* reg);
+	regdata_t getRegisterContent(Register* reg) const;
 	/**
 	 * Sets the register content for the  \a current gem5 CPU.
 	 * @param reg the (initialized) register object whose content should be set
@@ -41,16 +41,12 @@ public:
 	 * for the current CPU \c this.
 	 * @return the current instruction ptr address
 	 */
-
-	address_t getInstructionPointer();
-	address_t getStackPointer();
-	address_t getLinkRegister();
-
-	unsigned int getId() { return m_Id; }
+	address_t getInstructionPointer() const { return getRegisterContent(getRegister(RI_IP)); }
 	/**
 	 * Retrieves the current stack pointer for the current CPU \c this.
 	 * @return the current stack ptr address
 	 */
+	address_t getStackPointer() const { return getRegisterContent(getRegister(RI_SP)); }
 	/**
 	 * Retrieves the link register (return address when a function returns) for
 	 * the current CPU \c this. See
@@ -58,10 +54,12 @@ public:
 	 * for further information.
 	 * @return the current link register address
 	 */
+	address_t getLinkRegister() const { return getRegisterContent(getRegister(RI_LR)); }
 	/**
 	 * Returns the ID of the current CPU.
 	 * @return the unique ID of \c this CPU object
 	 */
+	unsigned int getId() const { return m_Id; }
 private:
 	unsigned int m_Id; //!< the unique ID of this CPU
 	System* m_System; //!< the gem5 system object
