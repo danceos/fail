@@ -9,15 +9,11 @@ regdata_t Gem5ArmCPU::getRegisterContent(Register* reg)
 		if (reg->getIndex() == 15) {
 			return m_System->getThreadContext(m_Id)->pcState().pc();
 		}
-			
 		return m_System->getThreadContext(m_Id)->readIntReg(reg->getIndex());
-			
 	case RT_FP:
 		return m_System->getThreadContext(m_Id)->readFloatReg(reg->getIndex());
-	
 	case RT_ST:
 		return m_System->getThreadContext(m_Id)->readMiscReg(reg->getIndex());
-
 	case RT_IP:
 		return m_System->getThreadContext(m_Id)->pcState().pc();
 	}
@@ -32,15 +28,12 @@ void Gem5ArmCPU::setRegisterContent(Register* reg, regdata_t value)
 	switch (reg->getType()) {
 	case RT_GP:
 		m_System->getThreadContext(m_Id)->setIntReg(reg->getIndex(), value);
-	break;
-
+		break;
 	case RT_FP:
 		m_System->getThreadContext(m_Id)->setFloatReg(reg->getIndex(), value);
-	break;
-
+		break;
 	case RT_ST:
 		return m_System->getThreadContext(m_Id)->setMiscReg(reg->getIndex(), value);
-
 	case RT_IP:
 		return setRegisterContent(getRegister(RI_IP), value);
 	}

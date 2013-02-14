@@ -161,6 +161,7 @@ public:
 	 */
 	virtual Register* first() { return getRegister(0); }
 };
+
 } // end-of-namespace: fail
 
 #endif // __REGISTER_HPP__

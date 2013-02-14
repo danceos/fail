@@ -21,7 +21,8 @@ private:
 
 /**
  * \enum GPRegIndex
- * TODO.
+ * Defines the general purpose (GP) register identifier for the ARM
+ * plattform. Some of them are just aliases.
  */
 enum GPRegIndex {
 	RI_R0,

@@ -6,6 +6,11 @@
 
 namespace fail {
 
+/**
+ * \class ArmCPUState
+ * This class represents the current state of a ARM based CPU. A final CPU class
+ * need to implement \c ArmCPUState and \c ArmArchitecture.
+ */
 class ArmCPUState : public CPUState {
 public:
 	virtual regdata_t getRegisterContent(Register* reg) = 0;
