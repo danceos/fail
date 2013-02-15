@@ -65,8 +65,14 @@ if(BUILD_BOCHS)
   unset(wxWidgets_USE_DEBUG CACHE)
   mark_as_advanced(wxWidgets_CONFIG_EXECUTABLE wxWidgets_wxrc_EXECUTABLE)
 
+  find_package(VGA)
+  if(VGA_FOUND)
+    set(bochs_library_dependencies ${bochs_library_dependencies} ${VGA_LIBRARIES})
+  endif()
+
   # FIXME: some libraries still need to be located the "cmake way"
-  set(bochs_library_dependencies ${bochs_library_dependencies} -lfontconfig -lrt -lvga -lvgagl -pthread)
+  set(bochs_library_dependencies ${bochs_library_dependencies} -lfontconfig -lrt -lvgagl -pthread)
+
 
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
 
