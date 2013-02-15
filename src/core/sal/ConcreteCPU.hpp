@@ -15,6 +15,11 @@
   #include "qemu/QEMUConfig.hpp"
 #elif defined BUILD_T32
   #include "t32/T32Config.hpp"
+  #if defined BUILD_ARM
+    #include "t32/T32ArmCPU.hpp"
+  #else
+    #error Active config currently not supported!
+  #endif
 #else
   #error SAL Config Target not defined
 #endif

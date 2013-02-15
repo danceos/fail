@@ -1,18 +1,10 @@
 #ifndef __T32_CONTROLLER_HPP__
 	#define __T32_CONTROLLER_HPP__
 
-#include <string>
-#include <cassert>
-#include <iostream>
-#include <iomanip>
-#include <string.h>
-
 #include "../SimulatorController.hpp"
+#include "T32Memory.hpp"
 
 namespace fail {
-
-class ExperimentFlow;
-class TimerListener;
 
 /**
  * \class T32Controller
@@ -20,8 +12,7 @@ class TimerListener;
  */
 class T32Controller : public SimulatorController {
 public:
-	// Initialize the controller.
-	T32Controller();
+  void startup();
 	~T32Controller();
 
 
@@ -29,8 +20,7 @@ public:
 	 * Simulator Controller & Access API:
 	 * ********************************************************************/
 	/**
-	 * Save simulator state.  Quite hard on real hardware! Also safe all 
-	 * HW registers!
+	 * Save simulator state.  Quite hard on real hardware! Also safe all HW registers! TODO
 	 * @param path Location to store state information
 	 * @return \c true if the state has been successfully saved, \c false otherwise
 	 */

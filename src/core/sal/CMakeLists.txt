@@ -60,8 +60,12 @@ elseif(BUILD_T32)
 		Register.cc
 		SimulatorController.cc
 		t32/T32Controller.cc
-		t32/wrappers.cc
 	)
+	if(BUILD_ARM)
+		set(SRCS ${SRCS}
+			t32/T32ArmCPU.cc
+		)
+	endif(BUILD_ARM)
 endif(BUILD_BOCHS)
 
 if(BUILD_X86)

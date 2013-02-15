@@ -91,7 +91,7 @@ extern struct hostent * gethostbyaddr();
 # define FD_ISSET(fd,fdset) (*fdset & (1<<(fd)))
 #endif
 
-#if defined(DEC_VMS) || defined(MS_WINDOWS) || defined(OS_9) || defined(LINUX) 
+#if defined(DEC_VMS) || defined(MS_WINDOWS) || defined(OS_9) || defined(LINUX)
 # define RECEIVEADDR (&ReceiveSocketAddress)
 static struct sockaddr ReceiveSocketAddress;
 #else
@@ -106,7 +106,7 @@ struct LineStruct {
     unsigned short      ReceivePort;                /* Receiver Port */
     unsigned short      TransmitPort;               /* Transmitter Port in T32 */
     int                 PacketSize;     	        /* Max. size of UDP-packet data */
-    int                 PollTimeSec;                   
+    int                 PollTimeSec;
     int                 ReceiveToggleBit;
     unsigned char       MessageId;
     int                 LineUp;
@@ -227,28 +227,28 @@ int LINE_LineConfig(char * in)
     }
     if (!strncmp((char *) in, "PORT=", 5)) {
         x = str2dec (in+5);
-        if (x == -1) 
+        if (x == -1)
             return -1;
         line->TransmitPort = x;
         return 1;
     }
     if (!strncmp((char *) in, "HOSTPORT=", 9)) {
         x = str2dec (in+9);
-        if (x == -1) 
+        if (x == -1)
             return -1;
         line->HostPort = x;
         return 1;
     }
     if (!strncmp((char *) in, "PACKLEN=", 8)) {
         x = str2dec (in+8);
-        if (x == -1) 
+        if (x == -1)
             return -1;
         line->PacketSize = x;
         return 1;
     }
     if (!strncmp((char *) in, "TIMEOUT=", 8)) {
         x = str2dec (in+8);
-        if (x == -1) 
+        if (x == -1)
             return -1;
         line->PollTimeSec = x;
         return 1;
@@ -353,7 +353,7 @@ void LINE_LineExit(void)
 
     if (line->CommSocket != -1) {
         for (i = 0; i < 5; i++)
-            sendto(line->CommSocket, (char *) discon, 16, 0, 
+            sendto(line->CommSocket, (char *) discon, 16, 0,
                     (struct sockaddr *) &(line->SocketAddress), sizeof(line->SocketAddress));
 
 #ifdef MS_WINDOWS
@@ -516,7 +516,7 @@ void T32_UnInstallAsyncSelect(HWND hwnd)
 /**
    Sends a message to T32. Handles segmentation of _message_ into (one
    or multiple) _packages_.
-   
+
    @param in pointer to outgoing message (already includes 5 byte message header)
    @param size size of message
    @note the message must be allocated such that there is space in
@@ -533,11 +533,11 @@ int LINE_LineTransmit(unsigned char * in, int size)
     line->LastTransmitSize = size;
     line->LastTransmitSeq = line->TransmitSeq;
     in -= 4; /* space for packet header */
-    
+
     do {
       packetSize = (size > line->PacketSize - 4) ?  line->PacketSize - 4 : size;
 
-      /* When sending multiple packets, the packet header is written inside the 
+      /* When sending multiple packets, the packet header is written inside the
          message's payload. Original contents needs to be saved/restored */
 
       SETLONGVAR(tmpl, in[0]);	                /* save */
@@ -547,7 +547,7 @@ int LINE_LineTransmit(unsigned char * in, int size)
       SETWORDVAR(in[2], line->TransmitSeq);	/* packet sequence ID */
 
       if (sendto(line->CommSocket,
-		 (char *) in, 
+		 (char *) in,
 		 packetSize + 4, 0,
                  (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)
 		 ) != packetSize + 4) {
@@ -576,9 +576,9 @@ static int ReceiveWithTimeout(struct timeval *tim, unsigned char *dest, int size
     socklen_t       length;
     struct timeval  timeout;
     LineStruct*     line = pLineParams;
-    
+
     timeout = *tim;
-    
+
 #ifdef POLL_NET
     DWORD           endpoll;
     static struct timeval tival = {0};
@@ -657,11 +657,11 @@ retry:
 
         /* multiple packets are merged in-place: backup data that is
 	   overwritten package aby header */
-        SETLONGVAR(tmpl, dest[0]); 
+        SETLONGVAR(tmpl, dest[0]);
 
 		do {
 			struct timeval PollTime = {0, 0};
-			PollTime.tv_sec = line->PollTimeSec;	
+			PollTime.tv_sec = line->PollTimeSec;
 			if ((i = ReceiveWithTimeout(&PollTime, dest, line->PacketSize)) <= 0) {
 				if (i == -2)
 					goto retry;
@@ -670,17 +670,17 @@ retry:
 			if (i <= 4) {
 				return -1;
 			}
-			
-			
+
+
 			/* Detect and enqeue async notification that slipped into a request/reply pair */
-			if (dest[0] == T32_API_NOTIFICATION) 
+			if (dest[0] == T32_API_NOTIFICATION)
 			{
 				T32_NotificationPackage *newPackage, *oldHead;
-				
+
 				newPackage = reinterpret_cast<T32_NotificationPackage*>( malloc(sizeof(T32_NotificationPackage)) );
 				if (newPackage==NULL)
 					return -1;
-				
+
 				memcpy(newPackage, dest, i); /* in theory i should always be the package size, at least for ethernet */
 				oldHead = T32_NotificationHead;
 				newPackage->prev = NULL;
@@ -693,12 +693,12 @@ retry:
 				}
 				goto retry;
 			}
-			
+
 			if (dest[0] != T32_API_RECEIVE) {
 				return -1;
 			}
 			SETWORDVAR(tmpw, dest[2]);
-			
+
 			if (tmpw == line->LastReceiveSeq && line->LastTransmitSize) {
 				line->TransmitSeq = line->LastTransmitSeq;
 				LINE_LineTransmit(line->LastTransmitBuffer, line->LastTransmitSize);
@@ -736,7 +736,7 @@ retry:
     function until it returns -1.
 
     @param package output buffer of size T32_PCKLEN_MAX for the package
-    @return -1  no notification pending, 
+    @return -1  no notification pending,
             >=0 notificataion type T32_E_BREAK, T32_E_EDIT, T32_E_BREAKPOINTCONFIG
 
  */
@@ -746,7 +746,7 @@ int LINE_ReceiveNotifyMessage(unsigned char* package)
 {
 	 int             len;
 	 static struct timeval LongTime = {0, 0};
-	 
+
 	 /* Check for asynchronous notifications */
 	 if (T32_NotificationTail) {
 		 T32_NotificationPackage *prev  = T32_NotificationTail->prev;
@@ -762,10 +762,10 @@ int LINE_ReceiveNotifyMessage(unsigned char* package)
 		 if (len < 2)
 			 return -1;
 	 }
-	 
+
 	 if (package[0] != T32_API_NOTIFICATION)
 		 return -1;
-	 
+
 	 return package[1]; /* type of notification: T32_E_BREAK, T32_E_EDIT, T32_E_BREAKPOINTCONFIG  */
  }
 
@@ -811,7 +811,7 @@ retry:
     line->LastReceiveSeq = line->ReceiveSeq - 100;
 
 
-    packet[0] =  T32_API_SYNCBACK;	
+    packet[0] =  T32_API_SYNCBACK;
     packet[1] = 0;
     SETWORDVAR(packet[2], line->TransmitSeq);
     SETWORDCONST(packet[4], 0);

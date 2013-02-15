@@ -1,3 +1,5 @@
+#ifndef __T32_H__
+#define __T32_H__
 
 #include <config/VariantConfig.hpp>
 
@@ -120,14 +122,14 @@ typedef unsigned int dword;
 
 /* Callbacks should have the following protoypes */
 /************************* WARNING *****************************/
-/* 
+/*
  * If you add more callback functions here, make sure you ONLY
  * use 'int', 'unsigned int', 'integral-type *' or 'float-type *' as parameters.
- * 
- * No 'long', no 'long long', no 'short', no 'char', no floats, no typedefs 
+ *
+ * No 'long', no 'long long', no 'short', no 'char', no floats, no typedefs
  * and no function pointers!
  * This is because we absolutely need to avoid portability problems here.
- * 
+ *
  * Explanation:
  * The T32_NotificationCallback_t typedef'd below has an empty parameter list,
  * which we can't change anymore to a va_list because of backwards compatibility.
@@ -360,3 +362,5 @@ extern void* T32_GetChannel0(void);
 #ifdef	__cplusplus
 }
 #endif
+#endif
+

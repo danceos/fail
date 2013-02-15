@@ -19,7 +19,7 @@ namespace fail {
 class Gem5MemoryManager : public MemoryManager {
 public:
 	Gem5MemoryManager(System* system) : m_System(system), m_Mem(&system->getPhysMem()) { }
-	
+
 	size_t getPoolSize() const { return m_Mem->totalSize(); }
 	host_address_t getStartAddr() const { return 0; }
 

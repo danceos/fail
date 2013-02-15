@@ -51,7 +51,8 @@ elseif(BUILD_OVP)
 elseif(BUILD_QEMU)
   include_directories(simulators)
 elseif(BUILD_T32)
-  add_subdirectory(hwdebuggers/t32)
+  include_directories(debuggers/t32/include src/core)
+  add_subdirectory(debuggers/t32)
 endif(BUILD_BOCHS)
 
 ## Additional compiler and linker flags ##

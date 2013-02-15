@@ -1,8 +1,8 @@
 #ifndef __T32LISTENER_AH__
   #define __T32LISTENER_AH__
 
-#include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
+#include "config/VariantConfig.hpp"
 
 #if defined(BUILD_T32) && defined(CONFIG_EVENT_BREAKPOINTS)
 
@@ -10,23 +10,22 @@
 
 aspect T32Listener
 
-	advice "fail::MemWriteListener" : slice class
+	advice "fail::BPSingleListener" : slice class
 	{
 	public:
 		bool onAddition()
 		{
-			//std::cout << "T32MemWriteListener::onAddition" << std::endl;
-			//if (failqemu_add_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1) != 0) {
-			//	std::cout << "adding watchpoint failed!" << std::endl;
-				return false;
-			//}
-			//return true;
+
+      // Setup Breakpoint in T32
+			std::cout << "T32Listener::onAddition" << std::endl;
+
+
+			return true;
 		}
 
 		void onDeletion()
 		{
-			//std::cout << "T32MemWriteListener::onDeletion" << std::endl;
-			//failqemu_remove_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1);
+      // Delete Breakpoint in T32
 		}
 	};
 };
