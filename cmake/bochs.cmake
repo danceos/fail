@@ -75,38 +75,55 @@ if(BUILD_BOCHS)
 
 
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
+  set(bochs_install_prefix ${bochs_src_dir}/install CACHE STRING "FailBochs installation path")
+  set(bochs_configure_params --enable-a20-pin --enable-x86-64 --enable-cpu-level=6 --enable-ne2000 --enable-acpi --enable-pci --enable-usb --enable-trace-cache --enable-fast-function-calls --enable-host-specific-asms --enable-disasm --enable-readline --enable-clgd54xx --enable-fpu --enable-vmx=2 --enable-monitor-mwait --enable-cdrom --enable-sb16=linux --enable-gdb-stub CACHE STRING "Bochs default configure parameters")
 
-  add_custom_command(OUTPUT "${bochs_src_dir}/libfailbochs.a"
-    COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core ${CMAKE_AGPP_FLAGS} --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" libfailbochs.a
-    COMMENT "[${PROJECT_NAME}] Building libfailbochs"
+  ## Bochs CXX args for calling make
+  set(bochs_build_CXX CXX=ag++\ -p\ ${PROJECT_SOURCE_DIR}\ -I${PROJECT_SOURCE_DIR}/src/core\ -I${CMAKE_BINARY_DIR}/src/core\ ${CMAKE_AGPP_FLAGS}\ --Xcompiler)
+  ## Bochs libtool command.
+  set(bochs_build_LIBTOOL LIBTOOL=/bin/sh\ ./libtool\ --tag=CXX)
+
+  # Use cmake's external project feature to build fail library
+  include(ExternalProject)
+  ExternalProject_Add(
+    libfailbochs_external
+    SOURCE_DIR ${bochs_src_dir}
+    CONFIGURE_COMMAND ${bochs_src_dir}/configure ${bochs_configure_params} --prefix=${bochs_install_prefix}
+    PREFIX ${bochs_src_dir}
+    BUILD_COMMAND $(MAKE) -C ${bochs_src_dir} ${bochs_build_CXX} ${bochs_build_LIBTOOL} libfailbochs.a
+    ## Put install command here, to prevent cmake calling make install
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E echo "[${PROJECT_NAME}] Built libfailbochs.a"
+    BUILD_IN_SOURCE 1
   )
+
+  # tell cmake that the external project generated a library so we can add dependencies here instead of later
+  add_library(libfailbochs STATIC IMPORTED)
+  set_property(TARGET libfailbochs PROPERTY IMPORTED_LOCATION ${bochs_src_dir}/libfailbochs.a )
+  add_dependencies(libfailbochs libfailbochs_external)
 
   # make sure aspects don't fail to match in entry.cc
   include_directories(${PROJECT_SOURCE_DIR}/src/core ${CMAKE_BINARY_DIR}/src/core)
-  add_executable(fail-client "${bochs_src_dir}/libfailbochs.a")
-  target_link_libraries(fail-client "${bochs_src_dir}/libfailbochs.a" fail ${bochs_library_dependencies})
+  # an executable needs at least one source file, so we hand over an empty .cc file to make cmake happy.
+  add_executable(fail-client  ${bochs_src_dir}/fail_empty_source_file_for_build.cc)
+  target_link_libraries(fail-client libfailbochs  fail ${bochs_library_dependencies})
   install(TARGETS fail-client RUNTIME DESTINATION bin)
-  
+
+  # Get stamp directory to touch files for forcing rebuilds.
+  ExternalProject_Get_Property(libfailbochs_external stamp_dir)
+
   # a few Bochs-specific passthrough targets:
   add_custom_target(bochsclean
     COMMAND +make -C ${bochs_src_dir} clean
+    # touch stamp file to force rebuild, without calling configure again.
+    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure
     COMMENT "[${PROJECT_NAME}] Cleaning all up (clean in bochs)"
   )
-  
+
   add_custom_target(bochsallclean
     COMMAND +make -C ${bochs_src_dir} all-clean
+    # touch stamp file to force rebuild, without calling configure again.
+    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure
     COMMENT "[${PROJECT_NAME}] Cleaning all up (all-clean in bochs)"
   )
-  
-  # these don't work, because we don't build a bochs binary anymore:
-  #add_custom_target(bochsinstall
-  #  COMMAND +make -C ${bochs_src_dir} CXX=\"ag++ -p ${PROJECT_SOURCE_DIR} -I${PROJECT_SOURCE_DIR}/src/core -I${CMAKE_BINARY_DIR}/src/core --real-instances --Xcompiler\" LIBTOOL=\"/bin/sh ./libtool --tag=CXX\" install
-  #  COMMENT "[${PROJECT_NAME}] Installing Bochs ..."
-  #)
-  #
-  #add_custom_target(bochsuninstall
-  #  COMMAND +make -C ${bochs_src_dir} uninstall
-  #  COMMENT "[${PROJECT_NAME}] Uninstalling Bochs ..."
-  #)
 
 endif(BUILD_BOCHS)

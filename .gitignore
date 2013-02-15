@@ -25,6 +25,9 @@ simulators/bochs/config.log
 simulators/bochs/config.status
 simulators/bochs/libtool
 simulators/bochs/ltdlconf.h
+simulators/bochs/src
+simulators/bochs/tmp
+simulators/bochs/install
 
 !simulators/bochs/plex86/kernel/freebsd/Makefile
 

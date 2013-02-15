@@ -20,7 +20,7 @@ Required for the Bochs simulator backend:
  - libpthread
  - Probably more, depending on, e.g., the GUI you configure (X11 ->
    libsvga1-dev, libxrandr-dev)
-   
+
 Required for the gem5 simulator backend:
 **********************************************************************
  - SCons
@@ -67,24 +67,24 @@ For the first time:
     in the compile process otherwise.
  4. Enter out-of-source build directory.  All generated files end up there.
       $ cd build
- 5. Generate CMake environment. 
+ 5. Generate CMake environment.
       $ cmake ..
  6. Setup build configuration by opening the CMake configuration tool
       $ ccmake .
-    Select "BUILD_BOCHS" or "BUILD_OVP".  Select an experiment to enable by
+    Select "BUILD_BOCHS" or "BUILD_GEM5".  Select an experiment to enable by
     naming its "experiments/" subdirectory under "EXPERIMENTS_ACTIVATED".
     Configure Fail* features you need for this experiment by enabling
     "CONFIG_*" options.  Press 'c', 'g' to regenerate the build system.
-    (Alternatively use 
+    (Alternatively use
       $ cmake-gui .
     for a Qt GUI.)  To enable a Debug build, choose "Debug" as the build type,
     otherwise choose "Release".
- 7. Additionally make sure Bochs is at least configured (see below).
+    If building FailBochs, optionally set up the bochs configure flags
+    for your need.
 
 
 After changes to Fail* code:
 ------------------------------------------------------------
-Prerequisite, if you're building with Bochs: configure Bochs (see below).
 Compile (in ${BUILD_DIR}, optionally "add -jN" for parallel building):
   $ make
 CMake will build all Fail* libraries and link them with the simulator backend
@@ -120,18 +120,15 @@ to be compiled previously:
   $ cd src/core/doc/latex; make
 
 
-Building FailBochs:
+FailBochs: Bochs configuration features
 **********************************************************************
 
-For the first time:
-------------------------------------------------------------
- 1. Change to the Bochs simulator directory (expects to be in ${FAIL_DIR}):
-      $ cd simulators/bochs
- 2. Configure the Bochs simulator (auto-tools).
+ The autotools-based bochs is configured within the Fail* build run. 
+ The configuration flags can be set within the ccmake configuration (ccmake ${FAIL_DIR}/build)
      - Sufficient:
-         $ ./configure --prefix=$(echo ~/localroot/usr) --enable-{cpu-level=6,ne2000,trace-cache,gdb-stub} --disable-docbook
-     - More simulator features:
-         $ ./configure --prefix=$(echo ~/localroot/usr) --enable-{a20-pin,x86-64,cpu-level=6,ne2000,acpi,pci,usb,trace-cache,fast-function-calls,host-specific-asms,disasm,readline,clgd54xx,fpu,vmx=2,monitor-mwait,cdrom,sb16=linux,gdb-stub} --disable-docbook --with-all-libs
+         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub --disable-docbook
+     - More simulator features (FailBochs default configuration):
+         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub --disable-docbook --with-all-libs
     Instead of --with-all-libs, you could use --with-nogui for "headless" experiments,
     additionally removing lots of library dependencies (thus reducing startup overhead).
     --with-x11 enables only the "x" (X11), --with-wx only the "wx" (wxWidgets) GUI.
@@ -241,7 +238,7 @@ Debug build:
 Selecting an experiment:
 ------------------------------------------------------------
  1. Edit ../src/core/sal/gem5/SConscript
-    In line starting with (gStaticLibs = ...) change -lfail-arch-test to 
+    In line starting with (gStaticLibs = ...) change -lfail-arch-test to
     -lfail-EXPERIMENTNAME
-      
+
 

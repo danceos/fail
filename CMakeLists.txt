@@ -75,24 +75,4 @@ include(gem5)
 include(ovp)
 include(qemu)
 include(t32)
-## Just for testing:
-## Invoking bochs build via external project
-# Setup configure call for bochs (-> make ebochs)
-# Prefix dir for make install etc
-#set(BOCHS_PREFIX_DIR "${CMAKE_BINARY_DIR}/bochs")
-#configure_file(${CMAKE_SOURCE_DIR}/cmake/config_failbochs.sh.in ${CMAKE_BINARY_DIR}/config_bochs.sh)
-#
-#include(ExternalProject)
-#externalproject_add(
-#	ebochs
-#	SOURCE_DIR 		${CMAKE_SOURCE_DIR}/bochs
-#	CONFIGURE_COMMAND 	${CMAKE_BINARY_DIR}/config_bochs.sh
-#	BUILD_IN_SOURCE 	1
-#	PREFIX			${BOCHS_PREFIX_DIR}
-#)
-#
-#message(STATUS "Include directories are:")
-#get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-#foreach(dir ${dirs})
-#  message(STATUS "    ${dir}")
-#endforeach(dir)
+
