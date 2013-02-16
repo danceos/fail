@@ -2,8 +2,8 @@
   #define __T32_MEMORY_HPP__
 
 #include "../Memory.hpp"
-#include <iostream>
 #include <t32.h>
+#include "T32Constants.hpp"
 
 namespace fail {
 
@@ -13,14 +13,6 @@ namespace fail {
  * MemoryManager to provide access to T32's memory pool.
  */
 class T32MemoryManager : public MemoryManager {
-
-  enum ACCESS_CLASS {
-    data_access = 0,
-    program_access = 1,
-    AD_access = 12,
-    AP_access = 13,
-    USR_access = 15,
-  };
 
 public:
 	size_t getPoolSize() const { return 0; /* TODO */ }
@@ -36,7 +28,7 @@ public:
 
 	void getBytes(guest_address_t addr, size_t cnt, void *dest)
 	{
-    int access = data_access; // TODO what access class do we need?!
+    int access = T32::MEMACCESS::DATA; // TODO what access class do we need?!
     T32_ReadMemory( addr, access, (byte*)(dest), cnt);
 	}
 
@@ -47,7 +39,7 @@ public:
 
 	void setBytes(guest_address_t addr, size_t cnt, void const *src)
 	{
-    int access = data_access; // TODO what access class do we really need?!
+    int access = T32::MEMACCESS::DATA; // TODO what access class do we really need?!
     T32_WriteMemory(addr, access, (byte*)(src), cnt);
 	}
 

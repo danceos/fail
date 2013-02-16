@@ -205,7 +205,7 @@ class BPSingleListener : public BPListener {
 protected:
 	address_t m_WatchInstrPtr;
 public:
-	/** 
+	/**
 	 * Creates a new breakpoint listener.
 	 * @param ip the instruction pointer of the breakpoint. If the control
 	 *        flow reaches this address and its counter value is zero, the
@@ -434,7 +434,7 @@ public:
 	bool removeWatchNumber(unsigned troubleNum);
 	/**
 	 * Returns the list of observed numbers.
-	 * @return a const reference to the list which contains all observed numbers 
+	 * @return a const reference to the list which contains all observed numbers
 	 */
 	const std::vector<unsigned>& getWatchNumbers() const { return m_WatchNumbers; }
 	/**
@@ -453,7 +453,7 @@ public:
 	* Sets the specific interrupt-/trap-number that actually triggered
 	* the listener. Should not be used by experiment code.
 	*/
-	void setTriggerNumber(unsigned troubleNum) { m_Data.setTriggerNumber(troubleNum); } 
+	void setTriggerNumber(unsigned troubleNum) { m_Data.setTriggerNumber(troubleNum); }
 	/**
 	* Returns the specific interrupt-/trap-number that actually triggered
 	* the listener.

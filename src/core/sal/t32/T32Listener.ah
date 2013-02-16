@@ -7,6 +7,7 @@
 #if defined(BUILD_T32) && defined(CONFIG_EVENT_BREAKPOINTS)
 
 #include "../SALInst.hpp"
+#include "T32Constants.hpp"
 
 aspect T32Listener
 {
@@ -18,13 +19,14 @@ aspect T32Listener
       // Setup Breakpoint in T32
 			std::cout << "T32Listener::onAddition" << std::endl;
       // Enable Breakpoint
-
+      T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION, 1);
 			return true;
 		}
 
 		void onDeletion()
 		{
       // Delete Breakpoint in T32
+      T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::CLEAR, 1);
 		}
 	};
 };
