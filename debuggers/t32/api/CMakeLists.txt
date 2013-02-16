@@ -1,6 +1,1 @@
-set(SRCS
-		hlinknet.cc
-		hremote.cc
-)
-
-add_library(t32api ${SRCS})
+add_library(t32api hlinknet.cc hremote.cc)
