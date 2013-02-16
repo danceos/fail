@@ -2,7 +2,7 @@
   #define __T32_MEMORY_HPP__
 
 #include "../Memory.hpp"
-
+#include <iostream>
 #include <t32.h>
 
 namespace fail {

@@ -9,16 +9,15 @@
 #include "../SALInst.hpp"
 
 aspect T32Listener
-
+{
 	advice "fail::BPSingleListener" : slice class
 	{
 	public:
 		bool onAddition()
 		{
-
       // Setup Breakpoint in T32
 			std::cout << "T32Listener::onAddition" << std::endl;
-
+      // Enable Breakpoint
 
 			return true;
 		}

@@ -18,9 +18,9 @@ namespace fail {
 class T32ArmCPU : public ArmArchitecture, public ArmCPUState {
 public:
 	/**
-	 * Creates a new gem5 CPU for ARM based targets.
+	 * Creates a new T32 CPU for ARM based targets.
 	 * @param id the unique ID of the CPU to be created (the first CPU0 has ID 0)
-	 * @param system the gem5 system object
+	 * @param system the T32 system object
 	 */
 	T32ArmCPU(unsigned int id = 0) : m_Id(id) { }
 	virtual ~T32ArmCPU() { }

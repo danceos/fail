@@ -4,6 +4,8 @@
 
 namespace fail {
 
+static const uint64_t lower = 0x00000000ffffffff;
+
 regdata_t T32ArmCPU::getRegisterContent(Register* reg) const
 {
   // T32_ReadRegister wants a mask of bits representig the registers to read:
@@ -11,11 +13,11 @@ regdata_t T32ArmCPU::getRegisterContent(Register* reg) const
   //             mask1
   // 0000 0000 0000 0000 0001 0010 ->  R1/R4
   //             mask2
-  // 1000 0000 0000 0000 0001 0010 ->  R63
+  // 1000 0000 0000 0000 0000 0000 ->  R63
   uint64_t mask = (1 << reg->getIndex());
 
   if(mask){
-    if( T32_ReadRegister(static_cast<dword>(mask & 0xffffffff), static_cast<dword>(mask >> 32), m_regbuffer) == 0 ){
+    if( T32_ReadRegister(static_cast<dword>(mask & lower ), static_cast<dword>(mask >> 32), m_regbuffer) == 0 ){
     // No error, return value.
       return m_regbuffer[reg->getIndex()];
     } else {
@@ -30,7 +32,7 @@ void T32ArmCPU::setRegisterContent(Register* reg, regdata_t value)
   uint64_t mask = (1 << reg->getIndex());
 
   if(mask){
-    if( T32_WriteRegister(static_cast<dword>(mask & 0xffffffff), static_cast<dword>(mask >> 32), m_regbuffer) == 0 ){
+    if( T32_WriteRegister(static_cast<dword>(mask & lower), static_cast<dword>(mask >> 32), m_regbuffer) == 0 ){
       // No error, return value.
       return;
     } else {
