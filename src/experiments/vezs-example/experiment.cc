@@ -24,7 +24,7 @@ bool VEZSExperiment::run()
 {
   m_log << "STARTING EXPERIMENT" << endl;
   m_log << "Instruction Pointer: 0x" << hex << simulator.getCPU(0).getInstructionPointer() << endl;
-
+// Test register access
   Register* reg = simulator.getCPU(0).getRegister(RI_R1);
   m_log << "Register R2: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
 
@@ -33,6 +33,7 @@ bool VEZSExperiment::run()
 
   simulator.getCPU(0).setRegisterContent(reg, 0x23);
 
+// Test Memory access
   address_t targetaddress = 0x12345678;
   MemoryManager& mm = simulator.getMemoryManager();
   mm.setByte(targetaddress, 0x42);
@@ -43,6 +44,16 @@ bool VEZSExperiment::run()
   *((uint32_t*)(tb)) = 0; // clear array.
   // read back bytes
   mm.getBytes(targetaddress, 4, tb);
+
+// Test Breakpoints
+  address_t address = 0x11223344;
+  BPSingleListener bp(address);
+  simulator.addListener(&bp);
+
+  simulator.clearListeners();
+
+// resume backend.
+  simulator.resume();
 
   // Explicitly terminate, or the simulator will continue to run.
   simulator.terminate();

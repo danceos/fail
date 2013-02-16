@@ -17,16 +17,14 @@ aspect T32Listener
 		bool onAddition()
 		{
       // Setup Breakpoint in T32
-			std::cout << "T32Listener::onAddition" << std::endl;
-      // Enable Breakpoint
-      T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION, 1);
-			return true;
+      return T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION, 1) == 0;
 		}
 
 		void onDeletion()
 		{
       // Delete Breakpoint in T32
       T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::CLEAR, 1);
+      // TODO Error handling
 		}
 	};
 };

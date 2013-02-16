@@ -57,5 +57,26 @@ int main(int argc, char** argv){
   // Let the SimulatorController do the dirty work.
   fail::simulator.startup();
 
+  // Here, we come back after any experiment called a resume
+  // Start execution of the SUT.
+  // The experiments/traces hopefully set some Breakpoints, we can react on.
+  // We may also provide a timeout, if a TimerListener was set wanted.
+
+ /*
+   while(1) {
+        // Start execution (with next timeout, in any)
+
+        // Wait for debugger to stop.
+
+        // Evaluate state.
+
+        // Call appropriate callback of the SimulatorController.
+
+    }
+  */
+  cout << "[T32 Backend] After startup" << endl;
   return 0;
 }
+
+
+
