@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <vector>
 #include "config/VariantConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "optionparser.h"
@@ -23,14 +23,6 @@
 
 #include "T32Connector.hpp"
 using namespace std;
-
-/* Default T32 error handler */
-void err(int ernum){
-	if(err != 0){
-		cerr << "Error: " << err << endl;
-		//exit(-1);
-	}
-}
 
 static fail::T32Connector t32;
 
@@ -62,7 +54,7 @@ int main(int argc, char** argv){
     return 1;
   }
 
-  if ( options[HELP] ) // || argc == 0 || options[RUN].count() == 0) // to enforce -s 
+  if ( options[HELP] ) // || argc == 0 || options[RUN].count() == 0) // to enforce -s
   {
     int columns = getenv("COLUMNS")? atoi(getenv("COLUMNS")) : 80;
     option::printUsage(fwrite, stdout, usage, columns);
@@ -70,39 +62,23 @@ int main(int argc, char** argv){
   }
 
   if(options[RUN].count()){
-    cout << "Script: " << options[RUN].first()->arg << endl;
+    t32.setScript(options[RUN].first()->arg);
   }
 
-  char hostname[] = "localhost";
   if(options[T32HOST].count()){
-    cout << "T32 Hostname: " << options[T32HOST].first()->arg << endl;
+    t32.setHostname(options[T32HOST].first()->arg);
   }
 
-	char port[] = "20010";
   if(options[PORT].count()){
-    cout << "T32 Port: " << options[PORT].first()->arg << endl;
+    t32.setPort(options[PORT].first()->arg);
   }
 
-	char packlen[] = "1024";
   if(options[PACKLEN].count()){
-    cout << "T32 Packet Length: " << options[PACKLEN].first()->arg << endl;
+    t32.setPacketlength(options[PACKLEN].first()->arg);
   }
 
-
-  // Setup connection to Lauterbach
-  cout << "Lauterbach remote connection" << endl;
-	int error;
-
-	cout << "[T32] Connecting to " << hostname << ":" << port << " Packlen: " << packlen << endl;
-	T32_Config("NODE=", hostname);
-	T32_Config("PACKLEN=", packlen);
-	T32_Config("PORT=", port);
-
-	cout << "[T32] Init." << endl;
-	err(T32_Init());
-
-	cout << "[T32] Attach." << endl;
-	err(T32_Attach(T32_DEV_ICD));
+  // Initialize T32
+  t32.startup();
 
 
   // Let the SimulatorController do the dirty work.
