@@ -1,5 +1,6 @@
 set(SRCS
-		T32Connector.cc
+		main.cc
+    T32Connector.cc
 )
 
 add_executable(fail-client ${SRCS})

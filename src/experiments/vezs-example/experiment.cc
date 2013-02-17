@@ -53,7 +53,7 @@ bool VEZSExperiment::run()
   simulator.clearListeners();
 
 // resume backend.
-  simulator.resume();
+//  simulator.resume();
 
   // Explicitly terminate, or the simulator will continue to run.
   simulator.terminate();
