@@ -39,19 +39,33 @@ bool VEZSExperiment::run()
   mm.setByte(targetaddress, 0x42);
   mm.getByte(targetaddress);
 
-  uint8_t tb[] = {0xaa, 0xbb, 0xcc, 0xdd};
+  uint8_t tb[] = {0xab, 0xbb, 0xcc, 0xdd};
   mm.setBytes(targetaddress, 4, tb);
   *((uint32_t*)(tb)) = 0; // clear array.
   // read back bytes
   mm.getBytes(targetaddress, 4, tb);
 
-// Test Breakpoints
-  address_t address = 0x11223344;
+// Test Listeners
+  address_t address = 0xee;
   BPSingleListener bp(address);
   simulator.addListener(&bp);
 
-  simulator.clearListeners();
+  BPRangeListener rbp(0xef, 0xff);
+  simulator.addListener(&rbp);
 
+  MemAccessListener l_mem_w(0x1111, MemAccessEvent::MEM_WRITE);
+  l_mem_w.setWatchWidth(16);
+  simulator.addListener(&l_mem_w);
+
+  MemAccessListener l_mem_r(0x2222, MemAccessEvent::MEM_READ);
+  l_mem_r.setWatchWidth(16);
+  simulator.addListener(&l_mem_r);
+
+  MemAccessListener l_mem_rw(0x3333, MemAccessEvent::MEM_READWRITE);
+  l_mem_rw.setWatchWidth(16);
+  simulator.addListener(&l_mem_rw);
+
+  simulator.clearListeners();
 // resume backend.
 //  simulator.resume();
 

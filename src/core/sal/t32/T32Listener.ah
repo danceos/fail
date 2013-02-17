@@ -17,7 +17,7 @@ aspect T32Listener
 		bool onAddition()
 		{
       // Setup Breakpoint in T32
-      return T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION, 1) == 0;
+      return T32_WriteBreakpoint( m_WatchInstrPtr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION /* | T32::BP::READ ?? */, 1) == 0;
 		}
 
 		void onDeletion()
@@ -27,6 +27,53 @@ aspect T32Listener
       // TODO Error handling
 		}
 	};
+
+	advice "fail::BPRangeListener" : slice class
+	{
+	public:
+		bool onAddition()
+		{
+      // Calculate address range
+      address_t range = m_WatchEndAddr - m_WatchStartAddr; //  range / sizeof(address_t) ??!
+      // Setup Breakpoint in T32
+      return T32_WriteBreakpoint( m_WatchStartAddr, T32::MEMACCESS::PROGRAM, T32::BP::EXECUTION, range) == 0;
+		}
+
+		void onDeletion()
+		{
+      // Calculate address range
+      address_t range = m_WatchEndAddr - m_WatchStartAddr; //  range / sizeof(address_t) ??!
+      // Setup Breakpoint in T32
+      T32_WriteBreakpoint( m_WatchStartAddr, T32::MEMACCESS::PROGRAM, T32::BP::CLEAR, range);
+      // TODO Error handling
+		}
+	};
+
+	advice "fail::MemAccessListener" : slice class
+	{
+    int m_t32access;
+	public:
+		bool onAddition()
+		{
+      // Setup Breakpoint in T32
+      switch(m_WatchType) {
+        case MemAccessEvent::MEM_READ: m_t32access = T32::BP::READ; break;
+        case MemAccessEvent::MEM_WRITE: m_t32access = T32::BP::WRITE; break;
+        case MemAccessEvent::MEM_READWRITE: m_t32access = (T32::BP::READ | T32::BP::WRITE); break;
+        default: return false;
+      }
+
+      return T32_WriteBreakpoint( m_WatchAddr, T32::MEMACCESS::DATA, m_t32access, m_WatchWidth) == 0;
+		}
+
+		void onDeletion()
+		{
+      // Setup Breakpoint in T32
+      T32_WriteBreakpoint( m_WatchAddr, T32::MEMACCESS::DATA, m_t32access, m_WatchWidth);
+      // TODO Error handling
+		}
+	};
+
 };
 
 #endif // BUILD_T32 && CONFIG_EVENT_BREAKPOINTS
