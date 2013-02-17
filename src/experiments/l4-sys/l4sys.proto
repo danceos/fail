@@ -1,0 +1,46 @@
+message L4SysProtoMsg {
+	// experiment types
+	enum ExperimentType {
+		GPRFLIP = 1;
+		RATFLIP = 2;
+		IDCFLIP = 3;
+		ALUINSTR = 4;
+	}
+	// parameters
+	required ExperimentType exp_type = 1;
+	required int32 instr_offset = 2;
+	required int32 bit_offset = 3;
+
+	// registers
+	enum RegisterType {
+		EAX = 1;
+		ECX = 2;
+		EDX = 3;
+		EBX = 4;
+		ESP = 5;
+		EBP = 6;
+		ESI = 7;
+		EDI = 8;
+	}
+	optional RegisterType register_offset = 4;
+
+	// results
+	// make these optional to reduce overhead for server->client communication
+	enum ResultType {
+		DONE = 1;
+		INCOMPLETE = 2;
+		TIMEOUT = 3;
+		WRONG = 4;
+		UNKNOWN = 5;
+	}
+	// instruction pointer where injection was done
+	optional uint32 injection_ip = 5;
+	// result type, see above
+	optional ResultType resulttype = 6;
+	// result data, depending on resulttype (see source code)
+	optional uint32 resultdata = 7;
+	// generated output
+	optional string output = 8;
+	// optional textual description of what happened
+	optional string details = 9;
+}

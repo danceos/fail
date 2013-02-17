@@ -1,0 +1,122 @@
+****************************************************************************************************
+  RESULTS:
+****************************************************************************************************
+ (A) WITH FAST_BREAKPOINTS (Default mode):
+ 
+hsc-simple (r1636) - phase 1:
+real	1m8.604s
+user	1m8.384s
+sys		0m0.132s
+
+hsc-simple (r1636) - phase 2:
+real	0m0.591s
+user	0m0.064s
+sys		0m0.076s
+
+perf-test (r1745): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A:  511.46s (= ~9min, around 5,6 times faster than (B).a)
+Case B: 4731.53s (= ~79min, around 1,1 times slower than (B).b)
+
+----------------------------------------------
+
+ (B) WITHOUT FAST_BREAKPOINTS (Default mode):
+
+hsc-simple (r1636) - phase 1:
+real	0m34.712s
+user	0m34.246s
+sys		0m00.148s
+
+hsc-simple (r1636) - phase 2:
+real	0m0.429s
+user	0m0.048s
+sys		0m0.084s
+
+perf-test (r1745): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A: 2853.63s (= 47min)
+Case B: 4214.03s (= 70min)
+
+----------------------------------------------
+
+ (C) WITH FAST_BREAKPOINTS (Release mode):
+ 
+hsc-simple (r1636) - phase 1:
+real	0m13.341s
+user	0m12.377s
+sys		0m00.168s
+
+hsc-simple (r1636) - phase 2:
+real	0m0.506s
+user	0m0.032s
+sys		0m0.100s
+
+perf-test (r1745): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A: 43.0115s (< 1min, around 7,5 times faster than (D).a)
+Case B: 385.547s (= ~6min, around 1,5 times faster than (D).b)
+
+----------------------------------------------
+
+ (D) WITHOUT FAST_BREAKPOINTS (Release mode):
+ 
+hsc-simple (r1636) - phase 1:
+real	0m28.806s
+user	0m28.214s
+sys		0m00.160s
+
+hsc-simple (r1636) - phase 2:
+real	0m0.565s
+user	0m0.052s
+sys		0m0.084s
+
+perf-test (r1745): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A: 321.594s (= ~5min)
+Case B: 587.698s (= ~9min)
+
+----------------------------------------------
+
+ (E) WITH FAST_BREAKPOINTS AND FAST_WATCHPOINTS (Default mode):
+
+perf-test (r1768 (= ~r1745)): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A: 276.986s (= ~4,6min, around 1,8 times faster than (A).a)
+Case B: 538.164s (= ~9,0min, around 8,8 times faster than (A).b)
+
+----------------------------------------------
+
+ (F) WITH FAST_BREAKPOINTS AND FAST_WATCHPOINTS (Release mode):
+
+perf-test (r1768 (= ~r1745)): Best- vs. Worst-Case with Wallclock-Timer (NON_BP_COUNT = 50 and BP_COUNT = 50):
+Case A: 50.7299s (around 1,2 times slower than (C).a)
+Case B: 109.589s (= ~1,8min, around 3,5 times faster than (C).b)
+
+****************************************************************************************************
+  EVALUATION:
+****************************************************************************************************
+Note: These are just exemplary results based on the observed values (see above).
+
+- The (former) BufferCache's enabled a speedup up to 2,5x (according to Martin Unzner).
+- hsc-simple: Fast-Breakpoints are only faster if compiled in Release mode (yields a
+  speedup up to 2x).
+- hsc-simple: Unfortunately, they are also slower by a factor of 2, if compiled in
+  Default-Mode (and probably in Debug mode, too).
+- perf-test: Except for case B in Default mode, Fast-Breakpoints enable a speedup that
+  ranges from 1,5 to 7,5! For case B (in Default mode -> no optimization), the Fast-
+  Breakpoint implementation slows down the overall execution speed by a factor of (only)
+  1,1. However, for case A (Best-Case) we assume that the overall speedup (compared to
+  the corresponding case where Fast-Breakpoints are switched off) will tend to rise
+  when the experiment parameter NON_BP_COUNT is increased.
+
+****************************************************************************************************
+  POSSIBLE OPTIMIZATIONS:
+****************************************************************************************************
+Note: The following observations and conjectures are partly derived from the analysis of the
+callgrind profile (using kcachegrind).
+
+   (i) gather() should be inlined. (At the moment, this avoids an include cycle.)
+       ==> impossible (?)
+  (ii) Bypass the construction of a ResultSet object (the bypass would avoid an additional iteration
+       over the elements stored in the ResultSet itself), by calling makeActive in gather()
+       ==> declined (!)
+ (iii) Complete the implementation of the PerfVecSortedSingleBP class (uses binary search in IPs)
+       ==> promising (?)
+
+ => (i) won't effect the speed in Default and Debug mode. (ii) should enable a speedup in all
+    cases. (iii) will only improve the speed when many *BPSingleListeners* are in use.

@@ -1,0 +1,40 @@
+#ifndef __WATCHPOINT_CONTROLLER_SLICE_AH__
+  #define __WATCHPOINT_CONTROLLER_SLICE_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_WATCHPOINTS
+
+#include <cassert>
+#include "../Listener.hpp"
+
+/**
+ * \class WatchpointControllerSlice
+ *
+ * The slice class definition to be used with FastWatchpoints.ah.
+ * The members of this class will be sliced into the \c SimulatorController class.
+ */
+slice class WatchpointControllerSlice {
+public:
+	bool addListener(fail::MemAccessListener* mli)
+	{
+		assert(mli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		// Check whether we were called from onTrigger (see SimulatorController.cc@addListener).
+		fail::ExperimentFlow* pFlow = m_Flows.getCurrent(); 
+		if (pFlow == CoroutineManager::SIM_FLOW)
+			pFlow = mli->getParent();
+		m_LstList.add(mli, pFlow); // preserve type of mli
+		// Call the common postprocessing function:
+		if (!mli->onAddition()) { // If the return value signals "false"...,
+			m_LstList.remove(mli); // ...skip the addition
+			return false;
+		}
+		return true;
+	}
+	fail::BaseListener* addListenerAndResume(fail::MemAccessListener* mli)
+	{ addListener(mli); return resume(); }
+};
+
+#endif // CONFIG_FAST_WATCHPOINTS
+
+#endif // __WATCHPOINT_CONTROLLER_SLICE_AH__

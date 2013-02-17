@@ -1,0 +1,29 @@
+#ifndef __TRAP_AH__
+  #define __TRAP_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_TRAP)
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+#include "BochsHelpers.hpp"
+
+aspect Trap {
+	pointcut exception_method() = "void bx_cpu_c::exception(...)";
+
+	advice execution (exception_method()) : before ()
+	{
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onTrap(&triggerCPU, *(tjp->arg<0>()));
+		// TODO: There are some different types of exceptions at cpu.h (line 265-281)
+		//       Which kind of traps are these types?
+	}
+};
+
+#endif // CONFIG_EVENT_TRAP
+#endif // __TRAP_AH__

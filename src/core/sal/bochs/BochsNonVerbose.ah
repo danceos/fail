@@ -1,0 +1,61 @@
+#ifndef __BOCHS_NON_VERBOSE_AH__
+  #define __BOCHS_NON_VERBOSE_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_BOCHS_NON_VERBOSE)
+
+#include "bochs.h"
+
+/*
+// Doesn't work because AspectC++ doesn't deal properly with variadic parameter
+// lists:
+aspect BochsNonVerbose {
+	// Needed to suppress Bochs output *before* a state restore finished
+	// FIXME: ac++ segfaults if we use call() instead of execution().
+	advice execution("% logfunctions::debug(...)")
+	    || execution("% logfunctions::info(...)")
+	    || execution("% logfunctions::pass(...)")
+	    || execution("% logfunctions::error(...)")
+	    || execution("% logfunctions::panic(...)")
+	     : around () { }
+};
+*/
+
+aspect BochsNonVerbose {
+	pointcut get_default_action() = "int logfunctions::get_default_action(int)";
+
+	// make sure we're the innermost aspect
+	advice call(get_default_action()) : order ("BochsNoAbort", "BochsNonVerbose");
+
+	// needed to suppress Bochs output *before* a state restore finished
+	// This works around the BUG mentioned in bochs/logio.cc /
+	// logfunctions::logfunctions().
+	advice call(get_default_action())
+	     : around ()
+	{
+		int action;
+		switch (*(tjp->arg<0>())) {
+		case LOGLEV_DEBUG:
+		case LOGLEV_PASS:
+		case LOGLEV_INFO:
+			action = ACT_IGNORE;
+			break;
+		case LOGLEV_ERROR:
+			action = ACT_REPORT;
+			break;
+		case LOGLEV_PANIC:
+		default:
+			action = ACT_FATAL;
+		}
+		*(tjp->result()) = action;
+	}
+
+	// No credits header
+	advice call("void bx_print_header()")
+	     : around () { }
+};
+
+#endif // CONFIG_BOCHS_NON_VERBOSE
+#endif // __BOCHS_NON_VERBOSE_AH__

@@ -1,0 +1,45 @@
+#ifndef __FIREINTERRUPT_AH__
+  #define __FIREINTERRUPT_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_FIRE_INTERRUPTS)
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+#include "iodev/iodev.h"
+#include "../SALInst.hpp"
+
+aspect FireInterrupt {
+	pointcut cpuLoop() = "void defineCPULoopJoinPoint(...)";
+
+	advice execution (cpuLoop()) : before ()
+	{
+		if (!fail::interrupt_injection_request) {
+			return;
+		} else {
+			BX_SET_INTR(fail::interrupt_to_fire);
+			DEV_pic_raise_irq(fail::interrupt_to_fire);
+		}
+	}
+};
+
+aspect InterruptDone {
+	pointcut interrupt_method() = "void bx_cpu_c::interrupt(...)";
+
+	advice execution (interrupt_method()) : before ()
+	{
+		if (!fail::interrupt_injection_request) {
+			return;
+		} else {
+			if (*(tjp->arg<0>()) == 32 + fail::interrupt_to_fire) {
+				DEV_pic_lower_irq(fail::interrupt_to_fire);
+				fail::simulator.fireInterruptDone();
+			}
+		}
+	}
+};
+
+#endif // CONFIG_FIRE_INTERRUPTS
+#endif // __FIREINTERRUPT_AH__

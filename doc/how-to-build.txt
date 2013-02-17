@@ -1,0 +1,244 @@
+=========================================================================================
+Additional libraries/packages/tools needed for Fail*:
+=========================================================================================
+
+Required for Fail*:
+**********************************************************************
+ - libprotobuf-dev
+ - libpcl1-dev
+ - libboost-thread-dev
+ - protobuf-compiler
+ - cmake
+ - cmake-curses-gui
+ - binutils-dev
+ - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
+   obtained from http://www.aspectc.org; nightlies can be downloaded from
+   http://akut.aspectc.org
+
+Required for the Bochs simulator backend:
+**********************************************************************
+ - libpthread
+ - Probably more, depending on, e.g., the GUI you configure (X11 ->
+   libsvga1-dev, libxrandr-dev)
+
+Required for the gem5 simulator backend:
+**********************************************************************
+ - SCons
+ - SWIG
+ - zlib
+ - m4
+ - python-dev
+ - optional: libgoogle-perftools-dev
+
+For distribution/parallelization:
+**********************************************************************
+ - rsync
+ - tmux
+
+
+32-bit FailBochs on x86_64 Linux machines:
+**********************************************************************
+ - Create a "bochslibs" directory and fill it with all necessary libraries from
+   your build machine:
+     $ mkdir bochslibs
+     $ cp -v $(ldd fail-client|awk '{print $3}'|egrep -v '\(|lib(pthread|selinux|c.so.)|^$') bochslibs/
+ - Copy this directory to ~/bochslibs on all machines lacking these libraries
+   (this may also be the case for i386 machines you cannot install library
+   packages on yourself).  client.sh will add ~/bochslibs to LD_LIBRARY_PATH if
+   it exists.
+
+=========================================================================================
+Compiling, building and modifying: Simulators and Fail*
+=========================================================================================
+
+Building Fail*:
+**********************************************************************
+
+For the first time:
+------------------------------------------------------------
+ 1. Enter the "fail/" directory (${FAIL_DIR}, see also "fail-structure.txt"):
+      $ cd fail/
+ 2. (Optional) Cleanup previous CMake remnants:
+      $ find -name CMakeCache.txt | xargs rm
+ 3. Create out of source build directory (${BUILD_DIR}, see also "fail-structure.txt"):
+      $ mkdir build
+    Note that currently this build directory must be located somewhere below
+    the fail/ directory, as generated .ah files in there will not be included
+    in the compile process otherwise.
+ 4. Enter out-of-source build directory.  All generated files end up there.
+      $ cd build
+ 5. Generate CMake environment.
+      $ cmake ..
+ 6. Setup build configuration by opening the CMake configuration tool
+      $ ccmake .
+    Select "BUILD_BOCHS" or "BUILD_GEM5".  Select an experiment to enable by
+    naming its "experiments/" subdirectory under "EXPERIMENTS_ACTIVATED".
+    Configure Fail* features you need for this experiment by enabling
+    "CONFIG_*" options.  Press 'c', 'g' to regenerate the build system.
+    (Alternatively use
+      $ cmake-gui .
+    for a Qt GUI.)  To enable a Debug build, choose "Debug" as the build type,
+    otherwise choose "Release".
+    If building FailBochs, optionally set up the bochs configure flags
+    for your need.
+
+
+After changes to Fail* code:
+------------------------------------------------------------
+Compile (in ${BUILD_DIR}, optionally "add -jN" for parallel building):
+  $ make
+CMake will build all Fail* libraries and link them with the simulator backend
+library to a binary called "fail-client".  You may use the shell script
+  $ ${FAIL_DIR}/scripts/rebuild-bochs.sh [-]
+to speed up repetitive tasks regarding Fail/Bochs builds.  This script contains
+a concise documentation on itself.
+
+
+Add new Fail* sources to build chain:
+------------------------------------------------------------
+To add new source files to the build, see CMakeLists.txt in the subdirectory of the
+corresponding component in "${FAIL_DIR}/src/core/", and probably consultate the
+CMake docs: http://cmake.org/cmake/help/documentation.html
+
+
+Add new experiment/plugin/campaign:
+------------------------------------------------------------
+Look at "${FAIL_DIR}/src/experiments/coolchecksum/" as a template.  After creating a
+new subdirectory in "experiments/", activate it in the CMake configuration step (see
+above).
+
+
+Generating the Doxygen documentation for Fail*:
+**********************************************************************
+To generate the Doxygen documentation, type:
+  $ make doc
+The documentation files (HTML and LaTeX) are located in "${BUILD_DIR}/src/core/doc/".
+To open the HTML documentation, type:
+  $ firefox src/core/doc/html/index.html
+(You may want to replace "firefox" with your favourite browser.) The LaTeX docs need
+to be compiled previously:
+  $ cd src/core/doc/latex; make
+
+
+FailBochs: Bochs configuration features
+**********************************************************************
+
+ The autotools-based bochs is configured within the Fail* build run. 
+ The configuration flags can be set within the ccmake configuration (ccmake ${FAIL_DIR}/build)
+     - Sufficient:
+         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub --disable-docbook
+     - More simulator features (FailBochs default configuration):
+         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub --disable-docbook --with-all-libs
+    Instead of --with-all-libs, you could use --with-nogui for "headless" experiments,
+    additionally removing lots of library dependencies (thus reducing startup overhead).
+    --with-x11 enables only the "x" (X11), --with-wx only the "wx" (wxWidgets) GUI.
+    Note that "wx" does not play well together with Fail*'s "restore" feature (FailBochs
+    will fall back to "x" if available, or die trying.)
+    Once you know everything works as it should, you may want to add the
+    following flags before running larger campaigns:
+      --disable-logging --disable-assert-checks
+    Make sure --enable-repeat-speedups (--enable-all-optimizations implicitly
+    enables this) is not enabled; you will otherwise encounter funny effects
+    when tracing REP-prefixed instructions.
+    FIXME: Remove more redundant flags/libraries
+
+
+After changes to Bochs code:
+------------------------------------------------------------
+ - Just re-run "make" in ${BUILD_DIR}, or call "scripts/rebuild-bochs.sh -".
+   The latter automatically runs "make install" after rebuilding fail-client
+   (and probably the experiment's campaign server).
+ - Cleaning up (forcing a complete rebuild of libfailbochs.a next time):
+     $ make bochsallclean
+   This is especially necessary if you changed a Bochs-affecting aspect header
+   (.ah), as the build system does not know about Bochs sources depending on
+   certain aspects.
+
+
+Debug build:
+------------------------------------------------------------
+Configure Bochs to use debugging-related compiler flags (expects to be in ${BUILD_DIR}):
+  $ cd ../simulator/bochs
+  $ CFLAGS="-g -O0" CXXFLAGS="-g -O0" ./configure --prefix=... ... (see above)
+You might additionally want to configure the rest of Fail* into debug mode by
+setting CMAKE_BUILD_TYPE to "Debug" (ccmake, see above).
+
+
+Profiling-based optimization build:
+------------------------------------------------------------
+FIXME: ag++ needs to be run with --keep_woven
+Configure Bochs to use compiler flags to enable profiling:
+  $ cd ../simulator/bochs
+  $ CFLAGS="-fprofile-generate" CXXFLAGS="-fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=... ... (see above)
+Build Bochs normally, and run it.  Configure Bochs to use compiler flags to enable
+optimizations based on profiling results:
+  $ CFLAGS="-fprofile-use -Wcoverage-mismatch" CXXFLAGS="-fprofile-use -Wcoverage-mismatch" LDFLAGS="-fprofile-use" ./configure --prefix=... ... (see above)
+
+
+Benchmarking:
+------------------------------------------------------------
+Simple instructions/second measurement:
+ - Configure Bochs with --enable-show-ips (see above)
+ - Modify the bochsrc: print_timestamps: enabled=1
+Comparison IPS numbers are shown in the default "bochsrc". Headless bochsrc configuration,
+all aspects disabled, guest system executes endless loop, host CPU Xeon X5470 (3.33GHz):
+IPS: 66124283 average = 66964789
+
+Building OVP for ARM Cortex-M3:
+**********************************************************************
+
+For the first time:
+------------------------------------------------------------
+ 1. Get a license from http://www.ovpworld.org/
+ 2. Download the following files:
+     - Downloads -> Main OVP Download including OVPsim Simulator
+     - Downloads -> ARM -> ARM OVP Cortex-M Profile Model
+                        -> Self contained ARM Cortex-M examples
+                        -> ARM GNU GCC and GDB tools
+ 3. Install OVP by running the self-extracting archives.
+ 4. Get Sourcery CodeBench Lite Edition from
+    http://www.mentor.com/embedded-software/codesourcery
+    (ARM processors -> EABI release)
+ 5. Install the self-extracting archive, or use the installation in
+    /fs/proj/compiler/codesourcery-arm-eabi (DO, ios/kos)
+TODO: Source setup.sh, setupImperas ...
+TODO: Fix Hard-coded paths
+
+Building gem5:
+**********************************************************************
+
+Fail* configuration:
+------------------------------------------------------------
+ - BUILD_GEM5 ON
+ - BUILD_ARM ON
+ - all configuration options specific for other simulators OFF
+ - Release or Debug choice must match gem5 in the following
+
+For the first time:
+------------------------------------------------------------
+ 1. Change to the gem5 simulator directory (expects to be in ${FAIL_DIR}):
+      $ cd simulators/gem5
+ 2. Build gem5 using the commands below until it fails finding the fail-libs
+ 3. Build fail
+ 4. Select an experiment (see below)
+ 5. Build gem5 again. THe fail-libs should be found now.
+
+Optimized build:
+------------------------------------------------------------
+      $ cd ../simulator/gem5
+      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.fast
+(add -jN for a parallel build)
+
+Debug build:
+------------------------------------------------------------
+      $ cd ../simulator/gem5
+      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.debug
+(add -jN for a parallel build)
+
+Selecting an experiment:
+------------------------------------------------------------
+ 1. Edit ../src/core/sal/gem5/SConscript
+    In line starting with (gStaticLibs = ...) change -lfail-arch-test to
+    -lfail-EXPERIMENTNAME
+
+

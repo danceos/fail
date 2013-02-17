@@ -1,0 +1,42 @@
+#ifndef __INTERRUPT_AH__
+  #define __INTERRUPT_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_INTERRUPT)
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+
+aspect Interrupt {
+	pointcut interrupt_method() = "void bx_cpu_c::interrupt(...)"; // cpu/exception.cc
+
+	advice execution (interrupt_method()) : before ()
+	{
+		// There are six different type-arguments for the interrupt-method
+		// in cpu.h (lines 3867-3872):
+		//    - BX_EXTERNAL_INTERRUPT = 0,
+		//    - BX_NMI = 2,
+		//    - BX_HARDWARE_EXCEPTION = 3,  
+		//    - BX_SOFTWARE_INTERRUPT = 4,
+		//    - BX_PRIVILEGED_SOFTWARE_INTERRUPT = 5,
+		//    - BX_SOFTWARE_EXCEPTION = 6
+		// Only the first and the second types are relevant for this aspect.  
+
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+
+		unsigned vector = *(tjp->arg<0>());
+		unsigned type = *(tjp->arg<1>());
+		if (type == BX_EXTERNAL_INTERRUPT)
+			fail::simulator.onInterrupt(&triggerCPU, vector, false);
+		else if (type == BX_NMI)
+			fail::simulator.onInterrupt(&triggerCPU, vector, true);
+	}
+};
+
+#endif // CONFIG_EVENT_INTERRUPT
+#endif // __INTERRUPT_AH__

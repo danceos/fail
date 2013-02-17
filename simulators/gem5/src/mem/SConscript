@@ -1,0 +1,91 @@
+# -*- mode:python -*-
+
+# Copyright (c) 2006 The Regents of The University of Michigan
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met: redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer;
+# redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution;
+# neither the name of the copyright holders nor the names of its
+# contributors may be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Authors: Nathan Binkert
+
+Import('*')
+
+SimObject('Bridge.py')
+SimObject('Bus.py')
+SimObject('CommMonitor.py')
+SimObject('MemObject.py')
+
+Source('bridge.cc')
+Source('bus.cc')
+Source('coherent_bus.cc')
+Source('comm_monitor.cc')
+Source('mem_object.cc')
+Source('mport.cc')
+Source('noncoherent_bus.cc')
+Source('packet.cc')
+Source('port.cc')
+Source('packet_queue.cc')
+Source('tport.cc')
+Source('port_proxy.cc')
+Source('fs_translating_port_proxy.cc')
+Source('se_translating_port_proxy.cc')
+
+if env['TARGET_ISA'] != 'no':
+    SimObject('AbstractMemory.py')
+    SimObject('SimpleMemory.py')
+    Source('abstract_mem.cc')
+    Source('simple_mem.cc')
+    Source('page_table.cc')
+    Source('physical.cc')
+
+DebugFlag('BaseBus')
+DebugFlag('BusAddrRanges')
+DebugFlag('CoherentBus')
+DebugFlag('NoncoherentBus')
+CompoundFlag('Bus', ['BaseBus', 'BusAddrRanges', 'CoherentBus',
+                     'NoncoherentBus'])
+
+DebugFlag('BusBridge')
+DebugFlag('CommMonitor')
+DebugFlag('LLSC')
+DebugFlag('MMU')
+DebugFlag('MemoryAccess')
+DebugFlag('PacketQueue')
+
+DebugFlag('ProtocolTrace')
+DebugFlag('RubyCache')
+DebugFlag('RubyCacheTrace')
+DebugFlag('RubyDma')
+DebugFlag('RubyGenerated')
+DebugFlag('RubyMemory')
+DebugFlag('RubyNetwork')
+DebugFlag('RubyPort')
+DebugFlag('RubyQueue')
+DebugFlag('RubySequencer')
+DebugFlag('RubySlicc')
+DebugFlag('RubySystem')
+DebugFlag('RubyTester')
+
+CompoundFlag('Ruby', [ 'RubyQueue', 'RubyNetwork', 'RubyTester',
+    'RubyGenerated', 'RubySlicc', 'RubySystem', 'RubyCache',
+    'RubyMemory', 'RubyDma', 'RubyPort', 'RubySequencer', 'RubyCacheTrace'])

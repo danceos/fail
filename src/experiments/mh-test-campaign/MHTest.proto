@@ -1,0 +1,5 @@
+message MHTestData {
+	optional string foo = 1;
+	optional int32 input = 2;
+	optional int32 output = 3;
+}

@@ -1,0 +1,24 @@
+#ifndef __DISABLE_ADD_REMOVE_LOGFN_AH__
+  #define __DISABLE_ADD_REMOVE_LOGFN_AH__
+
+#include "config/VariantConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
+/* Hack to prevent Bochs' logfunctions list (bochs.h) to overflow if the
+ * experiment restores simulator state more than ~1000 times.
+ *
+ * The "proper" fix would be to completely unregister all log functions before
+ * restore, i.e. to destroy all objects deriving from class logfunctions.  We
+ * decided to simply ignore this tiny memory leak and to hack around the
+ * problem by disabling iofunctions::add/remove_logfn().
+ */
+aspect DisableLogFunctions {
+	pointcut add_remove_logfn() =
+		"void iofunctions::add_logfn(...)" ||
+		"void iofunctions::remove_logfn(...)";
+	advice execution (add_remove_logfn()) : around () { }
+};
+
+#endif // BUILD_BOCHS
+#endif // __DISABLE_ADD_REMOVE_LOGFN_AH__

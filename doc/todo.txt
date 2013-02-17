@@ -1,0 +1,238 @@
+==========================================================================================
+Verrückte Ideen
+==========================================================================================
+ - aufeinander aufbauende Events (Backend-spezifisch <- generisch, oder mehrere
+   Einzelevents gebündelt in ein einzelnes abstraktes ["Crash", HLT mit
+   abgeschalteten Interrupts])
+   * lösbar als Callback-"Experimente", die selbst Events auslösen?
+   * Synthese komplexerer Events
+ - Backend-Schnittstelle (z.B. direkte Anbindung an Simulator vs.
+   GDB-Schnittstelle zu Simulator vs. Anbindung an reale HW) von
+   Backend-Architektur (welche Register gibt es, wie breit ist der
+   Datenbus, welche Traps können ausgelöst werden, etc.) trennen
+
+
+==========================================================================================
+FailBochs-Bausteine TODO
+==========================================================================================
+Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
+
+Bochs:
+ - Bug: Nach save() ist momentan hinterher der Instruction-Pointer eins weiter,
+   womit nicht unbedingt zu rechnen ist. (rh)
+  -> Workaround?  save() ruft implizit restore() ...
+ - bei BX_PANIC nicht einfach weitermachen, sondern dem Experiment
+   signalisieren, dass der Simulator gepanict hat?
+
+Abstraktionen:
+ - Endianness?
+ - Merkmalmodell von Implementierungsdetails trennen (hsc)
+  -> automatische Konfigurierung anhand Experimentauswahl
+  -> Annotierung von Experimentcode, automatisches Nachladen von Aspekten
+ - (Allgemeine) Testfälle / Regression-Tests
+  -> Modifikationen an FAIL* sind damit leichter zu verifizieren
+ - Abstraktionen für Funktionsparameter und -rückgabewerte
+ - API zum Übersetzen von Adressen (virtuell [-> linear] -> physikalisch)
+  -> ggf. nur noch physikalische (oder virtuelle?) Adressen für diverse
+     Listener?
+ - SingleBitflipFaultspacePruning kapseln (hsc)
+
+Events/Listener:
+ - Umstrukturierung des Event-Managements, damit es performanter wird. Dazu
+   werden Aspekte für die Performanz-Verbesserung pro zeitkritischem Typ
+   eingewoben. Dabei soll auf eine "search"-Methode zurückgegriffen werden, mit
+   der in den typspezifischen Containern gesucht werden kann. [...]
+ - Listener-Callback-Funktionalität einführen: von spezifischem Listener
+   ableiten, trigger() überschreiben
+ - Listener alternativ beliebig lange aktiv lassen (statt sie jedes mal neu
+   registrieren zu müssen, wenn einer gefeuert hat)
+ - Bug? Wenn z.B. das Tracing-Plugin aktiv ist, ist nicht klar, ob ein
+   bestimmtes Ereignis zuerst diesem, oder dem laufenden Experiment zugestellt
+   wird; je nach Reihenfolge sieht der rausgeschriebene Trace anders aus
+  -> explizites "stell mal alle übrigen Events zu, bevor es mit mir weitergeht"
+     im SimulatorController?
+
+Parallelisierung:
+ - Momentan landen initial *alle* Parametersätze im Speicher.  Sobald das viel
+   mehr werden, wird das eventuell eng.
+   -> BoundedSynchronizedQueue basteln, Kampagne blockiert dann, wenn die voll ist
+   -> eingehende Resultate nicht in der Kampagne "verarbeiten" (rausschreiben)
+      -- sonst bekommen wir dasselbe Problem mit der Queue der Resultate;
+      stattdessen z.B. die Idee der ExperimentDataStorage weiterverfolgen,
+      Ergebnisse werden asynchron zur Kampagne weggeschrieben
+      (oder: Zweiteilung der Kampagne vornehmen, "Verarbeitung" in eigenem
+      Thread)
+ - coolcampaign fährt momentan ziemlich Achterbahn bei RAM-Benutzung
+   -> Grund analysieren, ggf. beheben (Ressourcenverwaltung? Threadpool?)
+ - warum skalieren die Experimente/s nicht (ganz) linear mit der Anzahl der
+   Cores auf einer Maschine?  Jobserver-Problem, oder lokal Contention auf dem
+   Client (Kernel, Disk-IO)?
+   -> mal Experimente ohne Kommunikation laufenlassen, Durchsatz messen
+   -> mal mit mehreren Maschinen durchmessen
+ - JobServer Statistiken ausgeben lassen, dafür keine Meldung mehr bei jedem Auftrag
+   * Anzahl Hosts
+   * Anzahl Clients (momentan ununterscheidbar ...)
+   * Aufträge pro Sekunde
+   * ETA bis Kampagne komplett
+ - Client/Server-TCP-Verbindungen aufrechterhalten
+ - die Möglichkeit schaffen, im Server mehr Informationen über einen Job
+   vorzuhalten (und zu loggen), als man an den Client kommuniziert
+   -> bei Fault-Space-Pruning hat man im Server Äquivalenzklassen, aus denen
+      man nur einen einzelnen Parametersatz auswählt und dem Client zum
+      Ausprobieren gibt; die Informationen über die Äquivalenzklasse müss(t)en
+      nicht über die Leitung, werden aber am Schluss zur Auswertung gebraucht
+ - Build-ID in control message tatsächlich generieren und verwenden!
+   - einfacher, aber nicht in allen Fällen wirksam: Server generiert zur
+     Laufzeit "Session-ID"; falls bei Client-/Server-Kommunikation diese nicht
+     mit der vorherigen übereinstimmt, terminiert der Client automatisch
+     * Problem 1: hilft nicht, wenn der Client gerade neu gestartet wurde
+     * Problem 2: wenn das viele Clients tun, landen sehr viele unbearbeitete
+       Jobs in der Aktiv-Queue auf dem Server
+ - mehrere Jobs auf einmal übertragen -> weniger Kommunikationsvorgänge (rh)
+   * adaptiv: clientseitig erst nur einen anfordern, Laufzeit messen, die
+     folgenden Male immer so viele anfordern, dass (geschätzt) z.B. mindestens
+     60s zwischen zwei Kommunikationsvorgängen liegen (mit oberem Limit für
+     Anzahl Jobs)
+   -> dann müsste man sich über die ganzen serverseitigen Engpässe gar keine
+      Gedanken machen
+
+Implementierungsdetails:
+ - einheitliche Fehlerbehandlung
+ - einheitliches Logging (Loglevels?), Ausgaben (z.B. im Bochs-Controller,
+   siehe BochsController::save) vereinheitlichen, evtl. zusätzlich via
+   (Non-)Verbose-Mode(s)
+   -> "Ausgabesystem", "Logger"
+ - einfache, Linux-spezifische Wallclock-Zeitmessung ähnlich boost::timer v2 (rh)
+   * Start, Ende, einfache Stringkonvertierung/Ausgabe
+
+Effizienz:
+ - getrennte Queues?
+ - Queue-Suche optimieren (Hashes, Sortierung, ...)?
+ - boolean/Counter für Events (um Durchlaufen der Queue zu verhindern)?
+ - Dynamic AspectC++ ausprobieren
+ - Löschliste in EventManager via Hashing implementieren (o.Ä.)?
+
+Buildsystem:
+ - (mittelfristig) in cmake nur wirklich Build-spezifische Dinge konfigurieren
+   (verwendeter Compiler, Installationsverzeichnis, ...), den Rest in einem
+   brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
+   Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
+   * Bochs / OVP / Gem5 sind Alternativen, nicht beide anschaltbar
+  -> Cmake-Combo-Box (ggf. noch an anderen Stellen einsetzbar)
+     http://www.kitware.com/blog/home/post/82
+ - Hinzufügen eines neuen Experiments konkreter dokumentieren (how-to-build.txt?)
+ - "Aktivieren" von Aspekten muss anders implementiert werden:
+   * Momentan ist es nicht möglich, dass mehrere Build-Verzeichnisse (mit
+     Aspekten darin) nebeneinander existieren, da ag++ alle Unterverzeichnisse
+     von fail/ nach Aspektheadern durchsucht.
+  -> stattdessen (in Cmake) eine globale Liste von aktiven Aspektheadern
+     pflegen und diese per ag++-Flag "-a" aktivieren.
+  -> ggf. instantiate-foo-experiment.ah nicht mehr generieren (hässlicher, und
+     dann unnötiger Hack)
+
+Dokumentation:
+ - Änderungen im Klassendiagramm nachziehen
+ 
+Erledigt:
+ - alle Events mit Zähler versehen, so dass sie erst bei Erreichen der 0 feuern
+   * z.B. erst nach dem 5ten Mal Lesen von Adresse X auslösen
+ - Bereiche von Instruction-Pointern
+ - Wrapper für häufig auftretende Experimentmuster, z.B. einzelnes Event
+   anlegen und dann genau darauf warten
+ - Wildcards für beliebige Instruktions- bzw. Speicheradresse (ANY_ADDR, siehe Event.hpp),
+   inkl. Anpassung des ausgelösten Events
+ - Registerzugriff aus dem Experiment-Controller, RegisterBitflip vorbereitet
+ - Auslösen von Reboot (rh)
+ - Auslesen von Register- und Speicherzustand (Kontext Golden-Run-Vergleiche etc.)
+ - Coroutinen-Bibliothek (oder getcontext/setcontext) statt Threads+Synchronisation?
+ - Bitflips in Register
+ - nach Eintreten eines Events wird das Event- (oder FI-)Objekt mit
+   Detailinformationen befüllt
+   -> insbesondere bei "Wildcards" (ANY_TRAP) will man ja im
+      Experimentablauf wissen, was jetzt eigentlich passiert ist
+ - Event-Aspekt zur Kommunikation mit dem Gastsystem fertig stellen (siehe events/GuestSysCom.ah)
+ - Bochs-Spezifika von Bochs-unabhängigen Codeteilen trennen
+   -> Simulator-Abstraktionsschicht
+   -> Schnittstelle für Informationen über Plattformspezifika, z.B. Register + Bitbreiten
+   -> Bochs-spezifische Aspekte leiten nur noch Kontrollfluss um,
+      Implementierung von Ereignissen separat
+ - (sofern möglich) Ereignisse von FI trennen
+ - Scattering-Graphik, (Python-)Skript (ab)
+ - ohne GUI bzw. gesetztem $DISPLAY lauffähig? (rh)
+ - Save (rh):
+   - Zielverzeichnis anlegen, falls nicht existent
+   - Fehlermeldung, falls Zielverzeichnis nicht schreibbar
+ - FI-Jobs gibt's nicht mehr, überall rauswerfen (ab)
+ - Traps und Interrupts (alle, oder Match auf beliebige Teilmenge) 
+   (Aspekte existieren bereits. Matchen auf beliebige Teilmenge der Traps ist noch nicht moeglich)
+   (rh)
+ - die schlimmsten Speicherlecks in Bochs eliminieren (rh)
+ - Event-IDs als Identifikationsmittel für Events auf den zweiten Platz verweisen
+   -> IDs gibt's weiterhin (getId()), aber z.B. waitAny() liefert einen Pointer (ab)
+ - Brauchen wir eigentlich IDs als Handles für Events, oder genügt es nicht
+   eigentlich, die Event-Objektadresse zu verwenden? (ab)
+ - Event-Match-Schleife von Event-Feuer-Schleife trennen (ab):
+   - erst alle Events, die aktuell matchen, sammeln (Code ggf. spezifisch für die Ereignisart)
+   - dann sequentiell feuern (Code zentral in SimulatorController)
+   -> keine Probleme mit nachträglich hinzukommenden Events
+   - dann leider immer noch Probleme mit nachträglich entfernten Events
+   -> siehe fail/experiments/coolchecksum/experiment.cc FIXME am Ende
+   -> Lösung: Löschliste
+   - ggf. zusammen mit Datenstruktur-Implementierungsdetails-TODO (s.u.) angehen
+ - FailConfig.hpp in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - variant_config.h in cmake-config einbinden (genauso behandeln wie experiments.hpp!)
+   -> generierte Datei landet in Buildtree, wird nicht mehr eingecheckt
+ - EXP*-options nur einmal in config/, nicht in drei verschiedenen Dateien
+   (config/CMakelists.txt, config/experiments.hpp.in,
+   experiments/CMakeLists.txt)
+ - zum Verpacken in ExperimentData-Nachrichten Register<->String-Konvertierung
+   vereinfachen (ab)
+ - Speicherzugriffe: bei Instruction Fetch?  INC $Adresse?  CALL?  PUSH?
+   PUSHF?  Interrupt? (ab)
+ - Timer (Bochs: basierend auf bx_pc_system.register_timer()) für "echte"
+   Timeouts (die auch dann greifen, wenn die CPU z.B. in einem CLI/HLT steht) (ab)
+ - Client-Timeouts untersuchen, Server-Implementierung tunen?  Retries im Client? (ab)
+ - unbeantwortete Jobs am Ende einer Kampagne erneut vergeben (ab)
+ - Namespace Confusion: aufräumen (ab)
+ - Verzeichnisstruktur umstrukturieren und aufräumen (ab)
+ - Determinismus: Wie kann für Mikroexperimente sichergestellt werden, dass
+   externe Ereignisse (Timer, Eingang von Netzwerkpaketen, ...) reproduzierbar
+   zum selben Zeitpunkt eintreffen? (rh)
+   - Interrupts teilweise oder komplett sperren
+   - optional: Interrupts auslösen
+ - Traces: geeignet kapseln, in einer Sequenz von protobuf-Nachrichten statt
+   einer großen rausschreiben/laden (rh)
+ - einheitliches Namensschema für Backend-Beeinflussungen (Interrupt-Synthese,
+   Interrupt-Unterdrückung, Speicher schreiben, Register schreiben, ...) finden
+   -> "Fehlerinjektion" ist das ja nicht immer
+ - Aktuelle Events sind viel mehr "Listener", die auf eine ganze Klasse von
+   Ereignissen warten (semantische Ungenauigkeit)
+    -> benenne Events um ("Listener")
+    -> Erstelle neue Klassenhierarchie, die den "Informationsanteil" der "Events"
+       repräsentiert. Diese kapseln dann die Informationen in den Events und
+       werden zudem intern im Fail*-Framework verwendet (genauer: kommuniziert).
+
+==========================================================================================
+Theorie TODO
+==========================================================================================
+ - Problem Fork von FI Tools -> Merging eklig.
+   -> Liste mit konkreten Beispielen 
+
+
+==========================================================================================
+FailOVP-Bausteine TODO
+==========================================================================================
+Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
+
+Abstraktionen:
+ - save/restore implementieren -> Speicher-, Register-, Timer-, ??- Zustaende 
+
+Sonstiges:
+ - Sections aus ELF Datei extrahieren, entsprechende Speicherbereiche (generisch) anlegen (rz)
+ - Symbole aus ELF extrahieren -> Adressen von globalen Objekten/Funktionen in Experimenten angeben (rz)
+ - Prozessormodell per cmake cleanen und neu bauen (mh)
+ - CiAO ELF in OVP ausfuehren
+
+Erledigt:
+ - 

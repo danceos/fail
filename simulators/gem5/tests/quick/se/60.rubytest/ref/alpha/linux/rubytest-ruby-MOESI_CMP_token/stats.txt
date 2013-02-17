@@ -1,0 +1,11 @@
+
+---------- Begin Simulation Statistics ----------
+sim_seconds                                  0.000259                       # Number of seconds simulated
+sim_ticks                                      259241                       # Number of ticks simulated
+final_tick                                     259241                       # Number of ticks from beginning of simulation (restored from checkpoints and never reset)
+sim_freq                                   1000000000                       # Frequency of simulated ticks
+host_tick_rate                                2053459                       # Simulator tick rate (ticks/s)
+host_mem_usage                                 221360                       # Number of bytes of host memory used
+host_seconds                                     0.13                       # Real time elapsed on the host
+
+---------- End Simulation Statistics   ----------

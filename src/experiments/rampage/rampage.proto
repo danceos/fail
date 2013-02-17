@@ -1,0 +1,55 @@
+message RAMpageProtoMsg {
+	// Input: experiment parameters
+
+	// memory error address
+	required uint64 mem_addr = 1;
+	// failing bit at that address
+	required uint32 mem_bit = 2;
+	// coupled bit at that address (only for ERROR_COUPLING)
+	optional uint32 mem_coupled_bit = 3;
+	// error type
+	enum ErrorType {
+		ERROR_NONE = 1;
+		ERROR_STUCK_AT_0 = 2;
+		ERROR_STUCK_AT_1 = 3;
+		ERROR_COUPLING = 4;
+		ERROR_INVERSE_COUPLING = 5;
+	}
+	required ErrorType errortype = 4;
+	// number of empty passes until we give up
+	required uint32 empty_passes = 5;
+	// local timeout (between newlines on ttyS1)
+	required uint32 local_timeout = 6;
+	// global timeout
+	required uint32 global_timeout = 7;
+
+	// ----------------------------------------------------
+
+	// Output: experiment results
+
+	// erroneous byte was written to
+	optional bool mem_written = 8;
+
+	enum ResultType {
+		RIGHT_PFN_DETECTED = 1;
+		// error was detected, but in the wrong PF (improbable)
+		WRONG_PFN_DETECTED = 2;
+		// erroneous pfn was listed on the serial line, but no error was detected
+		PFN_WAS_LISTED = 3;
+		// no "tested ..." line between "starting test pass" and "calculating stats"
+		NO_PFNS_TESTED = 4;
+		LOCAL_TIMEOUT = 5;
+		GLOBAL_TIMEOUT = 6;
+		// e.g., unknown string on serial line
+		UNKNOWN = 7;
+	}
+	optional ResultType resulttype = 9;
+
+	// pfn the error was detected in (hopefully the right one?)
+	optional uint32 error_detected_pfn = 10;
+	// host wallclock time it took until we finished
+	optional uint32 experiment_time = 11;
+
+	// debugging info
+	optional string details = 12;
+}

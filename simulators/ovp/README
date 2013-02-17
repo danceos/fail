@@ -1,0 +1,7 @@
+Env setzen: . ./setImperas.sh
+
+64 bit Systeme brauchen ia32-libs
+evtl unter Ubuntu: ln -s /usr/lib32/libstdc++.so.6 /usr/lib32/libstdc++.so
+
+License Server in Env-Variable:
+export IMPERASD_LICENSE_FILE=@faui49.informatik.uni-erlangen.de

@@ -1,0 +1,57 @@
+#ifndef __BREAKPOINT_CONTROLLER_SLICE_AH__
+  #define __BREAKPOINT_CONTROLLER_SLICE_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_BREAKPOINTS
+
+#include <cassert>
+#include "../Listener.hpp"
+
+/**
+ * \class BreakpointControllerSlice
+ *
+ * The slice class definition to be used with FastBreakpoint.ah.
+ * The members of this class will be sliced into the \c SimulatorController class.
+ */
+slice class BreakpointControllerSlice {
+public:
+	bool addListener(fail::BPSingleListener* sli)
+	{
+		assert(sli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		// Check whether we were called from onTrigger (see SimulatorController.cc@addListener).
+		fail::ExperimentFlow* pFlow = m_Flows.getCurrent(); 
+		if (pFlow == CoroutineManager::SIM_FLOW)
+			pFlow = sli->getParent();
+		m_LstList.add(sli, pFlow);
+		// Call the common postprocessing function:
+		if (!sli->onAddition()) { // If the return value signals "false"...,
+			m_LstList.remove(sli); // ...skip the addition
+			return false;
+		}
+		return true;
+	}
+	fail::BaseListener* addListenerAndResume(fail::BPSingleListener* sli)
+	{ addListener(sli); return resume(); }
+	bool addListener(fail::BPRangeListener* rli)
+	{
+		assert(rli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		// Check whether we were called from onTrigger (see above).
+		fail::ExperimentFlow* pFlow = m_Flows.getCurrent();
+		if (pFlow == CoroutineManager::SIM_FLOW)
+			pFlow = rli->getParent();
+		m_LstList.add(rli, pFlow);
+		// Call the common postprocessing function:
+		if (!rli->onAddition()) { // If the return value signals "false"...,
+			m_LstList.remove(rli); // ...skip the addition
+			return false;
+		}
+		return true;
+	}
+	fail::BaseListener* addListenerAndResume(fail::BPRangeListener* rli)
+	{ addListener(rli); return resume(); }
+};
+
+#endif // CONFIG_FAST_BREAKPOINTS
+
+#endif // __BREAKPOINT_CONTROLLER_SLICE_AH__

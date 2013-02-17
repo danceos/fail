@@ -1,0 +1,31 @@
+#ifndef __INTERRUPT_SUPPRESSION_AH__
+  #define __INTERRUPT_SUPPRESSION_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_SUPPRESS_INTERRUPTS)
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+
+aspect InterruptSuppression {
+	pointcut interrupt_method() = "void bx_cpu_c::interrupt(...)";
+
+	advice execution (interrupt_method()) : around ()
+	{
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+
+		unsigned vector = *(tjp->arg<0>());
+		if (!triggerCPU.isSuppressedInterrupt(vector)) {
+			tjp->proceed();
+		}
+		// else: do not process the interrupt
+	}
+};
+
+#endif // CONFIG_SUPPRESS_INTERRUPTS
+#endif // __INTERRUPT_SUPPRESSION_AH__

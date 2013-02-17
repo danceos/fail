@@ -1,0 +1,171 @@
+#ifndef __MEM_ACCESS_AH__
+  #define __MEM_ACCESS_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#ifdef BUILD_BOCHS
+#if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
+
+#include <iostream>
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+#include "BochsHelpers.hpp"
+
+// FIXME: We currently assume a "flat" memory model and ignore the segment
+//        parameter of all memory accesses.
+// TODO: Instruction fetch?
+// TODO: Warn on uncovered memory accesses.
+
+aspect MemAccess {
+	fail::address_t rmw_address;
+
+	pointcut write_methods() =
+		"% ...::bx_cpu_c::write_virtual_%(...)" && // -> access32/64.cc
+	// not an actual memory access:
+		!"% ...::bx_cpu_c::write_virtual_checks(...)";
+	pointcut write_methods_RMW() =
+		"% ...::bx_cpu_c::write_RMW_virtual_%(...)";
+	pointcut write_methods_new_stack() =
+		"% ...::bx_cpu_c::write_new_stack_%(...)" &&	// -> access32.cc
+		!"% ...::bx_cpu_c::write_new_stack_%_64(...)";
+	pointcut write_methods_new_stack_64() =
+		"% ...::bx_cpu_c::write_new_stack_%_64(...)";	// -> access64.cc
+	pointcut write_methods_system() =
+		"% ...::bx_cpu_c::system_write_%(...)";		// -> access.cc
+	// FIXME not covered:
+	/* "% ...::bx_cpu_c::v2h_write_byte(...)";		// -> access.cc */
+
+	pointcut read_methods()  =
+		 "% ...::bx_cpu_c::read_virtual_%(...)" &&
+	// sizeof() doesn't work here (see next pointcut)
+		!"% ...::bx_cpu_c::read_virtual_dqword_%(...)" &&	// -> access32/64.cc
+	// not an actual memory access:
+		!"% ...::bx_cpu_c::read_virtual_checks(...)";
+	pointcut read_methods_dqword() =
+		"% ...::bx_cpu_c::read_virtual_dqword_%(...)";	// -> access32/64.cc
+	pointcut read_methods_RMW() =
+		"% ...::bx_cpu_c::read_RMW_virtual_%(...)";
+	pointcut read_methods_system() =
+		"% ...::bx_cpu_c::system_read_%(...)";		// -> access.cc
+	// FIXME not covered:
+	/* "% ...::bx_cpu_c::v2h_read_byte(...)";		// -> access.cc */
+
+	//
+	// Fire a memory-write-event each time the guest system requests
+	// to write data to RAM:
+	//
+	// Listener source: "memory write access"
+	//
+#ifdef CONFIG_EVENT_MEMWRITE
+	advice execution (write_methods()) : after ()
+	{
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<1>()), sizeof(*(tjp->arg<2>())), true,
+			getCPU(tjp->that())->prev_rip);
+	}
+
+	advice execution (write_methods_RMW()) : after ()
+	{
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			rmw_address, sizeof(*(tjp->arg<0>())), true,
+			getCPU(tjp->that())->prev_rip);
+	}
+
+	advice execution (write_methods_new_stack()) : after ()
+	{
+		//std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
+		// TODO: Log-level?
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<1>()), sizeof(*(tjp->arg<3>())), true,
+			getCPU(tjp->that())->prev_rip);
+	}
+
+	advice execution (write_methods_new_stack_64()) : after ()
+	{
+		//std::cerr << "WOOOOOT write_methods_new_stack_64" << std::endl;
+		// TODO: Log-level?
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<0>()), sizeof(*(tjp->arg<2>())), true,
+			getCPU(tjp->that())->prev_rip);
+	}
+
+	advice execution (write_methods_system()) : after ()
+	{
+		// We don't do anything here for now: This type of memory
+		// access is used when the hardware itself needs to access
+		// memory (e.g., to read vectors from the interrupt vector
+		// table).
+/*
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<0>()), sizeof(*(tjp->arg<1>())), true,
+			getCPU(tjp->that())->prev_rip);
+*/
+	}
+#endif
+
+	//
+	// Fire a memory-read-event each time the guest system requests
+	// to read data in RAM:
+	//
+	// Listener source: "memory read access"
+	//
+#ifdef CONFIG_EVENT_MEMREAD
+	advice execution (read_methods()) : before ()
+	{
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
+			getCPU(tjp->that())->prev_rip);
+	}
+
+	advice execution (read_methods_dqword()) : before ()
+	{
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<1>()), 16, false,
+			getCPU(tjp->that())->prev_rip);
+	}
+#endif
+
+	advice execution (read_methods_RMW()) : before ()
+	{
+#if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
+		rmw_address = *(tjp->arg<1>());
+#endif
+#ifdef CONFIG_EVENT_MEMREAD
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
+			getCPU(tjp->that())->prev_rip);
+#endif
+	}
+
+#ifdef CONFIG_EVENT_MEMREAD
+	advice execution (read_methods_system()) : before ()
+	{
+		// We don't do anything here for now: This type of memory
+		// access is used when the hardware itself needs to access
+		// memory (e.g., to read vectors from the interrupt vector
+		// table).
+/*
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onMemoryAccess(&triggerCPU,
+			*(tjp->arg<0>()), sizeof(*(tjp->result())), false,
+			getCPU(tjp->that())->prev_rip);
+*/
+	}
+#endif
+};
+
+#endif // CONFIG_EVENT_MEMACCESS
+#endif // BUILD_BOCHS
+#endif // __MEM_ACCESS_AH__

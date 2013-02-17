@@ -1,0 +1,60 @@
+#ifndef __QEMULISTENER_AH__
+  #define __QEMULISTENER_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_QEMU) && defined(CONFIG_EVENT_BREAKPOINTS)
+
+#include "../SALInst.hpp"
+
+extern "C" {
+#include "qemu/failqemu.h"
+}
+
+aspect QEMUListener
+{
+	advice "fail::TimerListener" : slice class
+	{
+	public:
+		bool onAddition()
+		{
+			//std::cout << "QEMUTimerListener::onAddition" << std::endl;
+			setId(failqemu_register_timer(getTimeout(), (void *)this));
+			//std::cout << "this = " << std::hex << (unsigned) this << std::endl;
+			//std::cout << "id = " << std::hex << (unsigned) getId() << std::endl;
+			return true;
+		}
+
+		void onDeletion()
+		{
+			//std::cout << "QEMUTimerListener::onDeletion" << std::endl;
+			//std::cout << "this = " << std::hex << (unsigned) this << std::endl;
+			//std::cout << "id = " << std::hex << (unsigned) getId() << std::endl;
+			failqemu_unregister_timer(getId());
+		}
+	};
+
+	advice "fail::MemWriteListener" : slice class
+	{
+	public:
+		bool onAddition()
+		{
+			//std::cout << "QEMUMemWriteListener::onAddition" << std::endl;
+			if (failqemu_add_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1) != 0) {
+				std::cout << "adding watchpoint failed!" << std::endl;
+				return false;
+			}
+			return true;
+		}
+
+		void onDeletion()
+		{
+			//std::cout << "QEMUMemWriteListener::onDeletion" << std::endl;
+			failqemu_remove_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1);
+		}
+	};
+};
+
+#endif // BUILD_QEMU && CONFIG_EVENT_BREAKPOINTS
+#endif // __QEMULISTENER_AH__

@@ -1,0 +1,46 @@
+#ifndef __BREAK_REPEAT_INSTR_AH__
+  #define __BREAK_REPEAT_INSTR_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && (defined(CONFIG_EVENT_BREAKPOINTS) || defined(CONFIG_EVENT_BREAKPOINTS_RANGE))
+
+#include <iostream>
+
+#include "cpu/cpu.h"
+
+#include "BochsHelpers.hpp"
+#include "../SALInst.hpp"
+
+/*
+ * This aspect ensures that all conditions like
+ *   ... if (BX_CPU_THIS_PTR async_event) ...
+ * (in "break_condition_methods") are always true.
+ *
+ * This is required by the Breakpoint-Events (aspect) in case
+ * of (any) rep-instructions because they need to be triggered
+ * after *each* repetition of the corresponding instruction.
+ */
+aspect BreakRepeatInstr {
+	pointcut break_condition_methods() = 
+		"% ...::bx_cpu_c::repeat(...)"   || // cpu/cpu.cc
+		"% ...::bx_cpu_c::repeat_ZF(...)";  // dito
+
+	advice execution (break_condition_methods()) : around ()
+	{
+		// We cannot restore the previous state because the methods
+		// itself may change the value of "async_event". We need to
+		// be aware of introducing a potential bug in the Bochs'
+		// internal logic this way if "1" represents an internally
+		// used value.
+		//Bit32u old_async_ev = getCPU(tjp->that())->async_event;
+		getCPU(tjp->that())->async_event |= 1;
+		tjp->proceed();
+		//getCPU(tjp->that())->async_event = old_async_ev;
+	}
+};
+
+#endif // CONFIG_EVENT_BREAKPOINTS
+
+#endif // __BREAK_REPEAT_INSTR_AH__

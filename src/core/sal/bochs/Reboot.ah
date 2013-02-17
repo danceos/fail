@@ -1,0 +1,29 @@
+#ifndef __REBOOT_AH__
+  #define __REBOOT_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_SR_REBOOT)
+
+#include "bochs.h"
+#include "../SALInst.hpp"
+
+aspect Reboot {
+	pointcut reboot_trigger()  = "void bx_pc_system_c::tick%(...)";
+
+	advice execution (reboot_trigger()) : before ()
+	{
+		if (!fail::reboot_bochs_request) {
+			return;
+		}
+		
+		bx_gui_c::reset_handler();
+		std::cout << "[FAIL] Reboot finished" << std::endl;
+		// TODO: Log-level?
+		fail::simulator.rebootDone();
+	}
+};
+
+#endif // CONFIG_SR_REBOOT
+#endif // __REBOOT_AH__

@@ -1,0 +1,42 @@
+#ifndef __IOPORT_COM_AH__
+  #define __IOPORT_COM_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_IOPORT)
+
+#include "bochs.h"
+#include "cpu/cpu.h"
+
+#include "../SALInst.hpp"
+#include "BochsHelpers.hpp"
+
+// TODO: ATM only capturing bytewise output (most common, I suppose)
+
+aspect IOPortCom {
+	pointcut outInstruction() = "% ...::bx_cpu_c::OUT_DXAL(...)";
+
+	advice execution (outInstruction()) : after ()
+	{
+		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
+		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
+		
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, true);
+	}
+
+	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX(...)";
+
+	advice execution (inInstruction()) : after ()
+	{
+		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
+		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, false);
+	}
+};
+
+#endif // CONFIG_EVENT_IOPORT
+#endif // __IOPORT_COM_AH__

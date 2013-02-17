@@ -1,0 +1,28 @@
+Import('*')
+
+if env['TARGET_ISA'] == 'no':
+    Return()
+
+env.Prepend(CPPPATH=Dir('../../../../../src/core/'))
+env.Prepend(CPPPATH=Dir('../../../../../build/src/core/'))
+
+env.Append(CXXFLAGS = '-Wno-deprecated')
+
+env.Prepend(LIBPATH=Dir('../../../../../build/lib/'))
+gStaticLibs = ['-lfail-sal', '-lfail-arch-test', '-lfail-comm', '-lfail-cpn', '-lfail-efw', '-lfail-util', '-lpcl', '-lprotobuf']
+
+if (len(gStaticLibs)>0):
+	linkFlags = ['-Wl,--start-group']
+	linkFlags = linkFlags+gStaticLibs
+	linkFlags = linkFlags+['-Wl,--end-group']
+
+	env['GEN_LIB_BUILD_STATIC'] = linkFlags
+
+	env.Append(SHLINKCOM = ' $GEN_LIB_BUILD_STATIC')
+	env.Append(LINKCOM = ' $GEN_LIB_BUILD_STATIC')
+
+
+DebugFlag('FailState')
+CompoundFlag('Fail', ['FailState'])
+
+Source('Gem5Connector.cc')

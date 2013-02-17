@@ -1,0 +1,26 @@
+#ifndef __DISABLE_KEYBOARD_INTERRUPT_AH__
+  #define __DISABLE_KEYBOARD_INTERRUPT_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_DISABLE_KEYB_INTERRUPTS)
+
+#include "iodev/iodev.h"
+#include "iodev/keyboard.h"
+
+aspect DisableKeyboardInterrupt {
+	pointcut heyboard_interrupt() =
+		"void bx_keyb_c::timer_handler(...)";
+
+	advice execution (heyboard_interrupt()) : around ()
+	{
+		bx_keyb_c *class_ptr = (bx_keyb_c*)tjp->arg<0>();
+		unsigned retval;
+
+		retval = class_ptr->periodic(1);
+	}
+};
+
+#endif // CONFIG_DISABLE_KEYB_INTERRUPTS
+#endif // __DISABLE_KEYBOARD_INTERRUPT_AH__

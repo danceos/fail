@@ -1,0 +1,41 @@
+#ifndef __BOCHS_NO_ABORT_AH__
+  #define __BOCHS_NO_ABORT_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_BOCHS_NO_ABORT)
+
+#include "bochs.h"
+
+aspect BochsNoAbort {
+	pointcut get_default_action() = "int logfunctions::get_default_action(int)";
+
+	// make sure we're not the innermost aspect
+	advice call(get_default_action()) : order ("BochsNoAbort", "BochsNonVerbose");
+
+	// Needed to prevent Bochs from aborting or interacting with the user (ask
+	// what to do) when any of the Bochs-internal log macros (especially
+	// BX_PANIC) is called.  This may leave Bochs in a weird state (see the
+	// example bochsrc that accompanies Bochs, section LOG CONTROL), but is
+	// better than completely terminating the experiment.
+	// FIXME: Probably we should signal a BX_PANIC to the experiment somehow,
+	//        instead of continuing simulation?
+	//
+	// Aspect is BochsNonVerbose's little sister.
+	//
+	// This works around the BUG mentioned in bochs/logio.cc /
+	// logfunctions::logfunctions().
+	advice call(get_default_action())
+	     : around ()
+	{
+		tjp->proceed();
+		int *action = tjp->result();
+		if (*action == ACT_FATAL || *action == ACT_ASK) {
+			*action = ACT_REPORT;
+		}
+	}
+};
+
+#endif // CONFIG_BOCHS_NO_ABORT
+#endif // __BOCHS_NO_ABORT_AH__

@@ -1,0 +1,54 @@
+message OOStuBSProtoMsg {
+	// Input: experiment parameters
+	// (client executes 8 experiments, one for each bit at mem_addr)
+
+	// FI at #instructions from experiment start
+	required int32 instr_offset = 1;
+	// the exact IP value at this point in time (from golden run)
+	optional int32 instr_address = 2; // for sanity checks
+	// address of the byte to inject bit-flips
+	required int32 mem_addr = 3;
+
+	// ----------------------------------------------------
+
+	// Output: experiment results
+
+	// IP where we did the injection: for debugging purposes, must be identical
+	// to instr_address
+	optional int32 injection_ip = 4;
+
+	repeated group Result = 5 {
+		// single experiment bit offset
+		required int32 bit_offset = 1;
+
+		// result type:
+		// FINISHED = planned number of instructions were executed
+		// TRAP = premature guest "crash"
+		// OUTSIDE = IP left text segment
+		enum ResultType {
+			FINISHED = 1;
+			TRAP = 2;
+			OUTSIDE = 3;
+			DETECTED = 4;
+			TIMEOUT = 5;
+			UNKNOWN = 6;
+		}
+		required ResultType resulttype = 2;
+
+		// especially interesting for TRAP/UNKNOWN: latest IP
+		required uint32 latest_ip = 3;
+
+		// result details:
+		// resultdata = result[0-2]
+		repeated uint32 resultdata = 4 [packed=true];
+
+		// was finish() ever reached?
+		optional bool finish_reached = 5;
+
+		// did ECC correct the fault?
+		optional int32 error_corrected = 6;
+
+		// optional textual description of what happened
+		optional string details = 7;
+	}
+}

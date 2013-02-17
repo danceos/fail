@@ -1,0 +1,35 @@
+#ifndef __CREDITS_AH__
+  #define __CREDITS_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#ifdef BUILD_BOCHS
+
+#include <string.h>
+#include <stdio.h>
+
+aspect Credits {
+	bool first;
+	Credits() : first(true) {}
+
+	advice call ("% bx_center_print(...)") 
+	    && within ("void bx_print_header()")
+	    && args(file, line, maxwidth)
+	    : around (FILE *file, const char *line, unsigned maxwidth)
+	{
+		if (!first) {
+			tjp->proceed();
+			return;
+		}
+		// FIXME take version from global configuration
+		char buf[256] = "FailBochs " FAIL_VERSION ", based on the ";
+		strncat(buf, line, 128);
+		first = false;
+		*(tjp->arg<1>()) = buf;
+		tjp->proceed();
+	}
+};
+
+#endif // BUILD_BOCHS
+#endif // __CREDITS_AH__

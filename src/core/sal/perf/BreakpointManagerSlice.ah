@@ -1,0 +1,58 @@
+#ifndef __BREAKPOINT_MANAGER_SLICE_AH__
+  #define __BREAKPOINT_MANAGER_SLICE_AH__
+
+#include "config/FailConfig.hpp"
+
+#ifdef CONFIG_FAST_BREAKPOINTS
+
+#include <cassert>
+#include "BreakpointBuffer.hpp"
+#include "../Listener.hpp"
+
+/**
+ * \class BreakpointManagerSlice
+ *
+ * The slice class definition to be used with FastBreakpoint.ah.
+ * The members of this class will be sliced into the \c ListenerManager class.
+ */
+slice class BreakpointManagerSlice {
+private:
+	fail::PerfVectorBreakpoints m_SingleListeners;
+	fail::PerfVectorBreakpoints m_RangeListeners;
+public:
+	fail::PerfVectorBreakpoints& getSingleListeners() { return m_SingleListeners; }
+	fail::PerfVectorBreakpoints& getRangeListeners()  { return m_RangeListeners;  }
+
+	void add(fail::BPSingleListener* sli, fail::ExperimentFlow* flow)
+	{
+		assert(sli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		sli->setParent(flow);
+		// (1) Add sli to the main buffer-list, ...
+		m_BufferList.push_back(sli);
+		// (2) ... update it's location (index) / performance-buffer (ptr) and ...
+		fail::index_t idx = m_BufferList.size()-1;
+		assert(m_BufferList[idx] == sli && "FATAL ERROR: Invalid index after push_back() unexpected!");
+		sli->setLocation(idx);
+		sli->setPerformanceBuffer(&m_SingleListeners);
+		// (3) ... add this index to the m_SingleListeners vector.
+		m_SingleListeners.add(idx);
+	}
+	void add(fail::BPRangeListener* rli, fail::ExperimentFlow* flow)
+	{
+		assert(rli != NULL && "FATAL ERROR: Argument (ptr) cannot be NULL!");
+		rli->setParent(flow);
+		// (1) Add sli to the main buffer-list, ...
+		m_BufferList.push_back(rli);
+		// (2) ... update it's location (index) / performance-buffer (ptr) and ...
+		fail::index_t idx = m_BufferList.size()-1;
+		assert(m_BufferList[idx] == rli && "FATAL ERROR: Invalid index after push_back() unexpected!");
+		rli->setLocation(idx);
+		rli->setPerformanceBuffer(&m_RangeListeners);
+		// (3) ... add this index to the m_RangeListeners vector.
+		m_RangeListeners.add(idx);
+	}
+};
+
+#endif // CONFIG_FAST_BREAKPOINTS
+
+#endif // __BREAKPOINT_MANAGER_SLICE_AH__

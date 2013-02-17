@@ -1,0 +1,26 @@
+#ifndef __T32MOCK_AH__
+  #define __T32MOCK_AH__
+
+#include <iostream>
+
+#if defined(BUILD_T32) //  && defined(T32MOCK)
+
+/* Mock aspect for testing without T32 HW attached. */
+aspect T32Mock
+{
+	advice call("% T32_% (...)") : around ()
+	{
+	  std::cout << "[T32 MOCK] " << JoinPoint::signature() <<  " (";
+
+    for(int i = 0; i < tjp->args(); i++) {
+      std::cout << std::hex << *((int*)( tjp->arg(i) ) );
+      if(i < tjp->args()-1) std::cout << ", ";
+    }
+    std::cout << ")" << std::endl;
+
+    *tjp->result() = 0;
+	}
+};
+
+#endif // BUILD_T32 && CONFIG_EVENT_BREAKPOINTS
+#endif // __T32MOCK_AH__

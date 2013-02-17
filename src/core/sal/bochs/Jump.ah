@@ -1,0 +1,146 @@
+#ifndef __JUMP_AH__
+  #define __JUMP_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_EVENT_JUMP)
+
+#include <iostream>
+#include <cstdlib>
+#include <string>
+#include <ctime>
+
+#include "bochs.h"
+
+#include "../SALInst.hpp"
+#include "BochsHelpers.hpp"
+
+// FIXME: This seems (partial) deprecated/incomplete as well...
+
+aspect Jump {
+	// Note: Have a look at the Bochs-Code (cpu/cpu.h) and the Intel
+	// Architecture Software Developer's Manual - Instruction Set Reference
+	// p. 3-329 (PDF p. 369) for further information:
+	// http://www.intel.com/design/intarch/manuals/243191.htm
+
+	// Default conditional-jump instructions: they are evaluating the FLAGS,
+	// defined in ctrl_xfer[16 | 32 | 64].cc, Postfix: 16-Bit: w, 32-Bit: d, 64-Bit: q
+	pointcut defJumpInstructions()  =
+		"% ...::bx_cpu_c::JO_J%(...)"   ||
+		"% ...::bx_cpu_c::JNO_J%(...)"  ||
+		"% ...::bx_cpu_c::JB_J%(...)"   ||
+		"% ...::bx_cpu_c::JNB_J%(...)"  ||
+		"% ...::bx_cpu_c::JZ_J%(...)"   ||
+		"% ...::bx_cpu_c::JNZ_J%(...)"  ||
+		"% ...::bx_cpu_c::JBE_J%(...)"  ||
+		"% ...::bx_cpu_c::JNBE_J%(...)" ||
+		"% ...::bx_cpu_c::JS_J%(...)"   ||
+		"% ...::bx_cpu_c::JNS_J%(...)"  ||
+		"% ...::bx_cpu_c::JP_J%(...)"   ||
+		"% ...::bx_cpu_c::JNP_J%(...)"  ||
+		"% ...::bx_cpu_c::JL_J%(...)"   ||
+		"% ...::bx_cpu_c::JNL_J%(...)"  ||
+		"% ...::bx_cpu_c::JLE_J%(...)"  ||
+		"% ...::bx_cpu_c::JNLE_J%(...)";
+
+	// Special cases: they are evaluating the content of the CX-/ECX-/RCX-registers
+	// (NOT the FLAGS):
+	pointcut regJumpInstructions()  =
+		"% ...::bx_cpu_c::JCXZ_Jb(...)"  ||		// ctrl_xfer16.cc
+		"% ...::bx_cpu_c::JECXZ_Jb(...)" ||		// ctrl_xfer32.cc
+		"% ...::bx_cpu_c::JRCXZ_Jb(...)";		// ctrl_xfer64.cc
+
+/* TODO: Loop-Instructions needed?       Example: "LOOPNE16_Jb"
+	pointcut loopInstructions() = ...;
+
+*/
+/* TODO: Conditional-Data-Moves needed?  Example: "CMOVZ_GwEwR"
+	pointcut dataMoveInstructions() = ...;
+
+*/
+	advice execution (defJumpInstructions()) : around()
+	{
+		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
+
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onJump(&triggerCPU, true, pInstr->getIaOpcode());
+/*
+		JoinPoint::That* pThis = tjp->that();
+		if(pThis == NULL)
+			pThis = BX_CPU(0);
+		assert(pThis != NULL && "FATAL ERROR: tjp->that() returned null ptr! (Maybe called on a static instance?)");
+		// According to the Intel-Spec (p. 3-329f), the following flags are relevant:
+		bool fZeroFlag     = pThis->get_ZF();
+		bool fCarryFlag    = pThis->get_CF(); 
+		bool fSignFlag     = pThis->get_SF();
+		bool fOverflowFlag = pThis->get_OF();
+		bool fParityFlag   = pThis->get_PF();
+
+		//
+		// Step-1: Modify one or more of the fxxxFlag according to the error you want to inject
+		//         (using pThis->set_XX(new_val))
+		// Step-2: Call tjp->proceed();
+		// Step-3: Listenerually, unwind the changes of Step-1
+		//
+
+		// Example:
+		if(g_fEnableInjection) // event fired?
+		{
+			g_fEnableInjection = false;
+			// Obviously, this advice matches *all* jump-instructions so that it is not clear
+			// which flag have to be modified in order to invert the jump. For simplification,
+			// we will invert *all* flags. This avoids a few case differentiations.
+			cout << ">>> Manipulating jump-destination (inverted)... \"" << tjp->signature() << "\" ";
+			pThis->set_ZF(!fZeroFlag);
+			pThis->set_SF(!fSignFlag);
+			pThis->set_CF(!fCarryFlag);
+			pThis->set_OF(!fOverflowFlag);
+			pThis->set_PF(!fParityFlag);
+			tjp->proceed();
+			pThis->set_ZF(fZeroFlag);
+			pThis->set_SF(fSignFlag);
+			pThis->set_CF(fCarryFlag);
+			pThis->set_OF(fOverflowFlag);
+			pThis->set_PF(fParityFlag);
+			cout << "finished (jump taken)!" << endl;
+		}
+		else
+*/
+			tjp->proceed();
+	}
+
+	advice execution (regJumpInstructions()) : around ()
+	{
+		bxInstruction_c* pInstr = *(tjp->arg<0>()); // bxInstruction_c-object
+
+		// Detect the CPU that triggered the change:
+		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		fail::simulator.onJump(&triggerCPU, false, pInstr->getIaOpcode());
+/*
+		JoinPoint::That* pThis = tjp->that();
+
+		assert(pThis != NULL && "Unexpected: tjp->that() returned null ptr! (Maybe called on a static instance?)");
+
+		// Note: Direct access to the registers using the bochs-macros (defined in
+		// bochs.h) is not possibly due to the fact that they are using the this-ptr.
+
+		Bit16u CX  = (Bit16u)(pThis->gen_reg[1].word.rx);
+		Bit32u ECX = (Bit32u)(pThis->gen_reg[1].dword.erx);
+     #if BX_SUPPORT_X86_64
+		Bit64u RCX = (Bit64u)(pThis->gen_reg[1].rrx);
+     #endif
+
+		//
+		// Step-1: Modify CX, ECX or RCX according to the error you want to inject
+		// Step-2: Call tjp->proceed();
+		// Step-3: Eventually, unwind the changes of Step-1
+		//
+*/
+		tjp->proceed();
+	}
+};
+
+#endif // CONFIG_EVENT_JUMP
+#endif // __JUMP_AH__

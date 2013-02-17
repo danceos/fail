@@ -1,0 +1,56 @@
+message NanoJPEGProtoMsg {
+	// Input: experiment parameters
+	// (client executes one experiment for every specified bit in the target register)
+
+	// equivalence class start
+	required int32 instr_ecstart = 1;
+	// FI at #instructions from experiment start
+	required int32 instr_offset = 2;
+	// the exact IP value at this point in time (from golden run)
+	optional uint32 instr_address = 3; // for sanity checks
+	// ID of the register to inject faults into
+	required int32 register_id = 4;
+	// bits to inject a bit flip into
+	required int64 bitmask = 5;
+	// timeout in ms
+	required int32 timeout = 6;
+
+	// ----------------------------------------------------
+
+	// Output: experiment results
+
+	// IP where we did the injection: for debugging purposes, must be identical
+	// to instr_address
+	optional uint32 injection_ip = 8;
+
+	repeated group Result = 9 {
+		// single experiment bit number
+		required int32 bitnr = 1;
+
+		// result type:
+		// FINISHED = planned number of instructions were executed
+		// BROKEN = finished, but resulting image is broken (dimensions)
+		// TRAP = premature guest "crash"
+		// OUTSIDE = IP left text segment
+		// TIMEOUT = none of the above happened for /timeout/ ms
+		enum ResultType {
+			FINISHED = 1;
+			BROKEN = 2;
+			TRAP = 3;
+			OUTSIDE = 4;
+			OUTSIDEMEM = 5;
+			TIMEOUT = 6;
+			UNKNOWN = 7;
+		}
+		required ResultType resulttype = 2;
+
+		// especially interesting for TRAP/UNKNOWN: latest IP
+		required uint32 latest_ip = 3;
+
+		// PSNR golden run <-> this run
+		optional float psnr = 4;
+
+		// optional textual description of what happened
+		optional string details = 5;
+	}
+}
