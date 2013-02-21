@@ -69,7 +69,7 @@ int T32Connector::getState() const {
 /* Default T32 error handler */
 bool T32Connector::err(int errornum) const {
 	if(errornum != 0){
-    //m_log << "Error: " << errornum << std::endl;
+    m_log << "Error: " << errornum << std::endl;
     return false;
 	}
   return true;
