@@ -1,0 +1,15 @@
+;========================================================================
+; Flash programming example
+
+  FLASH.ReProgram ALL /Erase
+  Data.LOAD.elf &appimage /GNU /CPP /GLOBTYPES
+  FLASH.ReProgram off
+
+  ; Verify flash programming
+  Data.LOAD.ELF &appimage /ComPare
+
+  ; Reset device
+  SYStem.Down
+  SYStem.Up
+
+  Symbol.Demangle ON ON

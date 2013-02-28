@@ -1,0 +1,169 @@
+;========================================================================
+; CPU setup
+
+  IF SYSTEM.MODE()<5
+  (
+    SYStem.RESet
+    SYStem.CPU @T32_CPUNAME@
+    SYStem.Up
+  )
+
+;========================================================================
+; Flash declaration
+
+  FLASH.RESet
+  GOSUB FlashDeclaration
+
+  ENDDO
+
+;========================================================================
+; Flash declaration depending on selected CPU
+
+FlashDeclaration:
+  LOCAL &FlashSize
+  LOCAL &RAMSize
+
+  IF ((CPU()=="STM32F100C4")||(CPU()=="STM32F100R4")||(CPU()=="STM32F101C4")||(CPU()=="STM32F101R4")||(CPU()=="STM32F101T4")||(CPU()=="STM32F102C4")||(CPU()=="STM32F102R4"))
+  (
+    &FlashSize=0x4000
+    &RAMSize=0x1000
+  )
+  ELSE IF ((CPU()=="STM32F103C4")||(CPU()=="STM32F103R4")||(CPU()=="STM32F103T4"))
+  (
+    &FlashSize=0x4000
+    &RAMSize=0x1800
+  )
+  ELSE IF ((CPU()=="STM32F100C6")||(CPU()=="STM32F100R6"))
+  (
+    &FlashSize=0x8000
+    &RAMSize=0x1000
+  )
+  ELSE IF ((CPU()=="STM32F101C6")||(CPU()=="STM32F101R6")||(CPU()=="STM32F101T6")||(CPU()=="STM32F102C6")||(CPU()=="STM32F102R6"))
+  (
+    &FlashSize=0x8000
+    &RAMSize=0x1800
+  )
+  ELSE IF ((CPU()=="STM32F103C6")||(CPU()=="STM32F103R6")||(CPU()=="STM32F103T6"))
+  (
+    &FlashSize=0x8000
+    &RAMSize=0x2800
+  )
+  ELSE IF ((CPU()=="STM32F100C8")||(CPU()=="STM32F100R8")||(CPU()=="STM32F100V8"))
+  (
+    &FlashSize=0x10000
+    &RAMSize=0x2000
+  )
+  ELSE IF ((CPU()=="STM32F101C8")||(CPU()=="STM32F101R8")||(CPU()=="STM32F101T8")||(CPU()=="STM32F101V8")||(CPU()=="STM32F102C8")||(CPU()=="STM32F102R8"))
+  (
+    &FlashSize=0x10000
+    &RAMSize=0x2800
+  )
+  ELSE IF ((CPU()=="STM32F103C8")||(CPU()=="STM32F103R8")||(CPU()=="STM32F103T8")||(CPU()=="STM32F103V8")||(CPU()=="STM32F105R8")||(CPU()=="STM32F105V8"))
+  (
+    &FlashSize=0x10000
+    &RAMSize=0x2800
+  )
+  ELSE IF ((CPU()=="STM32F100CB")||(CPU()=="STM32F100RB")||(CPU()=="STM32F100VB"))
+  (
+    &FlashSize=0x20000
+    &RAMSize=0x2000
+  )
+  ELSE IF ((CPU()=="STM32F101CB")||(CPU()=="STM32F101RB")||(CPU()=="STM32F101VB")||(CPU()=="STM32F102CB")||(CPU()=="STM32F102RB"))
+  (
+    &FlashSize=0x20000
+    &RAMSize=0x4000
+  )
+  ELSE IF ((CPU()=="STM32F103CB")||(CPU()=="STM32F103RB")||(CPU()=="STM32F103VB"))
+  (
+    &FlashSize=0x20000
+    &RAMSize=0x5000
+  )
+  ELSE IF ((CPU()=="STM32F105RB")||(CPU()=="STM32F105VB"))
+  (
+    &FlashSize=0x20000
+    &RAMSize=0x8000
+  )
+  ELSE IF ((CPU()=="STM32F107RB")||(CPU()=="STM32F107VB"))
+  (
+    &FlashSize=0x20000
+    &RAMSize=0x8000
+  )
+  ELSE IF ((CPU()=="STM32F101RC")||(CPU()=="STM32F101VC")||(CPU()=="STM32F101ZC"))
+  (
+    &FlashSize=0x40000
+    &RAMSize=0x8000
+  )
+  ELSE IF ((CPU()=="STM32F103RC")||(CPU()=="STM32F103VC")||(CPU()=="STM32F103ZC"))
+  (
+    &FlashSize=0x40000
+    &RAMSize=0xc000
+  )
+  ELSE IF ((CPU()=="STM32F105RC")||(CPU()=="STM32F105VC")||(CPU()=="STM32F107RC")||(CPU()=="STM32F107VC"))
+  (
+    &FlashSize=0x40000
+    &RAMSize=0x10000
+  )
+  ELSE IF ((CPU()=="STM32F101RD")||(CPU()=="STM32F101VD")||(CPU()=="STM32F101ZD"))
+  (
+    &FlashSize=0x60000
+    &RAMSize=0xc000
+  )
+  ELSE IF ((CPU()=="STM32F103RD")||(CPU()=="STM32F103VD")||(CPU()=="STM32F103ZD"))
+  (
+    &FlashSize=0x60000
+    &RAMSize=0x10000
+  )
+  ELSE IF ((CPU()=="STM32F101RE")||(CPU()=="STM32F101VE")||(CPU()=="STM32F101ZE"))
+  (
+    &FlashSize=0x80000
+    &RAMSize=0xc000
+  )
+  ELSE IF ((CPU()=="STM32F103RE")||(CPU()=="STM32F103VE")||(CPU()=="STM32F103ZE"))
+  (
+    &FlashSize=0x80000
+    &RAMSize=0x10000
+  )
+  ELSE IF ((CPU()=="STM32F101RF")||(CPU()=="STM32F101VF")||(CPU()=="STM32F101ZF")||(CPU()=="STM32F103RF")||(CPU()=="STM32F103VF")||(CPU()=="STM32F103ZF"))
+  (
+    &FlashSize=0xc0000
+    &RAMSize=0x18000
+  )
+  ELSE IF ((CPU()=="STM32F101RG")||(CPU()=="STM32F101VG")||(CPU()=="STM32F101ZG")||(CPU()=="STM32F103RG")||(CPU()=="STM32F103VG")||(CPU()=="STM32F103ZG"))
+  (
+    &FlashSize=0x100000
+    &RAMSize=0x18000
+  )
+  ELSE
+  (
+    PRINT %ERROR "FLASH size of CPU type is unknown"
+    ENDDO
+  )
+
+  IF &FlashSize>=0x40000
+  (
+    FLASH.Create 1. 0x08000000++(&FlashSize-0x01) 0x800 TARGET Word
+  )
+  ELSE
+  (
+    FLASH.Create 1. 0x08000000++(&FlashSize-0x01) 0x400 TARGET Word
+  )
+
+  IF &FlashSize>0x80000
+  (
+    FLASH.TARGET 0x20000000 0x20001000 0x800 ~~/demo/arm/flash/word/stm32f100xl.bin
+  )
+  ELSE IF &RAMSize>=0x1800
+  (
+    FLASH.TARGET 0x20000000 0x20000800 0x800 ~~/demo/arm/flash/word/stm32f100.bin
+  )
+  ELSE IF &RAMSize>=0x1000
+  (
+    FLASH.TARGET 0x20000000 0x20000800 0x400 ~~/demo/arm/flash/word/stm32f100.bin
+  )
+  ELSE
+  (
+    DIALOG.OK "Not enough memory for flash algorithm."
+    ENDDO
+  )
+
+  RETURN

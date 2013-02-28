@@ -1,0 +1,10 @@
+;===== Cortex-M3 Lauterbach initialisation ====
+
+&appimage="OS.ENV(FAIL_ELF_PATH)"
+
+DO init.cmm
+
+VAr.Frame /LOCALS /CALLER
+REGISTER /SPOTLIGHT
+Data.ListAsm
+

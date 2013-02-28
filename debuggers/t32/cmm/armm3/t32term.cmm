@@ -1,0 +1,6 @@
+; This is currently output only, to support input we'd need a separate buffer
+TERM.METHOD BUFFERE e:_ZN2hw3hal7T32Term9OutBufferE e:_ZN2hw3hal7T32Term9OutBufferE
+TERM.MODE ASCII
+TERM.GATE
+
+

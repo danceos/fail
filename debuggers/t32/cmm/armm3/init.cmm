@@ -1,0 +1,29 @@
+;RESET
+
+&t32scriptdir=OS.PPD()
+
+;========================================================================
+; CPU setup
+
+SYStem.RESet
+
+if OS.FILE(&(t32scriptdir)/armm3cfg.cmm)
+(
+	DO &(t32scriptdir)/armm3cfg.cmm
+)
+
+
+;========================================================================
+; Flash programming
+;
+DO &(t32scriptdir)/loadelf.cmm
+
+
+;========================================================================
+; Optional Parts
+if OS.FILE(&(t32scriptdir)/t32term.cmm)
+(
+	DO &(t32scriptdir)/t32term.cmm
+)
+
+ENDDO
