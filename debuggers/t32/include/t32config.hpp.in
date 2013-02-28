@@ -1,0 +1,8 @@
+#ifndef __T32CONFIG_HPP__
+#define __T32CONFIG_HPP__
+
+#define T32_PORTNUM "@T32_PORTNUM@"
+#define T32_PACKLEN "@T32_PACKLEN@"
+
+#endif
+

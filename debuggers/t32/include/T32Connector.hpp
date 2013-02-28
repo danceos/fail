@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "sal/SALInst.hpp"
+#include "t32config.hpp"
 
 namespace fail {
 
@@ -16,7 +17,7 @@ namespace fail {
    */
   class T32Connector {
     public:
-      T32Connector() : m_hostname("localhost"), m_port("20010"), m_packetlength("1024"), m_log("T32", false), m_connection_established(false) { };
+      T32Connector() : m_hostname("localhost"), m_port(T32_PORTNUM), m_packetlength(T32_PACKLEN), m_log("T32", false), m_connection_established(false) { };
       T32Connector(const char* hostname, const char*  port, const char*  packlen) : m_hostname(hostname), m_port(port),
            m_packetlength(packlen), m_log("T32", false), m_connection_established(false) { };
 
@@ -48,6 +49,9 @@ namespace fail {
       bool isBigEndian(void) const { return !m_littleendian; };
       bool isLittleEndian(void) const { return m_littleendian; };
 
+      void showDataRegions(void) const { showMemoryRegions(m_data_memory_map); };
+      void showProgramRegions(void) const { showMemoryRegions(m_program_memory_map); };
+
     private:
       const char* m_hostname; //!< The hostname of the T32 device
       const char* m_port;     //!< The port to connect as configure in config.t32. Here we use strings, as required by the API
@@ -57,7 +61,8 @@ namespace fail {
 
       std::string m_cpustring;
 
-      typedef std::vector< std::pair< address_t, address_t > > memory_map_t;
+      typedef std::pair< address_t, address_t > region_t;
+      typedef std::vector< region_t > memory_map_t;
       memory_map_t m_data_memory_map;
       memory_map_t m_program_memory_map;
 
@@ -78,6 +83,7 @@ namespace fail {
 
       enum MemoryDiscoverCommand_t { DISCOVER_PROGRAM_RAM = 2, DISCOVER_DATA_RAM = 1, DISCOVER_END = 0, };
       void discoverMemory(int discovertype, memory_map_t & map);
+      void showMemoryRegions(const memory_map_t & map) const;
   };
 
 } // end-of-namespace fail

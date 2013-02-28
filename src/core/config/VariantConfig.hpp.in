@@ -6,6 +6,7 @@
 #cmakedefine BUILD_OVP
 #cmakedefine BUILD_QEMU
 #cmakedefine BUILD_T32
+#cmakedefine T32_MOCK_API
 
 #cmakedefine BUILD_X86
 #cmakedefine BUILD_ARM

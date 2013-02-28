@@ -78,7 +78,10 @@ int main(int argc, char** argv){
   }
 
   // Initialize T32
-  t32.startup();
+  if(t32.startup() == false){
+    cout << "Could not connect to Lauterbach :(" << endl;
+    return -1;
+  }
 
 
   // Let the SimulatorController do the dirty work.

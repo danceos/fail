@@ -2,12 +2,15 @@
   #define __T32MOCK_AH__
 
 #include <iostream>
+#include "config/VariantConfig.hpp"
 
-#if defined(BUILD_T32) //  && defined(T32MOCK)
+#if defined(BUILD_T32) && defined(T32_MOCK_API)
+#warning "T32 remote calls are intercepted by T32Mock aspect!"
 
 /* Mock aspect for testing without T32 HW attached. */
 aspect T32Mock
 {
+  // TODO: Let T32_GetRam's third parameter set to 0.
 	advice call("% T32_% (...)") : around ()
 	{
 	  std::cout << "[T32 MOCK] " << JoinPoint::signature() <<  " (";
@@ -21,6 +24,5 @@ aspect T32Mock
     *tjp->result() = 0;
 	}
 };
-
 #endif // BUILD_T32 && CONFIG_EVENT_BREAKPOINTS
 #endif // __T32MOCK_AH__

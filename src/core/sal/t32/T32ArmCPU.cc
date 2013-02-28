@@ -22,6 +22,7 @@ regdata_t T32ArmCPU::getRegisterContent(Register* reg) const
       return m_regbuffer[reg->getIndex()];
     } else {
       /// TODO Error handling!
+      std::cout << "could not read register :(" << std::endl;
     }
   }
 	return 0; // we should not come here.
@@ -31,12 +32,15 @@ void T32ArmCPU::setRegisterContent(Register* reg, regdata_t value)
 {
   uint64_t mask = (1 << reg->getIndex());
 
+  // set value to be set by T32:
+  m_regbuffer[reg->getIndex()] = value;
   if(mask){
     if( T32_WriteRegister(static_cast<dword>(mask & lower), static_cast<dword>(mask >> 32), m_regbuffer) == 0 ){
       // No error, return value.
       return;
     } else {
       /// TODO Error handling!
+      std::cout << "could not write register :(" << std::endl;
     }
   }
 }

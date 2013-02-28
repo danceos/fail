@@ -26,12 +26,20 @@ bool VEZSExperiment::run()
   m_log << "Instruction Pointer: 0x" << hex << simulator.getCPU(0).getInstructionPointer() << endl;
 // Test register access
   Register* reg = simulator.getCPU(0).getRegister(RI_R1);
-  m_log << "Register R2: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
-
-  reg = simulator.getCPU(0).getRegister(RI_R2);
   m_log << "Register R1: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
 
+  reg = simulator.getCPU(0).getRegister(RI_R2);
+  m_log << "Register R2: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
   simulator.getCPU(0).setRegisterContent(reg, 0x23);
+
+  reg = simulator.getCPU(0).getRegister(RI_R3);
+  m_log << "Register R3: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
+
+  simulator.terminate();
+
+// STOP HERE
+
+
 
 // Test Memory access
   address_t targetaddress = 0x12345678;
