@@ -13,6 +13,7 @@ class KESOrefs : public fail::ExperimentFlow {
   fail::JobClient m_jc;
   fail::Logger m_log;
   fail::MemoryManager& m_mm;
+  fail::ElfReader m_elf;
 
   void printEIP();
   void setupExitBPs(const std::string&);
@@ -23,7 +24,8 @@ class KESOrefs : public fail::ExperimentFlow {
   unsigned injectBitFlip(fail::address_t data_address, unsigned bitpos);
 
 public:
-  KESOrefs() : m_log("KESOrefs", false), m_mm(fail::simulator.getMemoryManager()) {};
+  KESOrefs() : m_log("KESOrefs", false), m_mm(fail::simulator.getMemoryManager()) {
+  };
   bool run();
 };
 

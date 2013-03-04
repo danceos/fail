@@ -35,9 +35,9 @@ bool KesoRefCampaign::run()
 		return false;
 	}
 
-  address_t injip = elf.getAddressByName("c23_PersistentDetectorScopeEntry_m5_run");
+  address_t injip = elf.getSymbol("c23_PersistentDetectorScopeEntry_m5_run").getAddress();
 
-  address_t rambase = elf.getAddressByName("__CIAO_APPDATA_cdx_det__heap");
+  address_t rambase = elf.getSymbol("__CIAO_APPDATA_cdx_det__heap").getAddress();
  // address_t ramend = rambase + 0x80000;
   address_t ramend = rambase + 4;
   cout << "ramend: " << hex << ramend << endl;

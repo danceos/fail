@@ -25,7 +25,7 @@ public:
 	 * @param dest Stream to log into.
 	 */
 	Logger(const std::string& description = "Fail*", bool show_time = true,
-		   std::ostream& dest = std::cout) 
+		   std::ostream& dest = std::cout)
 	 : m_pDest(&dest), m_description(description), m_showTime(show_time) { }
 	/**
 	 * Change the default description which is shown alongside each log

@@ -593,13 +593,13 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& text_end)
 {
 	ElfReader elfreader(EcosKernelTestCampaign::filename_elf(m_variant, m_benchmark).c_str());
-	entry            = elfreader.getAddressByName("cyg_start");
-	finish           = elfreader.getAddressByName("cyg_test_exit");
-	test_output      = elfreader.getAddressByName("cyg_test_output");
-	errors_corrected = elfreader.getAddressByName("errors_corrected");
-	panic            = elfreader.getAddressByName("_Z9ecc_panicv");
-	text_start       = elfreader.getAddressByName("_stext");
-	text_end         = elfreader.getAddressByName("_etext");
+	entry            = elfreader.getSymbol("cyg_start").getAddress();
+	finish           = elfreader.getSymbol("cyg_test_exit").getAddress();
+	test_output      = elfreader.getSymbol("cyg_test_output").getAddress();
+	errors_corrected = elfreader.getSymbol("errors_corrected").getAddress();
+	panic            = elfreader.getSymbol("_Z9ecc_panicv").getAddress();
+	text_start       = elfreader.getSymbol("_stext").getAddress();
+	text_end         = elfreader.getSymbol("_etext").getAddress();
 
 	// it's OK if errors_corrected or ecc_panic are missing
 	if (entry == ADDR_INV || finish == ADDR_INV || test_output == ADDR_INV ||

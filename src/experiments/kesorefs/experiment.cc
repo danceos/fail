@@ -24,7 +24,7 @@
 using namespace std;
 using namespace fail;
 
-#define SAFESTATE (0)
+#define SAFESTATE (1)
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
@@ -77,18 +77,20 @@ void handleMemoryAccessEvent(KesoRefExperimentData& param, const fail::MemAccess
     handleEvent(param, param.msg.MEMACCESS, sstr.str());
 }
 
-
 bool KESOrefs::run()
 {
 //******* Boot, and store state *******//
   m_log << "STARTING EXPERIMENT" << endl;
-  ElfReader m_elf;
 #if SAFESTATE // define SS (SafeState) when building: make -DSS
 #warning "Building safe state variant"
-  m_log << "Booting, and saving state at main";
+  m_log << "Booting, and saving state at main" << std::endl;
+ // m_elf.printSections();
+ // m_elf.printDemangled();
+
+  simulator.terminate();
   BPSingleListener bp;
   // STEP 1: run until interesting function starts, and save state
-  bp.setWatchInstructionPointer(m_elf.getAddressByName("main"));
+  bp.setWatchInstructionPointer(m_elf.getSymbol("main").getAddress());
   if(simulator.addListenerAndResume(&bp) == &bp){
     m_log << "main function entry reached, saving state" << endl;
   }
@@ -117,7 +119,7 @@ bool KESOrefs::run()
   simulator.restore("keso.state");
   // Goto injection point
   BPSingleListener injBP;
-  m_log << "Trying to inject @ " << hex << m_elf.getNameByAddress(injectionPC) << endl;
+  m_log << "Trying to inject @ " << hex << m_elf.getSymbol(injectionPC).getAddress() << endl;
 
   injBP.setWatchInstructionPointer(injectionPC);
 
@@ -126,15 +128,22 @@ bool KESOrefs::run()
   param.msg.set_original_value(injectBitFlip(data_address, bitpos));
 
   // Setup exit points
-  BPSingleListener l_error(m_elf.getAddressByName("keso_throw_error"));
-  BPSingleListener l_nullp(m_elf.getAddressByName("keso_throw_nullpointer"));
-  BPSingleListener l_parity(m_elf.getAddressByName("keso_throw_parity"));
-  BPSingleListener l_oobounds(m_elf.getAddressByName("keso_throw_index_out_of_bounds"));
-  BPSingleListener l_dump(m_elf.getAddressByName("c17_Main_m4_dumpResults_console"));
-	MemAccessListener l_mem_text(m_elf.getSectionStart(".text"), MemAccessEvent::MEM_WRITE); l_mem_text.setWatchWidth(m_elf.getSectionSize(".text"));
-	MemAccessListener l_mem_textcdx_det( m_elf.getSectionStart(".text.cdx_det"), MemAccessEvent::MEM_WRITE ); l_mem_textcdx_det.setWatchWidth(m_elf.getSectionSize(".text.cdx_det"));
-	MemAccessListener l_mem_outerspace( m_elf.getSectionStart(".copy_sec") ); l_mem_outerspace.setWatchWidth(0xfffffff0);
+  BPSingleListener l_error(m_elf.getSymbol("keso_throw_error").getAddress());
+  BPSingleListener l_nullp(m_elf.getSymbol("keso_throw_nullpointer").getAddress());
+  BPSingleListener l_parity(m_elf.getSymbol("keso_throw_parity").getAddress());
+  BPSingleListener l_oobounds(m_elf.getSymbol("keso_throw_index_out_of_bounds").getAddress());
+  BPSingleListener l_dump(m_elf.getSymbol("c17_Main_m4_dumpResults_console").getAddress());
+
+  ElfSymbol sym = m_elf.getSection(".text");
+	MemAccessListener l_mem_text(sym.getStart(), , AccessEvent::MEM_WRITE); l_mem_text.setWatchWidth(sym.getSize());
+
+  sym = m_elf.getSection(".text.cdx_det");
+	MemAccessListener l_mem_textcdx_det(sym.getStart(), MemAccessEvent::MEM_WRITE ); l_mem_textcdx_det.setWatchWidth(sym.getSize());
+
+  sym = m_elf.getSection(".copy_sec");
+	MemAccessListener l_mem_outerspace( sym.getStart() ); l_mem_outerspace.setWatchWidth(0xfffffff0);
   TrapListener l_trap(ANY_TRAP);
+
 cout << " outerspace : " << l_mem_outerspace.getWatchWidth() << " --- @ :" << l_mem_outerspace.getWatchAddress() << endl;
   simulator.addListener(&l_trap);
   simulator.addListener(&l_error);

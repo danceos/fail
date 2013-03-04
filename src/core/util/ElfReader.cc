@@ -2,12 +2,21 @@
 #include "sal/SALConfig.hpp"
 #include <stdio.h>
 #include <cstdlib>
-
+#include <algorithm>
 #include "Demangler.hpp"
 
 namespace fail {
 
-const std::string ElfReader::NOTFOUND = "[ELFReader] Function not found.";
+const std::string ELF::NOTFOUND = "[ELFReader] Function not found.";
+static const ElfSymbol g_SymbolNotFound;
+
+bool operator==(const std::string & str, const ElfSymbol & sym) {
+  return sym.getName() == str;
+}
+
+bool operator==(guest_address_t address, const ElfSymbol & sym) {
+  return sym.getAddress() == address;
+}
 
 
 ElfReader::ElfReader() : m_log("Fail*Elfinfo", false){
@@ -91,13 +100,17 @@ void ElfReader::setup(const char* path) {
     free(buff);
 
   fclose(fp);
+
+ // printDemangled();
+ // printSections();
 }
 
 
 int ElfReader::process_section(Elf32_Shdr *sect_hdr, char* sect_name_buff){
   // Add section name, start address and size to list
   int idx=sect_hdr->sh_name;
-  m_sections_map.push_back( sect_hdr->sh_addr, sect_hdr->sh_size, sect_name_buff+idx );
+//  m_sections_map.push_back( sect_hdr->sh_addr, sect_hdr->sh_size, sect_name_buff+idx );
+  m_sectiontable.push_back( ElfSymbol(sect_name_buff+idx, sect_hdr->sh_addr, sect_hdr->sh_size, ElfSymbol::SECTION)  );
 
   return 0;
 }
@@ -144,103 +157,89 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
 
     int type = ELF32_ST_TYPE(mysym.st_info);
     if((type != STT_SECTION) && (type != STT_FILE)){
-#ifndef __puma
-      m_bimap_mangled.insert( entry(name_buf+idx, mysym.st_value)  );
-      m_bimap_demangled.insert( entry ( Demangler::demangle(name_buf+idx), mysym.st_value) );
-
-#endif
+      m_symboltable.push_back( ElfSymbol(name_buf+idx, mysym.st_value, mysym.st_size, ElfSymbol::SYMBOL) );
     }
   }
   free (name_buf);
   return 0;
 }
 
-guest_address_t ElfReader::getAddressByName(const std::string& name) {
-#ifndef __puma
-  guest_address_t res = getAddress(m_bimap_demangled, name);
-  if(res == ADDR_INV){
-    res = getAddress(m_bimap_mangled, name);
+const ElfSymbol& ElfReader::getSymbol(guest_address_t address){
+  for(container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it){
+    if(it->contains(address)){
+      return *it;
+    }
   }
-  return res;
-#endif
+
+  return g_SymbolNotFound;
 }
 
-#ifndef __puma
-guest_address_t ElfReader::getAddress(const bimap_t& map, const std::string& name){
-  typedef bimap_t::left_map::const_iterator const_iterator_t;
-
-  const_iterator_t iterator = map.left.find(name);
-  if(iterator == map.left.end()){
-    return ADDR_INV;
-  }else{
-    return iterator->second;
+// Symbol search
+const ElfSymbol& ElfReader::getSymbol( const std::string& name ){
+  container_t::const_iterator it;
+  // Fist, try to find as mangled symbol
+  it = std::find(m_symboltable.begin(), m_symboltable.end(), name);
+  if(it != m_symboltable.end()){
+    return *it;
   }
-}
-#endif
 
-#ifndef __puma
-std::string ElfReader::getName(const bimap_t& map, guest_address_t address){
-  // .right switches key/value
-  typedef bimap_t::right_map::const_iterator const_iterator_t;
-
-  const_iterator_t iterator = map.right.find(address);
-  if(iterator != map.right.end()){
-    return iterator->second;
+  // Then, try to find as demangled symbol
+  std::string dname = Demangler::demangle(name);
+  if(dname == Demangler::DEMANGLE_FAILED){
+    return g_SymbolNotFound;
   }
-  return NOTFOUND;
-}
 
-std::string ElfReader::getNameByAddress(guest_address_t address) {
-  std::string res = getName(m_bimap_demangled, address);
-  if(res == NOTFOUND){
-    return getName(m_bimap_mangled, address);
+  it = std::find(m_symboltable.begin(), m_symboltable.end(), dname);
+  if(it != m_symboltable.end()){
+    return *it;
   }
-  return res;
+
+  return g_SymbolNotFound;
 }
 
-std::string ElfReader::getMangledNameByAddress(guest_address_t address) {
-  return getName(m_bimap_mangled, address);
+// Section search
+const ElfSymbol& ElfReader::getSection(guest_address_t address){
+  for(container_t::const_iterator it = m_sectiontable.begin(); it != m_sectiontable.end(); ++it){
+    if(it->contains(address)){
+      return *it;
+    }
+  }
+  return g_SymbolNotFound;
 }
 
-std::string ElfReader::getDemangledNameByAddress(guest_address_t address) {
-  return getName(m_bimap_demangled, address);
+const ElfSymbol& ElfReader::getSection( const std::string& name ){
+  for(container_t::const_iterator it = m_sectiontable.begin(); it !=m_sectiontable.end(); ++it){
+    if(it->getName() == name){
+      return *it;
+    }
+  }
+  return g_SymbolNotFound;
 }
 
+// "Pretty" Print 
 void ElfReader::printDemangled(){
-  print_map(m_bimap_demangled.right); // print Address as first element
+  m_log << "Demangled: " << std::endl;
+  for(container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it){
+    std::string str = Demangler::demangle(it->getName());
+    if(str == Demangler::DEMANGLE_FAILED){
+      str = it->getName();
+    }
+    m_log << "0x"  << std::hex << it->getAddress()  << "\t" << str.c_str() << "\t"  << it->getSize() << std::endl;
+  }
 }
 
 void ElfReader::printMangled(){
-  print_map(m_bimap_mangled.right); // print Address as first element
-}
-#endif
-
-#ifndef __puma
-std::string ElfReader::getSection(guest_address_t address) {
-  return m_sections_map.find_name_by(address);
-}
-
-guest_address_t ElfReader::getSectionStart(const std::string& sectionname) {
-  SectionsMap::address_pair_t pair;
-  pair = m_sections_map.find_range_by(sectionname);
-
-  return pair.first;
-}
-
-guest_address_t ElfReader::getSectionEnd(const std::string& sectionname) {
-  SectionsMap::address_pair_t pair = m_sections_map.find_range_by(sectionname);
-  if ( pair.first == ADDR_INV ) {
-    return ADDR_INV;
+  for(container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it){
+    m_log  << "0x"  << it->getAddress() << "\t" << it->getName().c_str() << "\t" << it->getSize() << std::endl;
   }
-  return pair.first + pair.second;
 }
 
-guest_address_t ElfReader::getSectionSize(const std::string& sectionname) {
-  SectionsMap::address_pair_t pair = m_sections_map.find_range_by(sectionname);
-  return pair.second;
+void ElfReader::printSections() {
+  for(container_t::const_iterator it = m_sectiontable.begin(); it !=m_sectiontable.end(); ++it){
+    m_log  << "0x"  << it->getAddress() << "\t" << it->getName().c_str() << "\t" << it->getSize() << std::endl;
+  }
 }
 
-#endif
 
 } // end-of-namespace fail
 

@@ -1,10 +1,10 @@
 #ifndef __DEMANGLER_HPP
-#define  __DEMANGLER_HPP
+#define __DEMANGLER_HPP
 
 #include <string>
 
 namespace fail {
-  
+
   class Demangler {
     public:
 

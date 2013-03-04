@@ -80,17 +80,17 @@ bool NanoJPEGExperiment::run()
 
 	ElfReader elfreader(NANOJPEG_ELF);
 	guest_address_t addr_text_start =
-		elfreader.getAddressByName("___TEXT_START__");
+		elfreader.getSymbol("___TEXT_START__").getAddress();
 	guest_address_t addr_text_end =
-		elfreader.getAddressByName("___TEXT_END__");
+		elfreader.getSymbol("___TEXT_END__").getAddress();
 	guest_address_t addr_rodata_start =
-		elfreader.getAddressByName("___RODATA_START__");
+		elfreader.getSymbol("___RODATA_START__").getAddress();
 	guest_address_t addr_bss_end =
-		elfreader.getAddressByName("___BSS_END__");
+		elfreader.getSymbol("___BSS_END__").getAddress();
 	guest_address_t addr_output_image_ptr =
-		elfreader.getAddressByName("output_image");
+		elfreader.getSymbol("output_image").getAddress();
 	guest_address_t addr_output_image_size =
-		elfreader.getAddressByName("output_image_size");
+		elfreader.getSymbol("output_image_size").getAddress();
 	log << "ELF symbols: text " << hex << addr_text_start << "-" << addr_text_end
 	    << " rodata/data/bss " << addr_rodata_start << "-" << addr_bss_end
 	    << " output_image ptr @ " << addr_output_image_ptr << ", size @ " << addr_output_image_size << endl;

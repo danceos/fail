@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 namespace fail {
- 
+
   const std::string Demangler::DEMANGLE_FAILED = "[Demangler] Demangle failed.";
 
   std::string Demangler::demangle(const std::string& name){
@@ -13,7 +13,7 @@ namespace fail {
     if(res != NULL){
       return std::string(res);
     }else{
-      return DEMANGLE_FAILED;
+      return Demangler::DEMANGLE_FAILED;
     }
   }
 
