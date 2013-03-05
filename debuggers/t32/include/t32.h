@@ -1,35 +1,45 @@
 #ifndef __T32_H__
 #define __T32_H__
 
-#include <config/VariantConfig.hpp>
-
-#if defined WIN32 || defined WIN64
-#ifndef MS_WINDOWS
-#define MS_WINDOWS
+#if defined(_WIN32) || defined(_WIN64) /* Microsoft Visual C++ or GCC-MinGW ? */
+# ifndef MS_WINDOWS
+#  define MS_WINDOWS
+# endif
+# define LOW_HIGH
+# ifndef _CRT_SECURE_NO_WARNINGS
+#  define _CRT_SECURE_NO_WARNINGS /* aBi - eliminate pesky deprecation warnings for older routines */
+# endif
 #endif
-#define LOW_HIGH
+
+#if defined(MS_WINDOWS) && defined(DLL_BUILD)
+# define T32EXTERN  __declspec(dllexport)
+# define T32EXPORT  __declspec(dllexport)
+#else
+# define T32EXTERN  extern
+# define T32EXPORT
 #endif
 
 #ifdef DEC_VMS
-#define LOW_HIGH_BYTE
+# define LOW_HIGH_BYTE
 #endif
 
 #ifdef DEC_OSF1
-#define UNIX_V
-#define LOW_HIGH_BYTE
+# define UNIX_V
+# define LOW_HIGH_BYTE
 #endif
 
-#ifdef HP_UX
-#define UNIX_V
-#define HIGH_LOW_BYTE
+#if defined(T32HOST_HPUX) || defined(HP_UX)
+# define UNIX_V
+# define HIGH_LOW_BYTE
 #endif
 
 #ifdef IBM_AIX
-#define UNIX_V
-#define HIGH_LOW_BYTE
+# define UNIX_V
+# define HIGH_LOW_BYTE
 #endif
 
-#ifdef __linux__
+
+#if defined(T32HOST_LINUX_X86) || defined(LINUX_86) || defined(__linux__)
 # ifndef LINUX
 #  define LINUX
 # endif
@@ -42,7 +52,7 @@
 # define LOW_HIGH_BYTE
 #endif
 
-#ifdef LINUX_PPC
+#if defined(T32HOST_LINUX_PPC) || defined(LINUX_PPC)
 # ifndef LINUX
 #  define LINUX
 # endif
@@ -55,9 +65,9 @@
 # define LOW_HIGH_BYTE
 #endif
 
-#ifdef SUN_SOL
-#define UNIX_V
-#define HIGH_LOW_BYTE
+#if defined(T32HOST_SOL_SPARC) || defined(SUN_SOL)
+# define UNIX_V
+# define HIGH_LOW_BYTE
 #endif
 
 
@@ -137,9 +147,9 @@ typedef unsigned int dword;
  * safely, otherwise we run into hard-to-debug problems with type-promotion and
  * parameter-passing conventions on the varying platforms we support.
  */
-extern void T32_callbackBreak(int generic);
-extern void T32_callbackEditExtern(int generic, int lineNr, unsigned char *fileName);
-extern void T32_callbackBreakpointConfig(int generic);
+extern void T32_callbackBreak(int gen_var);
+extern void T32_callbackEditExtern(int gen_var, int lineNr, unsigned char *fileName);
+extern void T32_callbackBreakpointConfig(int gen_var);
 
 
 #define T32_API_RECEIVE         0x1
@@ -153,14 +163,21 @@ extern void T32_callbackBreakpointConfig(int generic);
 #define T32_PCKLEN_MAX 	1472
 
 
+typedef struct t32_breakpoint {
+    dword address;
+    byte  enabled;
+    dword type;
+    dword auxtype;
+} T32_Breakpoint;
+
 
 typedef struct t32_notification {
 
-	char payload[T32_PCKLEN_MAX]; /* maximum packet size*/
+  char payload[T32_PCKLEN_MAX]; /* maximum packet size*/
 
-	struct t32_notification *next, *prev;
-	/* T32_NotificationPackage *next;
-	   T32_NotificationPackage *prev; */
+  struct t32_notification *next, *prev;
+  /* T32_NotificationPackage *next;
+  T32_NotificationPackage *prev; */
 
 } T32_NotificationPackage;
 
@@ -168,18 +185,20 @@ extern T32_NotificationPackage *T32_NotificationHead, *T32_NotificationTail; /* 
 
 
 
-
-#define T32_COM_RECEIVE_FAIL	-1
-#define T32_COM_TRANSMIT_FAIL	-2
-#define T32_COM_PARA_FAIL	-3
-#define T32_COM_SEQ_FAIL	-4
-#define T32_MAX_EVENT_FAIL 	-5
-#define T32_MALLOC_FAIL 	-6
+#define T32_OK                  0
+#define T32_COM_RECEIVE_FAIL   -1
+#define T32_COM_TRANSMIT_FAIL  -2
+#define T32_COM_PARA_FAIL      -3
+#define T32_COM_SEQ_FAIL       -4
+#define T32_MAX_EVENT_FAIL     -5
+#define T32_MALLOC_FAIL        -6
 
 
 typedef void * T32_TAPACCESS_HANDLE;
 
-#define T32_TAPACCESS_MAXBITS	0x3b00
+/* limited command size through hardcoded buffersizes on host and driver side */
+#define EMU_CBMAXDATASIZE 0x3c00
+#define T32_TAPACCESS_MAXBITS	EMU_CBMAXDATASIZE * 8
 
 #define T32_TAPACCESS_RELEASE	((T32_TAPACCESS_HANDLE)0)
 #define T32_TAPACCESS_HOLD	((T32_TAPACCESS_HANDLE)1)
@@ -211,6 +230,9 @@ typedef void * T32_TAPACCESS_HANDLE;
 #define T32_TAPACCESS_SLEEP_HALF_CLOCK 0x7e
 #define T32_TAPACCESS_SLEEP	T32_TAPACCESS_SLEEP_MS /*just for backwards compatibility*/
 
+#define HANDSHAKE_RECEIVEBUFFERSIZE 20
+#define T32_TAPACCESSSEND_HEADERSIZE 6
+#define SHIFTRAW_HEADERSIZE_BITS 8*8
 
 #define SHIFTRAW_OPTION_INTERNAL_TMS 0x0001 /*do not use the internal options*/
 #define SHIFTRAW_OPTION_INTERNAL_TDI 0x0002
@@ -233,102 +255,123 @@ extern "C" {
 
 #ifndef _NO_PROTO
 
-extern int T32_Config( const char *, const char * );
-extern int T32_Init(void);
-extern int T32_Exit(void);
-extern int T32_Nop(void);
-extern int T32_NopFail(void);
-extern int T32_Ping(void);
-extern int T32_Stop(void);
-extern int T32_GetPracticeState(int * );
-extern int T32_Attach( int );
-extern int T32_GetState( int * );
-extern int T32_GetCpuInfo( char **, word *, word *, word * );
-extern int T32_GetRam(dword *, dword *, word *);
-extern int T32_ResetCPU(void);
+extern T32EXPORT int T32_Errno;
+T32EXTERN int T32_Config( const char *, const char * );
+T32EXTERN int T32_Init(void);
+T32EXTERN int T32_Exit(void);
+T32EXTERN int T32_Nop(void);
+T32EXTERN int T32_NopFail(void);
+T32EXTERN int T32_Ping(void);
+T32EXTERN int T32_Stop(void);
+T32EXTERN int T32_GetPracticeState(int * );
+T32EXTERN int T32_Attach( int );
+T32EXTERN int T32_GetState( int * );
+T32EXTERN int T32_GetCpuInfo( char **, word *, word *, word * );
+T32EXTERN int T32_GetRam(dword *, dword *, word *);
+T32EXTERN int T32_ResetCPU(void);
 
-extern int T32_WriteMemory( dword, int, byte * , int );
-extern int T32_WriteMemoryPipe( dword, int, byte * , int );
-extern int T32_WriteMemoryEx( dword, int, int, int, byte * , int );
-extern int T32_ReadMemory( dword, int, byte *, int );
-extern int T32_ReadMemoryEx( dword, int, int, int, byte * , int );
-
-
-#define T32_MEMORY_ACCESS_DATA			0x0000
-#define T32_MEMORY_ACCESS_PROGRAM		0x0001
-#define T32_MEMORY_ACCESS_ARM_CP0		0x0002
-#define T32_MEMORY_ACCESS_ARM_ICE		0x0003
-#define T32_MEMORY_ACCESS_ARM_ETM		0x0004
-#define T32_MEMORY_ACCESS_ARM_CP14		0x0005
-#define T32_MEMORY_ACCESS_ARM_CP15		0x0006
-#define T32_MEMORY_ACCESS_ARM_ARM		0x0007
-#define T32_MEMORY_ACCESS_ARM_THUMB		0x0008
-#define T32_MEMORY_ACCESS_ARM_PHYSICAL_ARM	0x0009
-#define T32_MEMORY_ACCESS_ARM_PHYSICAL_THUMB	0x000a
-#define T32_MEMORY_ACCESS_ARM_ETB		0x000b
-#define T32_MEMORY_ACCESS_ARM_PHYSICAL_DATA	0x000c
-#define T32_MEMORY_ACCESS_ARM_PHYSICAL_PROGRAM	0x000d
-#define T32_MEMORY_ACCESS_ARM_DAP		0x000e
-#define T32_MEMORY_ACCESS_ARM_USR		0x000f
-
-#define T32_MEMORY_ATTR_WIDTHMASK		0x000f
-#define T32_MEMORY_ATTR_DUALPORT		0x0400
-#define T32_MEMORY_ATTR_NOINCREMENT	0x4000
+T32EXTERN int T32_ReadMemory      ( dword address, int access, byte * buffer, int size);
+T32EXTERN int T32_WriteMemory     ( dword address, int access, byte * buffer, int size);
+T32EXTERN int T32_WriteMemoryPipe ( dword address, int access, byte * buffer, int size);
+T32EXTERN int T32_ReadMemoryEx    ( dword address, int segment, int access, int attr, byte * buffer, int size);
+T32EXTERN int T32_WriteMemoryEx   ( dword address, int segment, int access, int attr, byte * buffer, int size);
 
 
-extern int T32_WriteRegister( dword, dword, dword * );
-extern int T32_ReadRegister( dword, dword, dword * );
-extern int T32_ReadPP( dword * );
-extern int T32_WriteBreakpoint( dword, int, int, int );
-extern int T32_ReadBreakpoint( dword, int, word * , int );
-extern int T32_Step(void);
-extern int T32_StepMode(int);
-extern int T32_SetMode(int);
-extern int T32_Go(void);
-extern int T32_Break(void);
-extern int T32_Terminate(int retval);
-extern int T32_Cmd( char * );
-extern int T32_CmdWin( dword, char * );
-extern int T32_EvalGet ( dword * );
-extern int T32_GetMessage ( char *, word * );
-extern int T32_GetTriggerMessage ( char* );
-extern int T32_GetSymbol ( char *, dword *, dword * , dword * );
-extern int T32_GetSource ( dword, char *, dword * );
-extern int T32_GetSelectedSource( char *, dword * );
+/* Memory access modes used with T32_ReadMemory, T32_WriteMemory, T32_ReadMemoryEx and T32_WriteMemoryEx */
+#define T32_MEMORY_ACCESS_DATA                   0x0000
+#define T32_MEMORY_ACCESS_PROGRAM                0x0001
+#define T32_MEMORY_ACCESS_ARM_CP0                0x0002
+#define T32_MEMORY_ACCESS_ARM_ICE                0x0003
+#define T32_MEMORY_ACCESS_ARM_ETM                0x0004
+#define T32_MEMORY_ACCESS_ARM_CP14               0x0005
+#define T32_MEMORY_ACCESS_ARM_CP15               0x0006
+#define T32_MEMORY_ACCESS_ARM_ARM                0x0007
+#define T32_MEMORY_ACCESS_ARM_THUMB              0x0008
+#define T32_MEMORY_ACCESS_ARM_PHYSICAL_ARM       0x0009
+#define T32_MEMORY_ACCESS_ARM_PHYSICAL_THUMB     0x000a
+#define T32_MEMORY_ACCESS_ARM_ETB                0x000b
+#define T32_MEMORY_ACCESS_ARM_PHYSICAL_DATA      0x000c
+#define T32_MEMORY_ACCESS_ARM_PHYSICAL_PROGRAM   0x000d
+#define T32_MEMORY_ACCESS_ARM_DAP                0x000e
+#define T32_MEMORY_ACCESS_ARM_USR                0x000f
+#define T32_MEMORY_ACCESS_MMUBYPASS              0x8000 /* T32_ReadMemoryEx and T32_WriteMemoryEx only */
 
-extern int T32_AnaStatusGet( byte *, long *, long *, long * );
-extern int T32_AnaRecordGet( long , byte *, int );
-extern int T32_GetTraceState(int tracetype, int * state, long * size, long * min, long * max);
-extern int T32_ReadTrace(int tracetype, long record, int nrecords, unsigned long mask, byte * buffer);
+/* Attributes used with T32_ReadMemoryEx and T32_WriteMemoryEx */
+#define T32_MEMORY_ATTR_WIDTHMASK                0x000f
+#define T32_MEMORY_ATTR_DUALPORT                 0x0400  // 0x0020 ???
+#define T32_MEMORY_ATTR_NOINCREMENT              0x4000
+
+
+T32EXTERN int T32_WriteRegister( dword, dword, dword * );
+T32EXTERN int T32_ReadRegister( dword, dword, dword * );
+T32EXTERN int T32_ReadRegisterByName( char *, dword *, dword *);
+T32EXTERN int T32_ReadPP( dword * );
+T32EXTERN int T32_WriteBreakpoint( dword, int, int, int );
+T32EXTERN int T32_ReadBreakpoint( dword, int, word * , int );
+T32EXTERN int T32_GetBreakpointList( int *, T32_Breakpoint*, int );
+T32EXTERN int T32_Step(void);
+T32EXTERN int T32_StepMode(int);
+T32EXTERN int T32_SetMode(int);
+T32EXTERN int T32_Go(void);
+T32EXTERN int T32_Break(void);
+T32EXTERN int T32_Terminate(int retval);
+T32EXTERN int T32_Cmd( char * );
+T32EXTERN int T32_CmdWin( dword, char * );
+T32EXTERN int T32_EvalGet ( dword * );
+T32EXTERN int T32_GetMessage ( char *, word * );
+T32EXTERN int T32_GetTriggerMessage ( char* );
+T32EXTERN int T32_GetSymbol ( char *, dword *, dword * , dword * );
+T32EXTERN int T32_GetSource ( dword, char *, dword * );
+T32EXTERN int T32_GetSelectedSource( char *, dword * );
+T32EXTERN int T32_ReadVariableValue ( char *, dword *, dword *);
+T32EXTERN int T32_ReadVariableString ( char *, char *, int);
+
+T32EXTERN int T32_AnaStatusGet( byte *, long *, long *, long * );
+T32EXTERN int T32_AnaRecordGet( long , byte *, int );
+T32EXTERN int T32_GetTraceState(int tracetype, int * state, long * size, long * min, long * max);
+T32EXTERN int T32_ReadTrace(int tracetype, long record, int nrecords, unsigned long mask, byte * buffer);
 
 typedef void (*T32_NotificationCallback_i_t)(int);
 typedef void (*T32_NotificationCallback_iicp_t)(int, int, unsigned char *);
 
 #ifndef SUPPRESS_FUNCTION_TYPE_WARNING
+
+# if defined(_MSC_VER)
+#  pragma warning( push )
+#  pragma warning( disable : 4255 )
+# endif
+
 typedef void (*T32_NotificationCallback_t)();
+
+# if defined(_MSC_VER)
+#  pragma warning( pop )
+# endif
+
 extern int T32_NotifyStateEnable( int event, T32_NotificationCallback_t func);
 #endif
 
-extern int T32_CheckStateNotify( unsigned param1);
-extern void T32_GetSocketHandle( int *t32soc );
+T32EXTERN int T32_CheckStateNotify( unsigned param1);
+T32EXTERN void T32_GetSocketHandle( int *t32soc );
 
-extern T32_TAPACCESS_HANDLE T32_TAPAccessAlloc(void);
-extern int T32_TAPAccessExecute(T32_TAPACCESS_HANDLE connection, T32_TAPACCESS_HANDLE connectionhold);
-extern int T32_TAPAccessFree(T32_TAPACCESS_HANDLE connection);
-extern int T32_TAPAccessSetInfo(int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave);
-extern int T32_TAPAccessShiftIR(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * poutbits, byte * pinbits);
-extern int T32_TAPAccessShiftDR(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * poutbits, byte * pinbits);
-extern int T32_TAPAccessShiftRaw(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * pTMSBits, byte * pTDIBits, byte * pTDOBits, int options);
-extern int T32_TAPAccessDirect(T32_TAPACCESS_HANDLE connection, int nbytes, byte * poutbytes, byte * pinbytes);
-extern int T32_TAPAccessRelease(void);
+T32EXTERN T32_TAPACCESS_HANDLE T32_TAPAccessAlloc(void);
+T32EXTERN int T32_TAPAccessExecute(T32_TAPACCESS_HANDLE connection, T32_TAPACCESS_HANDLE connectionhold);
+T32EXTERN int T32_TAPAccessFree(T32_TAPACCESS_HANDLE connection);
+T32EXTERN int T32_TAPAccessSetInfo(int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave);
+T32EXTERN int T32_TAPAccessSetInfo2(T32_TAPACCESS_HANDLE connection, int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave);
+T32EXTERN int T32_TAPAccessShiftIR(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * poutbits, byte * pinbits);
+T32EXTERN int T32_TAPAccessShiftDR(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * poutbits, byte * pinbits);
+T32EXTERN int T32_TAPAccessShiftRaw(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * pTMSBits, byte * pTDIBits, byte * pTDOBits, int options);
+T32EXTERN int T32_TAPAccessDirect(T32_TAPACCESS_HANDLE connection, int nbytes, byte * poutbytes, byte * pinbytes);
+T32EXTERN int T32_TAPAccessRelease(void);
+T32EXTERN unsigned int T32_GetMaxRawShiftSize(unsigned int bitsToTransmit, byte* tmsbuf, byte* tdibuf, byte* tdobuf, unsigned int* options);
 
-extern int T32_Fdx_Resolve(char * name);
-extern int T32_Fdx_Open(char * name, char * mode);
-extern int T32_Fdx_Close(int channel);
-extern int T32_Fdx_ReceivePoll(int channel, void * data, int width, int maxsize);
-extern int T32_Fdx_Receive(int channel, void * data, int width, int maxsize);
-extern int T32_Fdx_SendPoll(int channel, void * data, int width, int size);
-extern int T32_Fdx_Send(int channel, void * data, int width, int size);
+T32EXTERN int T32_Fdx_Resolve(char * name);
+T32EXTERN int T32_Fdx_Open(char * name, char * mode);
+T32EXTERN int T32_Fdx_Close(int channel);
+T32EXTERN int T32_Fdx_ReceivePoll(int channel, void * data, int width, int maxsize);
+T32EXTERN int T32_Fdx_Receive(int channel, void * data, int width, int maxsize);
+T32EXTERN int T32_Fdx_SendPoll(int channel, void * data, int width, int size);
+T32EXTERN int T32_Fdx_Send(int channel, void * data, int width, int size);
 
 /*
  * New stream structure, to improve performance for PIPE mode.
@@ -342,25 +385,24 @@ typedef struct
 	unsigned char buffer[4096];
 } T32_Fdx_Stream;
 
-extern T32_Fdx_Stream *T32_Fdx_OpenStream(char *name, char *mode);
-extern int T32_Fdx_CloseStream(T32_Fdx_Stream * pstream);
-extern int T32_Fdx_ReceiveStreamNext(T32_Fdx_Stream * pstream, unsigned char *target, int width, int size);
+T32EXTERN T32_Fdx_Stream *T32_Fdx_OpenStream(char *name, char *mode);
+T32EXTERN int T32_Fdx_CloseStream(T32_Fdx_Stream * pstream);
+T32EXTERN int T32_Fdx_ReceiveStreamNext(T32_Fdx_Stream * pstream, unsigned char *target, int width, int size);
 
 #define T32_Fdx_ReceiveStream(__pstream,__target,__width,__len)		( \
 			(((__pstream)->ptr >= (__pstream)->ptrend) ? \
 			    T32_Fdx_ReceiveStreamNext(__pstream,__target,__width,__len) : \
 			((__pstream)->blen = ((__pstream)->ptr[0]|((__pstream)->ptr[1]<<8)), memcpy((__target),(__pstream)->ptr+2,(__pstream)->blen), (__pstream)->ptr += 2+(__pstream)->blen, (__pstream)->blen)))
 
-
-extern int   T32_GetChannelSize(void);
-extern void  T32_GetChannelDefaults(void* line);
-extern void  T32_SetChannel(void* line);
-extern void* T32_GetChannel0(void);
+T32EXTERN int   T32_GetChannelSize(void);
+T32EXTERN void  T32_GetChannelDefaults(void* line);
+T32EXTERN void  T32_SetChannel(void* line);
+T32EXTERN void* T32_GetChannel0(void);
 
 #endif
 
 #ifdef	__cplusplus
 }
 #endif
-#endif
 
+#endif

@@ -82,6 +82,19 @@ void T32Connector::showMemoryRegions(const memory_map_t& map) const {
   }
 }
 
+void T32Connector::go() {
+  err(T32_Go());
+}
+
+void T32Connector::brk() {
+  err(T32_Break());
+}
+
+#include "sal/t32/T32Constants.hpp"
+
+void T32Connector::test() {
+  
+}
 
 /* Default T32 error handler */
 bool T32Connector::err(int errornum) const {

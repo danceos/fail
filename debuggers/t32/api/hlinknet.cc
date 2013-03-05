@@ -1,8 +1,6 @@
 /****************************************************************
 *                                                               *
-*                     Copyright notice:                         *
-*                                                               *
-*             Lauterbach Datentechnik GmbH                      *
+*         Copyright by Lauterbach GmbH                          *
 *         Alle Rechte vorbehalten - All rights reserved         *
 *                                                               *
 *****************************************************************
@@ -15,6 +13,11 @@
 ***************************************************************/
 
 #include "t32.h"
+
+#if defined(_MSC_VER)
+# pragma warning( push )
+# pragma warning( disable : 4255 )
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,6 +39,10 @@ typedef int socklen_t;
 # include <netdb.h>
 # include <in.h>
 # define DONT_USE_ASYNC
+# define fd_set  int
+# define FD_ZERO(fdset) (*fdset = 0)
+# define FD_SET(fd,fdset) (*fdset |= (1<<(fd)))
+# define FD_ISSET(fd,fdset) (*fdset & (1<<(fd)))
 #endif
 
 #ifdef __linux__
@@ -49,7 +56,6 @@ typedef int socklen_t;
 # include <sys/select.h>
 #endif
 
-
 #ifdef UNIX_V
 # include <fcntl.h>
 # include <unistd.h>
@@ -58,7 +64,7 @@ typedef int socklen_t;
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <netdb.h>
-# ifdef HP_UX
+# if defined(T32HOST_HPUX) || defined(HP_UX)
 typedef int socklen_t;
 # else
 #  include <sys/select.h>
@@ -74,21 +80,18 @@ typedef int socklen_t;
 # include <inet/netdb.h>
 #endif
 
+#if defined(_MSC_VER)
+# pragma warning( pop )
+#endif
+
 
 #define PCKLEN_MAX 1472                 /* maximum size of UDP-packet */
-#define BUFLEN_MIN 6000
+#define BUFLEN_MIN 6000					/* !!! keep in sync with hassist.c remoteapi !!! */
 
 #ifndef MS_WINDOWS
 # ifndef UNIX_V
 extern struct hostent * gethostbyaddr();
 # endif
-#endif
-
-#ifdef DEC_VMS
-# define fd_set  int
-# define FD_ZERO(fdset) (*fdset = 0)
-# define FD_SET(fd,fdset) (*fdset |= (1<<(fd)))
-# define FD_ISSET(fd,fdset) (*fdset & (1<<(fd)))
 #endif
 
 #if defined(DEC_VMS) || defined(MS_WINDOWS) || defined(OS_9) || defined(LINUX)
@@ -99,7 +102,7 @@ static struct sockaddr ReceiveSocketAddress;
 #endif
 
 
-struct LineStruct {
+typedef struct LineStruct_s {
     char                NodeName[80];               /* node name of host running T32 SW */
     int                 CommSocket;                 /* socket for communication */
     unsigned short      HostPort;		            /* Host side port */
@@ -114,8 +117,8 @@ struct LineStruct {
     unsigned short      LastReceiveSeq, LastTransmitSeq;
     unsigned char*      LastTransmitBuffer;
     int                 LastTransmitSize;
-    struct sockaddr_in SocketAddress;
-};
+    struct sockaddr_in  SocketAddress;
+} LineStruct;
 
 #ifdef MS_WINDOWS
 extern void T32_InstallAsyncSelect(HWND hwnd, int msg);
@@ -353,8 +356,7 @@ void LINE_LineExit(void)
 
     if (line->CommSocket != -1) {
         for (i = 0; i < 5; i++)
-            sendto(line->CommSocket, (char *) discon, 16, 0,
-                    (struct sockaddr *) &(line->SocketAddress), sizeof(line->SocketAddress));
+            sendto(line->CommSocket, (char *) discon, 16, 0, (struct sockaddr *) &(line->SocketAddress), sizeof(line->SocketAddress)); /* send EXIT 4 */
 
 #ifdef MS_WINDOWS
 	closesocket(line->CommSocket);
@@ -403,7 +405,7 @@ int LINE_LineInit(char * message)
 	line->SocketAddress.sin_port = line->HostPort;	/* Port can be determined by
 						 * host */
 
-	if ((line->CommSocket = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	if ((line->CommSocket = (int)socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 	    strcpy(message, "cannot create socket");
 	    WinsockErrorMessage(message);
 	    goto done;
@@ -527,41 +529,51 @@ int LINE_LineTransmit(unsigned char * in, int size)
 {
     int             packetSize;
     unsigned int    tmpl;
+    int             result;
+    unsigned int    bytesTransmitted = 0;
     LineStruct*     line = pLineParams;
+    unsigned char   receivebuffer[HANDSHAKE_RECEIVEBUFFERSIZE];
 
     line->LastTransmitBuffer = in;
     line->LastTransmitSize = size;
     line->LastTransmitSeq = line->TransmitSeq;
     in -= 4; /* space for packet header */
 
+
+    /* Assumed that Host SocketReceivebuffersize is 6000 (see hassist.c) */
     do {
-      packetSize = (size > line->PacketSize - 4) ?  line->PacketSize - 4 : size;
+	packetSize = (size > line->PacketSize - 4) ?  line->PacketSize - 4 : size;
 
-      /* When sending multiple packets, the packet header is written inside the
-         message's payload. Original contents needs to be saved/restored */
+	/* When sending multiple packets, the packet header is written inside the
+	 message's payload. Original contents needs to be saved/restored */
 
-      SETLONGVAR(tmpl, in[0]);	                /* save */
+	SETLONGVAR(tmpl, in[0]);               /* save */
 
-      in[0] = 0x11;		        	/* transmit data package */
-      in[1] = (size > packetSize) ? 1 : 0;    	/* more packets follow */
-      SETWORDVAR(in[2], line->TransmitSeq);	/* packet sequence ID */
+	in[0] = 0x11;                          /* transmit data package */
+	in[1] = (size > packetSize) ? 1 : 0;   /* more packets follow */
+	SETWORDVAR(in[2], line->TransmitSeq);  /* packet sequence ID */
 
-      if (sendto(line->CommSocket,
-		 (char *) in,
-		 packetSize + 4, 0,
-                 (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)
-		 ) != packetSize + 4) {
+	if (sendto( line->CommSocket, (char *) in, packetSize + 4, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress) ) != packetSize + 4) { /* send Data Package 0x11 */
+	    SETLONGVAR(in[0], tmpl);        /* restore buffer */
+	    return 0;
+	}
+	bytesTransmitted += packetSize + 4;
+	if( (bytesTransmitted + line->PacketSize) > BUFLEN_MIN ) {
+	    socklen_t length;
 
-	SETLONGVAR(in[0], tmpl);        	/* restore buffer */
-	return 0;
-      }
-      SETLONGVAR(in[0], tmpl);                  /* restore buffer */
+	    length=sizeof(struct sockaddr);
 
-      line->TransmitSeq++;
-      in += packetSize;
-      size -= packetSize;
+	    if( (result = recvfrom(line->CommSocket, (char *)receivebuffer, 1, 0, (struct sockaddr *) RECEIVEADDR, &length)) < 0) {
+		    return -1;
+	    }
+	}
+	SETLONGVAR(in[0], tmpl);                  /* restore buffer */
+
+	line->TransmitSeq++;
+	in += packetSize;
+	size -= packetSize;
     }
-    while (size > 0);		                /* more packets required? */
+    while (size > 0);                          /* more packets required? */
 
     return line->LastTransmitSize;
 }
@@ -602,7 +614,7 @@ retry:
     if (i == 0) {
 	if (endpoll) {
 	    if (GetCurrentTime() < endpoll) {
-		ScreenDispatcher(line->CommSocket);
+		ScreenDispatcher();
 		goto retry;
 	    }
 	}
@@ -616,7 +628,7 @@ retry:
 	return i;
     }
     length = sizeof(struct sockaddr);
-    return recvfrom(line->CommSocket, dest, size, 0, (struct sockaddr *) RECEIVEADDR, &length);
+    return recvfrom(line->CommSocket, (char *)dest, size, 0, (struct sockaddr *) RECEIVEADDR, &length);
 }
 
 
@@ -667,6 +679,12 @@ retry:
 					goto retry;
 				return -1;
 			}
+			/* we got a handshakepackage */
+			if( (i == 1) && (dest[0] == '+') )
+			{
+				goto retry;
+			}
+
 			if (i <= 4) {
 				return -1;
 			}
@@ -677,7 +695,7 @@ retry:
 			{
 				T32_NotificationPackage *newPackage, *oldHead;
 
-				newPackage = reinterpret_cast<T32_NotificationPackage*>( malloc(sizeof(T32_NotificationPackage)) );
+				newPackage = (T32_NotificationPackage *)malloc(sizeof(T32_NotificationPackage));
 				if (newPackage==NULL)
 					return -1;
 
@@ -716,8 +734,7 @@ retry:
 	    return -1;
 	}
 	if (flag == 2) {
-	    if (sendto(line->CommSocket, (char *) handshake, 16, 0,
-		       (struct sockaddr *) &line->SocketAddress, sizeof(line->SocketAddress)) != 16) {
+	    if (sendto(line->CommSocket, (char *) handshake, 16, 0, (struct sockaddr *) &line->SocketAddress, sizeof(line->SocketAddress)) != 16) { /* send Handshake 7 */
 		return -1;
 	    }
 	}
@@ -788,8 +805,7 @@ retry:
     SETWORDCONST(packet[6], 0);
     strcpy((char *) (packet + 8), magicPattern);
 
-    if (sendto(line->CommSocket, (char *) packet, 16 /*size*/, 0,
-               (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) {
+    if (sendto(line->CommSocket, (char *) packet, 16 /*size*/, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) { /* Send SyncReq 2 */
 	return -1;
     }
     while (1) {		/* empty queue */
@@ -818,7 +834,7 @@ retry:
     SETWORDCONST(packet[6], 0);
     strcpy((char *) (packet + 8), magicPattern);
 
-    if (sendto(line->CommSocket, (char *) packet, 16, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) {
+    if (sendto(line->CommSocket, (char *) packet, 16, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) { /* Send SyncBack 0x22 */
 	return -1;
     }
     return 1;
@@ -844,7 +860,7 @@ static int Connection(unsigned char *ipaddrused)
 
     strcpy((char *) (buffer + 8), magicPattern);
 
-    if (sendto(line->CommSocket, (char *) buffer, line->PacketSize, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) {
+    if (sendto(line->CommSocket, (char *) buffer, line->PacketSize, 0, (struct sockaddr *) & line->SocketAddress, sizeof(line->SocketAddress)) == -1) { /* send ConnectReq 3 */
 	return 0;
     }
     if ((i = ReceiveWithTimeout(&LongTime, buffer, line->PacketSize)) <= 0) {
@@ -879,4 +895,14 @@ static int Connection(unsigned char *ipaddrused)
 }
 
 
-
+/* .NET helpers: additional functions to interface managed and unmanaged memory */
+#ifdef	__cplusplus
+extern "C" void *LINE_AllocNewChannel()
+{
+    return malloc(sizeof(LineStruct));
+}
+extern "C" void LINE_FreeAllocChannel(void * p)
+{
+    free(p);
+}
+#endif

@@ -52,6 +52,12 @@ namespace fail {
       void showDataRegions(void) const { showMemoryRegions(m_data_memory_map); };
       void showProgramRegions(void) const { showMemoryRegions(m_program_memory_map); };
 
+      /**
+       * @brief Start real time emulation
+       */
+      void go(void);
+      void brk(void);
+      void test(void);
     private:
       const char* m_hostname; //!< The hostname of the T32 device
       const char* m_port;     //!< The port to connect as configure in config.t32. Here we use strings, as required by the API

@@ -1,8 +1,6 @@
 /****************************************************************
 *                                                               *
-*                     Copyright notice:                         *
-*                                                               *
-*             Lauterbach Datentechnik GmbH                      *
+*         Copyright by Lauterbach GmbH                          *
 *         Alle Rechte vorbehalten - All rights reserved         *
 *                                                               *
 *****************************************************************
@@ -11,25 +9,50 @@
   Function:     CAPI routines for communication with TRACE32.
                 Uses low level protocol implemented in hlinknet.c.
                 Link both files with your application.
+                General Protocol T32OUT_BUFFER:
+                 -5...-1   0 1    2       3     4...5    6...
+                ---------------------------------------------------------
+                | Header | CMD | SCMD | MSGID | Length | PayLoad
+                ---------------------------------------------------------
 
-  Author:	A. Nieser
+  Author:       A. Nieser
   Date:         15.10.98
 
 ***************************************************************/
 
 #include "t32.h"
+
+#if defined(_MSC_VER)
+# pragma warning( push )
+# pragma warning( disable : 4255 )
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #ifdef MS_WINDOWS
-#include "windows.h"
+# include <windows.h>
 #else
-#include <stdlib.h>
-#include <sys/time.h>
+# include <stdlib.h>
+# include <sys/time.h>
+#endif
+
+#if defined(_MSC_VER)
+# pragma warning( pop )
 #endif
 
 
 int T32_Errno;
 
+/* Remote Api commands used on Host */
+#define RAPI_CMD_NOP              0x70 /* NOP */
+#define RAPI_CMD_ATTACH           0x71 /* Attach to Device */
+#define RAPI_CMD_EXECUTE_PRACTICE 0x72 /* Execute generic Practice command */
+#define RAPI_CMD_PING             0x73 /* Ping */
+#define RAPI_CMD_DEVICE_SPECIFIC  0x74 /* Device-Specific command */
+#define RAPI_CMD_CMDWINDOW        0x75 /* T32_CmdWin: Generic PRACTICE command with remote window */
+#define RAPI_CMD_GETMSG           0x76 /* T32_GetMessage */
+#define RAPI_CMD_EDITNOTIFY       0x78 /* T32_EditNotifyEnable */
+#define RAPI_CMD_TERMINATE        0x79 /* T32_Terminate */
 
 #define MAXRETRY	5
 
@@ -45,32 +68,36 @@ unsigned char LINE_InBuffer[LINE_MSIZE+256];
 #define T32_OUTBUFFER (LINE_OutBuffer+13+4)
 #define T32_INBUFFER (LINE_InBuffer+13)
 
-struct LineStruct;
+
+/* forward declaration, see hlinknet.c for definition */
+typedef struct LineStruct_s LineStruct;
 
 extern int LINE_LineConfig(char * in);
 extern int LINE_LineInit(char * message);
 extern void LINE_LineExit(void);
 extern int LINE_LineDriverGetSocket(void);
-extern int LINE_LineTransmit(byte * in, int size);
-extern int LINE_LineReceive(byte * out);
+extern int LINE_LineTransmit(unsigned char * in, int size);
+extern int LINE_LineReceive(unsigned char * out);
 extern int LINE_ReceiveNotifyMessage(unsigned char* package);
 extern int LINE_LineSync(void);
-extern int LINE_GetLineParamsSize(void);
-extern void LINE_SetDefaultLineParams(LineStruct * params);
-extern void * LINE_GetLine0Params(void);
-extern void LINE_SetLine(LineStruct* params);
+extern int LINE_GetLineParamsSize (void);
+extern void LINE_SetDefaultLineParams (LineStruct* params);
+extern LineStruct* LINE_GetLine0Params (void);
+extern void LINE_SetLine (LineStruct* params);
 extern void LINE_SetReceiveToggleBit(int value);
 extern int LINE_GetReceiveToggleBit(void);
 extern int LINE_GetNextMessageId(void);
 extern int LINE_GetMessageId(void);
 
-extern int LINE_Transmit(int len);
-extern int LINE_Receive(void);
-static int LINE_Sync(void);
+/* prototypes for local helper functions */
+int LINE_Transmit(int len);
+int LINE_Receive(void);
+int LINE_Sync(void);
 
 static const int MaxPacketSize = 2048;
 
 static T32_NotificationCallback_t notificationCallback[T32_MAX_EVENTS];
+
 
 /**************************************************************************
 
@@ -103,7 +130,7 @@ int T32_GetChannelSize(void)
 
 void T32_GetChannelDefaults (void* line)
 {
-    LINE_SetDefaultLineParams ( reinterpret_cast<LineStruct*>( line ) );
+    LINE_SetDefaultLineParams ((LineStruct *)line);
     return;
 }
 
@@ -121,7 +148,7 @@ void T32_GetChannelDefaults (void* line)
 
 void T32_SetChannel (void* line)
 {
-    LINE_SetLine ( (LineStruct*) line);
+    LINE_SetLine ((LineStruct *)line);
     return;
 }
 
@@ -154,7 +181,7 @@ void* T32_GetChannel0 (void)
 int T32_Nop(void)
 {
     T32_OUTBUFFER[0] = 0x02;
-    T32_OUTBUFFER[1] = 0x70;
+    T32_OUTBUFFER[1] = RAPI_CMD_NOP;
     T32_OUTBUFFER[2] = 0x00;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -180,7 +207,7 @@ int T32_Nop(void)
 int T32_NopFail(void)
 {
     T32_OUTBUFFER[0] = 0x02;
-    T32_OUTBUFFER[1] = 0x70;
+    T32_OUTBUFFER[1] = RAPI_CMD_NOP;
     T32_OUTBUFFER[2] = 0x00;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -203,7 +230,7 @@ int T32_NopFail(void)
 int T32_Ping(void)
 {
     T32_OUTBUFFER[0] = 0x02;
-    T32_OUTBUFFER[1] = 0x73;
+    T32_OUTBUFFER[1] = RAPI_CMD_PING;
     T32_OUTBUFFER[2] = 0x00;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -258,7 +285,7 @@ int T32_Terminate(int retval)
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x79;
+    T32_OUTBUFFER[1] = RAPI_CMD_TERMINATE;
     T32_OUTBUFFER[2] = retval;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -285,7 +312,7 @@ int T32_Terminate(int retval)
 int T32_Attach(int dev)
 {
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x71;
+    T32_OUTBUFFER[1] = RAPI_CMD_ATTACH;
     T32_OUTBUFFER[2] = dev;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -316,8 +343,8 @@ int T32_Attach(int dev)
 int T32_GetState(int * pstate)
 {
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x10;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x10;	/* T32_GetState: Read Status Information */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -354,8 +381,8 @@ int T32_GetCpuInfo( char **string, word * fpu, word * endian, word * type )	/* G
     static char     cpu_string[16];
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x13;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x13; /* T32_GetCpuInfo: Get CPU information */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -384,8 +411,8 @@ int T32_GetRam (dword *startaddr, dword *endaddr, word *access)	/* Get Data or P
     dword           t32access;
 
     T32_OUTBUFFER[0] = 8;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x16;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x16; /* T32_GetRam: Get Memory Mapping */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     SETLONGVAR(T32_OUTBUFFER[4], *startaddr);
     SETWORDVAR(T32_OUTBUFFER[8], *access);
@@ -411,8 +438,8 @@ int T32_ResetCPU(void)					/* Reset CPU Registers */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x11;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x11; /* T32_ResetCpu: Reset CPU */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -428,32 +455,36 @@ int T32_ResetCPU(void)					/* Reset CPU Registers */
 
 /*
  * ADDRESS   memory address
- * FLAGS     memory access flags
+ * ACCESS    memory access flags
  * BUFFER    data to be written
  * SIZE      size of data
  */
 
-int T32_WriteMemory(dword address, int flags, byte * buffer, int size)	/* Write Memory */
+int T32_WriteMemory(dword address, int access, byte * buffer, int size)	/* Write Memory */
 {
     int             result;
 
     if (size > MaxPacketSize) {
-	result = T32_WriteMemoryPipe(address, flags, buffer, size);
+	result = T32_WriteMemoryPipe(address, access, buffer, size);
 	if (result)
 	    return result;
-	return T32_WriteMemoryPipe(address, flags, buffer, 0);
+	return T32_WriteMemoryPipe(address, access, buffer, 0);
     }
-    T32_OUTBUFFER[0] = 10;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x31;
-    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
+    /* Protocol Header */
+    T32_OUTBUFFER[0] = 10;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x31; /* Comemu remote command Write memory see comemu12.c COMEMU_Remote*/
+    T32_OUTBUFFER[3] = LINE_GetNextMessageId(); /* Message ID */
+
+	/* Command specific part */
     SETLONGVAR(T32_OUTBUFFER[4], address);
-    T32_OUTBUFFER[8] = flags;
+    T32_OUTBUFFER[8] = access;
     T32_OUTBUFFER[9] = 0;
     T32_OUTBUFFER[10] = size;
     T32_OUTBUFFER[11] = size >> 8;
 
+	/* payload */
     memcpy(T32_OUTBUFFER + 12, buffer, size);
 
     if (LINE_Transmit(12 + ((size + 1) & (~1))) == -1)
@@ -469,19 +500,19 @@ int T32_WriteMemory(dword address, int flags, byte * buffer, int size)	/* Write 
 
 /*
  * ADDRESS   memory address
- * FLAGS     memory access flags
+ * ACCESS    memory access flags
  * BUFFER    data to be written
  * SIZE      size of data
  */
 
-int T32_WriteMemoryPipe(dword address, int flags, byte * buffer, int size)	/* Write Memory, Pipelined */
+int T32_WriteMemoryPipe(dword address, int access, byte * buffer, int size)	/* Write Memory, Pipelined */
 {
     int             len;
 
     if (size == 0) {
 	T32_OUTBUFFER[0] = 2;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0x32;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0x32; /* T32_WriteMemoryPipe */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	if (LINE_Transmit(4) == -1)
@@ -498,12 +529,12 @@ int T32_WriteMemoryPipe(dword address, int flags, byte * buffer, int size)	/* Wr
 	    len = MaxPacketSize;
 
 	T32_OUTBUFFER[0] = 10;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0x32;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0x32; /* T32_WriteMemoryPipe */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	SETLONGVAR(T32_OUTBUFFER[4], address);
-	T32_OUTBUFFER[8] = flags;
+	T32_OUTBUFFER[8] = access;
 	T32_OUTBUFFER[9] = 0;
 	T32_OUTBUFFER[10] = len;
 	T32_OUTBUFFER[11] = len >> 8;
@@ -538,8 +569,8 @@ int T32_WriteMemoryEx(dword address, int segment, int access, int attr, byte * b
 
 	hlen = 0;
 	T32_OUTBUFFER[hlen] = 0;
-	T32_OUTBUFFER[hlen + 1] = 0x74;
-	T32_OUTBUFFER[hlen + 2] = 0x33;
+	T32_OUTBUFFER[hlen + 1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[hlen + 2] = 0x33; /* MCD API transaction list, T32_ReadMemoryEx, T32_WriteMemoryEx */
 	T32_OUTBUFFER[hlen + 3] = LINE_GetNextMessageId();
 
 	T32_OUTBUFFER[hlen + 4] = 0x02;
@@ -604,8 +635,8 @@ int T32_ReadMemory(dword address, int access, byte * buffer, int size)	/* Read M
 	    len = MaxPacketSize;
 
 	T32_OUTBUFFER[0] = 10;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0x30;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0x30; /* T32_ReadMemory */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	SETLONGVAR(T32_OUTBUFFER[4], address);
@@ -644,8 +675,8 @@ int T32_ReadMemoryEx(dword address, int segment, int access, int attr, byte * bu
 
 	hlen = 0;
 	T32_OUTBUFFER[hlen] = 0;
-	T32_OUTBUFFER[hlen + 1] = 0x74;
-	T32_OUTBUFFER[hlen + 2] = 0x33;
+	T32_OUTBUFFER[hlen + 1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[hlen + 2] = 0x33; /* MCD API transaction list, T32_ReadMemoryEx, T32_WriteMemoryEx */
 	T32_OUTBUFFER[hlen + 3] = LINE_GetNextMessageId();
 
 	T32_OUTBUFFER[hlen + 4] = 0x01;
@@ -683,7 +714,7 @@ int T32_ReadMemoryEx(dword address, int segment, int access, int attr, byte * bu
 
 	size -= len;
 	if (!(attr & T32_MEMORY_ATTR_NOINCREMENT))
-	     address += len;
+	    address += len;
 	buffer += len;
     }
     return 0;
@@ -728,8 +759,8 @@ int T32_WriteRegister(dword mask1, dword mask2, dword *buffer)	/* Write Register
     }
 
     T32_OUTBUFFER[0] = index;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x21;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x21; /* T32_WriteRegister: Write Registers */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(index) == -1)
@@ -760,8 +791,8 @@ int T32_ReadRegister(dword mask1, dword mask2, dword *buffer)	/* Read Registers 
     SETLONGVAR(T32_OUTBUFFER[8], tmp);
 
     T32_OUTBUFFER[0] = 12;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x20;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x20; /* T32_ReadRegister: Read Registers */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(12) == -1)
@@ -798,12 +829,40 @@ int T32_ReadRegister(dword mask1, dword mask2, dword *buffer)	/* Read Registers 
 }
 
 
+int T32_ReadRegisterByName (char *regname, dword *value, dword *hvalue)
+{
+    int len;
+
+    len = (unsigned int) strlen(regname);
+
+    if (len >= 256)
+	return T32_Errno = T32_COM_PARA_FAIL;
+
+    T32_OUTBUFFER[0] = len + 3;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x23; /* T32_ReadRegisterByName */
+    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+    strcpy((char *) (T32_OUTBUFFER + 4), regname);
+
+    if (LINE_Transmit((len + 5 + 1) & (~1)) == -1)
+	return T32_Errno = T32_COM_TRANSMIT_FAIL;
+
+    if (LINE_Receive() == -1)
+	return T32_Errno = T32_COM_RECEIVE_FAIL;
+
+    SETLONGVAR(*value,  T32_INBUFFER[4]);
+    SETLONGVAR(*hvalue, T32_INBUFFER[8]);
+
+    return T32_Errno = T32_INBUFFER[2];
+}
+
+
 int T32_ReadPP ( dword *pp )		/* Returns Program Pointer */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x22;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x22; /* T32_ReadPP: Read Program Pointer */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -836,8 +895,8 @@ int T32_WriteBreakpoint(dword address, int flags, int breakp, int size)	/* Set/C
 	    len = MaxPacketSize;
 
 	T32_OUTBUFFER[0] = 10;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = (breakp & 0x100) ? 0x42 : 0x41;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = (breakp & 0x100) ? 0x42 : 0x41; /* T32_WriteBreakpoint: Clear/Set Breakpoints */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	SETLONGVAR(T32_OUTBUFFER[4], address);
@@ -872,7 +931,7 @@ int T32_WriteBreakpoint(dword address, int flags, int breakp, int size)	/* Set/C
 int T32_ReadBreakpoint(dword address, int flags, word *buffer, int size)	/* Get Breakpoint/Flag Information */
 {
     int             i, len;
-	int outindex = 0;
+    int             outindex = 0;
 
     while (size > 0) {
 	len = size;
@@ -880,8 +939,8 @@ int T32_ReadBreakpoint(dword address, int flags, word *buffer, int size)	/* Get 
 	    len = MaxPacketSize / 2;
 
 	T32_OUTBUFFER[0] = 10;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0x40;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0x40; /* T32_ReadBreakpoint:  Get Breakpoints */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	SETLONGVAR(T32_OUTBUFFER[4], address);
@@ -910,12 +969,48 @@ int T32_ReadBreakpoint(dword address, int flags, word *buffer, int size)	/* Get 
 }
 
 
+int T32_GetBreakpointList (int* numbps, T32_Breakpoint* bps, int max)
+{
+    word wnum;
+    int  i, loc;
+    
+    T32_OUTBUFFER[0] = 5;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x64; /* T32_GetBreakpointList */
+    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+    T32_OUTBUFFER[4] = 0x77; /* sample payload */
+    T32_OUTBUFFER[5] = 0; /* padding for even byte count */
+
+    if (LINE_Transmit(6) == -1)
+        return T32_Errno = T32_COM_TRANSMIT_FAIL;
+
+    if (LINE_Receive() == -1)
+        return T32_Errno = T32_COM_RECEIVE_FAIL;
+
+    SETWORDVAR(wnum, T32_INBUFFER[4]);
+    *numbps = wnum;
+
+    for (i=0, loc=6; (i < wnum) && (i < max); i++, loc+=13)
+    {
+        SETLONGVAR(bps[i].address, T32_INBUFFER[loc]);
+        bps[i].enabled = T32_INBUFFER[loc+4] & 0x1;
+        SETLONGVAR(bps[i].type, T32_INBUFFER[loc+5]);
+        SETLONGVAR(bps[i].auxtype, T32_INBUFFER[loc+9]);
+    }
+
+    if ((T32_Errno = T32_INBUFFER[2]) != 0)
+        return T32_Errno;
+
+    return 0;
+}
+
+
 int T32_Step(void)					/* Single Step */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x50;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x50; /* T32_Step: Single-Step */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -936,8 +1031,8 @@ int T32_StepMode(int mode)				/* Single Step in Mode */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x54;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x54; /* T32_StepMode: Step with Options */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     T32_OUTBUFFER[4] = mode;
     T32_OUTBUFFER[5] = 0;
@@ -959,8 +1054,8 @@ int T32_SetMode(int mode)				/* Set Mode */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x53;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x53; /* T32_Mode: Mode-Selection */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     T32_OUTBUFFER[4] = mode;
     T32_OUTBUFFER[5] = 0;
@@ -979,8 +1074,8 @@ int T32_Go(void)					/* Start Realtime */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x51;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x51; /* T32_Go: Go */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -997,8 +1092,8 @@ int T32_Break(void)					/* Stop Realtime */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x52;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x52; /* T32_Break: Break */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -1017,21 +1112,34 @@ int T32_Break(void)					/* Stop Realtime */
 
 int T32_Cmd(char *name)			/* Executes a command line */
 {
+    word            wlen;
     int             len;
 
-    len = strlen(name);
+    len = (int) strlen(name);
 
-    if (len >= 256)
+    if (len > MaxPacketSize)
 	return T32_Errno = T32_COM_PARA_FAIL;
 
-    T32_OUTBUFFER[0] = len + 3;
-    T32_OUTBUFFER[1] = 0x72;
-    T32_OUTBUFFER[2] = 0x02;
-    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
-    strcpy((char *) (T32_OUTBUFFER + 4), name);
+    if (len + 3 >= 0xff) {
+	wlen = (word) (len + 5);
+	T32_OUTBUFFER[0] = 0;
+	T32_OUTBUFFER[1] = RAPI_CMD_EXECUTE_PRACTICE;
+	T32_OUTBUFFER[2] = 0x02;
+	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+	SETWORDVAR(T32_OUTBUFFER[4], wlen);
+	strcpy((char *) (T32_OUTBUFFER + 6), name);
+	if (LINE_Transmit((len + 7 + 1) & (~1)) == -1)
+	    return T32_Errno = T32_COM_TRANSMIT_FAIL;
+    } else {
+	T32_OUTBUFFER[0] = len + 3;
+	T32_OUTBUFFER[1] = RAPI_CMD_EXECUTE_PRACTICE;
+	T32_OUTBUFFER[2] = 0x02;
+	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+	strcpy((char *) (T32_OUTBUFFER + 4), name);
 
-    if (LINE_Transmit((len + 5 + 1) & (~1)) == -1)
-	return T32_Errno = T32_COM_TRANSMIT_FAIL;
+	if (LINE_Transmit((len + 5 + 1) & (~1)) == -1)
+	    return T32_Errno = T32_COM_TRANSMIT_FAIL;
+    }
 
     if (LINE_Receive() == -1)
 	return T32_Errno = T32_COM_RECEIVE_FAIL;
@@ -1057,7 +1165,7 @@ int T32_GetPracticeState(int * pstate)		/* Returns the run-state of PRACTICE */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x72;
+    T32_OUTBUFFER[1] = RAPI_CMD_EXECUTE_PRACTICE;
     T32_OUTBUFFER[2] = 0x03;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -1077,23 +1185,40 @@ int T32_GetPracticeState(int * pstate)		/* Returns the run-state of PRACTICE */
 
 int T32_CmdWin (dword handle, char* command)
 {
+    word            wlen;
     int             len;
 
-    len = strlen(command);
+    len = (int) strlen(command);
 
-    if (len >= 256)
+    if (len >= MaxPacketSize)
 	return T32_Errno = T32_COM_PARA_FAIL;
 
-    T32_OUTBUFFER[0] = len + 7;
-    T32_OUTBUFFER[1] = 0x75;
-    T32_OUTBUFFER[2] = 0x02;
-    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+    if (len + 3 >= 0xff) {
+	wlen = (word) (len + 9);
 
-    SETLONGVAR(T32_OUTBUFFER[4], handle);
-    strcpy((char *) (T32_OUTBUFFER + 8), command);
+	T32_OUTBUFFER[0] = 0;
+	T32_OUTBUFFER[1] = RAPI_CMD_CMDWINDOW;
+	T32_OUTBUFFER[2] = 0x02;
+	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+	SETWORDVAR(T32_OUTBUFFER[4], wlen);
 
-    if (LINE_Transmit((len + 9 + 1) & (~1)) == -1)
-	return T32_Errno = T32_COM_TRANSMIT_FAIL;
+	SETLONGVAR(T32_OUTBUFFER[6], handle);
+	strcpy((char *) (T32_OUTBUFFER + 10), command);
+
+	if (LINE_Transmit((len + 11 + 1) & (~1)) == -1)
+	    return T32_Errno = T32_COM_TRANSMIT_FAIL;
+    } else {
+	T32_OUTBUFFER[0] = len + 7;
+	T32_OUTBUFFER[1] = RAPI_CMD_CMDWINDOW;
+	T32_OUTBUFFER[2] = 0x02;
+	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+
+	SETLONGVAR(T32_OUTBUFFER[4], handle);
+	strcpy((char *) (T32_OUTBUFFER + 8), command);
+
+	if (LINE_Transmit((len + 9 + 1) & (~1)) == -1)
+	    return T32_Errno = T32_COM_TRANSMIT_FAIL;
+    }
 
     if (LINE_Receive() == -1)
 	return T32_Errno = T32_COM_RECEIVE_FAIL;
@@ -1106,8 +1231,8 @@ int T32_EvalGet (dword *peval)		/* Returns Evaluation Result */
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x14;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x14; /* T32_EvalGet */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -1127,7 +1252,7 @@ int T32_GetMessage (char *message, word *mode)
     dword           dmode;
 
     T32_OUTBUFFER[0] = 0x02;
-    T32_OUTBUFFER[1] = 0x76;
+    T32_OUTBUFFER[1] = RAPI_CMD_GETMSG;
     T32_OUTBUFFER[2] = 0x00;
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
@@ -1149,8 +1274,8 @@ int T32_GetMessage (char *message, word *mode)
 int T32_GetTriggerMessage (char *message)
 {
     T32_OUTBUFFER[0] = 0x02;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x63;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x63; /* T32_GetTriggerMessage */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     if (LINE_Transmit(4))
 	return T32_Errno = T32_COM_TRANSMIT_FAIL;
@@ -1165,14 +1290,14 @@ int T32_GetSymbol (char *symbol, dword *address, dword *size, dword *access)
 {
     int             len;
 
-    len = strlen(symbol);
+    len = (unsigned int)strlen(symbol);
 
     if (len >= 256)
 	return T32_Errno = T32_COM_PARA_FAIL;
 
     T32_OUTBUFFER[0] = len + 3;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x62;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x62; /* T32_GetSymbol: Get Symbol Address, Size & Class */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     strcpy((char *) (T32_OUTBUFFER + 4), symbol);
 
@@ -1194,8 +1319,8 @@ int T32_GetSource (dword address, char *filename, dword *line)
 {
 
     T32_OUTBUFFER[0] = 6;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x60;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x60; /* T32_GetSource: Get Filename & Line */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     SETLONGVAR(T32_OUTBUFFER[4], address);
 
@@ -1218,8 +1343,8 @@ int T32_GetSelectedSource (char *filename, dword *line)
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x61;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x61; /* T32_GetSelectedSource: Get Filename & Line of Selection */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -1232,6 +1357,65 @@ int T32_GetSelectedSource (char *filename, dword *line)
 
     *line = 0;
     SETLONGVAR(*line, T32_INBUFFER[4]);
+
+    return T32_Errno = T32_INBUFFER[2];
+}
+
+
+int T32_ReadVariableValue (char *symbol, dword *value, dword *hvalue)
+{
+    int len;
+
+    len = (unsigned int) strlen(symbol);
+
+    if (len >= 256)
+	return T32_Errno = T32_COM_PARA_FAIL;
+
+    T32_OUTBUFFER[0] = len + 3;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x65; /* T32_ReadVariable */
+    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+    strcpy((char *) (T32_OUTBUFFER + 4), symbol);
+
+    if (LINE_Transmit((len + 5 + 1) & (~1)) == -1)
+	return T32_Errno = T32_COM_TRANSMIT_FAIL;
+
+    if (LINE_Receive() == -1)
+	return T32_Errno = T32_COM_RECEIVE_FAIL;
+
+    SETLONGVAR(*value,  T32_INBUFFER[4]);
+    SETLONGVAR(*hvalue, T32_INBUFFER[8]);
+
+    return T32_Errno = T32_INBUFFER[2];
+}
+
+
+int T32_ReadVariableString (char *symbol, char *string, int maxlen)
+{
+    int len;
+
+    len = (unsigned int) strlen(symbol);
+
+    if (len > 250)
+	return T32_Errno = T32_COM_PARA_FAIL;
+
+    T32_OUTBUFFER[0] = len + 3;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x66; /* T32_ReadVariableString */
+    T32_OUTBUFFER[3] = LINE_GetNextMessageId();
+    strcpy((char *) (T32_OUTBUFFER + 4), symbol);
+
+    if (LINE_Transmit((len + 5 + 1) & (~1)) == -1)
+	return T32_Errno = T32_COM_TRANSMIT_FAIL;
+
+    if (LINE_Receive() == -1)
+	return T32_Errno = T32_COM_RECEIVE_FAIL;
+    
+    len = strlen ((char *) T32_INBUFFER + 4);
+    if (len >= maxlen)
+        len = maxlen - 1;
+    strncpy(string, (char *) T32_INBUFFER + 4, len);
+    string[len] = 0;
 
     return T32_Errno = T32_INBUFFER[2];
 }
@@ -1254,8 +1438,8 @@ int T32_AnaStatusGet (byte *state, long *size, long *min, long *max )	/* Get Ana
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x80;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x80; /* T32_AnaStatusGet */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     if (LINE_Transmit(4) == -1)
@@ -1282,8 +1466,8 @@ int T32_AnaRecordGet(long record, byte * buffer, int len)
     dword           drecord;
 
     T32_OUTBUFFER[0] = 8;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x81;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x81; /* T32_AnaRecordGet */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     drecord = (dword) record;
@@ -1313,8 +1497,8 @@ int T32_GetTraceState(int tracetype, int * state, long * size, long * min, long 
 {
 
     T32_OUTBUFFER[0] = 2;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0x82;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0x82; /* T32_GetTraceState */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     T32_OUTBUFFER[4] = tracetype;
     T32_OUTBUFFER[5] = 0;
@@ -1363,8 +1547,8 @@ int T32_ReadTrace(int tracetype, long record, int nrecords, unsigned long mask, 
 	drecord = (dword) record;
 
 	T32_OUTBUFFER[0] = 8;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0x83;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0x83; /* T32_ReadTrace */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 	T32_OUTBUFFER[4] = tracetype;
 	T32_OUTBUFFER[5] = 0;
@@ -1401,14 +1585,14 @@ int T32_ReadTrace(int tracetype, long record, int nrecords, unsigned long mask, 
 
 int T32_Fdx_Open(char * name, char * mode)
 {
-    int             len, lenm;
+    unsigned int len, lenm;
     dword           id;
 
-    len = strlen(name);
-    lenm = strlen(mode);
+    len  = (unsigned int)strlen(name);
+    lenm = (unsigned int)strlen(mode);
     T32_OUTBUFFER[0] = 3 + len+lenm+1;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0xa1;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0xa1; /* T32_FdxOpen */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     strcpy((char *) (T32_OUTBUFFER + 4), name);
@@ -1440,8 +1624,8 @@ int T32_Fdx_Close(int channel)
 
     id = (dword) channel;
     T32_OUTBUFFER[0] = 6;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0xa6;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0xa6; /* T32_FdxClose */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     SETLONGVAR(T32_OUTBUFFER[4], id);
@@ -1463,13 +1647,13 @@ int T32_Fdx_Close(int channel)
 
 int T32_Fdx_Resolve(char * name)
 {
-    int             len;
+    unsigned int    len;
     dword           id;
 
-    len = strlen(name);
+    len = (unsigned int)strlen(name);
     T32_OUTBUFFER[0] = 3 + len;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0xa0;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0xa0; /* T32_FdxResolve */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     strcpy((char *) (T32_OUTBUFFER + 4), name);
@@ -1513,8 +1697,8 @@ int T32_Fdx_ReceivePoll(int channel, void * data, int width, int maxsize)
 	maxsize = LINE_SBLOCK;
 
     T32_OUTBUFFER[0] = 6;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0xa2;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0xa2; /* T32_FdxReceivePoll */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     SETLONGVAR(T32_OUTBUFFER[4], id);
@@ -1576,8 +1760,8 @@ int T32_Fdx_Receive(int channel, void * data, int width, int maxsize)
     do {
 	id = (dword) channel;
 	T32_OUTBUFFER[0] = 6;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0xa3;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0xa3; /* T32_FdxReceive */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
 	SETLONGVAR(T32_OUTBUFFER[4], id);
@@ -1633,8 +1817,8 @@ int T32_Fdx_SendPoll(int channel, void * data, int width, int size)
     }
     id = (dword) channel;
     T32_OUTBUFFER[0] = 0;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = 0xa4;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = 0xa4; /* T32_FdxTransmitPoll */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 
     SETLONGVAR(T32_OUTBUFFER[4], id);
@@ -1684,8 +1868,8 @@ int T32_Fdx_Send(int channel, void * data, int width, int size)
 
     do {
 	T32_OUTBUFFER[0] = 0;
-	T32_OUTBUFFER[1] = 0x74;
-	T32_OUTBUFFER[2] = 0xa5;
+	T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+	T32_OUTBUFFER[2] = 0xa5; /* T32_FdxTransmit */
 	T32_OUTBUFFER[3] = LINE_GetNextMessageId();
 	SETLONGVAR(T32_OUTBUFFER[4], id);
 
@@ -1824,8 +2008,8 @@ static int TAPAccess(int cmd, T32_TAPACCESS_HANDLE connection, int numberofbits,
     size = (int) (ptr - (T32_OUTBUFFER + 6));
 
     T32_OUTBUFFER[0] = 0;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = (connection == T32_TAPACCESS_HOLD) ? 0x93 : 0x92;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = (connection == T32_TAPACCESS_HOLD) ? 0x93 : 0x92; /* T32_JtagDebugLock/T32_JtagDebug */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     T32_OUTBUFFER[4] = (4 + size) & 0xff;
     T32_OUTBUFFER[5] = ((4 + size) >> 8) & 0xff;
@@ -1909,8 +2093,8 @@ static int TAPAccessSend(T32_TAPACCESS_HANDLE connection, int size, byte ** bitp
     unsigned char           *ptr;
 
     T32_OUTBUFFER[0] = 0;
-    T32_OUTBUFFER[1] = 0x74;
-    T32_OUTBUFFER[2] = (connection == T32_TAPACCESS_HOLD) ? 0x93 : 0x92;
+    T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
+    T32_OUTBUFFER[2] = (connection == T32_TAPACCESS_HOLD) ? 0x93 : 0x92; /* T32_JtagDebugLock/T32_JtagDebug */
     T32_OUTBUFFER[3] = LINE_GetNextMessageId();
     T32_OUTBUFFER[4] = (4 + size) & 0xff;
     T32_OUTBUFFER[5] = ((4 + size) >> 8) & 0xff;
@@ -1956,7 +2140,7 @@ int T32_TAPAccessExecute(T32_TAPACCESS_HANDLE connection, T32_TAPACCESS_HANDLE c
     tapptr = taphandle->first;
     datasize = 0;
     n = 0;
-    maxsize = 0x3b00;
+    maxsize = EMU_CBMAXDATASIZE;
 
     while (tapptr) {
 
@@ -1964,10 +2148,11 @@ int T32_TAPAccessExecute(T32_TAPACCESS_HANDLE connection, T32_TAPACCESS_HANDLE c
 	numberofbits = tapptr->numberofbits;
 	size = (numberofbits + 7) / 8;
 
-	if (datasize >= maxsize) {
-	    if (TAPAccessSend(T32_TAPACCESS_HOLD, (int) (ptr - (T32_OUTBUFFER + 6)), bitptr, bitsizessend, bitsizesreceive, n))
+	if ( (datasize >= maxsize) || ( datasize + size > maxsize) )
+	{
+	    if (TAPAccessSend(T32_TAPACCESS_HOLD, (int) (ptr - (T32_OUTBUFFER + T32_TAPACCESSSEND_HEADERSIZE)), bitptr, bitsizessend, bitsizesreceive, n))
 		return T32_Errno;
-	    ptr = T32_OUTBUFFER + 6;
+	    ptr = T32_OUTBUFFER + T32_TAPACCESSSEND_HEADERSIZE;
 	    datasize = 0;
 	    n = 0;
 	}
@@ -1986,7 +2171,7 @@ int T32_TAPAccessExecute(T32_TAPACCESS_HANDLE connection, T32_TAPACCESS_HANDLE c
 	    ptr[2] = ((numberofbits >> 16) & 0xff);
 	    ptr[3] = ((numberofbits >> 24) & 0xff);
 	    ptr += 4;
-	    datasize += 6;
+	    datasize += T32_TAPACCESSSEND_HEADERSIZE;
 	}
 
 	if (size && (cmd & 2)) {
@@ -2030,8 +2215,7 @@ int T32_TAPAccessFree(T32_TAPACCESS_HANDLE connection)
     return 0;
 }
 
-
-int T32_TAPAccessSetInfo(int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave)
+int T32_TAPAccessSetInfo2(T32_TAPACCESS_HANDLE connection, int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave)
 {
     unsigned char   outbits[20];
 
@@ -2056,22 +2240,80 @@ int T32_TAPAccessSetInfo(int irpre, int irpost, int drpre, int drpost, int trist
     outbits[18] = tcklevel;
     outbits[19] = slave;
 
-    return TAPAccess(0, T32_TAPACCESS_RELEASE, 160, outbits, NULL, 0);
+    return TAPAccess(0, connection, 160, outbits, NULL, 0);
 }
+
+int T32_TAPAccessSetInfo(int irpre, int irpost, int drpre, int drpost, int tristate, int tapstate, int tcklevel, int slave)
+{
+    return T32_TAPAccessSetInfo2(T32_TAPACCESS_RELEASE, irpre, irpost, drpre, drpost, tristate, tapstate, tcklevel, slave);
+}
+
+/* T32_GetMaxRawShiftSize
+ * calculates the maximal shiftsize dependendent on the given buffers
+*/
+unsigned int T32_GetMaxRawShiftSize(unsigned int bitsToTransmit, byte* tmsbuf, byte* tdibuf, byte* tdobuf, unsigned int *options)
+{
+	unsigned int usedBits = 0, maxAllowedBits = 0;
+
+	if(tmsbuf)
+	{
+		usedBits += bitsToTransmit;
+	}
+	if(tdibuf)
+	{
+		usedBits += bitsToTransmit;
+	}
+	if(tdobuf && !tdibuf && !tmsbuf)
+	{
+		usedBits += bitsToTransmit;
+	}
+
+	if(tdibuf && tmsbuf)
+	{
+		/* we have to transmit two buffers so the maximum shift is only half */
+		maxAllowedBits = (T32_TAPACCESS_MAXBITS / 2) - SHIFTRAW_HEADERSIZE_BITS;
+		if(bitsToTransmit > maxAllowedBits)
+			return maxAllowedBits;
+		else
+			return bitsToTransmit;
+	}
+	else
+	{
+		maxAllowedBits = T32_TAPACCESS_MAXBITS - SHIFTRAW_HEADERSIZE_BITS;
+		if(bitsToTransmit > maxAllowedBits)
+		{
+			return maxAllowedBits;
+		}
+		else
+		{
+			*options |= SHIFTRAW_OPTION_LASTTMS_ONE;
+			return bitsToTransmit;
+		}
+	}
+}
+
 
 
 int T32_TAPAccessShiftRaw(T32_TAPACCESS_HANDLE connection, int numberofbits, byte * pTMSBits, byte * pTDIBits, byte * pTDOBits, int options)
 {
 	int usedbytes = 0;
-	unsigned char poutbuffer[T32_TAPACCESS_MAXBITS];
-	unsigned char *poutptr = poutbuffer;
+	unsigned char *poutbuffer;
+	unsigned char *poutptr;
 	int nDataByteSize = 0;
 	if (!numberofbits)
 		return T32_Errno = 0;
 	nDataByteSize = (numberofbits + 7) / 8 ;
-	poutbuffer[0]  = 0x90;
-	/* sub function 0x0*/
-	poutbuffer[1]  = 0x0;
+
+	/* allocate twice the size - if TMS and TDI are given we need the double buffer size */
+	poutbuffer = (unsigned char*)malloc(nDataByteSize*2+10);
+	if (poutbuffer == NULL)
+		return T32_MALLOC_FAIL;
+
+	poutptr = poutbuffer;
+
+	poutbuffer[0]  = 0x90; /* EMUMCI CMD Special Shift - see targetsystemtools.cpp */
+	poutbuffer[1]  = 0x00; /* EMUMCI CMD Special Shift sub function 0x0*/
+
 	/* setup options */
 	options &= ~SHIFTRAW_OPTION_INTERNAL_ALL;
 	if (pTMSBits)
@@ -2084,13 +2326,12 @@ int T32_TAPAccessShiftRaw(T32_TAPACCESS_HANDLE connection, int numberofbits, byt
 	poutbuffer[3] = (options >> 8) & 0xFF;
 	/* store bitlength */
 	poutbuffer[4] = numberofbits & 0xff;
-    poutbuffer[5] = (numberofbits >> 8) & 0xff;
-    poutbuffer[6] = (numberofbits >> 16) & 0xff;
-    poutbuffer[7] = (numberofbits >> 24) & 0xff;
+	poutbuffer[5] = (numberofbits >> 8) & 0xff;
+	poutbuffer[6] = (numberofbits >> 16) & 0xff;
+	poutbuffer[7] = (numberofbits >> 24) & 0xff;
 	usedbytes += 8;
 	poutptr = poutbuffer + 8;
-	if (usedbytes + ((pTDOBits)?nDataByteSize:0) + ((pTDIBits && pTMSBits)?nDataByteSize:0) > T32_TAPACCESS_MAXBITS)
-		return T32_Errno = T32_COM_PARA_FAIL;
+
 	if (pTMSBits)
 	{
 		memcpy(poutptr, pTMSBits, nDataByteSize);
@@ -2105,10 +2346,21 @@ int T32_TAPAccessShiftRaw(T32_TAPACCESS_HANDLE connection, int numberofbits, byt
 	}
 	if (pTDOBits && !pTMSBits && !pTDIBits)
 		usedbytes += nDataByteSize;
+
+	if ( usedbytes > EMU_CBMAXDATASIZE )
+	{
+		free(poutbuffer);
+		return T32_Errno = T32_COM_PARA_FAIL;
+	}
+
 	if (connection > T32_TAPACCESS_HOLD)
 		T32_Errno = TAPAccessStore(12, connection, usedbytes*8 , poutbuffer, pTDOBits, ((pTDOBits)?numberofbits:0) );
-    else
+	else
+	{
 		T32_Errno = TAPAccess(12, connection, usedbytes*8, poutbuffer, pTDOBits, ((pTDOBits)?numberofbits:0) );
+	}
+
+	free(poutbuffer);
 	return T32_Errno;
 }
 
@@ -2145,7 +2397,7 @@ int T32_TAPAccessDirect(T32_TAPACCESS_HANDLE connection, int nbytes, byte * pout
 	T32_Errno = T32_COM_PARA_FAIL;
 	return T32_Errno;
     }
-    if (nbytes * 8 > T32_TAPACCESS_MAXBITS) {
+    if (nbytes > EMU_CBMAXDATASIZE) {
 	T32_Errno = T32_COM_PARA_FAIL;
 	return T32_Errno;
     }
@@ -2159,87 +2411,6 @@ int T32_TAPAccessDirect(T32_TAPACCESS_HANDLE connection, int nbytes, byte * pout
 int T32_TAPAccessRelease(void)
 {
     return TAPAccess(0, T32_TAPACCESS_RELEASE, -1, NULL, NULL, 0);
-}
-
-
-/**************************************************************************
-
-	network layer
-	transport layer
-
-***************************************************************************/
-
-/** Sends message with payload contained in T32_OUTBUFFER[0...len-1].
-    Adds the (empty) message header and calls LINE_LineTransmit.
- */
-int LINE_Transmit(int len)
-{
-    int LastTransmitLen = 0;
-
-    if (len)
-	LastTransmitLen = len + 4 + 1;
-
-    T32_OUTBUFFER[-5] = 0; /* message header */
-
-    T32_OUTBUFFER[-4] = 0;
-    T32_OUTBUFFER[-3] = 0;
-    T32_OUTBUFFER[-2] = 0;
-    T32_OUTBUFFER[-1] = 0;
-
-    if (LINE_LineTransmit(T32_OUTBUFFER - 5, LastTransmitLen) == -1) {
-	T32_Errno = T32_COM_TRANSMIT_FAIL;
-	return -1;
-    }
-    return 0;
-}
-
-
-int LINE_Receive(void)
-{
-    int             len;
-    int             retry;
-
-    for (retry = 0; retry < MAXRETRY; retry++) {
-	len = LINE_LineReceive(T32_INBUFFER - 1);
-	if (len == -1) {
-	    T32_Errno = T32_COM_RECEIVE_FAIL;
-	    return -1;
-	}
-	if (T32_INBUFFER[2] == 0xfe) {
-	    retry = 0;
-	    LINE_SetReceiveToggleBit(-1);
-	    continue;
-	}
-	if (T32_INBUFFER[3] != LINE_GetMessageId())
-	    continue;
-
-	if (T32_INBUFFER[-1] & T32_MSG_LRETRY) {
-	    if (LINE_GetReceiveToggleBit() == (!!(T32_INBUFFER[-1] & T32_MSG_LHANDLE))) {
-		if (LINE_Transmit(0) == -1)
-		    LINE_Sync();
-		continue;
-	    }
-	}
-	LINE_SetReceiveToggleBit(!!(T32_INBUFFER[-1] & T32_MSG_LHANDLE));
-
-	return len - 1;
-    }
-
-    T32_Errno = T32_COM_RECEIVE_FAIL;
-    return -1;
-}
-
-
-static int LINE_Sync(void)
-{
-    int             retry;
-
-    for (retry = MAXRETRY; --retry > 0;) {
-	if (LINE_LineSync() != -1)
-	    return 0;
-    }
-
-    return -1;
 }
 
 
@@ -2321,7 +2492,7 @@ int T32_NotifyStateEnable(int eventNr, T32_NotificationCallback_t func) {
   if (eventNr==T32_E_EDIT)  /* device independent -> win/main.c */
     {
       T32_OUTBUFFER[0] = 2;
-      T32_OUTBUFFER[1] = 0x78;
+      T32_OUTBUFFER[1] = RAPI_CMD_EDITNOTIFY;
       T32_OUTBUFFER[2] = 0x0;
       T32_OUTBUFFER[3] = LINE_GetNextMessageId();
       T32_OUTBUFFER[4] = 0x1;  /* No mask, just an enable bit */
@@ -2329,7 +2500,7 @@ int T32_NotifyStateEnable(int eventNr, T32_NotificationCallback_t func) {
   else                      /* device dependent -> debug/comemu12.c */
     {
       T32_OUTBUFFER[0] = 2;
-      T32_OUTBUFFER[1] = 0x74;
+      T32_OUTBUFFER[1] = RAPI_CMD_DEVICE_SPECIFIC;
       T32_OUTBUFFER[2] = 0x12;  /* -> T32_NotifyStateEnable */
       T32_OUTBUFFER[3] = LINE_GetNextMessageId();
       T32_OUTBUFFER[4] = T32_EventMask;
@@ -2424,4 +2595,87 @@ void T32_GetSocketHandle(int *t32soc)
 {
     *t32soc = LINE_LineDriverGetSocket();
 }
+
+
+
+/**************************************************************************
+
+	network layer
+	transport layer
+
+***************************************************************************/
+
+/** Sends message with payload contained in T32_OUTBUFFER[0...len-1].
+    Adds the (empty) message header and calls LINE_LineTransmit.
+ */
+int LINE_Transmit(int len)
+{
+    int LastTransmitLen = 0;
+
+    if (len)
+	LastTransmitLen = len + 4 + 1;
+
+    T32_OUTBUFFER[-5] = 0; /* message header */
+
+    T32_OUTBUFFER[-4] = 0;
+    T32_OUTBUFFER[-3] = 0;
+    T32_OUTBUFFER[-2] = 0;
+    T32_OUTBUFFER[-1] = 0;
+
+    if (LINE_LineTransmit(T32_OUTBUFFER - 5, LastTransmitLen) == -1) {
+	T32_Errno = T32_COM_TRANSMIT_FAIL;
+	return -1;
+    }
+    return 0;
+}
+
+
+int LINE_Receive(void)
+{
+    int             len;
+    int             retry;
+
+    for (retry = 0; retry < MAXRETRY; retry++) {
+	len = LINE_LineReceive(T32_INBUFFER - 1);
+	if (len == -1) {
+	    T32_Errno = T32_COM_RECEIVE_FAIL;
+	    return -1;
+	}
+	if (T32_INBUFFER[2] == 0xfe) {
+	    retry = 0;
+	    LINE_SetReceiveToggleBit(-1);
+	    continue;
+	}
+	if (T32_INBUFFER[3] != LINE_GetMessageId())
+	    continue;
+
+	if (T32_INBUFFER[-1] & T32_MSG_LRETRY) {
+	    if (LINE_GetReceiveToggleBit() == (!!(T32_INBUFFER[-1] & T32_MSG_LHANDLE))) {
+		if (LINE_Transmit(0) == -1)
+		    LINE_Sync();
+		continue;
+	    }
+	}
+	LINE_SetReceiveToggleBit(!!(T32_INBUFFER[-1] & T32_MSG_LHANDLE));
+
+	return len - 1;
+    }
+
+    T32_Errno = T32_COM_RECEIVE_FAIL;
+    return -1;
+}
+
+
+int LINE_Sync(void)
+{
+    int             retry;
+
+    for (retry = MAXRETRY; --retry > 0;) {
+	if (LINE_LineSync() != -1)
+	    return 0;
+    }
+
+    return -1;
+}
+
 

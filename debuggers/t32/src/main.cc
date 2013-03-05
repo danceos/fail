@@ -22,33 +22,37 @@
 #include "optionparser_ext.hpp"
 
 #include "T32Connector.hpp"
-using namespace std;
+#include "t32config.hpp"
 
-static fail::T32Connector t32;
+using namespace std;
+using namespace fail;
+
+static T32Connector t32;
 
 //!< Program options
 enum  optionIndex { UNKNOWN, HELP, RUN, T32HOST, PORT, PACKLEN };
 const option::Descriptor usage[] =
 {
- {UNKNOWN, 0,"" , ""    ,Arg::None, "USAGE: fail-client [options]\n\n"
+ {UNKNOWN, 0,"" , ""    ,Arg::None, "USAGE: fail-client [options]\n\nATTENTION:\nOnly setup TCP Port/Packlen here, if you really know what you are doing!\nIt is safer use the  CMake configuration (ccmake <BUILDDIR>).\n\n"
                                             "Options:" },
  {HELP,    0,"" , "help",Arg::None, "  --help  \tPrint usage and exit." },
  {RUN,    0,"r", "run",Arg::Required, "  --run, -r  \tLauterbach script to startup system." },
  {T32HOST,    0,"t", "trace32-host",Arg::Required, "  --trace32-host, -t <hostname>  \tHostname/IP Address of the Trace32 instance. (default: localhost)" },
- {PORT,    0,"p", "port",Arg::Required, "  --port <NUM>, -p <NUM> \tTCP Port. (default: 20010)" },
- {PACKLEN,    0,"l", "packet-length",Arg::Required, "  --packet-length, -l <NUM> \tPacket length. (default: 1024)" },
+ {PORT,    0,"p", "port",Arg::Required, "  --port <NUM>, -p <NUM> \tTCP Port. (default: " T32_PORTNUM  ")" },
+ {PACKLEN,    0,"l", "packet-length",Arg::Required, "  --packet-length, -l <NUM> \tPacket length. (default: " T32_PACKLEN  ")" },
  {0,0,0,0,0,0}
 };
 
 /* Here we go... */
 int main(int argc, char** argv){
-
+  //----------------------------------------------
   // Evaluate arguments
   argc-=(argc>0); argv+=(argc>0); // skip program name argv[0] if present
   option::Stats stats(usage, argc, argv);
   option::Option options[stats.options_max], buffer[stats.buffer_max];
   option::Parser parse(usage, argc, argv, options, buffer);
 
+  return 0;
   if (parse.error()){
     cerr << "Error parsing arguments." << endl;
     return 1;
@@ -76,7 +80,7 @@ int main(int argc, char** argv){
   if(options[PACKLEN].count()){
     t32.setPacketlength(options[PACKLEN].first()->arg);
   }
-
+  //----------------------------------------------
   // Initialize T32
   if(t32.startup() == false){
     cout << "Could not connect to Lauterbach :(" << endl;
@@ -92,18 +96,19 @@ int main(int argc, char** argv){
   // The experiments/traces hopefully set some Breakpoints, we can react on.
   // We may also provide a timeout, if a TimerListener was set wanted.
 
- /*
+
    while(1) {
-        // Start execution (with next timeout, in any)
-
+        // Start execution (with next timeout, if any)
+        t32.go();
         // Wait for debugger to stop.
-
+        while( t32.isRunning() ) {}
         // Evaluate state.
-
+        t32.test();// TODO
         // Call appropriate callback of the SimulatorController.
-
+        fail::simulator.onBreakpoint(&fail::simulator.getCPU(0), fail::simulator.getCPU(0).getInstructionPointer(), fail::ANY_ADDR);
+// TODO        fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), 0x20002074, 1, true, fail::simulator.getCPU(0).getInstructionPointer());
     }
-  */
+
   cout << "[T32 Backend] After startup" << endl;
   return 0;
 }
