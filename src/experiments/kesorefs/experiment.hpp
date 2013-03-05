@@ -14,6 +14,7 @@ class KESOrefs : public fail::ExperimentFlow {
   fail::Logger m_log;
   fail::MemoryManager& m_mm;
   fail::ElfReader m_elf;
+  fail::Disassembler m_dis;
 
   void printEIP();
   void setupExitBPs(const std::string&);

@@ -72,10 +72,12 @@ if(BUILD_X86)
 	set(SRCS ${SRCS}
 		x86/Architecture.cc
 	)
+  set(ARCH_TOOL_PREFIX "" CACHE PATH "Setup prefix for binutils, e.g., arm-none-eabi- or tricore-, ..")
 elseif(BUILD_ARM)
 	set(SRCS ${SRCS}
 		arm/Architecture.cc
 	)
+  set(ARCH_TOOL_PREFIX "arm-none-eabi-" CACHE PATH "Setup prefix for binutils, e.g., arm-none-eabi- or tricore-, ..")
 endif(BUILD_X86)
 
 # Don't include these sources if perf-stuff is disabled

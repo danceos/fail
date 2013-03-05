@@ -1,23 +1,25 @@
 set(SRCS
-	ElfReader.cc
-	ElfReader.hpp
-  Demangler.hpp
-  Demangler.cc
-	elfinfo/elfinfo.cc
-	elfinfo/elfinfo.h
-	gzstream/gzstream.C
-	gzstream/gzstream.h
-	Logger.cc
-	Logger.hpp
-	MemoryMap.hpp
-	ProtoStream.cc
-	ProtoStream.hpp
-	SynchronizedCounter.cc
-	SynchronizedCounter.hpp
-	SynchronizedMap.hpp
-	SynchronizedQueue.hpp
-	WallclockTimer.cc
-	WallclockTimer.hpp
+ ElfReader.cc
+ ElfReader.hpp
+ Demangler.hpp
+ Demangler.cc
+ Disassembler.hpp
+ Disassembler.cc
+ elfinfo/elfinfo.cc
+ elfinfo/elfinfo.h
+ gzstream/gzstream.C
+ gzstream/gzstream.h
+ Logger.cc
+ Logger.hpp
+ MemoryMap.hpp
+ ProtoStream.cc
+ ProtoStream.hpp
+ SynchronizedCounter.cc
+ SynchronizedCounter.hpp
+ SynchronizedMap.hpp
+ SynchronizedQueue.hpp
+ WallclockTimer.cc
+ WallclockTimer.hpp
 )
 
 # required by ProtoStream.cc:
@@ -26,7 +28,7 @@ include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # required by Synchronized*.cc:
-find_package(Boost 1.42 COMPONENTS thread REQUIRED)
+find_package(Boost 1.42 COMPONENTS thread regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -38,4 +40,4 @@ if(${LIB_IBERTY} STREQUAL LIB_IBERTY-NOTFOUND)
 endif()
 
 add_library(fail-util ${SRCS})
-target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} ${LIB_IBERTY})
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} )

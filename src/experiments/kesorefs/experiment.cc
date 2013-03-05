@@ -20,6 +20,7 @@
 
 #include "campaign.hpp"
 #include "kesoref.pb.h"
+#include "util/Disassembler.hpp"
 
 using namespace std;
 using namespace fail;
@@ -79,6 +80,7 @@ void handleMemoryAccessEvent(KesoRefExperimentData& param, const fail::MemAccess
 
 bool KESOrefs::run()
 {
+  m_dis.init();
 //******* Boot, and store state *******//
   m_log << "STARTING EXPERIMENT" << endl;
 #if SAFESTATE // define SS (SafeState) when building: make -DSS
