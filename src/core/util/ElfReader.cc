@@ -18,6 +18,13 @@ bool operator==(guest_address_t address, const ElfSymbol & sym) {
   return sym.getAddress() == address;
 }
 
+std::ostream& operator<< (std::ostream &out, const ElfSymbol &symbol) {
+  return (out << symbol.getName()
+          << " @ 0x" << std::hex << symbol.getAddress()
+          << " size " << std::dec << symbol.getSize());
+}
+
+
 
 ElfReader::ElfReader() : m_log("Fail*Elfinfo", false){
   // try to open elf file from environment variable
@@ -157,7 +164,8 @@ int ElfReader::process_symboltable(int sect_num, FILE* fp){
 
     int type = ELF32_ST_TYPE(mysym.st_info);
     if((type != STT_SECTION) && (type != STT_FILE)){
-      m_symboltable.push_back( ElfSymbol(name_buf+idx, mysym.st_value, mysym.st_size, ElfSymbol::SYMBOL) );
+      m_symboltable.push_back( ElfSymbol(name_buf+idx, mysym.st_value, mysym.st_size, ElfSymbol::SYMBOL,
+                                         type) );
     }
   }
   free (name_buf);

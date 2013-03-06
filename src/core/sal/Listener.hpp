@@ -11,6 +11,8 @@
 #include "Event.hpp"
 #include "ConcreteCPU.hpp"
 #include "perf/BufferInterface.hpp"
+#include "util/ElfReader.hpp"
+
 
 namespace fail {
 
@@ -301,6 +303,11 @@ public:
 	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_WatchAddr(addr), m_WatchWidth(1), m_WatchType(type) { }
+	MemAccessListener(const ElfSymbol &symbol,
+	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
+					  ConcreteCPU* cpu = NULL)
+		: BaseListener(cpu), m_WatchAddr(symbol.getAddress()), m_WatchWidth(symbol.getSize()), m_WatchType(type) { }
+
 	/**
 	 * Returns the physical memory address to be observed.
 	 */

@@ -21,21 +21,26 @@ namespace fail {
     guest_address_t address;
     size_t size;
     int m_type;
+    int m_symbol_type;
 
     public:
     enum { SECTION = 1, SYMBOL = 2, UNDEFINED = 3, };
 
-    ElfSymbol(const std::string & name = ELF::NOTFOUND, guest_address_t addr = ADDR_INV, size_t size = -1, int type = UNDEFINED)
-      : name(name), address(addr), size(size), m_type(type) {};
+    ElfSymbol(const std::string & name = ELF::NOTFOUND, guest_address_t addr = ADDR_INV, size_t size = -1, int type = UNDEFINED,
+              int symbol_type = 0)
+      : name(name), address(addr), size(size), m_type(type), m_symbol_type(symbol_type) {};
 
     const std::string& getName() const { return name; };
+    std::string getDemangledName() const { return Demangler::demangle(name); };
     guest_address_t getAddress() const { return address; };
     size_t getSize() const { return size; };
     guest_address_t getStart() const { return getAddress(); }; // alias
     guest_address_t getEnd() const { return address + size; };
+    int getSymbolType() const { return m_symbol_type; };
 
     bool isSection() const { return m_type == SECTION; };
     bool isSymbol()  const { return m_type == SYMBOL; };
+    bool isValid()   const { return name != ELF::NOTFOUND; };
 
     bool operator==(const std::string& rhs) const {
       if(rhs == name){
@@ -56,7 +61,12 @@ namespace fail {
       return (ad >= address) && (ad < address+size);
     }
   };
-
+  /**
+   * \fn
+   * \relates ElfSymbol
+   * overloaded stream operator for printing ElfSymbol
+   */
+  std::ostream& operator<< (std::ostream &out, const ElfSymbol &symbol);
 
   /**
    * \class ElfReader
@@ -67,6 +77,9 @@ namespace fail {
   class ElfReader {
 
     public:
+      typedef ElfSymbol entry_t;
+      typedef std::vector<entry_t> container_t;
+      typedef container_t::const_iterator symbol_iterator;
 
       /**
        * Constructor.
@@ -124,15 +137,19 @@ namespace fail {
        */
        const ElfSymbol& getSection( const std::string& name );
 
+      /**
+       * Get symboltable iterator. Derefences to a ElfSymbol
+       * @return iterator
+       */
+      container_t::const_iterator sym_begin() { return m_symboltable.begin(); }
+      container_t::const_iterator sym_end() { return m_symboltable.end(); }
+
     private:
       Logger m_log;
 
       void setup(const char*);
       int process_symboltable(int sect_num, FILE* fp);
       int process_section(Elf32_Shdr *sect_hdr, char* sect_name_buff);
-
-      typedef ElfSymbol entry_t;
-      typedef std::vector<entry_t> container_t;
 
       container_t m_symboltable;
       container_t m_sectiontable;
