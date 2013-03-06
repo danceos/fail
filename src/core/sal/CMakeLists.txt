@@ -64,6 +64,8 @@ elseif(BUILD_T32)
 	if(BUILD_ARM)
 		set(SRCS ${SRCS}
 			t32/T32ArmCPU.cc
+      arm/ArmMemoryInstruction.cc
+      arm/arm_disassembler.cc
 		)
 	endif(BUILD_ARM)
 endif(BUILD_BOCHS)

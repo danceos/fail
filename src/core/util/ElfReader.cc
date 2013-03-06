@@ -216,7 +216,7 @@ const ElfSymbol& ElfReader::getSection( const std::string& name ){
   return g_SymbolNotFound;
 }
 
-// "Pretty" Print 
+// "Pretty" Print
 void ElfReader::printDemangled(){
   m_log << "Demangled: " << std::endl;
   for(container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it){
@@ -230,7 +230,7 @@ void ElfReader::printDemangled(){
 
 void ElfReader::printMangled(){
   for(container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it){
-    m_log  << "0x"  << it->getAddress() << "\t" << it->getName().c_str() << "\t" << it->getSize() << std::endl;
+    m_log  << "0x" << std::hex << it->getAddress() << "\t" << it->getName().c_str() << "\t" << it->getSize() << std::endl;
   }
 }
 

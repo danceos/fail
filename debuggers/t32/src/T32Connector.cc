@@ -1,6 +1,7 @@
 #include "T32Connector.hpp"
 #include <iostream>
 #include <t32.h>
+#include "sal/MemoryInstruction.hpp"
 
 using namespace fail;
 
@@ -93,7 +94,6 @@ void T32Connector::brk() {
 #include "sal/t32/T32Constants.hpp"
 
 void T32Connector::test() {
-  
 }
 
 /* Default T32 error handler */
