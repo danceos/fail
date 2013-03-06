@@ -43,7 +43,7 @@ unsigned KESOrefs::injectBitFlip(address_t data_address, unsigned bitpos){
   unsigned value, injectedval;
 
   mm.getBytes(data_address, 4, (void*)&value);
-  injectedval = value ^ bitpos;
+  injectedval = value ^ (1<<bitpos);
   mm.setBytes(data_address, 4, (void*)&injectedval);
 
   m_log << "INJECTION at: 0x" << hex  << setw(8) << setfill('0') << data_address;

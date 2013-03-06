@@ -23,6 +23,12 @@
 
 #include "T32Connector.hpp"
 #include "t32config.hpp"
+<<<<<<< Updated upstream
+#include "sal/MemoryInstruction.hpp"
+
+=======
+>>>>>>> Stashed changes
+#include "util/Disassembler.hpp"
 
 using namespace std;
 using namespace fail;
@@ -96,6 +102,8 @@ int main(int argc, char** argv){
   // The experiments/traces hopefully set some Breakpoints, we can react on.
   // We may also provide a timeout, if a TimerListener was set wanted.
 
+   MemoryInstruction mem;
+   address_t ip;
 
    while(1) {
         // Start execution (with next timeout, if any)
@@ -105,8 +113,11 @@ int main(int argc, char** argv){
         // Evaluate state.
         t32.test();// TODO
         // Call appropriate callback of the SimulatorController.
-        fail::simulator.onBreakpoint(&fail::simulator.getCPU(0), fail::simulator.getCPU(0).getInstructionPointer(), fail::ANY_ADDR);
-// TODO        fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), 0x20002074, 1, true, fail::simulator.getCPU(0).getInstructionPointer());
+        ip = fail::simulator.getCPU(0).getInstructionPointer();
+        fail::simulator.onBreakpoint(&fail::simulator.getCPU(0), ip , fail::ANY_ADDR);
+        if( meminstruction.eval(ip, mem) ) {
+          fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), mem.getAddress(), mem.getWidth(), mem.isWriteAccess(), ip );
+        }
     }
 
   cout << "[T32 Backend] After startup" << endl;

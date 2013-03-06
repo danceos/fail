@@ -19,11 +19,12 @@ namespace fail {
    * @brief An Instruction represents an disassembled opcode
    */
   struct Instruction {
-    std::string opcode; // TODO convert to integer, size?
+    address_t address; //!< The instruction address
+    regdata_t opcode;  //!< The opcode itself
     std::string instruction; //!< The disassembled instruction
     std::string comment;     //!< Comment (rest of line after ; )
-    Instruction(std::string opcode = "", const std::string& instr = DISASSEMBLER::FAILED, const std::string& comment = "")
-      : opcode(opcode), instruction(instr), comment(comment) { };
+    Instruction(address_t address = ADDR_INV, regdata_t opcode = 0, const std::string& instr = DISASSEMBLER::FAILED, const std::string& comment = "")
+      : address(address), opcode(opcode), instruction(instr), comment(comment) { };
   };
   //<! This allows to print an Instruction via Logger or cout
   std::ostream& operator <<(std::ostream & os, const fail::Instruction & i);
@@ -41,7 +42,16 @@ namespace fail {
        * @param address The instruction address
        * @return The according disassembled instruction if found, else DISASSEMBLER:FAILED
        */
-      const Instruction& disassemble(address_t address);
+      const Instruction & disassemble(address_t address) const;
+
+      /**
+       * Test if there is an instruction at a given address
+       * @param address The address to test
+       * @return true if found, else false
+       */
+      bool hasInstructionAt(address_t address) const {
+        return m_code.find(address) != m_code.end();;
+      };
 
       /**
        * Evaluate new ELF file

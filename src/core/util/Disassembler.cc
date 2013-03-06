@@ -53,7 +53,9 @@ namespace fail {
   }
 
   std::ostream& operator <<(std::ostream & os, const fail::Instruction & i) {
-    os << i.opcode << "\t" << i.instruction << "\t" << i.comment;
+#ifndef __puma
+    os << std::hex << ((int)(i.address)) << "\t" << i.opcode << "\t" << i.instruction << "\t" << i.comment;
+#endif
     return os;
   }
 
@@ -63,7 +65,7 @@ namespace fail {
     // Code lines start with a leading whitespace! (hopefully in each objdump implementation!)
     if(line.size() > 0 && isspace(line[0])){
       // a line looks like: 800156c:\tdd14          \tble.n   8001598 <_ZN2hw3hal7T32Term8PutBlockEPci+0x30>
-      boost::regex expr("\\s+([A-Fa-f0-9]+):((?:\\s+[A-Fa-f0-9]+)+)\\s+(.+?)(;.*)?$");
+      boost::regex expr("\\s+([A-Fa-f0-9]+):\\t(.*?)\\t(.+?)(;.*)?$");
       boost::smatch res;
       if(boost::regex_search(line, res, expr)){
         std::string address = res[1];
@@ -71,22 +73,31 @@ namespace fail {
         ss << std::hex << address;
         address_t addr = 0;
         ss >> addr;
+        ss.clear();
+        ss.str("");
+
         std::string opcode = res[2];
+        // delete trailing/leading whitespaces
         boost::trim(opcode);
+        // delete inner whitespaces and merge nibbles
+        opcode.erase(std::remove(opcode.begin(), opcode.end(), ' '), opcode.end());
+        ss << std::hex << opcode;
+        unsigned opc = 0;
+        ss >> opc;
+
         std::string instruction = res[3];
         boost::trim(instruction);
         std::string comment = res[4];
         boost::trim(comment);
 
-        m_code.insert(std::make_pair(addr, Instruction(opcode, instruction, comment)));
+        m_code.insert(std::make_pair(addr, Instruction(addr, opc, instruction, comment)));
       }
     }
 #endif
   }
 
   static Instruction g_InstructionNotFound;
-
-  const Instruction& Disassembler::disassemble(address_t address){
+  const Instruction & Disassembler::disassemble(address_t address) const {
     InstructionMap_t::const_iterator it = m_code.find(address);
     if(it == m_code.end()){
       return g_InstructionNotFound;
