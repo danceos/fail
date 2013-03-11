@@ -1,6 +1,8 @@
 #ifndef __OPTIONSPARSER_EXT_HPP__
 #define __OPTIONSPARSER_EXT_HPP__
 
+#include <cstdio>
+#include <cstdlib>
 
 struct Arg: public option::Arg
 {

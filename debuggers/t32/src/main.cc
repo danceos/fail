@@ -18,8 +18,8 @@
 #include <vector>
 #include "config/VariantConfig.hpp"
 #include "sal/SALInst.hpp"
-#include "optionparser.h"
-#include "optionparser_ext.hpp"
+#include "optionparser/optionparser.h"
+#include "optionparser/optionparser_ext.hpp"
 
 #include "T32Connector.hpp"
 #include "t32config.hpp"

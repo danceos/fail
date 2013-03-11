@@ -1,4 +1,6 @@
 set(SRCS
+ CommandLine.cc
+ CommandLine.hpp
  ElfReader.cc
  ElfReader.hpp
  Demangler.hpp
@@ -20,6 +22,7 @@ set(SRCS
  SynchronizedQueue.hpp
  WallclockTimer.cc
  WallclockTimer.hpp
+
 )
 
 # required by ProtoStream.cc:

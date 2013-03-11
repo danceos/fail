@@ -326,7 +326,7 @@ struct Descriptor
    * Use an enum rather than plain ints for better readability, as shown in the example
    * at Descriptor.
    */
-  const unsigned index;
+  unsigned index;
 
   /**
    * @brief Used to distinguish between options with the same @ref index.
@@ -335,7 +335,7 @@ struct Descriptor
    * It is recommended that you use an enum rather than a plain int to make your
    * code more readable.
    */
-  const int type;
+  int type;
 
   /**
    * @brief Each char in this string will be accepted as a short option character.
@@ -348,7 +348,7 @@ struct Descriptor
    *
    * See @ref longopt for more information.
    */
-  const char* const shortopt;
+  const char* shortopt;
 
   /**
    * @brief The long option name (without the leading @c -- ).
@@ -383,7 +383,7 @@ struct Descriptor
    * If there is no dummy descriptor, unknown options will be dropped silently.
    *
    */
-  const char* const longopt;
+  const char* longopt;
 
   /**
    * @brief For each option that matches @ref shortopt or @ref longopt this function
@@ -395,7 +395,7 @@ struct Descriptor
    *
    * See @ref CheckArg for more information.
    */
-  const CheckArg check_arg;
+  CheckArg check_arg;
 
   /**
    * @brief The usage text associated with the options in this Descriptor.
