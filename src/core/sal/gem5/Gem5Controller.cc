@@ -19,6 +19,7 @@ void Gem5Controller::startup()
 		addCPU(cpu);
 	}
 
+	// TODO pass on command-line parameters
 	SimulatorController::startup();
 }
 

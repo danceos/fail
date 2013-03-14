@@ -10,8 +10,7 @@
 aspect FailBochsInit {
 	advice call("int bxmain()") : before ()
 	{
-        fail::simulator.collectCommandLineArguments(bx_startup_flags.argc, bx_startup_flags.argv);
-		fail::simulator.startup();
+		fail::simulator.startup(bx_startup_flags.argc, bx_startup_flags.argv);
 	}
 };
 

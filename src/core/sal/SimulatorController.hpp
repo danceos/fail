@@ -48,8 +48,11 @@ public:
 	 * This function needs to be invoked once the simulator starts, and
 	 * allows the SimulatorController to instantiate all needed experiment
 	 * components.
+	 *
+	 * @param argc main()'s argument counter
+	 * @param argv main()'s argument value vector
 	 */
-	void startup();
+	void startup(int argc = 0, char **argv = 0);
 	/**
 	 * Experiments need to hook here.
 	 */
