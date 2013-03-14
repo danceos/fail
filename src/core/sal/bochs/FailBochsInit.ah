@@ -6,12 +6,11 @@
 #ifdef BUILD_BOCHS
 
 #include "../SALInst.hpp"
-#include "util/CommandLine.hpp"
 
 aspect FailBochsInit {
 	advice call("int bxmain()") : before ()
 	{
-        fail::CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
+        fail::simulator.collectCommandLineArguments(bx_startup_flags.argc, bx_startup_flags.argv);
 		fail::simulator.startup();
 	}
 };

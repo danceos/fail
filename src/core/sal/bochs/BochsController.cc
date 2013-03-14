@@ -4,6 +4,7 @@
 #include "BochsMemory.hpp"
 #include "../SALInst.hpp"
 #include "../Listener.hpp"
+#include "util/CommandLine.hpp"
 
 namespace fail {
 
@@ -171,6 +172,11 @@ ConcreteCPU& BochsController::detectCPU(BX_CPU_C* pCPU) const
 	}
   #endif
 	return getCPU(i);
+}
+
+void BochsController::collectCommandLineArguments(int argc, char **argv) const
+{
+	CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
 }
 
 } // end-of-namespace: fail
