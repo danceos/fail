@@ -97,15 +97,21 @@ if(BUILD_BOCHS)
   )
 
   # tell cmake that the external project generated a library so we can add dependencies here instead of later
-  add_library(libfailbochs STATIC IMPORTED)
-  set_property(TARGET libfailbochs PROPERTY IMPORTED_LOCATION ${bochs_src_dir}/libfailbochs.a )
-  add_dependencies(libfailbochs libfailbochs_external)
+  # FIXME: The following works only with cmake 2.8.4 or newer <http://public.kitware.com/Bug/view.php?id=10395>:
+  #add_library(libfailbochs STATIC IMPORTED)
+  #set_property(TARGET libfailbochs PROPERTY IMPORTED_LOCATION ${bochs_src_dir}/libfailbochs.a )
+  #add_dependencies(libfailbochs libfailbochs_external)
+  # /FIXME
 
   # make sure aspects don't fail to match in entry.cc
   include_directories(${PROJECT_SOURCE_DIR}/src/core ${CMAKE_BINARY_DIR}/src/core)
   # an executable needs at least one source file, so we hand over an empty .cc file to make cmake happy.
   add_executable(fail-client  ${bochs_src_dir}/fail_empty_source_file_for_build.cc)
-  target_link_libraries(fail-client libfailbochs  fail ${bochs_library_dependencies})
+  # FIXME: see FIXME above
+  #target_link_libraries(fail-client libfailbochs fail ${bochs_library_dependencies})
+  target_link_libraries(fail-client ${bochs_src_dir}/libfailbochs.a fail ${bochs_library_dependencies})
+  add_dependencies(fail-client libfailbochs_external)
+  # /FIXME
   install(TARGETS fail-client RUNTIME DESTINATION bin)
 
   # Get stamp directory to touch files for forcing rebuilds.
