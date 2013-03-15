@@ -43,6 +43,11 @@ namespace fail {
         void collect_args(argument_count &, argument_value &);
 
         /**
+         * Add a argument manually
+         */
+        void add_args(char *value) { argv.push_back(value); }
+
+        /**
          * Add a option to the command line interface of the fail-client
          *
          * @param shortopt e.g "m" for -m
