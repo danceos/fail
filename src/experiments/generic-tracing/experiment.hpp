@@ -11,25 +11,27 @@
 
 
 class GenericTracing : public fail::ExperimentFlow {
-    std::string start_symbol;
-    std::string stop_symbol;
-    std::string save_symbol;
+	std::string start_symbol;
+	std::string stop_symbol;
+	std::string save_symbol;
 
-    std::string state_file;
-    std::string trace_file;
-    std::string elf_file;
+	std::string state_file;
+	std::string trace_file;
+	std::string elf_file;
 
-    bool use_memory_map;
-    fail::MemoryMap traced_memory_map;
+	bool use_memory_map;
+	fail::MemoryMap traced_memory_map;
 
-    fail::Logger m_log;
-    fail::ElfReader *m_elf;
+	bool full_trace;
+
+	fail::Logger m_log;
+	fail::ElfReader *m_elf;
 
 public:
-    void parseOptions();
+	void parseOptions();
 	bool run();
 
-    GenericTracing() : m_log("GenericTracing", false) {};
+	GenericTracing() : full_trace(false), m_log("GenericTracing", false) {};
 };
 
 #endif // __TRACING_TEST_HPP__

@@ -21,7 +21,7 @@
  * \brief Plugin to record instruction traces and memory accesses.
  *
  * This plugin is supposed to be instantiated, configured and run by
- * experiments needing instruction or memory access traces.  Tracing can be
+ * experiments needing instruction or memory access traces.	 Tracing can be
  * restricted to a memory or instruction address map; the restrictions are
  * applied together, i.e., a memory access is only logged if neither its
  * instruction address nor its memory address is restricted.
@@ -29,10 +29,10 @@
  * TODO: document usage by example
  * FIXME: handle configuration changes after tracing start properly
  * FIXME: more explicit startup/shutdown; listener-based event interface needed?
- *        -> should simulator.removeFlow make sure all remaining active events
- *           are delivered?
+ *		  -> should simulator.removeFlow make sure all remaining active events
+ *			 are delivered?
  * FIXME: trace a sequence of pb messages, not a giant single one (pb weren't
- *        made for huge messages)
+ *		  made for huge messages)
  * FIXME: destructor -> removeFlow?
  */
 class TracingPlugin : public fail::ExperimentFlow
@@ -42,18 +42,19 @@ private:
 	fail::MemoryMap *m_ipMap; //!< instruction address restriction
 	bool m_memonly; //!< log instructions only if they are memory accesses
 	bool m_iponly; //!< log instruction addresses only
+	bool m_full_trace; //!< do a full trace (more information for the events)
 
 	std::ostream *m_protoStreamFile;
 	std::ostream *m_os; //!< ostream to write human-readable trace into
 	fail::ProtoOStream *ps;
 
 public:
-	TracingPlugin()
+	TracingPlugin(bool full_trace = false)
 	 : m_memMap(0), m_ipMap(0), m_memonly(false), m_iponly(false),
-	   m_protoStreamFile(0), m_os(0) { }
+	   m_full_trace(full_trace), m_protoStreamFile(0), m_os(0) { }
 	bool run();
 	/**
-	 * Restricts tracing to memory addresses listed in this MemoryMap.  An
+	 * Restricts tracing to memory addresses listed in this MemoryMap.	An
 	 * access wider than 8 bit *is* logged if *one* of the bytes it
 	 * reads/writes is listed.
 	 */
@@ -75,6 +76,10 @@ public:
 	 * If invoked with iponly=true, only instruction addresses are logged.
 	 */
 	void setLogIPOnly(bool iponly) { m_iponly = iponly; }
+	/**
+	 * If invoked with fulltrace=true, a extended (full) trace is done.
+	 */
+	void setFullTrace(bool fulltrace) { m_full_trace = fulltrace; }
 	/**
 	 * ostream to trace into (human-readable)
 	 */

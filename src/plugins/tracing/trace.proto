@@ -1,3 +1,21 @@
+message Trace_Event_Extended {
+	// data value read/written
+	optional uint64 data = 5;
+	// register contents
+	repeated group Registers = 6 {
+		// register ID
+		required uint32 id = 1;
+		// register value
+		optional uint64 value = 2;
+		// data register points to
+		optional uint32 value_deref = 3;
+	}
+	// selected stack content
+	repeated group Stack = 7 {
+		required uint32 value = 1;
+	}
+}
+
 message Trace_Event {
 	required uint64 ip = 1;
 	optional uint64 memaddr = 2;
@@ -7,4 +25,7 @@ message Trace_Event {
 		WRITE = 2;
 	}
 	optional AccessType accesstype = 4;
+
+    optional Trace_Event_Extended trace_ext = 5;
 }
+
