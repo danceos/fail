@@ -37,6 +37,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 # libiberty required by Demangler.cc:
 find_library(LIB_IBERTY iberty)
+mark_as_advanced(LIB_IBERTY)
 
 if(${LIB_IBERTY} STREQUAL LIB_IBERTY-NOTFOUND)
   message(FATAL_ERROR "libiberty not found. Try installing binutils-dev: [ sudo aptitude install binutils-dev ]")

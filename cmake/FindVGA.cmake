@@ -34,3 +34,5 @@ else(VGA_FOUND)
   endif(VGA_FIND_REQUIRED)
 endif(VGA_FOUND)
 endif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+
+mark_as_advanced(VGA_LIBRARY VGA_INCLUDE_DIR)
