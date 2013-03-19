@@ -25,6 +25,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## Build library
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
+add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
 target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters

@@ -37,6 +37,7 @@ add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SR
 find_package(LibUdis86 REQUIRED)
 include_directories(${LIBUDIS86_INCLUDE_DIRS})
 link_directories(${LIBUDIS86_LINK_DIRS})
+add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
 target_link_libraries(fail-${EXPERIMENT_NAME} ${LIBUDIS86_LIBRARIES} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters
