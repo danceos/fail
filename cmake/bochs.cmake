@@ -121,14 +121,14 @@ if(BUILD_BOCHS)
   add_custom_target(bochsclean
     COMMAND +make -C ${bochs_src_dir} clean
     # touch stamp file to force rebuild, without calling configure again.
-    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure
+    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure || true
     COMMENT "[${PROJECT_NAME}] Cleaning all up (clean in bochs)"
   )
 
   add_custom_target(bochsallclean
     COMMAND +make -C ${bochs_src_dir} all-clean
     # touch stamp file to force rebuild, without calling configure again.
-    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure
+    COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${stamp_dir}/libfailbochs_external-configure || true
     COMMENT "[${PROJECT_NAME}] Cleaning all up (all-clean in bochs)"
   )
 
