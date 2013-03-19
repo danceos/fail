@@ -653,7 +653,7 @@ public:
 class TimerListener : public BaseListener {
 protected:
 	unsigned m_Timeout; //!< timeout interval in microseconds
-	GenericTimerEvent m_Data;
+	TimerEvent m_Data;
 public:
 	/**
 	 * Creates a new timer listener. This can be used to implement a timeout-

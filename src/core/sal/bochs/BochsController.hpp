@@ -150,20 +150,6 @@ public:
 	 * @see The uses SimulatorController::getCPU().
 	 */
 	ConcreteCPU& detectCPU(BX_CPU_C* pCPU) const;
-
-protected:
-	/**
-	 * Hack: Indirection for commandline argument collection
-	 *
-	 * This prevents CommandLine.hpp (and optionparser.h) from being pulled
-	 * inbe to every single Bochs translation unit via FailBochsInit.ah,
-	 * leading to compilation errors in some of them.
-	 * TODO: Move this upwards to SimulatorController?
-	 *
-	 * @param argc main()'s argument counter
-	 * @param argv main()'s argument value vector
-	 */
-	void collectCommandLineArguments(int argc, char **argv) const;
 };
 
 } // end-of-namespace: fail

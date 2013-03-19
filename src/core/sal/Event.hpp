@@ -334,18 +334,18 @@ public:
 };
 
 /**
- * \class GenericTimerEvent
+ * \class TimerEvent
  * This event type is used to encapsulate timeout-specific data.
  */
-class GenericTimerEvent : public BaseEvent {
+class TimerEvent : public BaseEvent {
 protected:
 	timer_id_t m_Id; //!< internal timer id (sim-specific)
 public:
 	/**
 	 * Creates a new timer event.
 	 */
-	GenericTimerEvent(timer_id_t id = INVALID_TIMER) : m_Id(id) { }
-	~GenericTimerEvent() { }
+	TimerEvent(timer_id_t id = INVALID_TIMER) : m_Id(id) { }
+	~TimerEvent() { }
 	/**
 	 * Retrieves the internal timer id. Maybe useful for debug output.
 	 * @return the timer id or \c INVALID_TIMER if the timer is invalid

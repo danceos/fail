@@ -2,6 +2,7 @@
 #include "SALInst.hpp"
 #include "Event.hpp"
 #include "Listener.hpp"
+#include "util/CommandLine.hpp"
 
 namespace fail {
 
@@ -35,12 +36,16 @@ BaseListener* SimulatorController::resume(void)
 	return m_LstList.getLastFired();
 }
 
-void SimulatorController::startup()
+void SimulatorController::startup(int argc, char **argv)
 {
 	// Some greetings to the user:
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
 	// TODO: Log-Level?
 	
+	if (argv) {
+		CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
+	}
+
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
 }

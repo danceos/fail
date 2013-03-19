@@ -14,6 +14,7 @@ void fail_init(struct CPUX86State *env)
 {
 	std::cout << "FailQEMU v" FAIL_VERSION << std::endl;
 	fail::simulator.setCPUEnv(env);
+	// TODO pass on command-line parameters
 	fail::simulator.startup();
 }
 
