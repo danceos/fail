@@ -30,6 +30,7 @@ Gem5Controller::~Gem5Controller()
 		delete *it;
 		it = m_CPUs.erase(it);
 	}
+	delete m_Mem;
 }
 
 bool Gem5Controller::save(const std::string &path)
