@@ -1,6 +1,6 @@
 set(EXPERIMENT_NAME ecos_kernel_test)
 set(EXPERIMENT_TYPE EcosKernelTestExperiment)
-configure_file(../instantiate-experiment.ah.in
+configure_file(../instantiate-experiment-indirect.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
 
@@ -10,6 +10,7 @@ set(MY_PROTOS
 )
 
 set(MY_CAMPAIGN_SRCS
+	instantiateExperiment.cc
 	experiment.hpp
 	experiment.cc
 	campaign.hpp
