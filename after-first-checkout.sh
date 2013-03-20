@@ -12,7 +12,13 @@ PORT=$(echo "$GITURL"|sed -r 's%^.+:([0-9]+)/.*$%\1%')
 CONFIG=.git/config
 HOOKDIR=.git/hooks
 
-# Setup shortcut for pushing chagesets: e.g., git push formaster
+cd $(dirname $0)
+if [ ! -w "$CONFIG" ]; then
+    echo -e "\E[31m:( $CONFIG does not exist or is not writable; is this a writable git repository?\E[37m"
+    exit 1
+fi
+
+# Setup shortcut for pushing changesets: e.g., git push formaster
 if grep -q $SHORT $CONFIG; then
     echo -e "\E[32m:) Shortcut \E[33m$SHORT \E[32malready set."
 else
