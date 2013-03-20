@@ -41,10 +41,9 @@ void SimulatorController::startup(int argc, char **argv)
 	// Some greetings to the user:
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
 	// TODO: Log-Level?
-	
+
 	if (argv) {
-    // FIXME: bx_startup_flags only exits in Bochs build!!
-		//CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
+		CommandLine::Inst().collect_args(argc, argv);
 	}
 
 	// Activate previously added experiments to allow initialization:
