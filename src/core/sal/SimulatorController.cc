@@ -43,7 +43,8 @@ void SimulatorController::startup(int argc, char **argv)
 	// TODO: Log-Level?
 	
 	if (argv) {
-		CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
+    // FIXME: bx_startup_flags only exits in Bochs build!!
+		//CommandLine::Inst().collect_args(bx_startup_flags.argc, bx_startup_flags.argv);
 	}
 
 	// Activate previously added experiments to allow initialization:
