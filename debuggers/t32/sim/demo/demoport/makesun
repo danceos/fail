@@ -1,0 +1,7 @@
+OBJECTS = demoport.o simul.o
+COPTS	= -c -O
+
+demoport.so.1:	$(OBJECTS)
+	cc -G -o demoport.so.1 $(OBJECTS)
+
+.c.o: ; cc ${COPTS} $*.c

@@ -1,0 +1,44 @@
+ width 9. 7.
+ base d:20000
+
+ group.long 0--3 "Data1 (Simple Parallel port, available in Portanalyzer)"
+  line.long 0 "Data1"
+
+ group.long 4--7 "Data2 (Simple Parallel port)"
+  line.long 0 "Data2"
+
+ group.long 8--0x0b "Data3 (Parallel port, shared data)"
+  line.long 0 "Data3"
+
+ group.long 100--0x10b "Data4 (Relocatable Parallel port)"
+  line.long 0 "Data4"
+
+ group.byte 0x0c--0x0c "Data5 (Parallel port connected to FILE I/O)"
+  line.byte 0 "Data5"
+
+ group.byte 0x0d--0x0d "Terminal1 (Serial I/O simulation to Terminal I/O)"
+  line.byte 0 "DATA"
+ group.byte 0x0e--0x0e
+  line.byte 0 "STAT"
+    bitfld 0 7 "TXIE ,TX Interrupt Enable" "no,yes"
+    bitfld 0 6 "  RXIE ,RX Interrupt Enable" "no,yes"
+    bitfld 0 4 "  TWAV ,Terminal Window Available" "yes,no"
+    bitfld 0 1 "  TXR ,TX Ready" "no,yes"
+    bitfld 0 0 "  RXR ,RX Ready" "no,yes"
+
+ group.long 0x200--0x20f "Ram1 (Shared memory)"
+  line.long 0 "00"
+  line.long 4 "04"
+  line.long 8 "08"
+  line.long 0c "0c"
+
+ group.long 0x10--0x13 "Timer1 (Incrementing each 100 clockticks)"
+  line.long 0 "Timer1"
+
+ group.long 0x14--0x17 "Timer2 (Incrementing on each Port #0xf0 rising edge)"
+  line.long 0 "Timer2"
+
+ group.long 0x18--0x1b "Timer3 (Decrementing each clockticks after activation)"
+  line.long 0 "Timer3"
+
+

@@ -22,8 +22,8 @@
 ;PowerDebugInterface USB with onhost driver executable (t32m*) via USB interface
 ;please refer the installation manual (file icd_quick_installation.pdf) about more details
 ;concerning USB driver installation
-PBI=
-USB
+PBI=@T32_USB_OR_SIM@
+
 
 ;
 ;uncomment the following 3 lines if you use an ICE or PodbusEthernetController

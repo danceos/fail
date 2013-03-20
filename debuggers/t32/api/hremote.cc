@@ -2543,8 +2543,9 @@ int T32_CheckStateNotify(unsigned param1)
 
 		case T32_E_BREAK:
 			{
-				int state, err;
-				err = T32_GetState(&state);
+				int state;
+        //, err;
+				/*err =*/ T32_GetState(&state);
 				switch (state) {
 				case 0: break;	/* system down */
 				case 1: break;	/* system halted */

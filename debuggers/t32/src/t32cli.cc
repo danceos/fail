@@ -6,8 +6,8 @@
 using namespace std;
 
 void err(int ernum){
-	if(err != 0){
-		cerr << "Error: " << err << endl;
+	if(ernum != 0){
+		cerr << "Error: " << ernum << endl;
 		//exit(-1);
 	}
 }
@@ -36,7 +36,7 @@ int eval_command(){
 int main(void){
 	cout << "Lauterbach remote connection" << endl;
 	cout << "Enter bye to exit." << endl;
-	int error;
+
 	char hostname[] = "localhost";
 	char packlen[] = "1024";
 	char port[] = "20010";

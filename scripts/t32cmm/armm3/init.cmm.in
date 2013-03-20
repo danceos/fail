@@ -1,0 +1,64 @@
+;RESET
+
+&t32scriptdir=OS.PPD()
+
+;========================================================================
+; CPU setup
+
+SYStem.RESet
+
+IF (SIMULATOR())
+(
+  SYS.DOWN
+  AREA.view
+  SIM.UNLOAD
+  SIM.LOAD @T32_MEMLOGGER_LIB@
+  SIM.LOAD @T32_NVIC_LIB@
+  SIM.LIST
+  SYS.CPU cortexm3
+  SYS.UP
+)
+ELSE
+(
+  if OS.FILE(&(t32scriptdir)/armm3cfg.cmm)
+  (
+    DO &(t32scriptdir)/armm3cfg.cmm
+  )
+)
+
+IF (SIMULATOR())
+(
+ DATA.LOAD.ELF &appimage
+ ; Copy first bytes to address 0 to make simulator work
+ DATA.COPY 0x8000000++0x200 0x00
+ ; Load Stack pointer and Instruction Pointer
+ REGISTER.RES
+
+
+  ; Be aware of the HACK!
+  ; To get over the RCC Initialisation, we have to get to the second read
+  ; of the RCC Register and inject some initilized looking values.
+  ; for STM32
+  BREAK.SET 0x40021000 /Read /DISableHit /Count 2
+  GO
+  wait !state.run()
+  DATA.SET 0x40021000 %long ~0
+  DATA.SET 0x40021004 %long 0x8 
+)
+else
+(
+
+;========================================================================
+; Flash programming
+;
+  DO &(t32scriptdir)/loadelf.cmm
+)
+
+;========================================================================
+; Optional Parts
+if OS.FILE(&(t32scriptdir)/t32term.cmm)
+(
+	DO &(t32scriptdir)/t32term.cmm
+)
+
+ENDDO

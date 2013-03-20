@@ -1,6 +1,6 @@
 ;===== Cortex-M3 Lauterbach initialisation ====
 
-&appimage=OS.ENV(FAIL_ELF_PATH)
+&appimage="@T32_ELF_PATH@"
 
 DO init.cmm
 

@@ -1,0 +1,3 @@
+LIBRARY			nvic
+DESCRIPTION		'TRACE32 Hardware Simulation Model'
+EXPORTS			SIMUL_Interface

@@ -9,7 +9,8 @@ include_directories(include ${CMAKE_BINARY_DIR}/include)
 
 include_directories(${CMAKE_BINARY_DIR}/src/core)
 
+  set(T32_ARCHITECTURE armm3 CACHE PATH "Setup target architecture for default cmm scripts (currently only armm3)")
+
 add_subdirectory(api)
 add_subdirectory(src)
-add_subdirectory(cmm)
-
+add_subdirectory(sim)

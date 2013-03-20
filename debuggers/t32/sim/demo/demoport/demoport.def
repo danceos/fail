@@ -1,0 +1,7 @@
+LIBRARY			DEMOPORT
+
+DESCRIPTION             'TRACE32 Hardware Simulation Demoport'
+
+EXPORTS
+    SIMUL_Interface
+

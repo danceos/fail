@@ -1,0 +1,27 @@
+;Add some extra buttons to the toolbar
+
+ menu.rp
+ (
+  add
+  toolbar
+  (
+   separator
+   toolitem "Source/List" ":list" "Data.List"
+   toolitem "Memory Dump" ":dump" "Data.dump"
+   toolitem "Register" ":reg" "Register /SpotLight"
+   separator
+   toolitem "Watch" ":var" "Var.Watch"
+   toolitem "Stack" ":varframe" "Var.Frame /l /c"
+   toolitem "Automatic Watch" ":varref" "Var.Ref"
+   separator
+   toolitem "List Breakpoints" ":break" "Break.List"
+   toolitem "List Symbols" ":symbols" "sYmbol.Browse"
+   toolitem "List Tracebuffer" ":alist" "Analyzer.List"
+   separator
+  )
+ )
+
+ do demoport
+
+ enddo
+
