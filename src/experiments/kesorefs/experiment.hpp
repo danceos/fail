@@ -7,6 +7,7 @@
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
 #include "util/ElfReader.hpp"
+#include "util/Disassembler.hpp"
 #include <string>
 
 class KESOrefs : public fail::ExperimentFlow {

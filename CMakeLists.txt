@@ -53,12 +53,9 @@ elseif(BUILD_QEMU)
 elseif(BUILD_T32)
   include_directories(debuggers/t32/include src/core)
   add_subdirectory(debuggers/t32)
+  add_subdirectory(scripts/t32cmm)
 endif(BUILD_BOCHS)
 
-## Additional compiler and linker flags ##
-set(CMAKE_C_FLAGS "-g -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}") 
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections")
 ## Tell the linker where to find the Fail* libraries
 link_directories("${LIBRARY_OUTPUT_PATH}")
 
