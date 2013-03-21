@@ -1110,7 +1110,7 @@ int T32_Break(void)					/* Stop Realtime */
  * NAME commandline
  */
 
-int T32_Cmd(char *name)			/* Executes a command line */
+int T32_Cmd(const char *name)			/* Executes a command line */
 {
     word            wlen;
     int             len;

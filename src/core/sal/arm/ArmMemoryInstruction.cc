@@ -83,7 +83,7 @@ namespace fail {
 
   bool ArmMemoryInstructionAnalyzer::eval(address_t address, MemoryInstruction & result){
 #ifdef CORTEXM3
-#warning "Memory Accesses cannot be evaluated completedly!"
+#warning "Memory Accesses cannot be evaluated completely!"
     return eval_cm3(address, result);
 #elif defined CORTEXA9
     return eval_ca9(address, result);

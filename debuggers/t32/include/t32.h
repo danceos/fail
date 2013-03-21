@@ -315,7 +315,7 @@ T32EXTERN int T32_SetMode(int);
 T32EXTERN int T32_Go(void);
 T32EXTERN int T32_Break(void);
 T32EXTERN int T32_Terminate(int retval);
-T32EXTERN int T32_Cmd( char * );
+T32EXTERN int T32_Cmd( const char * );
 T32EXTERN int T32_CmdWin( dword, char * );
 T32EXTERN int T32_EvalGet ( dword * );
 T32EXTERN int T32_GetMessage ( char *, word * );

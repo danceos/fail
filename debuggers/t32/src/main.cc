@@ -22,6 +22,7 @@
 #include "util/optionparser/optionparser_ext.hpp"
 
 #include "T32Connector.hpp"
+#include "T32Tracer.hpp"
 #include "t32config.hpp"
 #include "sal/MemoryInstruction.hpp"
 #include "util/Disassembler.hpp"
@@ -54,7 +55,6 @@ int main(int argc, char** argv){
   option::Option options[stats.options_max], buffer[stats.buffer_max];
   option::Parser parse(usage, argc, argv, options, buffer);
 
-  return 0;
   if (parse.error()){
     cerr << "Error parsing arguments." << endl;
     return 1;
@@ -101,18 +101,27 @@ int main(int argc, char** argv){
    MemoryInstruction mem;
    address_t ip;
 
+   // Enable T32 Tracer (if available)
+   T32Tracer tr("/tmp/tr.x"); // TODO configurable trace file path
+   tr.setup(); // enable and configure tracing.
+
    while(1) {
         // Start execution (with next timeout, if any)
         t32.go();
         // Wait for debugger to stop.
         while( t32.isRunning() ) {}
-        // Evaluate state.
-        t32.test();// TODO
+
         // Call appropriate callback of the SimulatorController.
         ip = fail::simulator.getCPU(0).getInstructionPointer();
         fail::simulator.onBreakpoint(&fail::simulator.getCPU(0), ip , fail::ANY_ADDR);
-        if( meminstruction.eval(ip, mem) ) {
-          fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), mem.getAddress(), mem.getWidth(), mem.isWriteAccess(), ip );
+
+        // Evaluate tracing result, handle memory access event..
+        if((tr.evaluate() > 0) && (tr.wasDataAccess())){
+          // TODO: step back in trace and find program counter of the according instruction.
+          // ip = XXX;
+          fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), tr.getLatestRecord().getAddress(), /* TODO access width: */ 4, tr.getLatestRecord().isDataWrite(), ip );
+
+          tr.dump();
         }
     }
 
