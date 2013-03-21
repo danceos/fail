@@ -14,7 +14,7 @@ else()
   message(FATAL_ERROR "Please set the FAIL_ELF_PATH enviroment variable to the binary under test.")
 endif()
 
-OPTION( T32_SIMULATOR "Start LAuterbach as instruction set simulator. No hardware needed." OFF)
+OPTION( T32_SIMULATOR "Start LAuterbach as instruction set simulator. No hardware needed." ON)
 
 if(T32_SIMULATOR)
  set(T32_USB_OR_SIM "SIM")

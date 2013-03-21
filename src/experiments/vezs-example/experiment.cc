@@ -41,18 +41,18 @@ bool VEZSExperiment::run()
   address_t pfoo = m_elf.getSymbol("foo").getAddress();
   //BPSingleListener bp(address);
   //BPRangeListener bp(address-32, address + 32);
-  //MemWriteListener l_foo( pfoo );
-  MemAccessListener l_foo( 0x20002018 ); l_foo.setWatchWidth(0x20);
+  MemWriteListener l_foo( pfoo );
+  //MemAccessListener l_foo( 0x20002074 ); l_foo.setWatchWidth(0x4);
   reg = simulator.getCPU(0).getRegister(RI_R4);
 
-  unsigned foo = 23;
+  //unsigned foo = 23;
   for(int i = 0; i < 15; i++){
     simulator.addListenerAndResume(&l_foo);
     //if(i == 0) mm.setBytes(pfoo, 4, (void*)&foo);
     m_log << " Breakpoint hit! @ 0x" << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
     //m_log << " Register R3: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
     //mm.getBytes(pfoo, 4, (void*)&foo);
-    m_log << " foo @ 0x"<< std::hex << pfoo << " = " << foo << std::endl;
+    //m_log << " foo @ 0x"<< std::hex << pfoo << " = " << foo << std::endl;
   }
 
 /*

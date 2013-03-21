@@ -78,7 +78,7 @@ int T32Connector::getState() const {
 
 void T32Connector::showMemoryRegions(const memory_map_t& map) const {
 
-  for(int i = 0; i < map.size(); i++){
+  for(unsigned int i = 0; i < map.size(); i++){
     std::cout << "[" << i << "] 0x" << std::hex << map[i].first << " - 0x" << std::hex << map[i].second << std::endl;
   }
 }
