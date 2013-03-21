@@ -50,6 +50,7 @@ bool VEZSExperiment::run()
     simulator.addListenerAndResume(&l_foo);
     //if(i == 0) mm.setBytes(pfoo, 4, (void*)&foo);
     m_log << " Breakpoint hit! @ 0x" << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
+    m_log << " Trigger PC: 0x" << std::hex << l_foo.getTriggerInstructionPointer() << std::endl;
     //m_log << " Register R3: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
     //mm.getBytes(pfoo, 4, (void*)&foo);
     //m_log << " foo @ 0x"<< std::hex << pfoo << " = " << foo << std::endl;

@@ -98,7 +98,6 @@ int main(int argc, char** argv){
   // The experiments/traces hopefully set some Breakpoints, we can react on.
   // We may also provide a timeout, if a TimerListener was set wanted.
 
-   MemoryInstruction mem;
    address_t ip;
 
    // Enable T32 Tracer (if available)
@@ -117,11 +116,26 @@ int main(int argc, char** argv){
 
         // Evaluate tracing result, handle memory access event..
         if((tr.evaluate() > 0) && (tr.wasDataAccess())){
-          // TODO: step back in trace and find program counter of the according instruction.
-          // ip = XXX;
-          fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), tr.getLatestRecord().getAddress(), /* TODO access width: */ 4, tr.getLatestRecord().isDataWrite(), ip );
+          MemoryInstruction mem;
+          T32Tracer::const_record_iterator it = tr.begin();
 
-          tr.dump();
+          // step back to current PC
+          for( ; it != tr.end(); ++it) {
+            if(it->isProgram() && (it->getAddress() == ip)){
+              break;
+            }
+          }
+          // find latest memory access
+          for( ; it != tr.end(); ++it){
+            // iterate records till there is a memory access..
+            if(it->isProgram() && meminstruction.eval(it->getAddress(), mem)){ // skip data access in between
+              ip = it->getAddress(); // store PC of the mem access.
+              break; // yay, we found a memory access.
+            }
+          }
+          if(mem.isValid()){ // mem is not valid, if we did not leave the for loop via the break statement.. -> no mem access found :( XXX this should not happen.
+            fail::simulator.onMemoryAccess(&fail::simulator.getCPU(0), tr.getLatestRecord().getAddress(), mem.getWidth(), tr.getLatestRecord().isDataWrite(), ip );
+          }
         }
     }
 

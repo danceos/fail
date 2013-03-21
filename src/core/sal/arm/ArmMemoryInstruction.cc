@@ -8,10 +8,10 @@ namespace fail {
   MemoryInstructionAnalyzer & meminstruction = anal;
 
   address_t ArmMemoryInstructionAnalyzer::findPrevious(address_t address){
-    if(m_dis.hasInstructionAt(address-2)) {
+    if(m_dis.hasInstructionAt(address)) {
+      return address;
+    } else if (m_dis.hasInstructionAt(address - 2)) {
       return address - 2;
-    } else if (m_dis.hasInstructionAt(address - 4)) {
-      return address - 4;
     } else {
       return ADDR_INV;
     }
@@ -29,6 +29,23 @@ namespace fail {
   // The Cortex M3 Lauterbach is a pain in the ass, as a Memory Watchpoint does not stop
   // at the accessing instruction, but 1 or 2 instructions later.
   bool ArmMemoryInstructionAnalyzer::eval_cm3(address_t address, MemoryInstruction& result){
+
+    arm_instruction inst;
+    uint32_t opcode =0;
+    address = findPrevious(address);
+    opcode = m_dis.disassemble(address).opcode;
+
+    // OpenOCDs thumb2_opcode evaluation is not complete yet. :(
+    thumb2_opcode(address, opcode, &inst);
+
+    if(inst.isMemoryAccess()){
+      evaluate(inst, result);
+      return true;
+    }else{
+      return false;
+    }
+
+#if 0
     arm_instruction inst;
     uint32_t opcode =0;
     address = findPrevious(address); // Cortex M3: memory access is at the previous instruction
@@ -66,6 +83,7 @@ namespace fail {
       // This can happen if we came here from anywhere, e.g. by ldr pc, [r4]
     }
     return false;
+#endif
   }
 
   bool ArmMemoryInstructionAnalyzer::eval_ca9(address_t address, MemoryInstruction& result){
@@ -80,6 +98,7 @@ namespace fail {
   }
 
 #define CORTEXM3
+
 
   bool ArmMemoryInstructionAnalyzer::eval(address_t address, MemoryInstruction & result){
 #ifdef CORTEXM3
