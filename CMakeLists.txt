@@ -66,7 +66,9 @@ include_directories(${CMAKE_BINARY_DIR}/src/core)
 # FIXME: this should be in src/core/CMakeLists.txt but actually doesn't work
 
 ## Add CMakeLists from subdirectories:
+add_subdirectory(tools)
 add_subdirectory(src)
+
 
 #### Backend-related build system stuff
 include(bochs)

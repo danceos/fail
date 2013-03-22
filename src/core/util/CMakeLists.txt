@@ -3,6 +3,8 @@ set(SRCS
  CommandLine.hpp
  ElfReader.cc
  ElfReader.hpp
+ Database.hpp
+ Database.cc
  Demangler.hpp
  Demangler.cc
  Disassembler.hpp
