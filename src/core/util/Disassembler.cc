@@ -9,6 +9,7 @@
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #endif
+#include <stdlib.h>
 
 namespace fail {
 
@@ -21,7 +22,7 @@ namespace fail {
     char * elfpath = getenv("FAIL_ELF_PATH");
     if(elfpath == NULL){
       m_log << "FAIL_ELF_PATH not set :(" << std::endl;
-      return 0;
+      exit(EXIT_FAILURE);
     }else{
       return init(elfpath);
     }
@@ -44,7 +45,7 @@ namespace fail {
       if(ex != 0){
         m_code.clear();
         m_log << "Could not disassemble!" << std::endl;
-        return 0;
+        exit(EXIT_FAILURE);
       }
     }
     m_log << "disassembled " << m_code.size() << " lines." << std::endl;

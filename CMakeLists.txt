@@ -25,6 +25,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 #### Compiler configuration, see cmake/compilerconfig.cmake
 include(compilerconfig)
+include(doxygen)
 
 #### Backend selection ####
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)

@@ -2,14 +2,14 @@
 
 if(EXISTS $ENV{T32SYS})
   SET(T32_SYS $ENV{T32SYS})
-  message(STATUS "[FAIL*] T32 base directory: T32SYS=${T32_SYS}")
+  message(STATUS "[Fail*] T32 base directory: T32SYS=${T32_SYS}")
 else()
   message(FATAL_ERROR "Please set env variable T32SYS to a valid T32 installation base directory.")
 endif()
 
 if(EXISTS $ENV{FAIL_ELF_PATH})
   SET(T32_ELF_PATH $ENV{FAIL_ELF_PATH})
-  message(STATUS "[FAIL*] T32 ELF under test: ${T32_ELF_PATH}")
+  message(STATUS "[Fail*] T32 ELF under test: ${T32_ELF_PATH}")
 else()
   message(FATAL_ERROR "Please set the FAIL_ELF_PATH enviroment variable to the binary under test.")
 endif()
@@ -32,9 +32,9 @@ set(T32_EXE "${T32_SYS}/bin/pc_linux64/" CACHE INTERNAL "") # TODO: set pc_linux
 add_subdirectory(${T32_ARCHITECTURE})
 
 
-message(STATUS "[FAIL*] T32 Architecture: ${T32_ARCHITECTURE}")
-message(STATUS "[FAIL*] T32 CPU name: ${T32_CPUNAME}")
-message(STATUS "[FAIL*] T32 Executable: ${T32_EXE}")
+message(STATUS "[Fail*] T32 Architecture: ${T32_ARCHITECTURE}")
+message(STATUS "[Fail*] T32 CPU name: ${T32_CPUNAME}")
+message(STATUS "[Fail*] T32 Executable: ${T32_EXE}")
 
 add_custom_target(runt32
     COMMAND T32CONFIG=${PROJECT_BINARY_DIR}/cmm/config.t32 ${T32_EXE} &

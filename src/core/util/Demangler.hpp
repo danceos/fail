@@ -11,7 +11,7 @@ namespace fail {
       /**
        * Get the demangled symbol name of a mangled string.
        * @param name The mangled symbol
-       * @return The according demangled name if found, else Demangler:::DEMANGLE_FAILED
+       * @return The according demangled name if found, else Demangler::DEMANGLE_FAILED
        */
       static std::string demangle(const std::string & name);
 

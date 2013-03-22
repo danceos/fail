@@ -9,8 +9,8 @@
 
 namespace fail {
 
-  //! Inform about failed disassembly
   struct DISASSEMBLER {
+    //! Inform about failed disassembly
     static const std::string FAILED;
   };
 
@@ -40,7 +40,7 @@ namespace fail {
       /**
        * Get disassembler instruction
        * @param address The instruction address
-       * @return The according disassembled instruction if found, else DISASSEMBLER:FAILED
+       * @return The according disassembled instruction if found, else DISASSEMBLER::FAILED
        */
       const Instruction & disassemble(address_t address) const;
 

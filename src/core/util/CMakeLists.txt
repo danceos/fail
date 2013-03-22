@@ -43,5 +43,16 @@ if(${LIB_IBERTY} STREQUAL LIB_IBERTY-NOTFOUND)
   message(FATAL_ERROR "libiberty not found. Try installing binutils-dev: [ sudo aptitude install binutils-dev ]")
 endif()
 
+# objdump required by Diassembler.cc
+
+set(THE_OBJDUMP "${ARCH_TOOL_PREFIX}objdump")
+find_program(FAIL_OBJDUMP "${THE_OBJDUMP}" DOC "binutils object dump tool")
+if(${FAIL_OBJDUMP} STREQUAL FAIL_OBJDUMP-NOTFOUND)
+  message(FATAL_ERROR "Cannot find objdump exeuctable (tried: ${THE_OBJDUMP}")
+else()
+  message(STATUS "[Fail*] objdump binary -> ${FAIL_OBJDUMP}")
+endif()
+mark_as_advanced(FAIL_OBJDUMP)
+
 add_library(fail-util ${SRCS})
 target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} )
