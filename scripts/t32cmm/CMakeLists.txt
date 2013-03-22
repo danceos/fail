@@ -4,8 +4,10 @@ if(EXISTS $ENV{T32SYS})
   SET(T32_SYS $ENV{T32SYS})
   message(STATUS "[Fail*] T32 base directory: T32SYS=${T32_SYS}")
 else()
-  message(FATAL_ERROR "Please set env variable T32SYS to a valid T32 installation base directory.")
+  SET(T32_SYS "/proj/i4ciao/tools/t32-20130226-qt") ## defaulting to I4 installation
+  #message(FATAL_ERROR "Please set env variable T32SYS to a valid T32 installation base directory.")
 endif()
+message(STATUS "[Fail*] T32 base directory: T32SYS=${T32_SYS}")
 
 if(EXISTS $ENV{FAIL_ELF_PATH})
   SET(T32_ELF_PATH $ENV{FAIL_ELF_PATH})
@@ -37,7 +39,7 @@ message(STATUS "[Fail*] T32 CPU name: ${T32_CPUNAME}")
 message(STATUS "[Fail*] T32 Executable: ${T32_EXE}")
 
 add_custom_target(runt32
-    COMMAND T32CONFIG=${PROJECT_BINARY_DIR}/cmm/config.t32 ${T32_EXE} &
+    COMMAND T32CONFIG=${PROJECT_BINARY_DIR}/cmm/config.t32 T32SYS=${T32_SYS} ${T32_EXE} &
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/cmm"
     COMMENT "Starting Lauterbach."
     )
