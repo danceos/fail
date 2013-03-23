@@ -23,7 +23,7 @@ bool Importer::clear_database() {
 	ss << "DELETE FROM trace WHERE variant_id = " << m_variant_id;
 
 	bool ret = db->query(ss.str().c_str()) == 0 ? false : true;
-	log << "delted " << db->affected_rows() << " rows from trace table" << std::endl;
+	log << "deleted " << db->affected_rows() << " rows from trace table" << std::endl;
 	return ret;
 }
 

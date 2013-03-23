@@ -56,12 +56,12 @@ int main(int argc, char *argv[]) {
 		cmd.add_args(argv[i]);
 
 	CommandLine::option_handle IGNORE = cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
-	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help\t Print usage and exit");
+	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h/--help\t Print usage and exit");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
-															"-t/--trace-file\t File to save the execution trace to\n");
+															"-t/--trace-file\t File to load the execution trace from\n");
 
-    // setup the datbase command line options
-    Database::cmdline_setup();
+	// setup the database command line options
+	Database::cmdline_setup();
 
 	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
 															"-v/--variant\t Variant label (default: \"none\")");
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 		trace_file = "trace.pb";
 
 	ProtoIStream ps = openProtoStream(trace_file);
-    Database *db = Database::cmdline_connect();
+	Database *db = Database::cmdline_connect();
 
 	if (cmd[VARIANT].count() > 0)
 		variant = std::string(cmd[VARIANT].first()->arg);

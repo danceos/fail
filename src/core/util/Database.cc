@@ -8,8 +8,8 @@ static fail::Logger log("Database", true);
 using namespace fail;
 
 Database::Database(const std::string &username, const std::string &host, const std::string &database) {
-    handle = mysql_init(0);
-    last_result = 0;
+	handle = mysql_init(0);
+	last_result = 0;
 	mysql_options(handle, MYSQL_READ_DEFAULT_FILE, "~/.my.cnf");
 	if (!mysql_real_connect(handle, host.c_str(),
 							username.c_str(),
@@ -28,16 +28,16 @@ MYSQL_RES* Database::query(char const *query, bool get_result)
 	}
 
 	if (get_result) {
-        if (last_result != 0) {
-            mysql_free_result(last_result);
-            last_result = 0;
-        }
+		if (last_result != 0) {
+			mysql_free_result(last_result);
+			last_result = 0;
+		}
 		MYSQL_RES *res = mysql_store_result(handle);
 		if (!res && mysql_errno(handle)) {
 			std::cerr << "mysql_store_result for query '" << query << "' failed: " << mysql_error(handle) << std::endl;
 			return 0;
 		}
-        last_result = res;
+		last_result = res;
 		return res;
 	}
 	return (MYSQL_RES *) 1; // Invalid PTR!!!
@@ -91,11 +91,11 @@ int Database::get_fspmethod_id(const std::string &method)
 		return 0;
 	}
 
-    std::stringstream ss;
+	std::stringstream ss;
 	ss << "SELECT id FROM fspmethod WHERE method = '" << method << "'";
 	MYSQL_RES *res = query(ss.str().c_str(), true);
 
-    int id;
+	int id;
 
 	if (!res) {
 		return 0;
@@ -120,15 +120,15 @@ void Database::cmdline_setup() {
 	CommandLine &cmd = CommandLine::Inst();
 
 	DATABASE	  = cmd.addOption("d", "database", Arg::Required,
-                                  "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
+	                              "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
-                                  "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
+	                              "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-                                  "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
+	                              "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
 }
 
 Database * Database::cmdline_connect() {
-    std::string username, hostname, database;
+	std::string username, hostname, database;
 
 	CommandLine &cmd = CommandLine::Inst();
 
@@ -149,6 +149,3 @@ Database * Database::cmdline_connect() {
 
 	return new Database(username, hostname, database);
 }
-
-
-
