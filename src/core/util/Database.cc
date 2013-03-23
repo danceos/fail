@@ -17,7 +17,7 @@ Database::Database(const std::string &username, const std::string &host, const s
 		log << "cannot connect to MySQL server: " << mysql_error(handle) << std::endl;
 		exit(-1);
 	}
-	log << "opened MYSQL connection to " << username << "@" << host << "/" << database << std::endl;
+	log << "opened MYSQL connection" << std::endl;
 }
 
 MYSQL_RES* Database::query(char const *query, bool get_result)
@@ -109,11 +109,11 @@ void Database::cmdline_setup() {
 	CommandLine &cmd = CommandLine::Inst();
 
 	DATABASE	  = cmd.addOption("d", "database", Arg::Required,
-                                  "-d/--database\t MYSQL Database (default: fail_demo)");
+                                  "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
-                                  "-h/--hostname\t MYSQL Hostname (default: localhost)");
+                                  "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-                                  "-u/--username\t MYSQL Username (default: fail)");
+                                  "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
 }
 
 Database * Database::cmdline_connect() {
@@ -124,17 +124,17 @@ Database * Database::cmdline_connect() {
 	if (cmd[USERNAME].count() > 0)
 		username = std::string(cmd[USERNAME].first()->arg);
 	else
-		username = "fail";
+		username = "";
 
 	if (cmd[HOSTNAME].count() > 0)
 		hostname = std::string(cmd[HOSTNAME].first()->arg);
 	else
-		hostname = "localhost";
+		hostname = "";
 
 	if (cmd[DATABASE].count() > 0)
 		database = std::string(cmd[DATABASE].first()->arg);
 	else
-		database = "fail_demo";
+		database = "";
 
 	return new Database(username, hostname, database);
 }
