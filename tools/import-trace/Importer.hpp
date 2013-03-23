@@ -19,7 +19,7 @@ protected:
 public:
 	typedef unsigned instruction_count_t;
 
-	void init(const std::string &variant, const std::string &benchmark, fail::Database *db);
+	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	virtual bool create_database() = 0;
 	virtual bool copy_to_database(fail::ProtoIStream &ps);

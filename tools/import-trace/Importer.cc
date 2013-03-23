@@ -7,11 +7,15 @@ using namespace fail;
 
 extern Logger log;
 
-void Importer::init(const std::string &variant, const std::string &benchmark, Database *db) {
+bool Importer::init(const std::string &variant, const std::string &benchmark, Database *db) {
 	this->db = db;
 	m_variant_id = db->get_variant_id(variant, benchmark);
+	if (!m_variant_id) {
+		return false;
+	}
 	log << "Importing to variant " << variant << "/" << benchmark
 		<< " (ID: " << m_variant_id << ")" << std::endl;
+	return true;
 }
 
 bool Importer::clear_database() {

@@ -132,7 +132,10 @@ int main(int argc, char *argv[]) {
 
 
 
-	importer->init(variant, benchmark, db);
+	if (!importer->init(variant, benchmark, db)) {
+		log << "importer->init() failed" << endl;
+		exit(-1);
+	}
 	importer->set_elf_file(elf_file);
 
 	////////////////////////////////////////////////////////////////

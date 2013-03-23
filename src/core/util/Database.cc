@@ -52,25 +52,31 @@ my_ulonglong Database::affected_rows()
 
 int Database::get_variant_id(const std::string &variant, const std::string &benchmark)
 {
-	query("CREATE TABLE IF NOT EXISTS variant ("
+	if (!query("CREATE TABLE IF NOT EXISTS variant ("
 		  "  id int(11) NOT NULL AUTO_INCREMENT,"
 		  "  variant varchar(255) NOT NULL,"
 		  "  benchmark varchar(255) NOT NULL,"
 		  "  PRIMARY KEY (id),"
-		  "UNIQUE KEY variant (variant,benchmark))");
+		  "UNIQUE KEY variant (variant,benchmark))")) {
+		return 0;
+	}
 
 	int variant_id;
 	std::stringstream ss;
 	// FIXME SQL injection possible
 	ss << "SELECT id FROM variant WHERE variant = '" << variant << "' AND benchmark = '" << benchmark << "'";
 	MYSQL_RES *variant_id_res = query(ss.str().c_str(), true);
-	ss.str("");
-	if (mysql_num_rows(variant_id_res)) {
+	if (!variant_id_res) {
+		return 0;
+	} else if (mysql_num_rows(variant_id_res)) {
 		MYSQL_ROW row = mysql_fetch_row(variant_id_res);
 		variant_id = atoi(row[0]);
 	} else {
+		ss.str("");
 		ss << "INSERT INTO variant (variant, benchmark) VALUES ('" << variant << "', '" << benchmark << "')";
-		query(ss.str().c_str());
+		if (!query(ss.str().c_str())) {
+			return 0;
+		}
 		variant_id = mysql_insert_id(handle);
 	}
 	return variant_id;
@@ -78,25 +84,30 @@ int Database::get_variant_id(const std::string &variant, const std::string &benc
 
 int Database::get_fspmethod_id(const std::string &method)
 {
-
-	query("CREATE TABLE IF NOT EXISTS fspmethod ("
+	if (!query("CREATE TABLE IF NOT EXISTS fspmethod ("
           "  id int(11) NOT NULL AUTO_INCREMENT,"
           "  method varchar(255) NOT NULL,"
-          "  PRIMARY KEY (id), UNIQUE KEY method (method))");
+          "  PRIMARY KEY (id), UNIQUE KEY method (method))")) {
+		return 0;
+	}
 
     std::stringstream ss;
 	ss << "SELECT id FROM fspmethod WHERE method = '" << method << "'";
 	MYSQL_RES *res = query(ss.str().c_str(), true);
-	ss.str("");
 
     int id;
 
-	if (mysql_num_rows(res)) {
+	if (!res) {
+		return 0;
+	} else if (mysql_num_rows(res)) {
 		MYSQL_ROW row = mysql_fetch_row(res);
 		id = atoi(row[0]);
 	} else {
+		ss.str("");
 		ss << "INSERT INTO fspmethod (method) VALUES ('" << method << "')";
-		query(ss.str().c_str());
+		if (!query(ss.str().c_str())) {
+			return 0;
+		}
 		id = mysql_insert_id(handle);
 	}
 
