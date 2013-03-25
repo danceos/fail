@@ -8,7 +8,7 @@
 #include "efw/ExperimentFlow.hpp"
 #include "config/FailConfig.hpp"
 
-#include "../plugins/tracing/trace.pb.h"
+#include "TracePlugin.pb.h"
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_MEMREAD) || !defined(CONFIG_EVENT_MEMWRITE)

@@ -3,9 +3,10 @@
 #include "util/Logger.hpp"
 
 using namespace fail;
-static Logger log ("Pruner");
+static Logger LOG ("Pruner");
 
 #include "Pruner.hpp"
+
 
 bool Pruner::init(const std::string &variant, const std::string &benchmark, Database *db) {
 	this->db = db;
@@ -15,7 +16,7 @@ bool Pruner::init(const std::string &variant, const std::string &benchmark, Data
 	if (!(m_method_id = db->get_fspmethod_id(method_name()))) {
 		return false;
 	}
-	log << "Pruning variant "
+	LOG << "Pruning variant "
 	    << variant << "/" << benchmark      << " (ID: " << m_variant_id << ")"
 	    << " with method " << method_name() << " (ID: " << m_method_id << ")"
 	    << std::endl;
@@ -52,12 +53,12 @@ bool Pruner::clear_database() {
 	std::stringstream ss;
 	ss << "DELETE FROM fsppilot WHERE variant_id = " << m_variant_id << " AND fspmethod_id = " << m_method_id;
 	bool ret = (bool) db->query(ss.str().c_str());
-	log << "deleted " << db->affected_rows() << " rows from fsppilot table" << std::endl;
+	LOG << "deleted " << db->affected_rows() << " rows from fsppilot table" << std::endl;
 	ss.str("");
 
 	ss << "DELETE FROM fspgroup WHERE variant_id = " << m_variant_id << " AND fspmethod_id = " << m_method_id;
 	ret = ret && (bool) db->query(ss.str().c_str());
-	log << "deleted " << db->affected_rows() << " rows from fspgroup table" << std::endl;
+	LOG << "deleted " << db->affected_rows() << " rows from fspgroup table" << std::endl;
 
 	return ret;
 }

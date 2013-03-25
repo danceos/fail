@@ -4,7 +4,7 @@
 
 #include "util/CommandLine.hpp"
 #include "util/Logger.hpp"
-static fail::Logger log("prune-trace", true);
+static fail::Logger LOG("prune-trace", true);
 
 using namespace fail;
 using std::endl;
@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
 	                                                     "-v/--variant\t Variant label (default: \"none\")");
 	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
 														 "-b/--benchmark\t Benchmark label (default: \"none\")\n");
-
 	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
 	                                                     "-p/--prune-method\t Which import method to use (default: basic)");
 
@@ -42,15 +41,15 @@ int main(int argc, char *argv[]) {
 	if (cmd[PRUNER].count() > 0) {
 		std::string imp(cmd[PRUNER].first()->arg);
 		if (imp == "basic") {
-			log << "Using BasicPruner" << endl;
+			LOG << "Using BasicPruner" << endl;
 			pruner = new BasicPruner();
 		} else {
-			log << "Unkown import method: " << imp << endl;
+			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
 		}
 
 	} else {
-		log << "Using BasicPruner" << endl;
+		LOG << "Using BasicPruner" << endl;
 		pruner = new BasicPruner();
 	}
 
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
 		benchmark = "none";
 
 	if (!pruner->init(variant, benchmark, db)) {
-		log << "pruner->init() failed" << endl;
+		LOG << "pruner->init() failed" << endl;
 		exit(-1);
 	}
 
@@ -80,17 +79,17 @@ int main(int argc, char *argv[]) {
 	// Do the actual import
 	////////////////////////////////////////////////////////////////
 	if (!pruner->create_database()) {
-		log << "create_database() failed" << endl;
+		LOG << "create_database() failed" << endl;
 		exit(-1);
 	}
 
 	if (!pruner->clear_database()) {
-		log << "clear_database() failed" << endl;
+		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
 
 	if (!pruner->prune_all()) {
-		log << "prune_all() failed" << endl;
+		LOG << "prune_all() failed" << endl;
 		exit(-1);
 	}
 

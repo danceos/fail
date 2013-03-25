@@ -2,7 +2,7 @@
 #include <set>
 
 #include "util/Logger.hpp"
-extern fail::Logger log;
+static fail::Logger LOG("DCiAOKernelImporter");
 
 using namespace fail;
 
@@ -18,12 +18,12 @@ bool DCiAOKernelImporter::inDynamicKernelMemory(fail::address_t addr) {
 
 bool DCiAOKernelImporter::copy_to_database(fail::ProtoIStream &ps) {
 	if (m_elf == 0) {
-		log << "Please give an ELF Binary as a parameter" << std::endl;
+		LOG << "Please give an ELF Binary as a parameter" << std::endl;
 		exit(-1);
 	}
 
 	if (getEnterKernelAddress() == 0 || getLeaveKernelAddress() == 0) {
-		log << "Pleave give a valid CiAO Binary with kernel dependability options enabled" << std::endl;
+		LOG << "Pleave give a valid CiAO Binary with kernel dependability options enabled" << std::endl;
 		exit(-1);
 	}
 
@@ -93,12 +93,12 @@ bool DCiAOKernelImporter::copy_to_database(fail::ProtoIStream &ps) {
 					// we're currently looking at; the EC is defined by
 					// data_address [last_kernel_leave, read_instr] (instr_absolute)
 					if (!add_trace_event(instr1, instr2, ev)) {
-						log << "add_trace_event failed" << std::endl;
+						LOG << "add_trace_event failed" << std::endl;
 						return false;
 					}
 					row_count ++;
 					if (row_count % 1000 == 0) {
-						log << "Imported " << row_count << " traces into the database" << std::endl;
+						LOG << "Imported " << row_count << " traces into the database" << std::endl;
 					}
 				}
 			}
@@ -106,7 +106,7 @@ bool DCiAOKernelImporter::copy_to_database(fail::ProtoIStream &ps) {
 
 	}
 
-	log << "Inserted " << row_count << " traces into the database" << std::endl;
+	LOG << "Inserted " << row_count << " traces into the database" << std::endl;
 
 	return true;
 }

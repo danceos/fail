@@ -3,7 +3,8 @@
 #include "Database.hpp"
 #include "util/CommandLine.hpp"
 #include "util/Logger.hpp"
-static fail::Logger log("Database", true);
+
+static fail::Logger LOG("Database", true);
 
 using namespace fail;
 
@@ -14,14 +15,17 @@ Database::Database(const std::string &username, const std::string &host, const s
 	if (!mysql_real_connect(handle, host.c_str(),
 							username.c_str(),
 							0, database.c_str(), 0, 0, 0)) {
-		log << "cannot connect to MySQL server: " << mysql_error(handle) << std::endl;
+		LOG << "cannot connect to MySQL server: " << mysql_error(handle) << std::endl;
 		exit(-1);
 	}
-	log << "opened MYSQL connection" << std::endl;
+	LOG << "opened MYSQL connection" << std::endl;
 }
 
-MYSQL_RES* Database::query(char const *query, bool get_result)
-{
+MYSQL_RES* Database::query(char const *query, bool get_result) {
+#ifndef __puma
+	boost::lock_guard<boost::mutex> guard(m_handle_lock);
+#endif
+
 	if (mysql_query(handle, query)) {
 		std::cerr << "query '" << query << "' failed: " << mysql_error(handle) << std::endl;
 		return 0;
@@ -43,6 +47,26 @@ MYSQL_RES* Database::query(char const *query, bool get_result)
 	return (MYSQL_RES *) 1; // Invalid PTR!!!
 }
 
+MYSQL_RES* Database::query_stream(char const *query)
+{
+#ifndef __puma
+	boost::lock_guard<boost::mutex> guard(m_handle_lock);
+#endif
+
+	if (mysql_query(handle, query)) {
+		std::cerr << "query '" << query << "' failed: " << mysql_error(handle) << std::endl;
+		return 0;
+	}
+
+	MYSQL_RES *res = mysql_use_result(handle);
+	if (!res && mysql_errno(handle)) {
+		std::cerr << "mysql_use_result for query '" << query << "' failed: " << mysql_error(handle) << std::endl;
+		return 0;
+	}
+
+	return res;
+}
+
 
 my_ulonglong Database::affected_rows()
 {
@@ -53,10 +77,10 @@ my_ulonglong Database::affected_rows()
 int Database::get_variant_id(const std::string &variant, const std::string &benchmark)
 {
 	if (!query("CREATE TABLE IF NOT EXISTS variant ("
-		  "  id int(11) NOT NULL AUTO_INCREMENT,"
-		  "  variant varchar(255) NOT NULL,"
-		  "  benchmark varchar(255) NOT NULL,"
-		  "  PRIMARY KEY (id),"
+		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
+		  "	 variant varchar(255) NOT NULL,"
+		  "	 benchmark varchar(255) NOT NULL,"
+		  "	 PRIMARY KEY (id),"
 		  "UNIQUE KEY variant (variant,benchmark))")) {
 		return 0;
 	}
@@ -85,9 +109,9 @@ int Database::get_variant_id(const std::string &variant, const std::string &benc
 int Database::get_fspmethod_id(const std::string &method)
 {
 	if (!query("CREATE TABLE IF NOT EXISTS fspmethod ("
-          "  id int(11) NOT NULL AUTO_INCREMENT,"
-          "  method varchar(255) NOT NULL,"
-          "  PRIMARY KEY (id), UNIQUE KEY method (method))")) {
+		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
+		  "	 method varchar(255) NOT NULL,"
+		  "	 PRIMARY KEY (id), UNIQUE KEY method (method))")) {
 		return 0;
 	}
 
@@ -120,11 +144,11 @@ void Database::cmdline_setup() {
 	CommandLine &cmd = CommandLine::Inst();
 
 	DATABASE	  = cmd.addOption("d", "database", Arg::Required,
-	                              "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
+								  "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
-	                              "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
+								  "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-	                              "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
+								  "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
 }
 
 Database * Database::cmdline_connect() {

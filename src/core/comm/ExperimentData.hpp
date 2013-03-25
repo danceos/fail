@@ -24,6 +24,7 @@ public:
 	ExperimentData(google::protobuf::Message* m) : msg(m) , m_workloadID(0) { }
 
 	google::protobuf::Message& getMessage()  { return *msg; }
+	void setMessage(google::protobuf::Message *msg)  { this->msg = msg; }
 	uint32_t getWorkloadID() const { return m_workloadID; };
 	void setWorkloadID(uint32_t id) { m_workloadID = id; }
 	/**

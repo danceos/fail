@@ -2,7 +2,7 @@
 #include "util/Logger.hpp"
 #include "BasicImporter.hpp"
 
-extern fail::Logger log;
+static fail::Logger LOG("BasicImporter");
 
 bool BasicImporter::create_database() {
 	std::string create_statement = "CREATE TABLE IF NOT EXISTS trace ("
@@ -28,7 +28,7 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 		                "VALUES (?,?,?,?, ?,?,?)");
 		stmt = mysql_stmt_init(db->getHandle());
 		if (mysql_stmt_prepare(stmt, sql.c_str(), sql.length())) {
-			log << "query '" << sql << "' failed: " << mysql_error(db->getHandle()) << std::endl;
+			LOG << "query '" << sql << "' failed: " << mysql_error(db->getHandle()) << std::endl;
 			return false;
 		}
 	}
@@ -61,12 +61,12 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 		}
 	}
 	if (mysql_stmt_bind_param(stmt, bind)) {
-		log << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(stmt) << std::endl;
+		LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(stmt) << std::endl;
 		return false;
 	}
 	if (mysql_stmt_execute(stmt)) {
-		log << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
-		log << "IP: " << std::hex<< event.ip() << std::endl;
+		LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
+		LOG << "IP: " << std::hex<< event.ip() << std::endl;
 		return false;
 	}
 	return true;

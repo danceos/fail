@@ -5,7 +5,7 @@
 
 using namespace fail;
 
-extern Logger log;
+static Logger LOG("Importer");
 
 bool Importer::init(const std::string &variant, const std::string &benchmark, Database *db) {
 	this->db = db;
@@ -13,7 +13,7 @@ bool Importer::init(const std::string &variant, const std::string &benchmark, Da
 	if (!m_variant_id) {
 		return false;
 	}
-	log << "Importing to variant " << variant << "/" << benchmark
+	LOG << "Importing to variant " << variant << "/" << benchmark
 		<< " (ID: " << m_variant_id << ")" << std::endl;
 	return true;
 }
@@ -23,7 +23,7 @@ bool Importer::clear_database() {
 	ss << "DELETE FROM trace WHERE variant_id = " << m_variant_id;
 
 	bool ret = db->query(ss.str().c_str()) == 0 ? false : true;
-	log << "deleted " << db->affected_rows() << " rows from trace table" << std::endl;
+	LOG << "deleted " << db->affected_rows() << " rows from trace table" << std::endl;
 	return ret;
 }
 
@@ -69,12 +69,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			// we're currently looking at; the EC is defined by
 			// data_address [instr1, instr2] (instr_absolute)
 			if (!add_trace_event(instr1, instr2, ev)) {
-				log << "add_trace_event failed" << std::endl;
+				LOG << "add_trace_event failed" << std::endl;
 				return false;
 			}
 			row_count ++;
 			if (row_count % 1000 == 0) {
-				log << "Imported " << row_count << " traces into the database" << std::endl;
+				LOG << "Imported " << row_count << " traces into the database" << std::endl;
 			}
 
 			if (ev.accesstype() == ev.READ) {
@@ -91,7 +91,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 		}
 	}
 
-	log << "Inserted " << row_count << " traces into the database" << std::endl;
+	LOG << "Inserted " << row_count << " traces into the database" << std::endl;
 
 	// FIXME
 	// close all open intervals (right end of the fault-space) with fake trace event

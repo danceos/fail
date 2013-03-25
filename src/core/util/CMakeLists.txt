@@ -5,6 +5,8 @@ set(SRCS
  ElfReader.hpp
  Database.hpp
  Database.cc
+ DatabaseProtobufAdapter.hpp
+ DatabaseProtobufAdapter.cc
  Demangler.hpp
  Demangler.cc
  Disassembler.hpp
@@ -57,4 +59,5 @@ endif()
 mark_as_advanced(FAIL_OBJDUMP)
 
 add_library(fail-util ${SRCS})
+add_dependencies(fail-util fail-comm)
 target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} )

@@ -17,12 +17,12 @@ using std::cerr;
 using std::endl;
 using std::cout;
 
-Logger log("import-trace", true);
+static Logger LOG("import-trace", true);
 
 ProtoIStream openProtoStream(std::string input_file) {
 	std::ifstream *gz_test_ptr = new std::ifstream(input_file.c_str()), &gz_test = *gz_test_ptr;
 	if (!gz_test) {
-		log << "couldn't open " << input_file << endl;
+		LOG << "couldn't open " << input_file << endl;
 		exit(-1);
 	}
 	unsigned char b1, b2;
@@ -31,16 +31,16 @@ ProtoIStream openProtoStream(std::string input_file) {
 	if (b1 == 0x1f && b2 == 0x8b) {
 		igzstream *tracef = new igzstream(input_file.c_str());
 		if (!tracef) {
-			log << "couldn't open " << input_file << endl;
+			LOG << "couldn't open " << input_file << endl;
 			exit(-1);
 		}
-		log << "opened file " << input_file << " in GZip mode" << endl;
+		LOG << "opened file " << input_file << " in GZip mode" << endl;
 		delete gz_test_ptr;
 		ProtoIStream ps(tracef);
 		return ps;
 	}
 
-	log << "opened file " << input_file << " in normal mode" << endl;
+	LOG << "opened file " << input_file << " in normal mode" << endl;
 	ProtoIStream ps(gz_test_ptr);
 	return ps;
 }
@@ -85,18 +85,18 @@ int main(int argc, char *argv[]) {
 	if (cmd[IMPORTER].count() > 0) {
 		std::string imp(cmd[IMPORTER].first()->arg);
 		if (imp == "BasicImporter") {
-			log << "Using BasicImporter" << endl;
+			LOG << "Using BasicImporter" << endl;
 			importer = new BasicImporter();
 		} else if (imp == "DCiAOKernelImporter") {
-			log << "Using DCiAOKernelImporter" << endl;
+			LOG << "Using DCiAOKernelImporter" << endl;
 			importer = new DCiAOKernelImporter();
 		} else {
-			log << "Unkown import method: " << imp << endl;
+			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
 		}
 
 	} else {
-		log << "Using BasicImporter" << endl;
+		LOG << "Using BasicImporter" << endl;
 		importer = new BasicImporter();
 	}
 
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
 
 
 	if (!importer->init(variant, benchmark, db)) {
-		log << "importer->init() failed" << endl;
+		LOG << "importer->init() failed" << endl;
 		exit(-1);
 	}
 	importer->set_elf_file(elf_file);
@@ -143,17 +143,17 @@ int main(int argc, char *argv[]) {
 	////////////////////////////////////////////////////////////////
 
 	if (!importer->create_database()) {
-		log << "create_database() failed" << endl;
+		LOG << "create_database() failed" << endl;
 		exit(-1);
 	}
 
 	if (!importer->clear_database()) {
-		log << "clear_database() failed" << endl;
+		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
 
 	if (!importer->copy_to_database(ps)) {
-		log << "copy_to_database() failed" << endl;
+		LOG << "copy_to_database() failed" << endl;
 		exit(-1);
 	}
 }

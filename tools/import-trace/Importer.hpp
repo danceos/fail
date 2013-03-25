@@ -7,14 +7,14 @@
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
 #include "util/Database.hpp"
-#include "trace.pb.h"
+#include "comm/TracePlugin.pb.h"
 
 
 class Importer {
 protected:
 	int m_variant_id;
 	fail::ElfReader *m_elf;
-    fail::Database  *db;
+	fail::Database	*db;
 
 public:
 	typedef unsigned instruction_count_t;
