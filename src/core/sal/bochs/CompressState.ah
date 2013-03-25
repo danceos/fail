@@ -1,0 +1,82 @@
+#ifndef __COMPRESS_STATE_AH__
+  #define __COMPRESS_STATE_AH__
+
+#include "config/VariantConfig.hpp"
+#include "config/FailConfig.hpp"
+
+#if defined(BUILD_BOCHS) && defined(CONFIG_BOCHS_COMPRESS_STATE)
+
+#include <stdio.h>
+#include <zlib.h>
+
+aspect CompressState {
+	advice call ("% fwrite(...)")
+	    && within ("% bx_real_sim_c::save_sr_param(...)")
+	    && args(ptr, size, nmemb, stream)
+	    : around (const void *ptr, size_t size, size_t nmemb, FILE *stream)
+	{
+		*tjp->result() = fwrite_compressed(ptr, size, nmemb, stream);
+	}
+
+	advice call ("% fread(...)")
+	    && within ("% bx_real_sim_c::restore_bochs_param(...)")
+	    && args(ptr, size, nmemb, stream)
+	    : around (void *ptr, size_t size, size_t nmemb, FILE *stream)
+	{
+		*tjp->result() = fread_compressed(ptr, size, nmemb, stream);
+	}
+
+// FIXME move implementation to a separate compilation unit
+	size_t fread_compressed(void *ptr, size_t size, size_t nmemb, FILE *stream)
+	{
+		size_t remaining = size * nmemb;
+		ssize_t ret;
+		char *cbuf = (char *) ptr;
+		// FIXME check return values
+		gzFile f = gzdopen(dup(fileno(stream)), "rb");
+#if ZLIB_VERNUM >= 0x1240
+		gzbuffer(f, 1024*1024);
+#endif
+
+		do {
+			ret = gzread(f, cbuf, remaining);
+			// EOF or error?
+			if (ret == 0 || ret == -1) {
+				break;
+			}
+			remaining -= ret;
+			cbuf += ret;
+		} while (remaining);
+		gzclose(f);
+
+		return (cbuf - (char *)ptr) / size;
+	}
+
+	size_t fwrite_compressed(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+	{
+		size_t remaining = size * nmemb;
+		ssize_t ret;
+		const char *cbuf = (const char *) ptr;
+		// FIXME check return values
+		gzFile f = gzdopen(dup(fileno(stream)), "wb9");
+#if ZLIB_VERNUM >= 0x1240
+		gzbuffer(f, 1024*1024);
+#endif
+
+		do {
+			ret = gzwrite(f, cbuf, remaining);
+			// error?
+			if (ret == 0) {
+				break;
+			}
+			remaining -= ret;
+			cbuf += ret;
+		} while (remaining);
+		gzclose(f);
+
+		return (cbuf - (char *)ptr) / size;
+	}
+};
+
+#endif // BUILD_BOCHS && CONFIG_BOCHS_COMPRESS_STATE
+#endif // __COMPRESS_STATE_AH__
