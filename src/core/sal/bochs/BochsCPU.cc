@@ -11,7 +11,7 @@ regdata_t BochsCPU::getRegisterContent(Register* reg) const
 	// TODO: BX_CPU(0) *always* correct?
 
 	if (reg->getId() == RID_FLAGS) // EFLAGS register?
-		return *reinterpret_cast<regdata_t*>(&(BX_CPU(id)->eflags));
+		return static_cast<regdata_t>(BX_CPU(id)->eflags);
 
   #ifdef SIM_SUPPORT_64
 	if (reg->getId() == RID_PC) // program counter?
