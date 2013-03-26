@@ -1,0 +1,29 @@
+import "DatabaseCampaignMessage.proto";
+
+message DCIAOKernelProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+        enum ResultType {
+            OK = 1;
+            TIMEOUT = 2;
+            TRAP = 3;
+            ERR_ERROR_HOOK = 4;
+            ERR_DIFFERENT_ACTIVATION = 5;
+            ERR_DIFFERENT_KERNEL_TRANSITIONS = 6;
+            
+            ERR_MEMACCESS = 7;
+            ERR_OUTSIDE_TEXT = 8;
+
+            UNKNOWN = 9;
+            NOINJECTION = 10;
+        }
+
+        required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        required ResultType resulttype = 2;
+        optional uint32 original_value = 3;
+
+        repeated uint32 activation_scheme = 4;
+        optional string details = 5;
+    }
+}

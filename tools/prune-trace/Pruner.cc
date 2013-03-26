@@ -28,22 +28,24 @@ bool Pruner::create_database() {
 	    "  id int(11) NOT NULL AUTO_INCREMENT,"
 	    "  known_outcome tinyint(4) NOT NULL,"
 	    "  variant_id int(11) NOT NULL,"
+	    "  instr1 int(10) unsigned NOT NULL,"
 	    "  instr2 int(10) unsigned NOT NULL,"
 	    "  data_address int(10) unsigned NOT NULL,"
 	    "  fspmethod_id int(11) NOT NULL,"
 	    "  PRIMARY KEY (id),"
-	    "  KEY fspmethod_id (fspmethod_id,variant_id,instr2,data_address)"
+	    "  KEY fspmethod_id (fspmethod_id,variant_id,instr1,instr2,data_address)"
 		") engine=MyISAM ";
 	bool success = (bool) db->query(create_statement.c_str());
 	if (!success) return false;
 
 	create_statement = "CREATE TABLE IF NOT EXISTS fspgroup ("
-	    "  variant_id int(11) NOT NULL,"
-	    "  instr2 int(10) unsigned NOT NULL,"
-	    "  data_address int(10) unsigned NOT NULL,"
-	    "  fspmethod_id int(11) NOT NULL,"
-	    "  pilot_id int(11) NOT NULL,"
-	    "  PRIMARY KEY (variant_id, instr2, data_address, fspmethod_id, pilot_id),"
+	    "  variant_id      int(11) NOT NULL,"
+	    "  injection_instr int(10) unsigned NOT NULL,"
+	    "  injection_instr_absolute int(10) unsigned,"
+	    "  data_address    int(10) unsigned NOT NULL,"
+	    "  fspmethod_id    int(11) NOT NULL,"
+	    "  pilot_id        int(11) NOT NULL,"
+	    "  PRIMARY KEY (variant_id, injection_instr, data_address, fspmethod_id, pilot_id),"
 	    "  KEY joinresults (pilot_id,fspmethod_id))";
 
 	return db->query(create_statement.c_str());

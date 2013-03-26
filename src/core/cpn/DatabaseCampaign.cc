@@ -82,15 +82,15 @@ bool DatabaseCampaign::run() {
 
 	/* Gather all unfinished jobs */
 	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, fspgroup.fspmethod_id, fspgroup.variant_id, fspgroup.instr2, fspgroup.data_address ";
+	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, g.injection_instr, g.injection_instr_absolute, g.data_address";
 	std::stringstream ss;
-	ss << " FROM fspgroup INNER JOIN fsppilot ON fsppilot.id = fspgroup.pilot_id "
-	   << " WHERE known_outcome = 0 "
-	   << "	   AND fspgroup.fspmethod_id = "  << fspmethod_id
-	   << "	   AND fspgroup.variant_id = "	<< variant_id
-		// << "	   AND fsppilot.data_address = 1346688"
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = fspgroup.pilot_id) = 0"
-	   << "    ORDER BY fspgroup.instr2";
+	ss << " FROM fspgroup g"
+	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
+	   << " WHERE p.known_outcome = 0 "
+	   << "	   AND g.fspmethod_id = "  << fspmethod_id
+	   << "	   AND g.variant_id = "	<< variant_id
+	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id) = 0"
+	   << "    ORDER BY g.injection_instr";
 	std::string sql_body = ss.str();
 
 	/* Get the number of unfinished experiments */
@@ -105,15 +105,19 @@ bool DatabaseCampaign::run() {
 
 	sent_pilots = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
-		unsigned pilot_id     = atoi(row[0]);
-		unsigned instr2       = atoi(row[3]);
-		unsigned data_address = atoi(row[4]);
+		unsigned pilot_id        = atoi(row[0]);
+		unsigned injection_instr = atoi(row[3]);
+		unsigned data_address    = atoi(row[5]);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
 		pilot.set_fspmethod_id(fspmethod_id);
 		pilot.set_variant_id(variant_id);
-		pilot.set_instr2(instr2);
+		pilot.set_injection_instr(injection_instr);
+		if (row[4]) {
+			unsigned injection_instr_absolute = atoi(row[4]);
+			pilot.set_injection_instr_absolute(injection_instr_absolute);
+		}
 		pilot.set_data_address(data_address);
 
 		this->cb_send_pilot(pilot);

@@ -43,6 +43,10 @@ int main(int argc, char *argv[]) {
 		if (imp == "basic") {
 			LOG << "Using BasicPruner" << endl;
 			pruner = new BasicPruner();
+		} else if (imp == "basic-left") {
+			LOG << "Using BasicPruner (use left border, instr1)" << endl;
+			pruner = new BasicPruner(true);
+
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);

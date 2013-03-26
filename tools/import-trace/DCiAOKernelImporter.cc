@@ -11,9 +11,9 @@ using namespace fail;
 bool DCiAOKernelImporter::inDynamicKernelMemory(fail::address_t addr) {
 	const std::string &name = m_elf->getSymbol(addr).getDemangledName();
 	bool dynamic = name.find("os::data::dynamic", 0) != std::string::npos;
-	bool stack   = name.find("_stack") != std::string::npos;
-
-	return dynamic && !stack;
+	//	bool stack   = name.find("_stack") != std::string::npos;
+	// return dynamic && !stack;
+	return dynamic;
 }
 
 bool DCiAOKernelImporter::copy_to_database(fail::ProtoIStream &ps) {
