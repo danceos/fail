@@ -26,6 +26,5 @@ message Trace_Event {
 	}
 	optional AccessType accesstype = 4;
 
-    optional Trace_Event_Extended trace_ext = 5;
+	optional Trace_Event_Extended trace_ext = 5;
 }
-

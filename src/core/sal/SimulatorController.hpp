@@ -206,18 +206,20 @@ public:
 	 */
 	BaseListener* addListenerAndResume(BaseListener* li);
 	/**
-	 * Checks whether any experiment flow has listeners in the listener (buffer-)list.
+	 * Checks whether any experiment flow has listeners in the listener
+	 * (buffer-)list.  For internal use.
 	 * @return \c true if there are still listeners, or \c false otherwise
 	 */
 	bool hasListeners() const { return getListenerCount() > 0; }
 	/**
 	 * Determines the number of (stored) listeners in the listener-list which have
-	 * not been triggered so far.
+	 * not been triggered so far.  For internal use.
 	 * @return the actual number of listeners
 	 */
 	unsigned getListenerCount() const { return m_LstList.getListenerCount(); }
 	/**
-	 * Determines the pointer to the listener base type, stored at index \c idx.
+	 * Determines the pointer to the listener base type, stored at index \c
+	 * idx.  For internal use.
 	 * @param idx the index within the buffer-list of the listener to retrieve
 	 * @return the pointer to the (up-casted) base type (if \c idx is invalid and debug
 	 *         mode is enabled, an assertion is thrown)
@@ -226,7 +228,8 @@ public:
 	 */
 	inline BaseListener* dereference(index_t idx) { return m_LstList.dereference(idx); }
 	/**
-	 * Toggles the provided experiment flow by activating its coroutine.
+	 * Toggles the provided experiment flow by activating its coroutine.  For
+	 * internal use.
 	 * @param pfl the experiment flow to be activated
 	 */
 	void toggle(ExperimentFlow* pfl) { m_Flows.toggle(pfl); }

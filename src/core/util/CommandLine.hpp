@@ -64,9 +64,9 @@ namespace fail {
 
         /**
          *
-         * do the acutal parsing, called by the experiment
+         * do the actual parsing, called by the experiment
          *
-         * @return was the parsing a sucess
+         * @return true on success
          */
         bool parse();
 
