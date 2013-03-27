@@ -24,9 +24,9 @@ namespace fail {
     int m_symbol_type;
 
     public:
-    enum { SECTION = 1, SYMBOL = 2, UNDEFINED = 3, };
+    enum { SECTION = 1, SYMBOL = 2, UNDEF = 3, };
 
-    ElfSymbol(const std::string & name = ELF::NOTFOUND, guest_address_t addr = ADDR_INV, size_t size = -1, int type = UNDEFINED,
+    ElfSymbol(const std::string & name = ELF::NOTFOUND, guest_address_t addr = ADDR_INV, size_t size = -1, int type = UNDEF,
               int symbol_type = 0)
       : name(name), address(addr), size(size), m_type(type), m_symbol_type(symbol_type) {};
 

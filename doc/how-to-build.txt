@@ -126,9 +126,9 @@ FailBochs: Bochs configuration features
  The autotools-based bochs is configured within the Fail* build run. 
  The configuration flags can be set within the ccmake configuration (ccmake ${FAIL_DIR}/build)
      - Sufficient:
-         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub --disable-docbook
+         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub;--disable-docbook
      - More simulator features (FailBochs default configuration):
-         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub --disable-docbook --with-all-libs
+         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub;--disable-docbook;--with-all-libs
     Instead of --with-all-libs, you could use --with-nogui for "headless" experiments,
     additionally removing lots of library dependencies (thus reducing startup overhead).
     --with-x11 enables only the "x" (X11), --with-wx only the "wx" (wxWidgets) GUI.

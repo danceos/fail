@@ -76,7 +76,7 @@ if(BUILD_BOCHS)
 
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
   set(bochs_install_prefix ${bochs_src_dir}/install CACHE STRING "FailBochs installation path")
-  set(bochs_configure_params --enable-a20-pin --enable-x86-64 --enable-cpu-level=6 --enable-ne2000 --enable-acpi --enable-pci --enable-usb --enable-trace-cache --enable-fast-function-calls --enable-host-specific-asms --enable-disasm --enable-readline --enable-clgd54xx --enable-fpu --enable-vmx=2 --enable-monitor-mwait --enable-cdrom --enable-sb16=linux --enable-gdb-stub CACHE STRING "Bochs default configure parameters")
+  set(bochs_configure_params --enable-a20-pin --enable-x86-64 --enable-cpu-level=6 --enable-ne2000 --enable-acpi --enable-pci --enable-usb --enable-trace-cache --enable-fast-function-calls --enable-host-specific-asms --enable-disasm --enable-readline --enable-clgd54xx --enable-fpu --enable-vmx=2 --enable-monitor-mwait --enable-cdrom --enable-sb16=linux --enable-gdb-stub --disable-docbook --with-all-libs CACHE STRING "Bochs default configure parameters")
 
   ## Bochs CXX args for calling make
   set(bochs_build_CXX CXX=ag++\ -p\ ${PROJECT_SOURCE_DIR}\ -I${PROJECT_SOURCE_DIR}/src/core\ -I${CMAKE_BINARY_DIR}/src/core\ ${CMAKE_AGPP_FLAGS}\ --Xcompiler)
