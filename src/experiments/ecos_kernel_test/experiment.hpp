@@ -15,6 +15,7 @@ public:
 	EcosKernelTestExperiment() : log("eCos Kernel Test", false) {}
 	bool run();
 
+	void parseOptions();
 	bool retrieveGuestAddresses(fail::guest_address_t addr_finish); // step 0
 	bool establishState(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish, fail::guest_address_t addr_errors_corrected); // step 1
 	bool performTrace(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish); // step 2

@@ -19,6 +19,7 @@
 #include "util/WallclockTimer.hpp"
 #include "util/gzstream/gzstream.h"
 #include "config/FailConfig.hpp"
+#include "util/CommandLine.hpp"
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -64,7 +65,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 	bp.setWatchInstructionPointer(addr_finish);
 
 	// memory map serialization
-	ofstream mm(EcosKernelTestCampaign::filename_memorymap().c_str(), ios::out);
+	ofstream mm(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str(), ios::out);
 	if (!mm.is_open()) {
 		log << "failed to open " << EcosKernelTestCampaign::filename_memorymap() << endl;
 		return false;
@@ -142,9 +143,9 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 
 	for (unsigned i = 0; ; ++i) {
 		log << "saving state at offset " << dec << (i * MULTIPLE_SNAPSHOTS_DISTANCE) << endl;
-		simulator.save(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE));
+		simulator.save(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark));
 #if MULTIPLE_SNAPSHOTS
-		simulator.restore(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE));
+		simulator.restore(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark));
 
 		simulator.addListener(&step);
 		simulator.addListener(&finish);
@@ -164,7 +165,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
-	simulator.restore(EcosKernelTestCampaign::filename_state(0));
+	simulator.restore(EcosKernelTestCampaign::filename_state(0, m_variant, m_benchmark));
 	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
 	assert(simulator.getCPU(0).getInstructionPointer() == addr_entry);
 
@@ -173,12 +174,12 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// restrict memory access logging to injection target
 	MemoryMap mm;
-	EcosKernelTestCampaign::readMemoryMap(mm, EcosKernelTestCampaign::filename_memorymap().c_str());
+	EcosKernelTestCampaign::readMemoryMap(mm, EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
 
 	tp.restrictMemoryAddresses(&mm);
 
 	// record trace
-	ogzstream of(EcosKernelTestCampaign::filename_trace().c_str());
+	ogzstream of(EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark).c_str());
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
@@ -257,11 +258,11 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// serialize trace to file
 	if (of.fail()) {
-		log << "failed to write " << EcosKernelTestCampaign::filename_trace() << endl;
+		log << "failed to write " << EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark) << endl;
 		return false;
 	}
 	of.close();
-	log << "trace written to " << EcosKernelTestCampaign::filename_trace() << endl;
+	log << "trace written to " << EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark) << endl;
 	
 	return true;
 }
@@ -609,11 +610,41 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	return true;
 }
 
+void EcosKernelTestExperiment::parseOptions()
+{
+	CommandLine &cmd = CommandLine::Inst();
+	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>");
+	CommandLine::option_handle HELP =
+		cmd.addOption("h", "help", Arg::None, "-h,--help\t Print usage and exit");
+	CommandLine::option_handle VARIANT =
+		cmd.addOption("", "variant", Arg::Required, "--variant v\t experiment variant");
+	CommandLine::option_handle BENCHMARK =
+		cmd.addOption("", "benchmark", Arg::Required, "--benchmark b\t benchmark");
+
+	if (!cmd.parse()) {
+		cerr << "Error parsing arguments." << endl;
+		simulator.terminate(1);
+	} else if (cmd[HELP]) {
+		cmd.printUsage();
+		simulator.terminate(0);
+	}
+
+	if (cmd[VARIANT].count() > 0 && cmd[BENCHMARK].count() > 0) {
+		m_variant = std::string(cmd[VARIANT].first()->arg);
+		m_benchmark = std::string(cmd[BENCHMARK].first()->arg);
+	} else {
+		cerr << "Please supply parameters for --variant and --benchmark." << endl;
+		simulator.terminate(1);
+	}
+}
+
 bool EcosKernelTestExperiment::run()
 {
 	log << "startup" << endl;
 
 	#if PREREQUISITES
+	parseOptions();
+
 	log << "retrieving ELF symbol addresses ..." << endl;
 	guest_address_t entry, finish, test_output, errors_corrected,
 	                panic, text_start, text_end;
