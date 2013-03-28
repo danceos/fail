@@ -237,6 +237,18 @@ public:
 	 * @param pfl the experiment flow to be activated
 	 */
 	void toggle(ExperimentFlow* pfl) { m_Flows.toggle(pfl); }
+	/**
+	 * Retrieves the current backend time, in a backend-specific format.
+	 * @note FIXME Consider making this pure virtual.
+	 * @see SimulatorController::getTimerTicksPerSecond()
+	 */
+	virtual simtime_t getTimerTicks() { return 0; }
+	/**
+	 * Retrieves the backend-specific number of timer ticks per second.
+	 * @note FIXME Consider making this pure virtual.
+	 * @see SimulatorController::getTimerTicks()
+	 */
+	virtual simtime_t getTimerTicksPerSecond() { return 0; }
 };
 
 } // end-of-namespace: fail

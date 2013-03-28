@@ -27,6 +27,11 @@ typedef uint8_t          byte_t;      //!< 8 bit type for memory access (read or
 typedef uint32_t         regwidth_t;  //!< type of register width [bits]
 typedef register_data_t  regdata_t;   //!< type of register data
 typedef timer_t          timer_id_t;  //!< type of timer IDs
+//! backend-specific notion of time, e.g. CPU cycles or nanoseconds
+//! (move this to backend-specific headers when necessary)
+typedef uint64_t         simtime_t;
+//! backend-specific notion of time difference
+typedef int64_t          simtime_diff_t;
 
 // Note: The following flags are defined in SALConfig.cc.
 

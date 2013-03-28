@@ -18,6 +18,10 @@ message Trace_Event_Extended {
 
 message Trace_Event {
 	required uint64 ip = 1;
+	// backend-specific notion of time since last event, counted, e.g., in
+	// CPU cycles; needed to record CPU idle times (e.g., HLT instruction),
+	// and for target backends capable of timing-accurate execution
+	optional int64 time_delta = 6;
 	optional uint64 memaddr = 2;
 	optional uint32 width = 3;
 	enum AccessType {

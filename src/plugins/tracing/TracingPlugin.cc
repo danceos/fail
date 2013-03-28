@@ -38,9 +38,16 @@ bool TracingPlugin::run()
 	for (unsigned i = 0; i < sizeof(ids)/sizeof(*ids); ++i)
 		regs[i] = simulator.getCPU(0).getRegister(ids[i]);
 
+	// the first event gets an absolute time stamp, all others a delta to their
+	// predecessor
+	simtime_t prevtime = 0, curtime;
+	simtime_diff_t deltatime;
 
 	while (true) {
 		ev = simulator.resume();
+
+		curtime = simulator.getTimerTicks();
+		deltatime = curtime - prevtime;
 
 		if (ev == &ev_step) {
 			simulator.addListener(&ev_step);
@@ -55,6 +62,10 @@ bool TracingPlugin::run()
 			if (m_protoStreamFile) {
 				Trace_Event e;
 				e.set_ip(ip);
+				// only store deltas != 0
+				if (deltatime != 0) {
+					e.set_time_delta(deltatime);
+				}
 				ps->writeMessage(&e);
 			}
 		} else if (ev == &ev_mem) {
@@ -81,6 +92,10 @@ bool TracingPlugin::run()
 				e.set_accesstype(
 				  (ev_mem.getTriggerAccessType() & MemAccessEvent::MEM_READ) ?
 				  e.READ : e.WRITE);
+				// only store deltas != 0
+				if (deltatime != 0) {
+					e.set_time_delta(deltatime);
+				}
 
 				/* When we're doing a full trace, we log more data in
 				   the case of a memory event */
@@ -110,6 +125,10 @@ bool TracingPlugin::run()
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
+
+		// do this only if the last delta was written
+		// (no, e.g., memory map mismatch)
+		prevtime = curtime;
 	}
 
 	return true;
