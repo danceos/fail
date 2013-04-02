@@ -36,15 +36,19 @@ BaseListener* SimulatorController::resume(void)
 	return m_LstList.getLastFired();
 }
 
-void SimulatorController::startup(int argc, char **argv)
+void SimulatorController::startup(int& argc, char **& argv)
+{
+	if (argv) {
+		CommandLine::Inst().collect_args(argc, argv);
+	}
+	startup();
+}
+
+void SimulatorController::startup()
 {
 	// Some greetings to the user:
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
 	// TODO: Log-Level?
-
-	if (argv) {
-		CommandLine::Inst().collect_args(argc, argv);
-	}
 
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
