@@ -296,8 +296,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	}
 #else
 	// XXX debug
-	param.msg.set_variant("bitmap_CRC");
-	param.msg.set_benchmark("bin_sem0");
+	param.msg.set_variant(m_variant);
+	param.msg.set_benchmark(m_benchmark);
 	param.msg.set_instr2_offset(7462);
 	//param.msg.set_instr_address(12345);
 	param.msg.set_mem_addr(44540);
@@ -643,9 +643,11 @@ bool EcosKernelTestExperiment::run()
 {
 	log << "startup" << endl;
 
-	#if PREREQUISITES
+#if PREREQUISITES || LOCAL
 	parseOptions();
+#endif
 
+	#if PREREQUISITES
 	log << "retrieving ELF symbol addresses ..." << endl;
 	guest_address_t entry, finish, test_output, errors_corrected,
 	                panic, text_start, text_end;
