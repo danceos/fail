@@ -252,7 +252,8 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
 
 	// save these values for experiment STEP 3
-	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout, lowest_addr, highest_addr);
+	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout,
+		lowest_addr, highest_addr, m_variant, m_benchmark);
 
 	simulator.removeFlow(&tp);
 

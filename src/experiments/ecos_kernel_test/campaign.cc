@@ -43,10 +43,11 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 	return (count > 0);
 }
 
-bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr) {
-	ofstream ti(filename_traceinfo().c_str(), ios::out);
+bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr,
+	const std::string& variant, const std::string& benchmark) {
+	ofstream ti(filename_traceinfo(variant, benchmark).c_str(), ios::out);
 	if (!ti.is_open()) {
-		cout << "failed to open " << filename_traceinfo() << endl;
+		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
 		return false;
 	}
 	ti << instr_counter << endl << timeout << endl << lowest_addr << endl << highest_addr << endl;
