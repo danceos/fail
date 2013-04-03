@@ -52,7 +52,11 @@ public:
 	 * @param argc main()'s argument counter
 	 * @param argv main()'s argument value vector
 	 */
-	void startup(int argc = 0, char **argv = 0);
+	void startup(int& argc, char **& argv);
+	/**
+	 * @brief Parameter-less version of startup() for backends that do not (yet) handle parameters
+	 */
+	void startup();
 	/**
 	 * Experiments need to hook here.
 	 */

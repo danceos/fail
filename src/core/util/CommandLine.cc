@@ -13,7 +13,8 @@ namespace fail {
             if (strncmp(argv[i], "-Wf,", 4) == 0) {
                 this->argv.push_back(std::string(argv[i] + 4));
 
-                for (int x = i + 1; x < argc; ++x) {
+                // also copy argv[argc], which equals 0
+                for (int x = i + 1; x <= argc; ++x) {
                     argv[x - 1] = argv[x];
                 }
                 i --;
