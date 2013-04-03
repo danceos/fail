@@ -1,4 +1,2 @@
-all: trace_pb2.py
-
-trace_pb2.py: ../../src/plugins/tracing/trace.proto
+TracePlugin_pb2.py: ../../src/core/comm/TracePlugin.proto
 	protoc --python_out=. --proto_path `dirname $<` $< 
