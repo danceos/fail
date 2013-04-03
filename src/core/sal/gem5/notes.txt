@@ -2,6 +2,7 @@ Working:
  - Breakpoints
  - MemAccess
  - Traps (limited to traps that are triggered in the weather-monitor experiment)
+   Note: The trap number is not provided (in onTrap()), always set to 0
 
 On Breakpoints:
  - BPRangeBreakpoints and BPSingleBreakpoints(ANY_ADDRESS) are only working with
