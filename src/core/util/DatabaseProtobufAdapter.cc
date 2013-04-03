@@ -4,9 +4,6 @@
 #include "DatabaseProtobufAdapter.hpp"
 #include "util/Logger.hpp"
 #include "util/StringJoiner.hpp"
-//FIXME
-#include "../experiments/dciao-kernelstructs/dciao_kernel.pb.h"
-
 
 static fail::Logger LOG("DatabaseProtobufAdapter", true);
 
