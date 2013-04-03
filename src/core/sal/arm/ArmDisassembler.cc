@@ -25,7 +25,7 @@
 //#endif
 
 //#include "target.h"
-#include "arm_disassembler.hpp"
+#include "ArmDisassembler.hpp"
 #include "util/Logger.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"

@@ -4,7 +4,7 @@
 #include "../MemoryInstruction.hpp"
 #include "util/Disassembler.hpp"
 #include "util/ElfReader.hpp"
-#include "arm_disassembler.hpp"
+#include "ArmDisassembler.hpp"
 
 namespace fail {
 

@@ -8,7 +8,7 @@
 #include "cpn/Campaign.hpp"
 #include "comm/ExperimentData.hpp"
 #include "util/Logger.hpp"
-#include "sal/x86/Architecture.hpp"
+#include "sal/x86/X86Architecture.hpp"
 #include "nanojpeg.pb.h"
 
 class NanoJPEGExperimentData : public fail::ExperimentData {

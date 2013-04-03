@@ -7,7 +7,7 @@
 #include <utility>
 #include <map>
 
-#include "sal/x86/Architecture.hpp"
+#include "sal/x86/X86Architecture.hpp"
 
 class Udis86Helper {
 public:

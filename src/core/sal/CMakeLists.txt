@@ -64,20 +64,20 @@ elseif(BUILD_T32)
 	if(BUILD_ARM)
 		set(SRCS ${SRCS}
 			t32/T32ArmCPU.cc
-      arm/ArmMemoryInstruction.cc
-      arm/arm_disassembler.cc
+			arm/ArmMemoryInstruction.cc
+			arm/ArmDisassembler.cc
 		)
 	endif(BUILD_ARM)
 endif(BUILD_BOCHS)
 
 if(BUILD_X86)
 	set(SRCS ${SRCS}
-		x86/Architecture.cc
+		x86/X86Architecture.cc
 	)
   set(ARCH_TOOL_PREFIX "" CACHE PATH "Setup prefix for binutils, e.g., arm-none-eabi- or tricore-, ..")
 elseif(BUILD_ARM)
 	set(SRCS ${SRCS}
-		arm/Architecture.cc
+		arm/ArmArchitecture.cc
 	)
   set(ARCH_TOOL_PREFIX "arm-none-eabi-" CACHE PATH "Setup prefix for binutils, e.g., arm-none-eabi- or tricore-, ..")
 endif(BUILD_X86)

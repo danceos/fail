@@ -1,8 +1,8 @@
 #ifndef __T32_ARM_CPU_HPP__
   #define __T32_ARM_CPU_HPP__
 
-#include "../arm/Architecture.hpp"
-#include "../arm/CPUState.hpp"
+#include "../arm/ArmArchitecture.hpp"
+#include "../arm/ArmCPUState.hpp"
 #include <t32.h>
 
 namespace fail {

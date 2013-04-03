@@ -1,8 +1,8 @@
 #ifndef __BOCHS_CPU_HPP__
   #define __BOCHS_CPU_HPP__
 
-#include "../x86/Architecture.hpp"
-#include "../x86/CPUState.hpp"
+#include "../x86/X86Architecture.hpp"
+#include "../x86/X86CPUState.hpp"
 
 #include "bochs.h"
 #include "cpu/cpu.h"

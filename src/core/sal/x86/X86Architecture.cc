@@ -1,4 +1,4 @@
-#include "Architecture.hpp"
+#include "X86Architecture.hpp"
 #include "../Register.hpp"
 #include <sstream>
 
