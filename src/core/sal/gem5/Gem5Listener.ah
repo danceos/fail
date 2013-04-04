@@ -6,19 +6,6 @@
 
 #if defined(BUILD_GEM5) && defined(CONFIG_EVENT_BREAKPOINTS) && !defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
 
-#include "../SALInst.hpp"
-
-#include "sim/system.hh"
-#include "cpu/pc_event.hh"
-
-class Gem5Breakpoint : public PCEvent {
-public:
-	Gem5Breakpoint(PCEventQueue* queue, Addr ip)
-		: PCEvent(queue, "Fail* experiment breakpoint", ip) { }
-	virtual void process(ThreadContext *tc)
-	{ fail::simulator.onBreakpoint(&fail::simulator.getCPU(tc->cpuId()), this->evpc, fail::ANY_ADDR); }
-};
-
 aspect Gem5Listener {
 	advice "fail::BPSingleListener" : slice class {
 	private:
@@ -26,18 +13,13 @@ aspect Gem5Listener {
 	public:
 		virtual bool onAddition()
 		{
-			System* sys = *System::systemList.begin();
-			m_Breakpoint = new Gem5Breakpoint(&sys->pcEventQueue, this->m_WatchInstrPtr);
-
+			m_Breakpoint = OnBreakpointAddition(Gem5Breakpoint* bp, address_t watchInstrPtr)
 			return true;
 		}
-
 		virtual void onDeletion()
 		{
-			if (m_Breakpoint) {
-				delete m_Breakpoint;
-				m_Breakpoint = 0;
-			}
+			OnBreakpointDeletion(m_Breakpoint);
+			m_Breakpoint = 0;
 		}
 	};
 };

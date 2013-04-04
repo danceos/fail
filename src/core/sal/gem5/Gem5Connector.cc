@@ -1,3 +1,4 @@
+#if 0
 #include "Gem5Connector.hpp"
 
 #include "base/trace.hh"
@@ -23,3 +24,5 @@ void Gem5Connector::restore(const std::string &path)
 
 	root->loadState(&cp);
 }
+
+#endif

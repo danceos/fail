@@ -25,4 +25,4 @@ if (len(gStaticLibs)>0):
 DebugFlag('FailState')
 CompoundFlag('Fail', ['FailState'])
 
-Source('Gem5Connector.cc')
+Source('Gem5Wrapper.cc')
