@@ -56,9 +56,14 @@ int main(int argc, char *argv[])
 	igzstream gz_stream;
 	ProtoIStream ps(&openStream(argv[1], normal_stream, gz_stream));
 
+	uint64_t acctime = 0;
+
 	while (ps.getNext(&ev)) {
+		if (ev.has_time_delta()) {
+			acctime += ev.time_delta();
+		}
 		if (!ev.has_memaddr()) {
-			cout << "IP " << hex << ev.ip() << "\n";
+			cout << "IP " << hex << ev.ip() << dec << " t=" << acctime << "\n";
 		} else {
 			string ext = ""; // FIXME: use stringstream?
 			if (ev.has_trace_ext()) {
@@ -88,6 +93,7 @@ int main(int argc, char *argv[])
 			     << ev.memaddr()
 			     << dec << " width " << ev.width()
 			     << hex << " IP " << ev.ip()
+			     << dec << " t=" << acctime
 			     << ext << "\n";
 		}
 	}
