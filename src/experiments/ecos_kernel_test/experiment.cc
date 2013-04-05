@@ -37,6 +37,10 @@
 
 #define TIMER_GRANULARITY 10 // microseconds
 
+#define VIDEOMEM_START 0xb8000
+#define VIDEOMEM_SIZE  (80*25*2 *2) // two text mode screens
+#define VIDEOMEM_END   (VIDEOMEM_START + VIDEOMEM_SIZE)
+
 using namespace std;
 using namespace fail;
 
@@ -229,10 +233,10 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
 
-			if(hi > highest_addr) {
+			if (hi > highest_addr && (hi < VIDEOMEM_START || hi >= VIDEOMEM_END)) {
 				highest_addr = hi;
 			}
-			if(lo < lowest_addr) {
+			if (lo < lowest_addr && (lo < VIDEOMEM_START || lo >= VIDEOMEM_END)) {
 				lowest_addr = lo;
 			}
 			simulator.addListener(&ev_mem);
@@ -248,7 +252,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	unsigned estimated_timeout = (unsigned)estimated_timeout_overflow_check;
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
-	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ]" << endl;
+	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ] (ignoring VGA mem)" << endl;
 	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
 
 	// save these values for experiment STEP 3
@@ -430,12 +434,18 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addListener(&ev_beyond_text);
 
 		// memory access outside of bound determined in the golden run [lowest_addr, highest_addr]
+		// video memory accesses are OK, too
+		// FIXME: It would be nice to have a MemAccessListener that accepts a MemoryMap.
+		assert(lowest_addr < highest_addr && highest_addr < VIDEOMEM_START);
 		MemAccessListener ev_mem_low(0x0, MemAccessEvent::MEM_READWRITE);
 		ev_mem_low.setWatchWidth(lowest_addr);
 		MemAccessListener ev_mem_high(highest_addr + 1, MemAccessEvent::MEM_READWRITE);
-		ev_mem_high.setWatchWidth(0xFFFFFFFFU - (highest_addr + 1));
+		ev_mem_high.setWatchWidth(VIDEOMEM_START - (highest_addr + 1));
+		MemAccessListener ev_mem_veryhigh(VIDEOMEM_END, MemAccessEvent::MEM_READWRITE);
+		ev_mem_high.setWatchWidth(0xFFFFFFFFU - VIDEOMEM_END);
 		simulator.addListener(&ev_mem_low);
 		simulator.addListener(&ev_mem_high);
+		simulator.addListener(&ev_mem_veryhigh);
 
 		// timeout (e.g., stuck in a HLT instruction)
 		TimerListener ev_timeout(estimated_timeout);
@@ -545,7 +555,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);
-		} else if (ev == &ev_mem_low || ev == &ev_mem_high) {
+		} else if (ev == &ev_mem_low || ev == &ev_mem_high || ev == &ev_mem_veryhigh) {
 			log << "Result MEMORYACCESS" << endl;
 			result->set_resulttype(result->MEMORYACCESS);
 		} else if (ev == &ev_trap) {
