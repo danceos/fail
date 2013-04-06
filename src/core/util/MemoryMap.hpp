@@ -73,6 +73,24 @@ public:
 	 * structure.
 	 */
 	iterator end() { return as.end(); }
+	/**
+	 * Loads a memory map from a file and merges it with the current state.
+	 *
+	 * File format (addresses and sizes in decimal):
+	 * \code
+	 * address1<tab>size1
+	 * address2<tab>size2
+	 * ...
+	 * \endcode
+	 */
+	bool readFromFile(char const * const filename);
+	/**
+	 * Saves the map to a file.
+	 *
+	 * Currently all access size information is lost; the map is flattened out
+	 * to a long list of single-byte addresses.
+	 */
+	bool writeToFile(char const * const filename);
 };
 
 } // end-of-namespace: fail

@@ -17,6 +17,7 @@ set(SRCS
  gzstream/gzstream.h
  Logger.cc
  Logger.hpp
+ MemoryMap.cc
  MemoryMap.hpp
  ProtoStream.cc
  ProtoStream.hpp
