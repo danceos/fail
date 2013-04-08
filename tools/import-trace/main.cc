@@ -100,6 +100,11 @@ int main(int argc, char *argv[]) {
 	//		"--faultspace-cutoff-end \tCut off fault space end (no, lastr) "
 	//		"(default: no)");
 
+	CommandLine::option_handle ENABLE_SANITYCHECKS =
+		cmd.addOption("", "enable-sanitychecks", Arg::None,
+			"--enable-sanitychecks \tEnable sanity checks "
+			"(in case something looks fishy)"
+			"(default: disabled)");
 
 	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
@@ -179,6 +184,10 @@ int main(int argc, char *argv[]) {
 		}
 	} else {
 		importer->set_faultspace_rightmargin('W');
+	}
+
+	if (cmd[ENABLE_SANITYCHECKS].count() > 0) {
+		importer->set_sanitychecks(true);
 	}
 
 	if (!importer->init(variant, benchmark, db)) {

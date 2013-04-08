@@ -16,11 +16,13 @@ protected:
 	fail::ElfReader *m_elf;
 	fail::MemoryMap *m_mm;
 	char m_faultspace_rightmargin;
+	bool m_sanitychecks;
 	fail::Database *db;
 
 public:
 	typedef unsigned instruction_count_t; //!< not big enough for some benchmarks
 
+	Importer() : m_sanitychecks(false) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	virtual bool create_database() = 0;
@@ -33,6 +35,7 @@ public:
 	void set_elf_file(fail::ElfReader *elf) { m_elf = elf; }
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
+	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
 protected:
 private:
 	struct leftmargin_info_t { instruction_count_t dyninstr; fail::simtime_t time; };

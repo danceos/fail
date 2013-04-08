@@ -173,9 +173,102 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	LOG << "Inserted " << row_count << " trace events (+" << row_count_fake
 	    << " fake events) into the database" << std::endl;
 
-	// TODO: (configurable) sanity checks
-	// PC-based fault space rectangular, covered, and non-overlapping?
-	// (same for timing-based fault space?)
+	// sanity checks
+	if (m_sanitychecks) {
+		std::stringstream ss;
+		bool all_ok = true;
+		MYSQL_RES *res;
+
+		// PC-based fault space rectangular, covered, and non-overlapping?
+		// (same for timing-based fault space?)
+
+		LOG << "Sanity check: EC overlaps ..." << std::flush;
+		ss <<
+			"SELECT t1.variant_id\n" //, v.variant, v.benchmark, t1.instr1, t1.instr2, t1.data_address, t2.instr1, t2.instr2
+			"FROM trace t1\n"
+			"JOIN variant v\n"
+			"  ON v.id = t1.variant_id\n"
+			"JOIN trace t2\n"
+			"  ON t1.variant_id = t2.variant_id AND t1.data_address = t2.data_address\n"
+			" AND (t1.instr1 != t2.instr1 OR t2.instr2 != t2.instr2)\n"
+			" AND ((t1.instr1 >= t2.instr1 AND t1.instr1 <= t2.instr2)\n"
+			"  OR (t1.instr2 >= t2.instr1 AND t1.instr2 <= t2.instr2)\n"
+			"  OR (t1.instr1 < t2.instr1 AND t1.instr2 > t2.instr2))\n"
+			"WHERE t1.variant_id = " << m_variant_id;
+
+		res = db->query(ss.str().c_str(), true);
+		ss.str("");
+		ss.clear();
+		if (res && mysql_num_rows(res) == 0) {
+			std::cout << " OK" << std::endl;
+		} else {
+			std::cout << " FAILED: not all ECs are disjoint" << std::endl;
+			// TODO: show a list of overlapping ECs?
+			all_ok = false;
+		}
+
+		LOG << "Sanity check: FS row sum = total width ..." << std::flush;
+		ss <<
+			"SELECT t.variant_id, t.data_address,\n"
+			" (SELECT (MAX(t2.instr2) - MIN(t2.instr1) + 1)\n"
+			"  FROM trace t2\n"
+			"  WHERE t2.variant_id = t.variant_id)\n"
+			" -\n"
+			" (SELECT SUM(t3.instr2 - t3.instr1 + 1)\n"
+			"  FROM trace t3\n"
+			"  WHERE t3.variant_id = t.variant_id AND t3.data_address = t.data_address)\n"
+			" AS diff\n"
+			"FROM trace t\n"
+			"WHERE t.variant_id = " << m_variant_id << "\n"
+			"GROUP BY t.variant_id, t.data_address\n"
+			"HAVING diff != 0\n"
+			"ORDER BY t.data_address\n";
+
+		res = db->query(ss.str().c_str(), true);
+		ss.str("");
+		ss.clear();
+		if (res && mysql_num_rows(res) == 0) {
+			std::cout << " OK" << std::endl;
+		} else {
+			std::cout << " FAILED: MAX(instr2)-MIN(instr1)+1 == SUM(instr2-instr1+1) not true for all fault-space rows" << std::endl;
+			// TODO: show a list of failing data_addresses?
+			all_ok = false;
+		}
+
+		LOG << "Sanity check: Global min/max = FS row local min/max ..." << std::flush;
+		ss <<
+			"SELECT t.variant_id, local.data_address, global.min_instr, global.max_instr, local.min_instr, local.max_instr\n"
+			"FROM trace t\n"
+			"JOIN\n"
+			" (SELECT t2.variant_id, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
+			"  FROM trace t2\n"
+			"  GROUP BY t2.variant_id) AS global\n"
+			" ON global.variant_id = t.variant_id\n"
+			"JOIN\n"
+			" (SELECT variant_id, data_address, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
+			"  FROM trace t3\n"
+			"  GROUP BY t3.variant_id, t3.data_address) AS local\n"
+			" ON local.variant_id = t.variant_id\n"
+			"AND (local.min_instr != global.min_instr\n"
+			"  OR local.max_instr != global.max_instr)\n"
+			"WHERE t.variant_id = " << m_variant_id << "\n"
+			"GROUP BY t.variant_id, local.data_address\n";
+
+		res = db->query(ss.str().c_str(), true);
+		ss.str("");
+		ss.clear();
+		if (res && mysql_num_rows(res) == 0) {
+			std::cout << " OK" << std::endl;
+		} else {
+			std::cout << " FAILED: global MIN(instr1)/MAX(instr2) != row-local MIN(instr1)/MAX(instr2)" << std::endl;
+			// TODO: show a list of failing data_addresses and global min/max?
+			all_ok = false;
+		}
+
+		if (!all_ok) {
+			return false;
+		}
+	}
 
 	return true;
 }
