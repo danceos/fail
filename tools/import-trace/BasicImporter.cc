@@ -1,4 +1,3 @@
-#include <iostream>
 #include "util/Logger.hpp"
 #include "BasicImporter.hpp"
 
@@ -10,6 +9,8 @@ bool BasicImporter::create_database() {
 		"	instr1 int(10) unsigned NOT NULL,"
 		"	instr2 int(10) unsigned NOT NULL,"
 		"	instr2_absolute int(10) unsigned DEFAULT NULL,"
+		"	time1 bigint(10) unsigned NOT NULL,"
+		"	time2 bigint(10) unsigned NOT NULL,"
 		"	data_address int(10) unsigned NOT NULL,"
 		"	width tinyint(3) unsigned NOT NULL,"
 		"	accesstype enum('R','W') NOT NULL,"
@@ -19,13 +20,14 @@ bool BasicImporter::create_database() {
 }
 
 bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count_t end,
-									const Trace_Event &event, bool is_fake) {
+	fail::simtime_t time_begin, fail::simtime_t time_end,
+	const Trace_Event &event, bool is_fake) {
 
 	static MYSQL_STMT *stmt = 0;
 	if (!stmt) {
-		std::string sql("INSERT INTO trace (variant_id, instr1, instr2, instr2_absolute, data_address, width,"
+		std::string sql("INSERT INTO trace (variant_id, instr1, instr2, instr2_absolute, time1, time2, data_address, width,"
 		                "					accesstype)"
-		                "VALUES (?,?,?,?, ?,?,?)");
+		                "VALUES (?,?,?,?,?,?,?,?,?)");
 		stmt = mysql_stmt_init(db->getHandle());
 		if (mysql_stmt_prepare(stmt, sql.c_str(), sql.length())) {
 			LOG << "query '" << sql << "' failed: " << mysql_error(db->getHandle()) << std::endl;
@@ -33,7 +35,7 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 		}
 	}
 
-	MYSQL_BIND bind[7];
+	MYSQL_BIND bind[9];
 	my_bool is_null = is_fake;
 	unsigned long accesstype_len = 1;
 	unsigned ip = event.ip();
@@ -42,7 +44,7 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 	char accesstype = event.accesstype() == event.READ ? 'R' : 'W';
 
 	memset(bind, 0, sizeof(bind));
-	for (int i = 0; i < 7; ++i) {
+	for (unsigned i = 0; i < sizeof(bind)/sizeof(*bind); ++i) {
 		bind[i].buffer_type = MYSQL_TYPE_LONG;
 		bind[i].is_unsigned = 1;
 		switch (i) {
@@ -51,9 +53,15 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 		case 2: bind[i].buffer = &end; break;
 		case 3: bind[i].buffer = &ip;
 			bind[i].is_null = &is_null; break;
-		case 4: bind[i].buffer = &data_address; break;
-		case 5: bind[i].buffer = &width; break;
-		case 6: bind[i].buffer = &accesstype;
+		case 4: bind[i].buffer = &time_begin;
+			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
+			break;
+		case 5: bind[i].buffer = &time_end;
+			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
+			break;
+		case 6: bind[i].buffer = &data_address; break;
+		case 7: bind[i].buffer = &width; break;
+		case 8: bind[i].buffer = &accesstype;
 			bind[i].buffer_type = MYSQL_TYPE_STRING;
 			bind[i].buffer_length = accesstype_len;
 			bind[i].length = &accesstype_len;
@@ -66,10 +74,8 @@ bool BasicImporter::add_trace_event(instruction_count_t begin, instruction_count
 	}
 	if (mysql_stmt_execute(stmt)) {
 		LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
-		LOG << "IP: " << std::hex<< event.ip() << std::endl;
+		LOG << "IP: " << std::hex << event.ip() << std::endl;
 		return false;
 	}
 	return true;
 }
-
-
