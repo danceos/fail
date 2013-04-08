@@ -43,20 +43,26 @@ bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * con
 	return (count > 0);
 }
 
-bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr,
+bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout,
+	unsigned mem1_low, unsigned mem1_high, // < 1M
+	unsigned mem2_low, unsigned mem2_high, // >= 1M
 	const std::string& variant, const std::string& benchmark) {
 	ofstream ti(filename_traceinfo(variant, benchmark).c_str(), ios::out);
 	if (!ti.is_open()) {
 		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
 		return false;
 	}
-	ti << instr_counter << endl << timeout << endl << lowest_addr << endl << highest_addr << endl;
+	ti << instr_counter << endl << timeout << endl
+	   << mem1_low << endl << mem1_high << endl
+	   << mem2_low << endl << mem2_high << endl;
 	ti.flush();
 	ti.close();
 	return true;
 }
 
-bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr,
+bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &timeout,
+	unsigned &mem1_low, unsigned &mem1_high, // < 1M
+	unsigned &mem2_low, unsigned &mem2_high, // >= 1M
 	const std::string& variant, const std::string& benchmark) {
 	ifstream file(filename_traceinfo(variant, benchmark).c_str());
 	if (!file.is_open()) {
@@ -77,17 +83,23 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 				ss >> timeout;
 				break;
 			case 2:
-				ss >> lowest_addr;
+				ss >> mem1_low;
 				break;
 			case 3:
-				ss >> highest_addr;
+				ss >> mem1_high;
+				break;
+			case 4:
+				ss >> mem2_low;
+				break;
+			case 5:
+				ss >> mem2_high;
 				break;
 		}
 		count++;
 	}
 	file.close();
-	assert(count == 4);
-	return (count == 4);
+	assert(count == 6);
+	return (count == 6);
 }
 
 std::string EcosKernelTestCampaign::filename_memorymap(const std::string& variant, const std::string& benchmark)
@@ -196,8 +208,9 @@ bool EcosKernelTestCampaign::run()
 
 			// read trace info
 			unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
+			// FIXME properly deal with 2nd memory range
 			EcosKernelTestCampaign::readTraceInfo(instr_counter,
-				estimated_timeout, lowest_addr, highest_addr, variant, benchmark);
+				estimated_timeout, lowest_addr, highest_addr, lowest_addr, highest_addr, variant, benchmark);
 
 			// a map of addresses of ECC protected objects
 			MemoryMap mm;

@@ -209,8 +209,12 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	// on the way, record lowest and highest memory address accessed
 	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
 	simulator.addListener(&ev_mem);
-	unsigned lowest_addr = 0xFFFFFFFFUL;
-	unsigned highest_addr = 0;
+	// range for mem accesses < 1M
+	unsigned mem1_low = 0xFFFFFFFFUL;
+	unsigned mem1_high = 0;
+	// range for mem accesses >= 1M
+	unsigned mem2_low = 0xFFFFFFFFUL;
+	unsigned mem2_high = 0;
 
 	// do the job, 'till the end
 	BaseListener* ev = simulator.resume();
@@ -233,11 +237,14 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
 
-			if (hi > highest_addr && (hi < VIDEOMEM_START || hi >= VIDEOMEM_END)) {
-				highest_addr = hi;
-			}
-			if (lo < lowest_addr && (lo < VIDEOMEM_START || lo >= VIDEOMEM_END)) {
-				lowest_addr = lo;
+			if (lo < VIDEOMEM_START || lo >= VIDEOMEM_END) {
+				if (hi < 1024*1024) { // < 1M
+					if (hi > mem1_high) { mem1_high = hi; }
+					if (lo < mem1_low)  { mem1_low = lo; }
+				} else { // >= 1M
+					if (hi > mem2_high) { mem2_high = hi; }
+					if (lo < mem2_low)  { mem2_low = lo; }
+				}
 			}
 			simulator.addListener(&ev_mem);
 		}
@@ -252,12 +259,20 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	unsigned estimated_timeout = (unsigned)estimated_timeout_overflow_check;
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
-	log << hex << "all memory accesses within [ 0x" << lowest_addr << " , 0x" << highest_addr << " ] (ignoring VGA mem)" << endl;
+	log << hex << "all memory accesses within [0x" << mem1_low << ", 0x" << mem1_high << "] u [0x" << mem2_low << ", 0x" << mem2_high << "] (ignoring VGA mem)" << endl;
 	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
+
+	// sanitize memory ranges
+	if (mem1_low > mem1_high) {
+		mem1_low = mem1_high = 0;
+	}
+	if (mem2_low > mem2_high) {
+		mem2_low = mem2_high = 1024*1024;
+	}
 
 	// save these values for experiment STEP 3
 	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout,
-		lowest_addr, highest_addr, m_variant, m_benchmark);
+		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 
 	simulator.removeFlow(&tp);
 
@@ -277,7 +292,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
 	// trace info
-	unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
+	unsigned instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
 	// ELF symbol addresses
 	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
 	                addr_panic, addr_text_start, addr_text_end;
@@ -317,7 +332,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	int mem_addr = param.msg.mem_addr();
 
 	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
-		lowest_addr, highest_addr, m_variant, m_benchmark);
+		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 	readELFSymbols(addr_entry, addr_finish, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end);
 
@@ -433,19 +448,25 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addListener(&ev_below_text);
 		simulator.addListener(&ev_beyond_text);
 
-		// memory access outside of bound determined in the golden run [lowest_addr, highest_addr]
+		// memory access outside of bound determined in the golden run
+		// [mem1_low, mem1_high] u [mem2_low, mem2_high]
 		// video memory accesses are OK, too
-		// FIXME: It would be nice to have a MemAccessListener that accepts a MemoryMap.
-		assert(lowest_addr < highest_addr && highest_addr < VIDEOMEM_START);
-		MemAccessListener ev_mem_low(0x0, MemAccessEvent::MEM_READWRITE);
-		ev_mem_low.setWatchWidth(lowest_addr);
-		MemAccessListener ev_mem_high(highest_addr + 1, MemAccessEvent::MEM_READWRITE);
-		ev_mem_high.setWatchWidth(VIDEOMEM_START - (highest_addr + 1));
-		MemAccessListener ev_mem_veryhigh(VIDEOMEM_END, MemAccessEvent::MEM_READWRITE);
-		ev_mem_high.setWatchWidth(0xFFFFFFFFU - VIDEOMEM_END);
-		simulator.addListener(&ev_mem_low);
-		simulator.addListener(&ev_mem_high);
-		simulator.addListener(&ev_mem_veryhigh);
+		// FIXME: It would be nice to have a MemAccessListener that accepts a
+		// MemoryMap, to have MemoryMaps that store addresses in a compact way,
+		// and that are invertible.
+		assert(mem1_low < mem1_high && mem1_high < VIDEOMEM_START && VIDEOMEM_END < mem2_low && mem2_low < mem2_high);
+		MemAccessListener ev_mem_outside1(0x0, MemAccessEvent::MEM_READWRITE);
+		ev_mem_outside1.setWatchWidth(mem1_low);
+		MemAccessListener ev_mem_outside2(mem1_high + 1, MemAccessEvent::MEM_READWRITE);
+		ev_mem_outside2.setWatchWidth(VIDEOMEM_START - (mem1_high + 1));
+		MemAccessListener ev_mem_outside3(VIDEOMEM_END, MemAccessEvent::MEM_READWRITE);
+		ev_mem_outside3.setWatchWidth(mem2_low - VIDEOMEM_END);
+		MemAccessListener ev_mem_outside4(mem2_high + 1, MemAccessEvent::MEM_READWRITE);
+		ev_mem_outside4.setWatchWidth(0xFFFFFFFFU - (mem2_high + 1));
+		simulator.addListener(&ev_mem_outside1);
+		simulator.addListener(&ev_mem_outside2);
+		simulator.addListener(&ev_mem_outside3);
+		simulator.addListener(&ev_mem_outside4);
 
 		// timeout (e.g., stuck in a HLT instruction)
 		TimerListener ev_timeout(estimated_timeout);
@@ -555,7 +576,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
 			log << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);
-		} else if (ev == &ev_mem_low || ev == &ev_mem_high || ev == &ev_mem_veryhigh) {
+		} else if (ev == &ev_mem_outside1 || ev == &ev_mem_outside2
+		        || ev == &ev_mem_outside3 || ev == &ev_mem_outside4) {
 			log << "Result MEMORYACCESS" << endl;
 			result->set_resulttype(result->MEMORYACCESS);
 		} else if (ev == &ev_trap) {

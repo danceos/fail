@@ -49,8 +49,8 @@ public:
 		count_exp(0), count_exp_jobs(0), count_known(0), count_known_jobs(0) {}
 	virtual bool run();
 	static bool readMemoryMap(fail::MemoryMap &mm, char const * const filename);
-	static bool writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned lowest_addr, unsigned highest_addr, const std::string& variant = "", const std::string& benchmark = "");
-	static bool readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &lowest_addr, unsigned &highest_addr, const std::string& variant = "", const std::string& benchmark = "");
+	static bool writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned mem1_low, unsigned mem1_high, unsigned mem2_low, unsigned mem2_high, const std::string& variant = "", const std::string& benchmark = "");
+	static bool readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &mem1_low, unsigned &mem1_high, unsigned &mem2_low, unsigned &mem2_high, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_memorymap(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_state(unsigned instr_offset, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_trace(const std::string& variant = "", const std::string& benchmark = "");
