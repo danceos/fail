@@ -4,7 +4,8 @@
 #include "../SimulatorController.hpp"
 #include "Gem5Memory.hpp"
 
-#include "sim/system.hh"
+// gem5 forward declarations:
+class System;
 
 namespace fail {
 
@@ -14,6 +15,8 @@ namespace fail {
  * Gem5-specific implementation of a SimulatorController.
  */
 class Gem5Controller : public SimulatorController {
+private:
+	System* m_System; //!< the gem5 system object
 public:
 	void startup();
 	~Gem5Controller();

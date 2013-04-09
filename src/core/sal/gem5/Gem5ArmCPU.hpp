@@ -4,7 +4,8 @@
 #include "../arm/ArmArchitecture.hpp"
 #include "../arm/ArmCPUState.hpp"
 
-#include "sim/system.hh"
+// gem5 forward declarations:
+class System;
 
 namespace fail {
 
@@ -17,6 +18,9 @@ namespace fail {
  * while \c ArmCPUState encapsulates the CPU state (e.g. register \a content).
  */
 class Gem5ArmCPU : public ArmArchitecture, public ArmCPUState {
+private:
+	unsigned int m_Id; //!< the unique ID of this CPU
+	System* m_System; //!< the gem5 system object
 public:
 	/**
 	 * Creates a new gem5 CPU for ARM based targets.
@@ -60,9 +64,6 @@ public:
 	 * @return the unique ID of \c this CPU object
 	 */
 	unsigned int getId() const { return m_Id; }
-private:
-	unsigned int m_Id; //!< the unique ID of this CPU
-	System* m_System; //!< the gem5 system object
 };
 
 typedef Gem5ArmCPU ConcreteCPU; //!< the concrete CPU type for ARM + gem5

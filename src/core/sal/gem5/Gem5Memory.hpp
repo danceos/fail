@@ -2,12 +2,10 @@
   #define __GEM5_MEMORY_HPP__
 
 #include "../Memory.hpp"
+#include "Gem5Wrapper.hpp"
 
-#include "sim/system.hh"
-#include "mem/packet.hh"
-#include "mem/physical.hh"
-
-//class System;
+// gem5 forward declarations:
+class System;
 
 namespace fail {
 
@@ -17,56 +15,30 @@ namespace fail {
  * MemoryManager to provide access to gem5's memory pool.
  */
 class Gem5MemoryManager : public MemoryManager {
-public:
-	Gem5MemoryManager(System* system) : m_System(system), m_Mem(&system->getPhysMem()) { }
-
-	size_t getPoolSize() const { return m_Mem->totalSize(); }
-	host_address_t getStartAddr() const { return 0; }
-
-	byte_t getByte(guest_address_t addr)
-	{
-		Request req(addr, 1, Request::PHYSICAL, 0);
-
-		Packet pkt(&req, MemCmd::ReadReq);
-		byte_t data;
-		pkt.dataStatic(&data);
-
-		m_Mem->functionalAccess(&pkt);
-		return data;
-	}
-
-	void getBytes(guest_address_t addr, size_t cnt, void *dest)
-	{
-		Request req(addr, cnt, Request::PHYSICAL, 0);
-
-		Packet pkt(&req, MemCmd::ReadReq);
-		pkt.dataStatic(dest);
-
-		m_Mem->functionalAccess(&pkt);
-	}
-
-	void setByte(guest_address_t addr, byte_t data)
-	{
-		Request req(addr, 1, Request::PHYSICAL, 0);
-
-		Packet pkt(&req, MemCmd::WriteReq);
-		pkt.dataStatic(&data);
-
-		m_Mem->functionalAccess(&pkt);
-	}
-
-	void setBytes(guest_address_t addr, size_t cnt, void const *src)
-	{
-		Request req(addr, cnt, Request::PHYSICAL, 0);
-
-		Packet pkt(&req, MemCmd::WriteReq);
-		pkt.dataStatic(src);
-
-		m_Mem->functionalAccess(&pkt);
-	}
 private:
 	System* m_System;
-	PhysicalMemory* m_Mem;
+public:
+	Gem5MemoryManager(System* sys) : m_System(sys) { }
+	size_t getPoolSize() const { return GetPoolSize(m_System); }
+	host_address_t getStartAddr() const { return 0; }
+	byte_t getByte(guest_address_t addr)
+	{
+		byte_t data;
+		ReadMemory(m_System, addr, 1, &data);
+		return data;
+	}
+	void getBytes(guest_address_t addr, size_t cnt, void *dest)
+	{
+		ReadMemory(m_System, addr, cnt, dest);
+	}
+	void setByte(guest_address_t addr, byte_t data)
+	{
+		WriteMemory(m_System, addr, 1, &data);
+	}
+	void setBytes(guest_address_t addr, size_t cnt, void const *src)
+	{
+		WriteMemory(m_System, addr, cnt, src);
+	}
 };
 
 } // end-of-namespace: fail

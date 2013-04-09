@@ -1,3 +1,6 @@
+#if 0
+// TODO: Incorporate this code into Gem5Controller.{hpp,cc}
+
 #ifndef __GEM5_CONNECTOR_HPP__
   #define __GEM5_CONNECTOR_HPP__
 
@@ -17,3 +20,4 @@ public:
 extern Gem5Connector connector;
 
 #endif // __GEM5_CONNECTOR_HPP__
+#endif
