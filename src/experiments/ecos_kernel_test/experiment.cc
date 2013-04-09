@@ -69,6 +69,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 	bp.setWatchInstructionPointer(addr_finish);
 
 	// memory map serialization
+	// FIXME: use MemoryMap::writeToFile()
 	ofstream mm(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str(), ios::out);
 	if (!mm.is_open()) {
 		log << "failed to open " << EcosKernelTestCampaign::filename_memorymap() << endl;
@@ -178,7 +179,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// restrict memory access logging to injection target
 	MemoryMap mm;
-	EcosKernelTestCampaign::readMemoryMap(mm, EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
+	mm.readFromFile(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
 
 	tp.restrictMemoryAddresses(&mm);
 

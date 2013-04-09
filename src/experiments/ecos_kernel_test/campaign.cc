@@ -21,28 +21,6 @@ const std::string EcosKernelTestCampaign::dir_images("images");
 const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites");
 const std::string EcosKernelTestCampaign::dir_results("results");
 
-bool EcosKernelTestCampaign::readMemoryMap(fail::MemoryMap &mm, char const * const filename) {
-	ifstream file(filename);
-	if (!file.is_open()) {
-		cout << "failed to open " << filename << endl;
-		return false;
-	}
-
-	string buf;
-	unsigned guest_addr, guest_len;
-	unsigned count = 0;
-
-	while (getline(file, buf)) {
-		stringstream ss(buf, ios::in);
-		ss >> guest_addr >> guest_len;
-		mm.add(guest_addr, guest_len);
-		count++;
-	}
-	file.close();
-	assert(count > 0);
-	return (count > 0);
-}
-
 bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout,
 	unsigned mem1_low, unsigned mem1_high, // < 1M
 	unsigned mem2_low, unsigned mem2_high, // >= 1M
@@ -214,8 +192,7 @@ bool EcosKernelTestCampaign::run()
 
 			// a map of addresses of ECC protected objects
 			MemoryMap mm;
-			EcosKernelTestCampaign::readMemoryMap(mm,
-				filename_memorymap(variant, benchmark).c_str());
+			mm.readFromFile(filename_memorymap(variant, benchmark).c_str());
 
 			// map for keeping one "open" EC for every address
 			// (maps injection data address => equivalence class)
