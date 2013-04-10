@@ -369,6 +369,7 @@ void DatabaseProtobufAdapter::create_table(const Descriptor *toplevel_desc) {
 
 	create_table_stmt << "CREATE TABLE IF NOT EXISTS " << result_table_name << "(";
 	create_table_stmt << top_level_msg.sql_create_stmt() << ", PRIMARY KEY(" << primary_join.join(", ") << "))";
+	create_table_stmt << " ENGINE=MyISAM";
 
 	insert_stmt << "INSERT INTO " << result_table_name << "(" << insert_join.join(",");
 	insert_stmt << ") VALUES (" << question_marks.join(",") << ")";

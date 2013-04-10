@@ -20,8 +20,9 @@
  */
 class DCiAOKernelImporter : public BasicImporter {
 protected:
-	fail::address_t getEnterKernelAddress() { return m_elf->getSymbol("os::dep::KernelStructs::correct").getAddress(); }
-	fail::address_t getLeaveKernelAddress() { return m_elf->getSymbol("os::dep::KernelStructs::calculate").getAddress(); }
+	fail::address_t getInjectKernelAddress() { return m_elf->getSymbol("os::dep::KernelStructs::correct").getAddress(); }
+	fail::address_t getEnterKernelAddress() { return m_elf->getSymbol("os::dep::kernel_protected_open").getAddress(); }
+	fail::address_t getLeaveKernelAddress() { return m_elf->getSymbol("os::dep::kernel_protected_close").getAddress(); }
 	bool inDynamicKernelMemory(fail::address_t addr);
 
 public:

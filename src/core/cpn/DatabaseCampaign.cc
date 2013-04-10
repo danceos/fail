@@ -82,7 +82,7 @@ bool DatabaseCampaign::run() {
 
 	/* Gather all unfinished jobs */
 	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, g.injection_instr, g.injection_instr_absolute, g.data_address";
+	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address";
 	std::stringstream ss;
 	ss << " FROM fspgroup g"
 	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
@@ -90,7 +90,7 @@ bool DatabaseCampaign::run() {
 	   << "	   AND g.fspmethod_id = "  << fspmethod_id
 	   << "	   AND g.variant_id = "	<< variant_id
 	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id) = 0"
-	   << "    ORDER BY g.injection_instr";
+	   << "    ORDER BY p.injection_instr";
 	std::string sql_body = ss.str();
 
 	/* Get the number of unfinished experiments */

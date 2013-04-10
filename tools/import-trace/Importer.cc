@@ -82,21 +82,21 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			if (m_mm && !m_mm->isMatching(data_address)) {
 				continue;
 			}
-			instruction_count_t instr1 =
-				open_ecs[data_address].dyninstr; // defaults to 0 if nonexistent
-			instruction_count_t instr2 = instr; // the current instruction
-			simtime_t time1 = open_ecs[data_address].time;
+			margin_info_t right_margin;
+			margin_info_t left_margin = open_ecs[data_address];
 			// defaulting to 0 is not such a good idea, memory reads at the
 			// beginning of the trace would get an unnaturally high weight:
-			if (time1 == 0) {
-				time1 = time_trace_start;
+			if (left_margin.time == 0) {
+				left_margin.time = time_trace_start;
 			}
-			simtime_t time2 = curtime;
+			right_margin.time = curtime;
+			right_margin.dyninstr = instr; // !< The current instruction
+			right_margin.ip = ev.ip();
 
 			// skip zero-sized intervals: these can occur when an instruction
 			// accesses a memory location more than once (e.g., INC, CMPXCHG)
 			// FIXME: look at timing instead?
-			if (instr1 > instr2) {
+			if (left_margin.dyninstr > right_margin.dyninstr) {
 				continue;
 			}
 
@@ -107,7 +107,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			// we're currently looking at; the EC is defined by
 			// data_address, dynamic instruction start/end, the absolute PC at
 			// the end, and time start/end
-			if (!add_trace_event(instr1, instr2, time1, time2, ev)) {
+			if (!add_trace_event(left_margin, right_margin, ev)) {
 				LOG << "add_trace_event failed" << std::endl;
 				return false;
 			}
@@ -118,9 +118,10 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 			// next interval must start at next instruction; the aforementioned
 			// skipping mechanism wouldn't work otherwise
-			//lastuse_it->second = instr2 + 1;
-			open_ecs[data_address].dyninstr = instr2 + 1;
-			open_ecs[data_address].time = time2 + 1;
+			open_ecs[data_address].dyninstr = instr + 1;
+			open_ecs[data_address].time     = curtime  + 1;
+			// FIXME: This should be the next IP, not the current, or?
+			open_ecs[data_address].ip       = ev.ip();
 		}
 	}
 
@@ -138,31 +139,30 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 		fake_ev.set_width(1);
 		fake_ev.set_accesstype(m_faultspace_rightmargin == 'R' ? fake_ev.READ : fake_ev.WRITE);
 
-		instruction_count_t instr1 = lastuse_it->second.dyninstr;
-		simtime_t time1 = lastuse_it->second.time;
+		margin_info_t left_margin, right_margin;
+		left_margin = lastuse_it->second;
 
 		// Why -1?	In most cases it does not make sense to inject before the
 		// very last instruction, as we won't execute it anymore.  This *only*
 		// makes sense if we also inject into parts of the result vector.  This
 		// is not the case in this experiment, and with -1 we'll get a result
 		// comparable to the non-pruned campaign.
-		instruction_count_t instr2 = instr - 1;
-
-		simtime_t time2 = curtime; // -1?
-
+		right_margin.dyninstr = instr - 1;
+		right_margin.time     = curtime; // -1?
+		right_margin.ip       = ev.ip(); // The last event in the log.
 // #else
 //		// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
 //		FIXME probably implement this with cmdline parameter FAULTSPACE_CUTOFF
-//		int instr2 = instr_rightmost;
+//		right_margin.dyninstr = instr_rightmost;
 // #endif
 
 		// zero-sized?	skip.
 		// FIXME: look at timing instead?
-		if (instr1 > instr2) {
+		if (left_margin.dyninstr > right_margin.dyninstr) {
 			continue;
 		}
 
-		if (!add_trace_event(instr1, instr2, time1, time2, fake_ev, true)) {
+		if (!add_trace_event(left_margin, right_margin, fake_ev, true)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}

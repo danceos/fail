@@ -13,7 +13,7 @@ bool BasicPruner::prune_all() {
 	// FIXME "basic-left mode" doesn't make any sense; injections at instr1 and
 	// at instr2 are completely equivalent.
 	std::string injection_instr = this->use_instr1 ? "instr1" : "instr2";
-	std::string injection_instr_absolute = this->use_instr1 ? "NULL" : "instr2_absolute";
+	std::string injection_instr_absolute = this->use_instr1 ? "instr1_absolute" : "instr2_absolute";
 
 	ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, fspmethod_id) "
 		  "SELECT 0, variant_id, instr2, " << injection_instr << ", " << injection_instr_absolute << ", "
