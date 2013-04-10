@@ -13,7 +13,7 @@ using std::endl;
 #include "BasicPruner.hpp"
 
 int main(int argc, char *argv[]) {
-	std::string username, hostname, database, benchmark, variant;
+	std::string username, hostname, database;
 
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
@@ -25,12 +25,24 @@ int main(int argc, char *argv[]) {
 
 	Database::cmdline_setup();
 
-	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
-	                                                     "-v/--variant \tVariant label (default: \"none\")");
-	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
-														 "-b/--benchmark \tBenchmark label (default: \"none\")\n");
-	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
-	                                                     "-p/--prune-method \tWhich import method to use (default: basic)");
+	CommandLine::option_handle VARIANT =
+		cmd.addOption("v", "variant", Arg::Required,
+			"-v/--variant \tVariant label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle VARIANT_EXCLUDE =
+		cmd.addOption("", "variant-exclude", Arg::Required,
+			"--variant-exclude \tVariant to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle BENCHMARK =
+		cmd.addOption("b", "benchmark", Arg::Required,
+			"-b/--benchmark \tBenchmark label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle BENCHMARK_EXCLUDE =
+		cmd.addOption("", "benchmark-exclude", Arg::Required,
+			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle PRUNER =
+		cmd.addOption("p", "prune-method", Arg::Required,
+			"-p/--prune-method \tWhich import method to use (default: basic)");
+	CommandLine::option_handle NO_DELETE =
+		cmd.addOption("", "no-delete", Arg::None,
+			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
 
 	if(!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
@@ -64,17 +76,36 @@ int main(int argc, char *argv[]) {
 
 	Database *db = Database::cmdline_connect();
 
-	if (cmd[VARIANT].count() > 0)
-		variant = std::string(cmd[VARIANT].first()->arg);
-	else
-		variant = "none";
+	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
+	if (cmd[VARIANT].count() > 0) {
+		for (option::Option *o = cmd[VARIANT]; o; o = o->next()) {
+			variants.push_back(std::string(o->arg));
+		}
+	} else {
+		variants.push_back(std::string("none"));
+	}
 
-	if (cmd[BENCHMARK].count() > 0)
-		benchmark = std::string(cmd[BENCHMARK].first()->arg);
-	else
-		benchmark = "none";
+	if (cmd[VARIANT_EXCLUDE].count() > 0) {
+		for (option::Option *o = cmd[VARIANT_EXCLUDE]; o; o = o->next()) {
+			variants_exclude.push_back(std::string(o->arg));
+		}
+	}
 
-	if (!pruner->init(variant, benchmark, db)) {
+	if (cmd[BENCHMARK].count() > 0) {
+		for (option::Option *o = cmd[BENCHMARK]; o; o = o->next()) {
+			benchmarks.push_back(std::string(o->arg));
+		}
+	} else {
+		benchmarks.push_back(std::string("none"));
+	}
+
+	if (cmd[BENCHMARK_EXCLUDE].count() > 0) {
+		for (option::Option *o = cmd[BENCHMARK_EXCLUDE]; o; o = o->next()) {
+			benchmarks_exclude.push_back(std::string(o->arg));
+		}
+	}
+
+	if (!pruner->init(db, variants, variants_exclude, benchmarks, benchmarks_exclude)) {
 		LOG << "pruner->init() failed" << endl;
 		exit(-1);
 	}
@@ -87,7 +118,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	if (!pruner->clear_database()) {
+	if (cmd[NO_DELETE].count() == 0 && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
