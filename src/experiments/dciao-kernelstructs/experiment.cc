@@ -55,24 +55,24 @@ void handleEvent(DCIAOKernelProtoMsg_Result& result, DCIAOKernelProtoMsg_Result_
 	result.set_details(msg);
 }
 
-// void handleMemoryAccessEvent(DCIAOKernelExperimentData& param, const fail::MemAccessListener& l_mem) {
-//	   stringstream sstr;
-//	   sstr << "mem access (";
-//	   switch (l_mem.getTriggerAccessType()) {
-//	   case MemAccessEvent::MEM_READ:
-//		   sstr << "r";
-//		   break;
-//	   case MemAccessEvent::MEM_WRITE:
-//		   sstr << "w";
-//		   break;
-//	   default: break;
-//	   }
-//	   sstr << ") @ 0x" << hex << l_mem.getTriggerAddress();
+std::string handleMemoryAccessEvent(fail::MemAccessListener& l_mem) {
+	   stringstream sstr;
+	   sstr << "mem access (";
+	   switch (l_mem.getTriggerAccessType()) {
+	   case MemAccessEvent::MEM_READ:
+		   sstr << "r";
+		   break;
+	   case MemAccessEvent::MEM_WRITE:
+		   sstr << "w";
+		   break;
+	   default: break;
+	   }
+	   sstr << ") @ 0x" << hex << l_mem.getTriggerAddress();
 
-//	   sstr << " ip @ 0x" << hex << l_mem.getTriggerInstructionPointer();
+	   sstr << " ip @ 0x" << hex << l_mem.getTriggerInstructionPointer();
 
-//	   handleEvent(param, param.msg.ERR_MEMACCESS, sstr.str());
-// }
+	   return sstr.str();
+}
 
 DCIAOKernelStructs::time_markers_t *DCIAOKernelStructs::getTimeMarkerList() {
 	const ElfSymbol & sym_time_marker_index = m_elf.getSymbol("time_marker_index");
@@ -102,8 +102,7 @@ int DCIAOKernelStructs::time_markers_compare(const time_markers_t &a, const time
 	int pos = -1;
 	unsigned max_index = std::min(a.size(), b.size());
 	for (unsigned i = 0; i < max_index; i++) {
-		if (a[i].time != b[i].time
-			|| a[i].at != b[i].at) {
+		if (a[i].time != b[i].time || a[i].at != b[i].at) {
 			pos = i;
 			break;
 		}
@@ -114,9 +113,28 @@ int DCIAOKernelStructs::time_markers_compare(const time_markers_t &a, const time
 	return pos;
 }
 
-
-
 bool DCIAOKernelStructs::run() {
+	address_t minimal_ip = INT_MAX; // 1 Mbyte
+	address_t maximal_ip = 0;
+    address_t minimal_data = 0x100000; // 1 Mbyte
+    address_t maximal_data = 0;
+
+	for (ElfReader::section_iterator it = m_elf.sec_begin();
+		 it != m_elf.sec_end(); ++it) {
+		const ElfSymbol &symbol = *it;
+        std::string prefix(".text");
+        if (symbol.getName().compare(0, prefix.size(), prefix) == 0) {
+            minimal_ip = std::min(minimal_ip, symbol.getStart());
+            maximal_ip = std::max(maximal_ip, symbol.getEnd());
+        } else {
+            minimal_data = std::min(minimal_data, symbol.getStart());
+            maximal_data = std::max(maximal_data, symbol.getEnd());
+        }
+	}
+
+	std::cout << "Code section from " << hex << minimal_ip << " to " << maximal_ip << std::endl;
+	std::cout << "Whole programm section from " << hex << minimal_data << " to " << maximal_data << std::endl;
+
 	//******* Boot, and store state *******//
 	m_log << "STARTING EXPERIMENT" << endl;
 
@@ -126,55 +144,41 @@ bool DCIAOKernelStructs::run() {
 		simulator.terminate(1);
 	}
 
-	address_t minimal_ip = 0x100000; // 1 Mbyte
-	address_t minimal_data = 0x100000; // 1 Mbyte
-	address_t maximal_ip = 0;
-	address_t maximal_data = 0;
-	for (ElfReader::symbol_iterator it = m_elf.sym_begin();
-		 it != m_elf.sym_end(); ++it) {
-		const ElfSymbol &symbol = *it;
-		if (symbol.getSymbolType() == STT_FUNC
-			|| symbol.getSymbolType() == STT_GNU_IFUNC	/*indirect codeasm object */) {
-			maximal_ip = std::max(maximal_ip, symbol.getEnd());
-		}
-		maximal_data = std::max(maximal_data, symbol.getEnd());
-	}
-
-	std::cout << "Code section from " << hex << minimal_ip << " to " << maximal_ip << std::endl;
-	std::cout << "Data section from " << hex << minimal_ip << " to " << maximal_data << std::endl;
-
 	m_log << "Booting, and saving state at main";
 	BPSingleListener bp;
 
 	// STEP 1: run until interesting function starts, and save state
-	bp.setWatchInstructionPointer(m_elf.getSymbol("main").getAddress());
+	// Find starting point
+	guest_address_t entry_point;
+	if (m_elf.getSymbol("main").isValid()) {
+		entry_point = m_elf.getSymbol("main").getAddress();
+	} else if (m_elf.getSymbol("cyg_user_start").isValid()) {
+		entry_point = m_elf.getSymbol("cyg_user_start").getAddress();
+	} else {
+		m_log << "Could not find entry function. Dying." << endl;
+		simulator.terminate(1);
+	}
+
+	bp.setWatchInstructionPointer(entry_point);
 	if(simulator.addListenerAndResume(&bp) == &bp){
 		m_log << "main function entry reached, saving state" << endl;
 	} else {
 		m_log << "Couldn't reach entry function. Dying" << std::endl;
 		simulator.terminate(1);
 	}
-
 	simulator.save(statedir);
-	guest_address_t enter_kernel_address = m_elf.getSymbol("os::dep::KernelStructs::correct").getAddress();
-	BPSingleListener l_enter_kernel(enter_kernel_address);
-	BPSingleListener l_time_marker_print(m_elf.getSymbol("time_marker_print").getAddress());
-
+	const ElfSymbol &s_time_marker_print = m_elf.getSymbol("time_marker_print");
+	assert(s_time_marker_print.isValid());
+	BPSingleListener l_time_marker_print(s_time_marker_print.getAddress());
 
 	simulator.clearListeners();
-	simulator.addListener(&l_enter_kernel);
 	simulator.addListener(&l_time_marker_print);
 
-	bool in_kernelspace = false;
-	unsigned kernel_activations = 0;
 	while (1) {
 		fail::BaseListener *l = simulator.resume();
 		simulator.addListener(l);
-
 		if (l == &l_time_marker_print) {
 			break;
-		} else if (l == &l_enter_kernel) {
-			kernel_activations ++;
 		} else {
 			m_log << "THIS SHOULD'T HAPPEN" << std::endl;
 			simulator.terminate(1);
@@ -183,13 +187,9 @@ bool DCIAOKernelStructs::run() {
 	}
 
 	correct.time_markers = getTimeMarkerList();
-	correct.kernel_activation_count = kernel_activations;
-
-	assert(kernel_activations > 0);
 	assert(correct.time_markers->size() > 0);
 
 	m_log << "correct run is done:" << dec << std::endl;
-	m_log << "	kernel_transitions " << correct.kernel_activation_count << std::endl;
 	m_log << "	time_markers	   " << correct.time_markers->size()	 << std::endl;
 
 	// //******* Fault injection *******//
@@ -202,7 +202,7 @@ bool DCIAOKernelStructs::run() {
 		DCIAOKernelExperimentData param;
 		if(!m_jc.getParam(param)){
 			m_log << "Dying." << endl; // We were told to die.
-			simulator.terminate(1);
+			simulator.terminate(99);
 		}
 
 		// Get input data from	Jobserver
@@ -220,34 +220,34 @@ bool DCIAOKernelStructs::run() {
 			simulator.restore(statedir);
 			executed_jobs ++;
 
-			kernel_activations = 0;
-
 			m_log << "Trying to inject @ instr #" << dec << injection_instr << endl;
-
 
 			if (injection_instr > 0) {
 				simulator.clearListeners();
 				// XXX could be improved with intermediate states (reducing runtime until injection)
 				simulator.addListener(&l_time_marker_print);
-				simulator.addListener(&l_enter_kernel);
 
 				bp.setWatchInstructionPointer(ANY_ADDR);
-				bp.setCounter(injection_instr);
+				// for (int i = 0; i < injection_instr + 1; i++) {
+				// 	simulator.addListenerAndResume(&bp);
+				// 	m_log << "IP " << simulator.getCPU(0).getInstructionPointer() << endl;
+				// }
+				// goto check_ip;
+				bp.setCounter(injection_instr + 1);
 				simulator.addListener(&bp);
+
 
 				bool inject = true;
 				while (1) {
 					fail::BaseListener * listener = simulator.resume();
 					// finish() before FI?
+
+					// Count kernel activations
 					if (listener == &l_time_marker_print) {
 						m_log << "experiment reached finish() before FI" << endl;
-						handleEvent(*result, result->NOINJECTION, "time_marker reached before instr2");
+						handleEvent(*result, result->NOINJECTION, "time_marker reached before injection_instr");
 						inject = false;
 						break;
-					} else if (listener == &l_enter_kernel) {
-						// Count all kernel activations
-						simulator.addListener(&l_enter_kernel);
-						kernel_activations++;
 					} else if (listener == &bp) {
 						break;
 					} else {
@@ -262,31 +262,37 @@ bool DCIAOKernelStructs::run() {
 					continue;
 			}
 
+		check_ip:
+
 			// Not a working sanitiy check. Because of instruction
 			// offsets!
-			// 
-			// if (simulator.getCPU(0).getInstructionPointer() != param.msg.fsppilot().instr2_absolute()) {
-			// 	m_log << "Invalid Injection address EIP=0x" 
-			// 		  << std::hex << simulator.getCPU(0).getInstructionPointer()
-			// 		  << " != enter_kernel=0x" << param.msg.fsppilot().instr2_absolute() << std::endl;
-			// 	simulator.terminate(1);
-			// }
+			if (param.msg.fsppilot().has_injection_instr_absolute()) {
+				address_t PC = param.msg.fsppilot().injection_instr_absolute();
+				if (simulator.getCPU(0).getInstructionPointer() != PC) {
+					m_log << "Invalid Injection address EIP=0x" 
+						  << std::hex << simulator.getCPU(0).getInstructionPointer()
+						  << " != injection_instr_absolute=0x" << PC << std::endl;
+					simulator.terminate(1);
+				}
+			}
 
 			/// INJECT BITFLIP:
 			result->set_original_value(injectBitFlip(data_address, bit_offset));
 
 			// // Setup exit points
-			BPSingleListener l_error_hook(m_elf.getSymbol("copter_mock_panic").getAddress());
+			const ElfSymbol &s_copter_mock_panic = m_elf.getSymbol("copter_mock_panic");
+			BPSingleListener l_copter_mock_panic(s_copter_mock_panic.getAddress());
 
 			TrapListener l_trap(ANY_TRAP);
-			TimerListener l_timeout(1000 * 1000); // 1 second in microseconds
+			TimerListener l_timeout(10 * 1000 * 1000); // seconds in
+													   // microseconds
 
 			simulator.clearListeners();
-			simulator.addListener(&l_enter_kernel);
 			simulator.addListener(&l_timeout);
 			simulator.addListener(&l_trap);
 			simulator.addListener(&l_time_marker_print);
-			simulator.addListener(&l_error_hook);
+			if (s_copter_mock_panic.isValid())
+				simulator.addListener(&l_copter_mock_panic);
 
 			// jump outside text segment
 			BPRangeListener ev_below_text(ANY_ADDR, minimal_ip - 1);
@@ -302,7 +308,6 @@ bool DCIAOKernelStructs::run() {
 			simulator.addListener(&ev_mem_low);
 			simulator.addListener(&ev_mem_high);
 
-
 			// resume and wait for results while counting kernel
 			// activations
 			fail::BaseListener* l;
@@ -310,11 +315,7 @@ bool DCIAOKernelStructs::run() {
 				l = simulator.resume();
 
 				// Evaluate result
-				if (l == &l_enter_kernel) {
-					kernel_activations++;
-					simulator.addListener(&l_enter_kernel);
-					// continue experiment
-				} else if (l == &l_time_marker_print) {
+				if (l == &l_time_marker_print) {
 					m_log << "experiment ran to the end" << std::endl;
 					DCIAOKernelStructs::time_markers_t * time_markers = getTimeMarkerList();
 					int pos = time_markers_compare(*time_markers, *correct.time_markers);
@@ -327,17 +328,18 @@ bool DCIAOKernelStructs::run() {
 						sstr << "diff after #" << pos;
 						handleEvent(*result, result->ERR_DIFFERENT_ACTIVATION, sstr.str());
 						/* In case of an error append the activation scheme */
-						for (unsigned i = pos; i < time_markers->size(); ++i) {
+						for (unsigned i = 0; i < time_markers->size(); ++i) {
 							result->add_activation_scheme( (*time_markers)[i].time );
 							result->add_activation_scheme( (*time_markers)[i].at );
+
+							m_log << i << " "
+								  << (*time_markers)[i].time << " " <<  (*time_markers)[i].at <<  " "
+								  << (*correct.time_markers)[i].time << " " <<  (*correct.time_markers)[i].at
+								  << std::endl;
 						}
-					} else if (kernel_activations != correct.kernel_activation_count) {
-						stringstream sstr;
-						sstr << "kernel activations " << kernel_activations << " (expt: " << correct.kernel_activation_count << ")";
-						handleEvent(*result, result->ERR_DIFFERENT_KERNEL_TRANSITIONS, sstr.str());
 					} else {
 						stringstream sstr;
-						sstr << "calc done (kernel #" << kernel_activations << ")";
+						sstr << "calc done (markers #" << (*correct.time_markers).size() << ")";
 						handleEvent(*result, result->OK, sstr.str());
 					}
 					delete time_markers;
@@ -349,16 +351,22 @@ bool DCIAOKernelStructs::run() {
 					handleEvent(*result, result->TRAP, sstr.str());
 					break; // EOExperiment
 				} else if (l == &l_timeout){
-					handleEvent(*result, result->TIMEOUT, "timeout: 1 second");
+					handleEvent(*result, result->TIMEOUT, "timeout: 10 second");
 					break; // EOExperiment
-				} else if (l == &l_error_hook){
+				} else if (l == &l_copter_mock_panic){
 					handleEvent(*result, result->ERR_ERROR_HOOK, "called error hook");
 					break; // EOExperiment
 				} else if (l == &ev_below_text || l == &ev_beyond_text) {
-					handleEvent(*result, result->ERR_OUTSIDE_TEXT, (l == &ev_below_text) ? "< .text" : ">.text");
+					std::stringstream ss;
+					ss << ((l == &ev_mem_low) ? "< .text" : ">.text") << " ";
+					ss << handleMemoryAccessEvent(*(fail::MemAccessListener *)l);
+					handleEvent(*result, result->ERR_OUTSIDE_TEXT, ss.str());
 					break; // EOExperiment
 				} else if (l == &ev_mem_low || l == &ev_mem_high) {
-					handleEvent(*result, result->ERR_MEMACCESS, (l == &ev_mem_low) ? "< .data" : ">.data");
+					std::stringstream ss;
+					ss << ((l == &ev_mem_low) ? "< .data" : ">.data") << " ";
+					ss << handleMemoryAccessEvent(*(fail::MemAccessListener *)l);
+					handleEvent(*result, result->ERR_MEMACCESS, ss.str());
 					break; // EOFExperiment
 				} else {
 					handleEvent(*result, result->UNKNOWN, "UNKNOWN event");
@@ -373,6 +381,6 @@ bool DCIAOKernelStructs::run() {
 	} // end while (1)
 
 	// Explicitly terminate, or the simulator will continue to run.
-	 simulator.terminate();
+	simulator.terminate(0);
 }
 

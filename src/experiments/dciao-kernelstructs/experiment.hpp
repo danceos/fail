@@ -31,7 +31,6 @@ private:
 
 	struct correct_run {
 		time_markers_t *time_markers;
-		unsigned int  kernel_activation_count;
 	};
 
 	correct_run correct;

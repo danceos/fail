@@ -89,7 +89,7 @@ bool DatabaseCampaign::run() {
 	   << " WHERE p.known_outcome = 0 "
 	   << "	   AND g.fspmethod_id = "  << fspmethod_id
 	   << "	   AND g.variant_id = "	<< variant_id
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id) = 0"
+	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id) < 8"
 	   << "    ORDER BY p.injection_instr";
 	std::string sql_body = ss.str();
 

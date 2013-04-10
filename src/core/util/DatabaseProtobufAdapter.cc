@@ -437,8 +437,6 @@ bool DatabaseProtobufAdapter::insert_row(const google::protobuf::Message *msg) {
 
 		if (mysql_stmt_execute(stmt)) {
 			LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
-			delete[] bind;
-			return false;
 		}
 
 
