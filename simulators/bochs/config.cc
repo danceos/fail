@@ -2558,7 +2558,9 @@ static int parse_line_formatted(const char *context, int num_params, char *param
         SIM->get_param_num(BXPN_CPU_NCORES)->set(cores);
         SIM->get_param_num(BXPN_CPU_NTHREADS)->set(threads);
       } else if (!strncmp(params[i], "ips=", 4)) {
-        SIM->get_param_num(BXPN_IPS)->set(atol(&params[i][4]));
+        // DanceOS
+        //SIM->get_param_num(BXPN_IPS)->set(atol(&params[i][4]));
+        SIM->get_param_num(BXPN_IPS)->set(atoll(&params[i][4]));
 #if BX_SUPPORT_SMP
       } else if (!strncmp(params[i], "quantum=", 8)) {
         SIM->get_param_num(BXPN_SMP_QUANTUM)->set(atol(&params[i][8]));
@@ -3823,12 +3825,18 @@ int bx_write_configuration(const char *rc, int overwrite)
   fprintf(fp, "vga_update_interval: %u\n", SIM->get_param_num(BXPN_VGA_UPDATE_INTERVAL)->get());
   fprintf(fp, "vga: extension=%s\n", SIM->get_param_string(BXPN_VGA_EXTENSION)->getptr());
 #if BX_SUPPORT_SMP
-  fprintf(fp, "cpu: count=%u:%u:%u, ips=%u, quantum=%d, ",
+  // DanceOS
+  //fprintf(fp, "cpu: count=%u:%u:%u, ips=%u, quantum=%d, ",
+  fprintf(fp, "cpu: count=%u:%u:%u, ips=%llu, quantum=%d, ",
     SIM->get_param_num(BXPN_CPU_NPROCESSORS)->get(), SIM->get_param_num(BXPN_CPU_NCORES)->get(),
-    SIM->get_param_num(BXPN_CPU_NTHREADS)->get(), SIM->get_param_num(BXPN_IPS)->get(),
+    // DanceOS
+    //SIM->get_param_num(BXPN_CPU_NTHREADS)->get(), SIM->get_param_num(BXPN_IPS)->get(),
+    SIM->get_param_num(BXPN_CPU_NTHREADS)->get(), SIM->get_param_num(BXPN_IPS)->get64(),
     SIM->get_param_num(BXPN_SMP_QUANTUM)->get());
 #else
-  fprintf(fp, "cpu: count=1, ips=%u, ", SIM->get_param_num(BXPN_IPS)->get());
+  // DanceOS
+  //fprintf(fp, "cpu: count=1, ips=%u, ", SIM->get_param_num(BXPN_IPS)->get());
+  fprintf(fp, "cpu: count=1, ips=%u, ", SIM->get_param_num(BXPN_IPS)->get64());
 #endif
   fprintf(fp, "reset_on_triple_fault=%d",
     SIM->get_param_bool(BXPN_RESET_ON_TRIPLE_FAULT)->get());

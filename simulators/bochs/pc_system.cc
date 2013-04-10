@@ -64,7 +64,9 @@ bx_pc_system_c::bx_pc_system_c()
   numTimers = 1; // So far, only the nullTimer.
 }
 
-void bx_pc_system_c::initialize(Bit32u ips)
+// DanceOS
+//void bx_pc_system_c::initialize(Bit32u ips)
+void bx_pc_system_c::initialize(Bit64u ips)
 {
   ticksTotal = 0;
   timer[0].timeToFire = NullTimerInterval;
@@ -79,7 +81,9 @@ void bx_pc_system_c::initialize(Bit32u ips)
   // parameter 'ips' is the processor speed in Instructions-Per-Second
   m_ips = double(ips) / 1000000.0L;
 
-  BX_DEBUG(("ips = %u", (unsigned) ips));
+  // DanceOS
+  //BX_DEBUG(("ips = %u", (unsigned) ips));
+  BX_DEBUG(("ips = %llu", (unsigned long long) ips));
 }
 
 void bx_pc_system_c::set_HRQ(bx_bool val)

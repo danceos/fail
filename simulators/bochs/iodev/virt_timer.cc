@@ -396,7 +396,9 @@ void bx_virt_timer_c::init(void)
   }
 
   // Local copy of IPS value to avoid reading it frequently in timer handler
-  ips = SIM->get_param_num(BXPN_IPS)->get();
+  // DanceOS
+  //ips = SIM->get_param_num(BXPN_IPS)->get();
+  ips = SIM->get_param_num(BXPN_IPS)->get64();
 
   register_timer(this, nullTimer, (Bit32u)NullTimerInterval, 1, 1, "Null Timer");
 
