@@ -9,8 +9,6 @@
   #else
     #error Active config currently not supported!
   #endif
-#elif defined BUILD_OVP
-  #include "ovp/OVPConfig.hpp"
 #elif defined BUILD_QEMU
   #include "qemu/QEMUConfig.hpp"
 #elif defined BUILD_T32

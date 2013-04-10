@@ -20,14 +20,6 @@ namespace fail {
 typedef Gem5Controller ConcreteSimulatorController; //!< concrete simulator (type)
 }
 
-#elif defined BUILD_OVP
-
-#include "ovp/OVPController.hpp"
-
-namespace fail {
-typedef OVPController ConcreteSimulatorController; //!< concrete simulator (type)
-}
-
 #elif defined BUILD_QEMU
 
 #include "qemu/QEMUController.hpp"

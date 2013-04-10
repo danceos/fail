@@ -184,25 +184,6 @@ Comparison IPS numbers are shown in the default "bochsrc". Headless bochsrc conf
 all aspects disabled, guest system executes endless loop, host CPU Xeon X5470 (3.33GHz):
 IPS: 66124283 average = 66964789
 
-Building OVP for ARM Cortex-M3:
-**********************************************************************
-
-For the first time:
-------------------------------------------------------------
- 1. Get a license from http://www.ovpworld.org/
- 2. Download the following files:
-     - Downloads -> Main OVP Download including OVPsim Simulator
-     - Downloads -> ARM -> ARM OVP Cortex-M Profile Model
-                        -> Self contained ARM Cortex-M examples
-                        -> ARM GNU GCC and GDB tools
- 3. Install OVP by running the self-extracting archives.
- 4. Get Sourcery CodeBench Lite Edition from
-    http://www.mentor.com/embedded-software/codesourcery
-    (ARM processors -> EABI release)
- 5. Install the self-extracting archive, or use the installation in
-    /fs/proj/compiler/codesourcery-arm-eabi (DO, ios/kos)
-TODO: Source setup.sh, setupImperas ...
-TODO: Fix Hard-coded paths
 
 Building gem5:
 **********************************************************************
