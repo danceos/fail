@@ -1,3 +1,4 @@
+- funktionsfähiges save/restore implementieren (rh)
+- Überarbeitung der Breakpoint-Listener (ab)
 - Dokumentation korrigieren und überarbeiten
-- build-Prozess vereinfachen
-- funktionsfähiges restore implementieren
+- fs.py so anpassen, dass kein Startimage nötig ist
