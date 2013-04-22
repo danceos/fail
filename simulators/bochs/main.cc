@@ -1054,7 +1054,9 @@ void bx_init_hardware()
   }
 
 
-  bx_pc_system.initialize(SIM->get_param_num(BXPN_IPS)->get());
+  // DanceOS
+  //bx_pc_system.initialize(SIM->get_param_num(BXPN_IPS)->get());
+  bx_pc_system.initialize(SIM->get_param_num(BXPN_IPS)->get64());
 
 
   if (SIM->get_param_string(BXPN_LOG_FILENAME)->getptr()[0]!='-') {

@@ -92,7 +92,7 @@ bool DCiAOKernelImporter::copy_to_database(fail::ProtoIStream &ps) {
 					// we now have an interval-terminating R/W event to the memaddr
 					// we're currently looking at; the EC is defined by
 					// data_address [last_kernel_leave, read_instr] (instr_absolute)
-					if (!add_trace_event(instr1, instr2, ev)) {
+					if (!add_trace_event(instr1, instr2, 0, 0, ev)) { // FIXME use timing data
 						LOG << "add_trace_event failed" << std::endl;
 						return false;
 					}

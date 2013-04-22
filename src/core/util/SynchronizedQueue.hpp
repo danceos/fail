@@ -33,7 +33,7 @@ public:
 #endif
 		return m_queue.size();			
 	}
-		// Add data to the queue and notify others
+	// Add data to the queue and notify others
 	void Enqueue(const T& data)
 	{
 		// Acquire lock on the queue
@@ -47,13 +47,13 @@ public:
 #endif
 		}
 
-			// Add the data to the queue
+		// Add the data to the queue
 		m_queue.push(data);
-			// Notify others that data is ready
+		// Notify others that data is ready
 #ifndef __puma
 		m_cond.notify_one();
 #endif
-		} // Lock is automatically released here
+	} // Lock is automatically released here
 
 	/**
 	 * Get data from the queue. Wait for data if not available
@@ -64,15 +64,17 @@ public:
 #ifndef __puma
 		boost::unique_lock<boost::mutex> lock(m_mutex);
 #endif
-			// When there is no data, wait till someone fills it.
+		// When there is no data, wait till someone fills it.
 		// Lock is automatically released in the wait and obtained
 		// again after the wait
 #ifndef __puma
-		while (m_queue.size() == 0)
+		while (m_queue.size() == 0) {
 			m_cond.wait(lock);
+		}
 #endif
 		// Retrieve the data from the queue
-		T result=m_queue.front(); m_queue.pop();
+		T result = m_queue.front();
+		m_queue.pop();
 
 		// Notify others that we have free slots
 #ifndef __puma
@@ -101,7 +103,8 @@ public:
 		// again after the wait
 		if (m_queue.size() > 0) {
 			// Retrieve the data from the queue
-			d = m_queue.front(); m_queue.pop();
+			d = m_queue.front();
+			m_queue.pop();
 			// Notify others that we have free slots
 #ifndef __puma
 			if (m_queue.size() < capacity) {

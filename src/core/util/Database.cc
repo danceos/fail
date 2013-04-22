@@ -144,11 +144,11 @@ void Database::cmdline_setup() {
 	CommandLine &cmd = CommandLine::Inst();
 
 	DATABASE	  = cmd.addOption("d", "database", Arg::Required,
-								  "-d/--database\t MYSQL Database (default: taken from ~/.my.cnf)");
+								  "-d/--database \tMYSQL Database (default: taken from ~/.my.cnf)");
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
-								  "-h/--hostname\t MYSQL Hostname (default: taken from ~/.my.cnf)");
+								  "-h/--hostname \tMYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-								  "-u/--username\t MYSQL Username (default: taken from ~/.my.cnf, or your current user)");
+								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)");
 }
 
 Database * Database::cmdline_connect() {

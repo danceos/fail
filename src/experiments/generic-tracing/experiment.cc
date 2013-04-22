@@ -23,27 +23,27 @@ using namespace fail;
 void  GenericTracing::parseOptions() {
 	CommandLine &cmd = CommandLine::Inst();
 	CommandLine::option_handle IGNORE = cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
-	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help\t Print usage and exit");
+	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 
 	CommandLine::option_handle ELF_FILE = cmd.addOption("", "elf-file", Arg::Required,
-															"--elf-file\t ELF Binary File (default: $FAIL_ELF_PATH)");
+															"--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
 	CommandLine::option_handle START_SYMBOL = cmd.addOption("s", "start-symbol", Arg::Required,
-															"-s,--start-symbol\t ELF symbol to start tracing (default: main)");
+															"-s,--start-symbol \tELF symbol to start tracing (default: main)");
 	CommandLine::option_handle STOP_SYMBOL	= cmd.addOption("e", "end-symbol", Arg::Required,
-															"-e,--end-symbol\t ELF symbol to end tracing");
+															"-e,--end-symbol \tELF symbol to end tracing");
 	CommandLine::option_handle SAVE_SYMBOL	= cmd.addOption("S", "save-symbol", Arg::Required,
-															"-S,--save-symbol\t ELF symbol to save the state of the machine (default: main)\n");
+															"-S,--save-symbol \tELF symbol to save the state of the machine (default: main)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
-															"-f,--state-file\t File/dir to save the state to (default state)");
+															"-f,--state-file \tFile/dir to save the state to (default state)");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
-															"-t,--trace-file\t File to save the execution trace to\n");
+															"-t,--trace-file \tFile to save the execution trace to\n");
 
-	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None, "--full-trace\t Do a full trace (more data, default: off)");
+	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None, "--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
-															"-m,--memory-symbol\t ELF symbol(s) to trace accesses (without specifiying all mem read/writes are traced)");
+															"-m,--memory-symbol \tELF symbol(s) to trace accesses (without specifiying all mem read/writes are traced)");
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
-															"-M,--memory-region\t restrict memory region which is traced"
+															"-M,--memory-region \trestrict memory region which is traced"
 															"	Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>");
 
 	if(!cmd.parse()) {

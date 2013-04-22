@@ -87,7 +87,9 @@ public:
   // Timer oriented public features
   // ==============================
 
-  void   initialize(Bit32u ips);
+  // DanceOS
+  //void   initialize(Bit32u ips);
+  void   initialize(Bit64u ips);
   int    register_timer(void *this_ptr, bx_timer_handler_t, Bit32u useconds,
                          bx_bool continuous, bx_bool active, const char *id);
   bx_bool unregisterTimer(unsigned timerID);

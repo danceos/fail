@@ -112,21 +112,21 @@ public:
 	 */
 	ExperimentData* getDone();
 	/**
-	 * The Campaign controller must signalize, that there will be no
-	 * more parameter sets. We need this, as we allow concurrent parameter
-	 * generation and distribution.
+	 * The Campaign controller must signal that there will be no more parameter
+	 * sets.  We need this, as we allow concurrent parameter generation and
+	 * distribution.
 	 */
 	void setNoMoreExperiments() { m_noMoreExps = true; }
 	/**
-	 * Checks whether there are no more experiment paremeter sets.
+	 * Checks whether there are no more experiment parameter sets.
 	 * @return \c true if no more parameter sets available, \c false otherwise
 	 * @see setNoMoreExperiments
 	 */
 	bool noMoreExperiments() const { return m_noMoreExps; }
 
-  /**
-	 * The Campaign Controller can signalize, that the jobserver can
-	 * stop listening for client connections.
+	/**
+	 * The Campaign Controller may signal that the jobserver can stop listening
+	 * for client connections.
 	 */
 	void done() { m_finish = true; }
 };

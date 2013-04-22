@@ -188,9 +188,7 @@ bool JobClient::sendResult(ExperimentData& result)
 
 		if (m_job_throughput > CLIENT_JOB_LIMIT) {
 			m_job_throughput = CLIENT_JOB_LIMIT;
-		}
-
-		if (m_job_throughput < 1) {
+		} else if (m_job_throughput < 1) {
 			m_job_throughput = 1;
 		}
 

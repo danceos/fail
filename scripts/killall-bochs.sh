@@ -14,7 +14,7 @@ SCRIPTDIR=$(readlink -f $(dirname $0))
 # env variable defaults
 source $SCRIPTDIR/fail-env.sh
 
-CMD="killall -q client.sh"
+CMD="killall -q client.sh; killall -q fail-client"
 CONNECTION_ATTEMPTS=2
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=60 -o ConnectionAttempts=$CONNECTION_ATTEMPTS"
 
@@ -31,3 +31,6 @@ do
 
 	$SSH $h "$CMD $NCLIENTS" &
 done
+
+wait
+echo "Done."
