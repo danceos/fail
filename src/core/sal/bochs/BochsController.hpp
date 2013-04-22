@@ -115,6 +115,8 @@ public:
 	 * Fire done: Callback from Simulator 
 	 */
 	void fireInterruptDone();
+	virtual simtime_t getTimerTicks() { return bx_pc_system.time_ticks(); }
+	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec(); /* imprecise hack */ }
 	/* ********************************************************************
 	 * BochsController-specific (not implemented in SimulatorController!):
 	 * ********************************************************************/
@@ -150,8 +152,6 @@ public:
 	 * @see The uses SimulatorController::getCPU().
 	 */
 	ConcreteCPU& detectCPU(BX_CPU_C* pCPU) const;
-	virtual simtime_t getTimerTicks() { return bx_pc_system.time_ticks(); }
-	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec(); /* imprecise hack */ }
 };
 
 } // end-of-namespace: fail

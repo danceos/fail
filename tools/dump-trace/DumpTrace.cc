@@ -14,13 +14,13 @@ using std::cerr;
 using std::hex;
 using std::dec;
 
-Logger log("dump-trace", true);
+Logger LOG("dump-trace", true);
 
 std::istream& openStream(const char *input_file,
 	std::ifstream& normal_stream, igzstream& gz_stream) {
 	normal_stream.open(input_file);
 	if (!normal_stream) {
-		log << "couldn't open " << input_file << endl;
+		LOG << "couldn't open " << input_file << endl;
 		exit(-1);
 	}
 	unsigned char b1, b2;
@@ -30,16 +30,16 @@ std::istream& openStream(const char *input_file,
 		normal_stream.close();
 		gz_stream.open(input_file);
 		if (!gz_stream) {
-			log << "couldn't open " << input_file << endl;
+			LOG << "couldn't open " << input_file << endl;
 			exit(-1);
 		}
-		//log << "opened file " << input_file << " in GZip mode" << endl;
+		//LOG << "opened file " << input_file << " in GZip mode" << endl;
 		return gz_stream;
 	}
 
 	normal_stream.seekg(0);
 
-	//log << "opened file " << input_file << " in normal mode" << endl;
+	//LOG << "opened file " << input_file << " in normal mode" << endl;
 	return normal_stream;
 }
 

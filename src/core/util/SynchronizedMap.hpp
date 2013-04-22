@@ -28,7 +28,10 @@ private:
 
 	int nextpick;
 	// We need a window at least as wide as the number of clients we serve.
-	enum { pick_window_size = 2000 };
+	// FIXME better solution: when inbound queue is empty, *copy* in-flight map
+	// to a vector, iterate but don't delete; when at the end, copy in-flight
+	// map again and repeat
+	enum { pick_window_size = 50000 };
 
 public:
 	SynchronizedMap() : nextpick(0) { }

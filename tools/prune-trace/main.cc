@@ -20,17 +20,17 @@ int main(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i)
 		cmd.add_args(argv[i]);
 
-	CommandLine::option_handle IGNORE = cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
-	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help\t Print usage and exit");
+	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
+	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	Database::cmdline_setup();
 
 	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
-	                                                     "-v/--variant\t Variant label (default: \"none\")");
+	                                                     "-v/--variant \tVariant label (default: \"none\")");
 	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
-														 "-b/--benchmark\t Benchmark label (default: \"none\")\n");
+														 "-b/--benchmark \tBenchmark label (default: \"none\")\n");
 	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
-	                                                     "-p/--prune-method\t Which import method to use (default: basic)");
+	                                                     "-p/--prune-method \tWhich import method to use (default: basic)");
 
 	if(!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;

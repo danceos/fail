@@ -251,7 +251,7 @@ int DatabaseProtobufAdapter::TypeBridge_message::gatherTypes(StringJoiner &inser
 		bool can_be_repeated = true; // default value
 
 		// For repeated messages
-		TypeBridge_message *top_level_msg;
+		TypeBridge_message *top_level_msg = 0;
 
 		const FieldOptions& field_options = field->options();
 		if (field_options.GetExtension(sql_ignore)) {
@@ -411,9 +411,7 @@ int DatabaseProtobufAdapter::field_size_at_pos(const Message *msg, std::vector<i
 }
 
 bool DatabaseProtobufAdapter::insert_row(const google::protobuf::Message *msg) {
-	const Reflection *ref = msg->GetReflection();
-	const Descriptor *d = msg->GetDescriptor();
-	assert (d != 0 && ref != 0);
+	assert (msg->GetDescriptor() != 0 && msg->GetReflection() != 0);
 
 	MYSQL_BIND *bind = new MYSQL_BIND[top_level_msg.field_count];
 

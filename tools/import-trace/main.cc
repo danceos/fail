@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i)
 		cmd.add_args(argv[i]);
 
-	CommandLine::option_handle IGNORE = cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
+	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h/--help\t Print usage and exit");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
 															"-t/--trace-file\t File to load the execution trace from\n");
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 														 "-e/--elf-file\t ELF File (default: UNSET)");
 
 
-	if(!cmd.parse()) {
+	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
 		exit(-1);
 	}

@@ -14,7 +14,7 @@ class Importer {
 protected:
 	int m_variant_id;
 	fail::ElfReader *m_elf;
-	fail::Database	*db;
+	fail::Database *db;
 
 public:
 	typedef unsigned instruction_count_t;
@@ -27,7 +27,7 @@ public:
 	virtual bool add_trace_event(instruction_count_t begin, instruction_count_t end,
 								 const Trace_Event &event, bool is_fake = false) = 0;
 
-	void set_elf_file(fail::ElfReader *elf) {m_elf = elf;};
+	void set_elf_file(fail::ElfReader *elf) { m_elf = elf; }
 protected:
 private:
 	typedef std::map<fail::address_t, instruction_count_t> AddrLastaccessMap;

@@ -649,11 +649,11 @@ void EcosKernelTestExperiment::parseOptions()
 	CommandLine &cmd = CommandLine::Inst();
 	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>");
 	CommandLine::option_handle HELP =
-		cmd.addOption("h", "help", Arg::None, "-h,--help\t Print usage and exit");
+		cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 	CommandLine::option_handle VARIANT =
-		cmd.addOption("", "variant", Arg::Required, "--variant v\t experiment variant");
+		cmd.addOption("", "variant", Arg::Required, "--variant v \texperiment variant");
 	CommandLine::option_handle BENCHMARK =
-		cmd.addOption("", "benchmark", Arg::Required, "--benchmark b\t benchmark");
+		cmd.addOption("", "benchmark", Arg::Required, "--benchmark b \tbenchmark");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
