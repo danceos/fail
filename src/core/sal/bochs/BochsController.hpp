@@ -43,7 +43,7 @@ private:
 	bxInstruction_c *m_CurrentInstruction; //!< dito.
 public:
 	/**
-	 * Initialize the controller, i.e. add the number of simulated CPUs.
+	 * Initialize the controller, i.e., add the number of simulated CPUs.
 	 */
 	BochsController();
 	~BochsController();
@@ -56,7 +56,7 @@ public:
 	 * @param cpu the CPU that caused the IO port access
 	 * @param data the data transmitted
 	 * @param port the port it was transmitted on
-	 * @param out true if the I/O traffic has been outbound, false otherwise
+	 * @param out \c true if the I/O traffic has been outbound, \c false otherwise
 	 */
 	void onIOPort(ConcreteCPU* cpu, unsigned char data, unsigned port, bool out);
 	/**
@@ -130,7 +130,7 @@ public:
 	const std::string& getMnemonic() const;
 	/**
 	 * Retrieves the current Bochs instruction cache entry
-	 * @returns a pointer to a bxICacheEntry_c object
+	 * @return a pointer to a \c bxICacheEntry_c object
 	 */
 	inline bxInstruction_c *getCurrentInstruction() const { return m_CurrentInstruction; }
 	/**
@@ -149,7 +149,7 @@ public:
 	 * Retrieves the concrete CPU object, based on the given Bochs' internal pointer \a pCPU.
 	 * @param pCPU the Bochs' internal CPU object
 	 * @return the FailBochs CPU representation that corresponds to Bochs' internal CPU \a pCPU
-	 * @see The uses SimulatorController::getCPU().
+	 * @see SimulatorController::getCPU().
 	 */
 	ConcreteCPU& detectCPU(BX_CPU_C* pCPU) const;
 };
