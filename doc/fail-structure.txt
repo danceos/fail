@@ -11,21 +11,31 @@ fail:  Fail* parent directory, containing all source & configuration files (${FA
 |-scripts:  python/shell scripts for Fail*-compilation and experiment distribution
 |-simulators:  parent directory of simulators supported by Fail* (may still be WIP)
   |-bochs:  source files of the (modified) Bochs x86 simulator backend
-  |-ovp:  source files of the Open Virtual Platform simulator backend
+  |-gem5:  source files of the gem5 simulator backend
+|-debuggers:  parent directory of debuggers supported by Fail* (may still be WIP)
+  |-gdb:  source files related to the GNU gdb debugger
+  |-t32:  source files related to the Lauterbach T32 debugger
 |-src:  C/C++/AspectC++ source files related to Fail*, experiments and plugins
   |-core:  core source files forming the Fail* framework
     |-util:  utility classes and miscellaneous helper functions
     |-config:  CMake configuration files, defining the Fail* components and variant
     |-sal:  source file forming the Simulator Abstraction Layer (backend-interface)
-      |-bochs:  backend source files to the Bochs simulator
-      |-ovp:  backend source files to the Open Virtual Platform simulator
+      |-bochs:  backend source files of the Bochs simulator
+      |-gem5:  backend source files of the gem5 simulator
+      |-qemu:  backend source files of the QEMU simulator
+      |-t32:  backend source files of the Lauterbach T32 debugger
+      |-arm:  ARM-specific platform source files
+      |-x86:  x86-specific platform source files
+      |-perf:  performance-related source files (extensions); speeds up
+               Fail* <-> simulator interaction (e.g., when using breakpoints)
     |-cpn:  campaign- (and therefore server-)related source files
     |-efw:  experiment-framework- (and therefore client-)related source files
-    |-comm:  communication related source files (these files are used by cpn and efw)
-      |-msg:  Google protobuf message definitions used for communication purposes
+    |-comm:  communication related source files (these files are used by cpn and efw), incl.
+             protobuf message definitions used for communication purposes
   |-experiments:  experiment code files (within a new dir) need to be located here
   |-plugins:  plugin code files (within a new dir) need to be located here
-|-[build]: recommended location of your build-tree, generated files will be placed here
+|-tools:  Fail*-related tools, e.g., for tracing or fault-space pruning
+|-[build]:  recommended location of your build-tree, generated files will be placed here
 
 
 Some additional useful notes:
@@ -40,8 +50,8 @@ Some additional useful notes:
  - CMake invokes the compiler with the following include directories:
     * ${FAIL_DIR}/src/core
     * ${BUILD_DIR}/src/core
-   When compiling the Bochs variant the following directory is added, too:
-    * ${FAIL_DIR}/simulators/bochs
+   When compiling the $SIMULATOR variant the following directory is added, too:
+    * ${FAIL_DIR}/simulators/$SIMULATOR
    These definitions simplify and shorten the include paths.
 
 =========================================================================================

@@ -27,17 +27,6 @@ elseif(BUILD_GEM5)
 			gem5/Gem5ArmCPU.cc
 		)
 	endif(BUILD_ARM)
-elseif(BUILD_OVP)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
-		${VARIANT}/OVPController.cc
-	)
 elseif(BUILD_QEMU)
 	set(SRCS
 		CPU.cc

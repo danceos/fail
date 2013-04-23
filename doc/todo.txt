@@ -117,7 +117,7 @@ Buildsystem:
    (verwendeter Compiler, Installationsverzeichnis, ...), den Rest in einem
    brauchbaren Konfigurationswerkzeug mit Ausdrucksmöglichkeiten für
    Merkmalmodelle, Abhängigkeiten, Mehrfachauswahl etc. (kconfig?)
-   * Bochs / OVP / Gem5 sind Alternativen, nicht beide anschaltbar
+   * Bochs / T32 / Gem5 sind Alternativen, nicht beide anschaltbar
   -> Cmake-Combo-Box (ggf. noch an anderen Stellen einsetzbar)
      http://www.kitware.com/blog/home/post/82
  - Hinzufügen eines neuen Experiments konkreter dokumentieren (how-to-build.txt?)
@@ -218,21 +218,3 @@ Theorie TODO
 ==========================================================================================
  - Problem Fork von FI Tools -> Merging eklig.
    -> Liste mit konkreten Beispielen 
-
-
-==========================================================================================
-FailOVP-Bausteine TODO
-==========================================================================================
-Wer gerade an was arbeitet, steht in Klammern hinter dem TODO.
-
-Abstraktionen:
- - save/restore implementieren -> Speicher-, Register-, Timer-, ??- Zustaende 
-
-Sonstiges:
- - Sections aus ELF Datei extrahieren, entsprechende Speicherbereiche (generisch) anlegen (rz)
- - Symbole aus ELF extrahieren -> Adressen von globalen Objekten/Funktionen in Experimenten angeben (rz)
- - Prozessormodell per cmake cleanen und neu bauen (mh)
- - CiAO ELF in OVP ausfuehren
-
-Erledigt:
- - 

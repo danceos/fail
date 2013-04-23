@@ -1,4 +1,4 @@
-#### Configuration file emitting BUILD_OVP/BOCHS defines ####
+#### Configuration file emitting BUILD_BOCHS/GEM5/... defines ####
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/VariantConfig.hpp.in
                ${CMAKE_CURRENT_BINARY_DIR}/VariantConfig.hpp)
 
