@@ -1,6 +1,5 @@
 #include "../SALInst.hpp"
 #include "Gem5Wrapper.hpp"
-#include "Gem5Breakpoint.hpp"
 
 #include "sim/system.hh"
 #include "mem/packet.hh"
@@ -60,27 +59,6 @@ void WriteMemory(System* sys, guest_address_t addr, size_t cnt, void const *src)
 }
 
 size_t GetPoolSize(System* sys) { return sys->getPhysMem().totalSize(); }
-
-// Breakpoint-related:
-void Gem5Breakpoint::process(ThreadContext *tc)
-{
-	fail::simulator.onBreakpoint(&fail::simulator.getCPU(tc->cpuId()), this->evpc, fail::ANY_ADDR);
-}
-
-Gem5Breakpoint* OnBreakpointAddition(address_t watchInstrPtr)
-{
-	System* sys = *System::systemList.begin();
-	// FIXME: begin() vs. front() (see Gem5Controller::startup())
-	// FIXME: Provide "sys" using the simulator-inst?
-	return new Gem5Breakpoint(&sys->pcEventQueue, watchInstrPtr);
-}
-
-void OnBreakpointDeletion(Gem5Breakpoint* bp)
-{
-	if (bp) {
-		delete bp; // TODO: required?
-	}
-}
 
 // Controller-related:
 unsigned int GetCPUId(System* sys, int context)
