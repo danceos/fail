@@ -11,12 +11,8 @@ namespace fail {
 regdata_t GetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t idx)
 {
 	switch (type) {
-	case RT_GP:
-		if (idx == 15) {
-			return sys->getThreadContext(id)->pcState().pc();
-		}
-		return sys->getThreadContext(id)->readIntReg(idx);
-	case RT_FP: return sys->getThreadContext(id)->readFloatReg(idx); // FIXME: correct?! (FP <-> Float?!)
+	case RT_GP: // pass on...
+	case RT_FP:	return sys->getThreadContext(id)->readIntReg(idx);
 	case RT_ST: return sys->getThreadContext(id)->readMiscReg(idx);
 	case RT_IP: return sys->getThreadContext(id)->pcState().pc();
 	}
@@ -29,13 +25,13 @@ void SetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t 
                         regdata_t value)
 {
 	switch (type) {
-	case RT_GP: sys->getThreadContext(id)->setIntReg(idx, value); break;
-	case RT_FP: sys->getThreadContext(id)->setFloatReg(idx, value); break; // FIXME: correct?! (FP <-> Float?!)
-	case RT_ST: sys->getThreadContext(id)->setMiscReg(idx, value); break;
-	case RT_IP: sys->getThreadContext(id)->pcState().pc(static_cast<Addr>(value)); break;
+	case RT_GP: // pass on...
+	case RT_FP: sys->getThreadContext(id)->setIntReg(idx, value); return;
+	case RT_ST: sys->getThreadContext(id)->setMiscReg(idx, value); return;
+	case RT_IP: sys->getThreadContext(id)->pcState().pc(static_cast<Addr>(value)); return;
 	}
 	// This shouldn't be reached if a valid register is passed
-	assert(false && "FATAL ERROR: invalid register type (should never be reached)!");
+	assert(false && "FATAL ERROR: Invalid register type (should never be reached)!");
 }
 
 void ReadMemory(System* sys, guest_address_t addr, size_t cnt, void *dest)
