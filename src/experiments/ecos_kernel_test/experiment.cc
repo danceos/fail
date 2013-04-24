@@ -35,8 +35,6 @@
 #define MULTIPLE_SNAPSHOTS 0
 #define MULTIPLE_SNAPSHOTS_DISTANCE 1000000
 
-#define TIMER_GRANULARITY 10 // microseconds
-
 #define VIDEOMEM_START 0xb8000
 #define VIDEOMEM_SIZE  (80*25*2 *2) // two text mode screens
 #define VIDEOMEM_END   (VIDEOMEM_START + VIDEOMEM_SIZE)
@@ -199,13 +197,8 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	simulator.addListener(&ev_count);
 	unsigned instr_counter = 0;
 
-	// on the way, count elapsed time
-	TimerListener time_step(TIMER_GRANULARITY); //TODO: granularity?
-	//elapsed_time.setCounter(0xFFFFFFFFU); // not working for TimerListener
-	simulator.addListener(&time_step);
-	unsigned elapsed_time = 1; // always run 1 step
-	// just increase elapsed_time counter by 1, which serves as time for ECC recovery algorithm
-	++elapsed_time; // (this is a rough guess ... TODO)
+	// measure elapsed time
+	simtime_t time_start = simulator.getTimerTicks();
 
 	// on the way, record lowest and highest memory address accessed
 	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
@@ -227,13 +220,6 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 			}
 			simulator.addListener(&ev_count);
 		}
-		else if(ev == &time_step) {
-			if(elapsed_time++ == 0xFFFFFFFFU) {
-				log << "ERROR: elapsed_time overflowed" << endl;
-				return false;
-			}
-			simulator.addListener(&time_step);
-		}
 		else if(ev == &ev_mem) {
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
@@ -252,16 +238,14 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 		ev = simulator.resume();
 	}
 
-	unsigned long long estimated_timeout_overflow_check = ((unsigned long long)elapsed_time) * time_step.getTimeout();
-	if(estimated_timeout_overflow_check > 0xFFFFFFFFU) {
-		log << "Timeout estimation overflowed" << endl;
-		return false;
-	}
-	unsigned estimated_timeout = (unsigned)estimated_timeout_overflow_check;
+	unsigned long long estimated_timeout_overflow_check =
+		simulator.getTimerTicks() - time_start + 10000;
+	unsigned estimated_timeout =
+		(unsigned) (estimated_timeout_overflow_check * 1000000 / simulator.getTimerTicksPerSecond());
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [0x" << mem1_low << ", 0x" << mem1_high << "] u [0x" << mem2_low << ", 0x" << mem2_high << "] (ignoring VGA mem)" << endl;
-	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
+	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout / 1000000.0) << "s" << endl;
 
 	// sanitize memory ranges
 	if (mem1_low > mem1_high) {
