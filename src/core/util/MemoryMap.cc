@@ -1,6 +1,8 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <cassert>
+
 #include "MemoryMap.hpp"
 
 namespace fail {
