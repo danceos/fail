@@ -17,8 +17,13 @@
 using namespace std;
 using namespace fail;
 
-const std::string EcosKernelTestCampaign::dir_images("images");
+#if BASELINE_ASSESSMENT
+const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites-baseline");
+const std::string EcosKernelTestCampaign::dir_images("images-baseline");
+#else
 const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites");
+const std::string EcosKernelTestCampaign::dir_images("images");
+#endif
 const std::string EcosKernelTestCampaign::dir_results("results");
 
 bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout,

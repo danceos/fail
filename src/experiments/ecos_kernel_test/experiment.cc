@@ -59,7 +59,13 @@ using namespace fail;
 #endif
 
 #if PREREQUISITES
-bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish) {
+bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
+#if BASELINE_ASSESSMENT
+	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
+	MemoryMap mm;
+	mm.add(addr_data_start, addr_data_end - addr_data_start);
+	mm.writeToFile(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
+#else
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
 	// run until func_finish is reached
@@ -111,6 +117,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 
 	// close serialized mm
 	mm.close();
+#endif
 
 	return true;
 }
@@ -280,7 +287,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	unsigned instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
 	// ELF symbol addresses
 	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
-	                addr_panic, addr_text_start, addr_text_end;
+	                addr_panic, addr_text_start, addr_text_end,
+	                addr_data_start, addr_data_end;
 
 	BPSingleListener bp;
 	
@@ -320,7 +328,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 	readELFSymbols(addr_entry, addr_finish, addr_test_output,
-		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end);
+		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
+		addr_data_start, addr_data_end);
 
 	int state_instr_offset = instr_offset - (instr_offset % MULTIPLE_SNAPSHOTS_DISTANCE);
 	string statename;
@@ -615,7 +624,9 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& errors_corrected,
 	fail::guest_address_t& panic,
 	fail::guest_address_t& text_start,
-	fail::guest_address_t& text_end)
+	fail::guest_address_t& text_end,
+	fail::guest_address_t& data_start,
+	fail::guest_address_t& data_end)
 {
 	ElfReader elfreader(EcosKernelTestCampaign::filename_elf(m_variant, m_benchmark).c_str());
 	entry            = elfreader.getSymbol("cyg_start").getAddress();
@@ -625,10 +636,13 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	panic            = elfreader.getSymbol("_Z9ecc_panicv").getAddress();
 	text_start       = elfreader.getSymbol("_stext").getAddress();
 	text_end         = elfreader.getSymbol("_etext").getAddress();
+	data_start       = elfreader.getSymbol("__ram_data_start").getAddress();
+	data_end         = elfreader.getSymbol("__bss_end").getAddress();
 
 	// it's OK if errors_corrected or ecc_panic are missing
 	if (entry == ADDR_INV || finish == ADDR_INV || test_output == ADDR_INV ||
-	    text_start == ADDR_INV || text_end == ADDR_INV) {
+	    text_start == ADDR_INV || text_end == ADDR_INV ||
+	    data_start == ADDR_INV || data_end == ADDR_INV) {
 		return false;
 	}
 	return true;
@@ -673,15 +687,15 @@ bool EcosKernelTestExperiment::run()
 #if PREREQUISITES
 	log << "retrieving ELF symbol addresses ..." << endl;
 	guest_address_t entry, finish, test_output, errors_corrected,
-	                panic, text_start, text_end;
+	                panic, text_start, text_end, data_start, data_end;
 	if (!readELFSymbols(entry, finish, test_output, errors_corrected,
-	               panic, text_start, text_end)) {
+	               panic, text_start, text_end, data_start, data_end)) {
 		log << "failed, essential symbols are missing!" << endl;
 		simulator.terminate(1);
 	}
 
 	// step 0
-	if(retrieveGuestAddresses(finish)) {
+	if (retrieveGuestAddresses(finish, data_start, data_end)) {
 		log << "STEP 0 finished: rebooting ..." << endl;
 		simulator.reboot();
 	} else { return false; }
