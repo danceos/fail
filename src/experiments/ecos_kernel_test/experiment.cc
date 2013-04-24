@@ -27,7 +27,7 @@
 #define LOCAL 0
 
 #ifndef PREREQUISITES
-  #define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+  #error Configure experimentInfo.hpp properly!
 #endif
 
 // create/use multiple snapshots to speed up long experiments
@@ -285,7 +285,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	BPSingleListener bp;
 	
 #if !LOCAL
-	for (int i = 0; i < 50 || (m_jc.getNumberOfUndoneJobs() != 0) ; ++i) { // only do 50 sequential experiments, to prevent swapping
+	for (int experiments = 0;
+		experiments < 500 || (m_jc.getNumberOfUndoneJobs() != 0); ) { // stop after ~500 experiments to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
 #endif
 
@@ -340,6 +341,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	// for each job with the SINGLEBITFLIP fault model we're actually doing *8*
 	// experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
+		++experiments;
+
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
@@ -408,6 +411,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_details(ss.str());
 
 			continue;
+		}
+		if (param.msg.has_instr2_address()) {
+			log << "Absolute IP sanity check OK" << endl;
 		}
 
 		// --- aftermath ---
@@ -664,7 +670,7 @@ bool EcosKernelTestExperiment::run()
 	parseOptions();
 #endif
 
-	#if PREREQUISITES
+#if PREREQUISITES
 	log << "retrieving ELF symbol addresses ..." << endl;
 	guest_address_t entry, finish, test_output, errors_corrected,
 	                panic, text_start, text_end;
@@ -681,19 +687,19 @@ bool EcosKernelTestExperiment::run()
 	} else { return false; }
 
 	// step 1
-	if(establishState(entry, finish, errors_corrected)) {
+	if (establishState(entry, finish, errors_corrected)) {
 		log << "STEP 1 finished: proceeding ..." << endl;
 	} else { return false; }
 
 	// step 2
-	if(performTrace(entry, finish)) {
+	if (performTrace(entry, finish)) {
 		log << "STEP 2 finished: terminating ..." << endl;
 	} else { return false; }
 
-	#else // !PREREQUISITES
+#else // !PREREQUISITES
 	// step 3
 	faultInjection();
-	#endif // PREREQUISITES
+#endif // PREREQUISITES
 
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();
