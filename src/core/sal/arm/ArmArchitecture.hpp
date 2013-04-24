@@ -67,7 +67,9 @@ enum GPRegIndex {
 	RI_R14_FIQ
 };
 
-// TODO: Enum for misc registers
+// TODO: Enum for misc registers, see (e.g.)
+//       simulators/gem5/src/arch/arm/miscregs.hh and
+//       simulators/gem5/src/arch/arm/intregs.hh
 
 } // end-of-namespace: fail
 
