@@ -118,7 +118,7 @@ public:
 	 * sets.  We need this, as we allow concurrent parameter generation and
 	 * distribution.
 	 */
-	void setNoMoreExperiments() { m_noMoreExps = true; }
+	void setNoMoreExperiments();
 	/**
 	 * Checks whether there are no more experiment parameter sets.
 	 * @return \c true if no more parameter sets available, \c false otherwise

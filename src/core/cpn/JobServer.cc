@@ -41,19 +41,28 @@ boost::mutex CommThread::m_CommMutex;
 ExperimentData *JobServer::getDone()
 {
 #ifndef __puma
-	if (m_undoneJobs.Size() == 0
-	 && noMoreExperiments()
-	 && m_runningJobs.Size() == 0
-	 && m_doneJobs.Size() == 0
-	 && m_inOutCounter.getValue() == 0) {
-		return 0;
+	ExperimentData *exp = m_doneJobs.Dequeue();
+	if (exp) {
+		m_inOutCounter.decrement();
 	}
-
-	ExperimentData *exp = NULL;
-	exp = m_doneJobs.Dequeue();
-	m_inOutCounter.decrement();
 	return exp;
 #endif
+}
+
+void JobServer::setNoMoreExperiments()
+{
+#ifndef __puma
+	boost::unique_lock<boost::mutex> lock(CommThread::m_CommMutex);
+#endif
+	// currently not really necessary, as we only non-blockingly dequeue:
+	m_undoneJobs.setIsFinished();
+
+	m_noMoreExps = true;
+	if (m_undoneJobs.Size() == 0 &&
+	    noMoreExperiments() &&
+	    m_runningJobs.Size() == 0) {
+		m_doneJobs.setIsFinished();
+	}
 }
 
 #ifdef SERVER_PERFORMANCE_MEASURE
@@ -361,6 +370,12 @@ void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ct
 		}
 	}
 
+	// all results complete?
+	if (m_js.m_undoneJobs.Size() == 0 &&
+	    m_js.noMoreExperiments() &&
+	    m_js.m_runningJobs.Size() == 0) {
+		m_js.m_doneJobs.setIsFinished();
+	}
 }
 
 } // end-of-namespace: fail
