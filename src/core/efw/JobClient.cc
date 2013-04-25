@@ -85,7 +85,7 @@ bool JobClient::getParam(ExperimentData& exp)
 			return true;
 			// Nothing to do right now, but maybe later
 		case FailControlMessage::COME_AGAIN:
-			sleep(1);
+			sleep(10);
 			continue;
 		default:
 			return false;
