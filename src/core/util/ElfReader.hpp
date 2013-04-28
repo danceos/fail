@@ -80,6 +80,8 @@ namespace fail {
       typedef ElfSymbol entry_t;
       typedef std::vector<entry_t> container_t;
       typedef container_t::const_iterator symbol_iterator;
+      typedef container_t::const_iterator section_iterator;
+
 
       /**
        * Constructor.
@@ -143,6 +145,14 @@ namespace fail {
        */
       container_t::const_iterator sym_begin() { return m_symboltable.begin(); }
       container_t::const_iterator sym_end() { return m_symboltable.end(); }
+
+      /**
+       * Get section iterator. Derefences to a ElfSymbol
+       * @return iterator
+       */
+      container_t::const_iterator sec_begin() { return m_sectiontable.begin(); }
+      container_t::const_iterator sec_end() { return m_sectiontable.end(); }
+
 
     private:
       Logger m_log;
