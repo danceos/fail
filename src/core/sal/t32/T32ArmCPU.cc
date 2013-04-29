@@ -6,7 +6,7 @@ namespace fail {
 
 static const uint64_t lower = 0x00000000ffffffff;
 
-regdata_t T32ArmCPU::getRegisterContent(Register* reg) const
+regdata_t T32ArmCPU::getRegisterContent(const Register* reg) const
 {
   // T32_ReadRegister wants a mask of bits representig the registers to read:
   // e.g., reading R1 and R4 and R63
@@ -28,7 +28,7 @@ regdata_t T32ArmCPU::getRegisterContent(Register* reg) const
 	return 0; // we should not come here.
 }
 
-void T32ArmCPU::setRegisterContent(Register* reg, regdata_t value)
+void T32ArmCPU::setRegisterContent(const Register* reg, regdata_t value)
 {
   uint64_t mask = (1 << reg->getIndex());
 
