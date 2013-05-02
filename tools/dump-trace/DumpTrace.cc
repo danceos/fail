@@ -5,6 +5,7 @@
 #include "util/ProtoStream.hpp"
 #include "../../src/core/util/Logger.hpp"
 #include "../../src/core/util/gzstream/gzstream.h"
+#include "util/CommandLine.hpp"
 
 using namespace fail;
 using std::string;
@@ -47,26 +48,58 @@ int main(int argc, char *argv[])
 {
 	Trace_Event ev;
 
-	if (argc != 2) {
-		cerr << "Usage: " << argv[0] << " tracefile.pb" << endl;
+	CommandLine &cmd = CommandLine::Inst();
+	cmd.addOption("", "", Arg::None, "usage: dump-trace [options] tracefile.tc");
+	CommandLine::option_handle HELP =
+		cmd.addOption("h", "help", Arg::None, "-h/--help \tPrint usage and exit");
+	CommandLine::option_handle STATS =
+		cmd.addOption("s", "stats", Arg::None,
+			"-s/--stats \tShow trace stats");
+
+	for (int i = 1; i < argc; ++i) {
+		cmd.add_args(argv[i]);
+	}
+	if (!cmd.parse()) {
+		std::cerr << "Error parsing arguments." << std::endl;
 		return 1;
+	}
+
+	if (cmd[HELP] || cmd.parser()->nonOptionsCount() != 1) {
+		cmd.printUsage();
+		if (cmd[HELP]) {
+			exit(0);
+		} else {
+			exit(1);
+		}
+	}
+
+	bool stats_only = false;
+	if (cmd[STATS]) {
+		stats_only = true;
 	}
 
 	std::ifstream normal_stream;
 	igzstream gz_stream;
-	ProtoIStream ps(&openStream(argv[1], normal_stream, gz_stream));
+	ProtoIStream ps(&openStream(cmd.parser()->nonOption(0), normal_stream, gz_stream));
 
 	uint64_t acctime = 0;
+	uint64_t stats_instr = 0, stats_reads = 0, stats_writes = 0, starttime = 0;
 
 	while (ps.getNext(&ev)) {
 		if (ev.has_time_delta()) {
+			if (!acctime) {
+				starttime = ev.time_delta();
+			}
 			acctime += ev.time_delta();
 		}
 		if (!ev.has_memaddr()) {
-			cout << "IP " << hex << ev.ip() << dec << " t=" << acctime << "\n";
+			++stats_instr;
+			if (!stats_only) {
+				cout << "IP " << hex << ev.ip() << dec << " t=" << acctime << "\n";
+			}
 		} else {
 			string ext = ""; // FIXME: use stringstream?
-			if (ev.has_trace_ext()) {
+			if (ev.has_trace_ext() && !stats_only) {
 				const Trace_Event_Extended& temp_ext = ev.trace_ext();
 				ext = " DATA ";
 				ext += temp_ext.data();
@@ -88,14 +121,25 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			cout << "MEM "
-			     << (ev.accesstype() == Trace_Event_AccessType_READ ? "R" : "W") << " "
-			     << ev.memaddr()
-			     << dec << " width " << ev.width()
-			     << hex << " IP " << ev.ip()
-			     << dec << " t=" << acctime
-			     << ext << "\n";
+			if (!stats_only) {
+				cout << "MEM "
+				     << (ev.accesstype() == Trace_Event_AccessType_READ ? "R" : "W") << " "
+				     << ev.memaddr()
+				     << dec << " width " << ev.width()
+				     << hex << " IP " << ev.ip()
+				     << dec << " t=" << acctime
+				     << ext << "\n";
+			}
+			stats_reads += (ev.accesstype() == Trace_Event_AccessType_READ);
+			stats_writes += (ev.accesstype() == Trace_Event_AccessType_WRITE);
 		}
+	}
+
+	if (stats_only) {
+		cout << "#instructions: " << stats_instr << "\n"
+		     << "#memR:         " << stats_reads << "\n"
+		     << "#memW:         " << stats_writes << "\n"
+		     << "duration:      " << (acctime - starttime + 1) << endl;
 	}
 
 	return 0;
