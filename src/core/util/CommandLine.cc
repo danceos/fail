@@ -11,7 +11,7 @@ namespace fail {
         // Filter out all command line arguments that start with -Wf,
         for (int i = 0; i < argc; ++i) {
             if (strncmp(argv[i], "-Wf,", 4) == 0) {
-                this->argv.push_back(std::string(argv[i] + 4));
+                this->argv.push_back(argv[i] + 4);
 
                 // also copy argv[argc], which equals 0
                 for (int x = i + 1; x <= argc; ++x) {
@@ -42,31 +42,27 @@ namespace fail {
         option::Descriptor desc = {0, 0, 0, 0, 0, 0};
         this->options.push_back(desc);
 
-        // Build an argv array
-        std::vector<const char *> tmp_argv;
-        int argc = this->argv.size();
-        for (unsigned i = 0; i < this->argv.size(); ++i)
-            tmp_argv.push_back(this->argv[i].c_str());
-
         // Generate the options stats
-        option::Stats stats(this->options.data(), argc, tmp_argv.data());
+        option::Stats stats(this->options.data(), argv.size(), argv.data());
 
         if (parsed_options)
             delete[] parsed_options;
         if (parsed_buffer)
             delete[] parsed_buffer;
+        if (m_parser)
+            delete m_parser;
 
         parsed_options = new option::Option[stats.options_max];
         parsed_buffer  = new option::Option[stats.buffer_max];
 
-        option::Parser parse(this->options.data(), argc, tmp_argv.data(),
+        m_parser = new option::Parser(this->options.data(), argv.size(), argv.data(),
                              parsed_options, parsed_buffer);
 
 
         // Pop the terminating entry
         this->options.pop_back();
 
-        return !parse.error();
+        return !m_parser->error();
     }
 
 

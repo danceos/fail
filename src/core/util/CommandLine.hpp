@@ -22,9 +22,10 @@ namespace fail {
     private:
         static CommandLine m_instance;
 
-        std::vector<std::string> argv;
+        std::vector<const char *> argv;
         std::vector<option::Descriptor> options;
         option::Option *parsed_options, *parsed_buffer;
+        option::Parser *m_parser;
     public:
         /// Handle for accessing the parsed data of an option
         typedef int option_handle;
@@ -45,7 +46,7 @@ namespace fail {
         /**
          * Add a argument manually
          */
-        void add_args(char *value) { argv.push_back(value); }
+        void add_args(const char *value) { argv.push_back(value); }
 
         /**
          * Add a option to the command line interface of the fail-client
@@ -88,6 +89,12 @@ namespace fail {
         void printUsage() {
             int columns = getenv("COLUMNS")? atoi(getenv("COLUMNS")) : 80;
             option::printUsage(fwrite, stdout, options.data(), columns);
+        }
+        /**
+         * Return the internal option::Parser object for further usage.
+         */
+        option::Parser *parser() {
+            return m_parser;
         }
     };
 
