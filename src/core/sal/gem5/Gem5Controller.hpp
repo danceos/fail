@@ -30,7 +30,7 @@ public:
 	void startup();
 	~Gem5Controller();
 
-	bool save(const std::string &path);
+	void save(const std::string &path);
 	void restore(const std::string &path);
 	void reboot();
 #if defined(CONFIG_EVENT_BREAKPOINTS) ||\
