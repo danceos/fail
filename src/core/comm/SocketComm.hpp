@@ -22,6 +22,10 @@ namespace fail {
 class SocketComm {
 public:
 	/**
+	 * This allows us to ignore SIGPIPE.
+	 */
+	static void init();
+	/**
 	 * Send Protobuf-generated message
 	 * @param sockfd open socket descriptor to write to
 	 * @param Msg Reference to Protobuf generated message type

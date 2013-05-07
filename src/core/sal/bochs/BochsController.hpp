@@ -116,7 +116,7 @@ public:
 	 */
 	void fireInterruptDone();
 	virtual simtime_t getTimerTicks() { return bx_pc_system.time_ticks(); }
-	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec(); /* imprecise hack */ }
+	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec() * 1000000; /* imprecise hack */ }
 	/* ********************************************************************
 	 * BochsController-specific (not implemented in SimulatorController!):
 	 * ********************************************************************/

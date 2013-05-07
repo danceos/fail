@@ -1,9 +1,17 @@
 #include <string>
 #include <errno.h>
+#include <signal.h>
 
 #include "SocketComm.hpp"
 
 namespace fail {
+
+void SocketComm::init()
+{
+	// It's usually much easier to handle the error on write(), than to do
+	// anything intelligent in a SIGPIPE handler.
+	signal(SIGPIPE, SIG_IGN);
+}
 
 bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 {

@@ -1,4 +1,5 @@
 #include "JobClient.hpp"
+#include "comm/SocketComm.hpp"
 
 using namespace std;
 
@@ -6,6 +7,7 @@ namespace fail {
 
 JobClient::JobClient(const std::string& server, int port)
 {
+	SocketComm::init();
 	m_server_port = port;
 	m_server = server;
 	m_server_ent = gethostbyname(m_server.c_str());
@@ -83,7 +85,7 @@ bool JobClient::getParam(ExperimentData& exp)
 			return true;
 			// Nothing to do right now, but maybe later
 		case FailControlMessage::COME_AGAIN:
-			sleep(1);
+			sleep(10);
 			continue;
 		default:
 			return false;

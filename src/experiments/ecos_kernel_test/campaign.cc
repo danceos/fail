@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <sstream>
 
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
@@ -9,16 +10,20 @@
 #include "util/ProtoStream.hpp"
 #include "util/MemoryMap.hpp"
 #include "util/gzstream/gzstream.h"
+#include "util/CommandLine.hpp"
 
 #include "../plugins/tracing/TracingPlugin.hpp"
-
-//#define PRUNING_DEBUG_OUTPUT
 
 using namespace std;
 using namespace fail;
 
-const std::string EcosKernelTestCampaign::dir_images("images");
+#if BASELINE_ASSESSMENT
+const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites-baseline");
+const std::string EcosKernelTestCampaign::dir_images("images-baseline");
+#else
 const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites");
+const std::string EcosKernelTestCampaign::dir_images("images");
+#endif
 const std::string EcosKernelTestCampaign::dir_results("results");
 
 bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout,
@@ -114,14 +119,6 @@ std::string EcosKernelTestCampaign::filename_traceinfo(const std::string& varian
 	return "traceinfo.txt";
 }
 
-std::string EcosKernelTestCampaign::filename_results(const std::string& variant, const std::string& benchmark)
-{
-	if (variant.size() && benchmark.size()) {
-		return dir_results + "/" + variant + "-" + benchmark + "-" + "results.csv";
-	}
-	return "results.csv";
-}
-
 std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, const std::string& benchmark)
 {
 	if (variant.size() && benchmark.size()) {
@@ -146,350 +143,217 @@ char const *variants[] = {
 	0
 };
 
+// big four (three): (mutex3,) bin_sem2, clocktruth, sync2
+// busy waiters, sloooow at ips=2666mhz: kill, mutex3, clocktruth
+// batch 1: line 1
 char const *benchmarks[] = {
+#if 1
 	"bin_sem0", "bin_sem1", "bin_sem2", "bin_sem3", "clock1", "clockcnv",
-	"clocktruth", "cnt_sem1", "except1", "flag1", "kill", "mqueue1", "mutex1",
-	"mutex2", "mutex3", "release", "sched1", "sync2", "sync3", "thread0",
+	/*"clocktruth",*/ "cnt_sem1", "except1", "flag1", /*"kill",*/ "mqueue1", "mutex1",
+	"mutex2", /*"mutex3",*/ "release", "sched1", "sync2", "sync3", "thread0",
 	"thread1", "thread2",
+#elif 0
+	"sync2",
+#endif
 	0
 };
 
 bool EcosKernelTestCampaign::run()
 {
-	m_log << "startup" << endl;
+	CommandLine &cmd = CommandLine::Inst();
 
-	if (!init_results()) {
-		return false;
+	cmd.addOption("", "", Arg::None, "USAGE: fail-server [options...]");
+	CommandLine::option_handle HELP =
+		cmd.addOption("h", "help", Arg::None, "-h/--help \tPrint usage and exit");
+	CommandLine::option_handle RESULTTABLE =
+		cmd.addOption("r", "resulttable", Arg::Required, "-r/--resulttable \tTable to store results in (default: 'result')");
+	Database::cmdline_setup();
+
+	if (!cmd.parse()) {
+		m_log << "Error parsing arguments." << std::endl;
+		exit(1);
 	}
+	if (cmd[HELP].count() > 0) {
+		cmd.printUsage();
+		exit(0);
+	}
+	if (cmd[RESULTTABLE].count() > 0) {
+		m_result_table = std::string(cmd[RESULTTABLE].first()->arg);
+	} else {
+		m_result_table = std::string("result");
+	}
+	m_log << "Storing results in table '" << m_result_table << "'\n";
 
+	db = Database::cmdline_connect();
+	db_recv = Database::cmdline_connect();
+	fspmethod_id = 1; // constant for now
+
+	std::stringstream ss;
+	ss << "CREATE TABLE IF NOT EXISTS " << m_result_table << " ("
+	      "pilot_id int(11) NOT NULL,\n"
+	      "bitnr tinyint(4) NOT NULL,\n"
+	      "bit_width tinyint(4) NOT NULL,\n"
+	      "resulttype tinyint(4) NOT NULL,\n"
+	      "ecos_test_result tinyint(4) NOT NULL,\n"
+	      "latest_ip int(10) unsigned DEFAULT NULL,\n"
+	      "error_corrected tinyint(4) NOT NULL,\n"
+	      "details varchar(255) DEFAULT NULL,\n"
+	      "runtime float NOT NULL,\n"
+	      "PRIMARY KEY (pilot_id,bitnr))\n"
+	      "ENGINE = MyISAM";
+	if (!db->query(ss.str().c_str())) return false;
 	// collect results in parallel to avoid deadlock
 #ifndef __puma
 	boost::thread collect_thread(&EcosKernelTestCampaign::collect_results, this);
 #endif
 
+	ss.str("");
+
+	/* Gather all unfinished jobs */
+	m_log << "Looking for unfinished jobs in the database ..." << std::endl;
+	ss << "(";
 	for (int variant_nr = 0; variants[variant_nr]; ++variant_nr) {
 		char const *variant = variants[variant_nr];
-		for (int benchmark_nr = 0; benchmarks[benchmark_nr]; ++benchmark_nr) {
-			char const *benchmark = benchmarks[benchmark_nr];
-
-			// local copies of experiment/job count (to calculate differences)
-			int local_count_exp = count_exp, local_count_exp_jobs = count_exp_jobs,
-				local_count_known = count_known, local_count_known_jobs = count_known_jobs;
-
-			// load trace
-			igzstream tracef(filename_trace(variant, benchmark).c_str());
-			if (tracef.fail()) {
-				m_log << "couldn't open " << filename_trace(variant, benchmark) << endl;
-				return false;
-			}
-			ProtoIStream ps(&tracef);
-
-			// read trace info
-			unsigned instr_counter, estimated_timeout, lowest_addr, highest_addr;
-			// FIXME properly deal with 2nd memory range
-			EcosKernelTestCampaign::readTraceInfo(instr_counter,
-				estimated_timeout, lowest_addr, highest_addr, lowest_addr, highest_addr, variant, benchmark);
-
-			// a map of addresses of ECC protected objects
-			MemoryMap mm;
-			mm.readFromFile(filename_memorymap(variant, benchmark).c_str());
-
-			// map for keeping one "open" EC for every address
-			// (maps injection data address => equivalence class)
-			AddrLastaccessMap open_ecs;
-
-			// instruction counter within trace
-			unsigned instr = 0;
-			// "rightmost" instr where we did a FI experiment
-			unsigned instr_rightmost = 0;
-
-			// fill open_ecs with one EC for every address
-			for (MemoryMap::iterator it = mm.begin(); it != mm.end(); ++it) {
-				open_ecs[*it] = instr;
-			}
-
-			// absolute address of current trace instruction
-			address_t instr_absolute = 0;
-
-			Trace_Event ev;
-			// for every event in the trace ...
-			while (ps.getNext(&ev) && instr < instr_counter) {
-				// instruction events just get counted
-				if (!ev.has_memaddr()) {
-					// new instruction
-					instr++;
-					instr_absolute = ev.ip();
-					continue;
-				}
-
-				// for each single byte in this memory access ...
-				for (address_t data_address = ev.memaddr();
-					data_address < ev.memaddr() + ev.width();
-					++data_address) {
-					// skip accesses to data outside our map of interesting addresses
-					AddrLastaccessMap::iterator lastuse_it;
-					if ((lastuse_it = open_ecs.find(data_address)) == open_ecs.end()) {
-						continue;
-					}
-					int instr1 = lastuse_it->second;
-					int instr2 = instr;
-
-					// skip zero-sized intervals: these can occur when an instruction
-					// accesses a memory location more than once (e.g., INC, CMPXCHG)
-					if (instr1 > instr2) {
-						continue;
-					}
-
-					// we now have an interval-terminating R/W event to the memaddr
-					// we're currently looking at; the EC is defined by
-					// data_address [instr1, instr2] (instr_absolute)
-
-					if (ev.accesstype() == ev.READ) {
-						// a sequence ending with READ: we need to do one experiment to
-						// cover it completely
-						add_experiment_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
-						instr_rightmost = instr2;
-					} else if (ev.accesstype() == ev.WRITE) {
-						// a sequence ending with WRITE: an injection anywhere here
-						// would have no effect.
-						add_known_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
-					} else {
-						m_log << "WAT" << endl;
-					}
-
-					// next interval must start at next instruction; the aforementioned
-					// skipping mechanism wouldn't work otherwise
-					lastuse_it->second = instr2 + 1;
-				}
-			}
-
-			// close all open intervals (right end of the fault-space)
-			for (AddrLastaccessMap::iterator lastuse_it = open_ecs.begin();
-				 lastuse_it != open_ecs.end(); ++lastuse_it) {
-				address_t data_address = lastuse_it->first;
-				int instr1 = lastuse_it->second;
+		ss << "v.variant = '" << variant << "' OR ";
+	}
+	ss << "0) AND ("; // dummy terminator
+	for (int benchmark_nr = 0; benchmarks[benchmark_nr]; ++benchmark_nr) {
+		char const *benchmark = benchmarks[benchmark_nr];
+		ss << "v.benchmark = '" << benchmark << "' OR ";
+	}
+	ss << "0)"; // dummy terminator
+	std::string sql_variants = ss.str();
+	ss.str("");
 
 #if 0
-				// Why -1?  In most cases it does not make sense to inject before the
-				// very last instruction, as we won't execute it anymore.  This *only*
-				// makes sense if we also inject into parts of the result vector.  This
-				// is not the case in this experiment, and with -1 we'll get a result
-				// comparable to the non-pruned campaign.
-				int instr2 = instr - 1;
-#else
-				// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
-				int instr2 = instr_rightmost;
+	ss << "SELECT STRAIGHT_JOIN p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address, SUM(r.bit_width) AS existing_results "
+	   << "FROM variant v "
+	   << "JOIN fsppilot p ON p.variant_id = v.id "
+	   << "LEFT JOIN result r ON r.pilot_id = p.id "
+	   << "WHERE p.known_outcome = 0 "
+	   << "  AND p.fspmethod_id = " << fspmethod_id << " "
+	   << "  AND (" << sql_variants << ") "
+	   << "GROUP BY p.id "
+	   << "HAVING existing_results < 8 OR existing_results IS NULL "; // 8 results per pilot
+#elif 0
+	std::string sql_select = "SELECT p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address ";
+	ss << "FROM variant v "
+	   << "JOIN fsppilot p ON p.variant_id = v.id "
+	   << "LEFT JOIN " << m_result_table << " r ON r.pilot_id = p.id "
+	   << "WHERE p.known_outcome = 0 "
+	   << "  AND p.fspmethod_id = " << fspmethod_id << " "
+	   << "  AND (" << sql_variants << ") "
+	   << "  AND r.pilot_id IS NULL ";
+#elif 0
+	std::string sql_select = "SELECT p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address ";
+	ss << "FROM variant v "
+	   << "JOIN fsppilot p ON p.variant_id = v.id "
+//	   << "WHERE p.known_outcome = 0 "
+	   << "  AND p.fspmethod_id = " << fspmethod_id << " "
+	   << "  AND (" << sql_variants << ") ";
+#elif 1
+	if (!db->query("CREATE TEMPORARY TABLE done_pilots (id INT UNSIGNED NOT NULL PRIMARY KEY)")) return false;
+	ss << "INSERT INTO done_pilots SELECT pilot_id FROM " << m_result_table << " GROUP BY pilot_id HAVING SUM(bit_width) = 8";
+	if (!db->query(ss.str().c_str())) return false;
+	unsigned finished_jobs = db->affected_rows();
+	ss.str("");
+	ss << "DELETE r FROM " << m_result_table << " r LEFT JOIN done_pilots ON r.pilot_id = done_pilots.id WHERE done_pilots.id IS NULL";
+	if (!db->query(ss.str().c_str())) return false;
+	unsigned deleted_rows = db->affected_rows();
+	ss.str("");
+	m_log << "Deleted " << deleted_rows << " rows from incomplete jobs" << std::endl;
+	std::string sql_select = "SELECT STRAIGHT_JOIN p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address ";
+	ss << "FROM variant v "
+	   << "JOIN fsppilot p ON p.variant_id = v.id "
+	   << "LEFT JOIN done_pilots d ON d.id = p.id "
+	   << "WHERE d.id IS NULL "
+	   << "  AND p.fspmethod_id = " << fspmethod_id << " "
+	   << "  AND (" << sql_variants << ") ";
 #endif
-				int instr_absolute = 0; // unknown
+	std::string sql_body = ss.str();
+	//std::string sql_order = "ORDER BY v.benchmark, v.variant";
+	std::string sql_order = "ORDER BY v.id";
+	//std::string sql_order = "";
 
-				// zero-sized?  skip.
-				if (instr1 > instr2) {
-					continue;
-				}
+	/* Get the number of unfinished experiments */
+	std::string sql_count = "SELECT COUNT(*) " + sql_body;
+	m_log << sql_count << std::endl;
+	MYSQL_RES *count = db->query(sql_count.c_str(), true);
+	if (!count) {
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(count);
+	unsigned unfinished_jobs;
+	unfinished_jobs = strtoul(row[0], NULL, 10);
 
-#if 0
-				// the run continues after the FI window, so do this experiment
-				// XXX this creates at least one experiment for *every* bit!
-				//     fix: full trace, limited FI window
+	m_log << "Found " << unfinished_jobs << " unfinished jobs (" << finished_jobs << " already finished)." << std::endl;
 
-				ecs_need_experiment.push_back(current_ec);
-				add_experiment_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
-#else
-				// as the experiment ends, this byte is a "don't care":
-				add_known_ec(variant, benchmark, data_address, instr1, instr2, instr_absolute);
-#endif
-			}
-			// conserve some memory
-			open_ecs.clear();
-
-			// progress report
-			m_log << variant << "/" << benchmark
-			      << " exp " << (count_exp - local_count_exp) << " (" << (count_exp_jobs - local_count_exp_jobs) << " jobs)"
-				  << " known " << (count_known - local_count_known) << " (" << (count_known_jobs - local_count_known_jobs) << " jobs)"
-				  << " faultspace cutoff @ " << instr_rightmost << " out of " << instr
-				  << endl;
-		}
+	std::string sql_pilots = sql_select + sql_body + sql_order;
+	m_log << sql_pilots << std::endl;
+	MYSQL_RES *pilots = db->query_stream(sql_pilots.c_str());
+	if (!pilots) {
+		return false;
 	}
 
-	available_results.clear();
+	m_log << "Filling queue ..." << std::endl;
 
+	unsigned prev_variant_id = 0;
+	while ((row = mysql_fetch_row(pilots))) {
+		unsigned pilot_id = atoi(row[0]);
+		unsigned variant_id = atoi(row[1]);
+		unsigned injection_instr = atoi(row[4]);
+		unsigned data_address = atoi(row[6]);
+
+		EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
+		d->msg.set_pilot_id(pilot_id);
+		d->msg.set_variant(row[2]);
+		d->msg.set_benchmark(row[3]);
+		d->msg.set_instr2_offset(injection_instr);
+		if (row[5]) {
+			unsigned injection_instr_absolute = atoi(row[5]);
+			d->msg.set_instr2_address(injection_instr_absolute);
+		}
+		d->msg.set_mem_addr(data_address);
+		d->msg.set_faultmodel(ECOS_FAULTMODEL_BURST ? d->msg.BURST : d->msg.SINGLEBITFLIP);
+
+		if (prev_variant_id != variant_id) {
+			m_log << "Enqueueing jobs for " << row[2] << "/" << row[3] << std::endl;
+		}
+		prev_variant_id = variant_id;
+
+		campaignmanager.addParam(d);
+	}
+
+	if (mysql_errno(db->getHandle())) {
+		std::cerr << "mysql_fetch_row failed: " << mysql_error(db->getHandle()) << std::endl;
+	}
+
+	delete db;
+
+	m_log << "finished, waiting for the clients to complete ..." << std::endl;
 	campaignmanager.noMoreParameters();
-	m_log << "total"
-		  << " exp " << count_exp << " (" << count_exp_jobs << " jobs)"
-		  << " known " << count_known << " (" << count_known_jobs << " jobs)"
-		  << endl;
 
-	// collect results
 #ifndef __puma
 	collect_thread.join();
 #endif
-	finalize_results();
-	m_log << "done." << endl;
-
+	delete db_recv;
+	m_log << "results complete, terminating." << std::endl;
 	return true;
 }
 
-bool EcosKernelTestCampaign::add_experiment_ec(const std::string& variant, const std::string& benchmark,
-	address_t data_address, int instr1, int instr2, address_t instr_absolute)
-{
-	if (check_available(variant, benchmark, data_address, instr2)) {
-		return false;
-	}
 
-	count_exp_jobs++;
-	if (ECOS_FAULTMODEL_BURST) {
-		count_exp++;
-	} else {
-		count_exp += 8;
-	}
-
-	// enqueue job
-#if 1
-	EcosKernelTestExperimentData *d = new EcosKernelTestExperimentData;
-	d->msg.set_variant(variant);
-	d->msg.set_benchmark(benchmark);
-	d->msg.set_instr1_offset(instr1);
-	d->msg.set_instr2_offset(instr2);
-	d->msg.set_instr2_address(instr_absolute);
-	d->msg.set_mem_addr(data_address);
-	d->msg.set_faultmodel(ECOS_FAULTMODEL_BURST ? d->msg.BURST : d->msg.SINGLEBITFLIP);
-	campaignmanager.addParam(d);
-#endif
-
-	return true;
-}
-
-bool EcosKernelTestCampaign::add_known_ec(const std::string& variant, const std::string& benchmark,
-	address_t data_address, int instr1, int instr2, address_t instr_absolute)
-{
-	if (check_available(variant, benchmark, data_address, instr2)) {
-		return false;
-	}
-
-	count_known_jobs++;
-	if (ECOS_FAULTMODEL_BURST) {
-		count_known++;
-	} else {
-		count_known += 8;
-	}
-
-#if 1
-	add_result(variant, benchmark, instr1, instr2, instr_absolute, data_address,
-		0, 8, // bitnr, bit_width
-		1, // resulttype
-		1, // ecos_test_result
-		99, // latest_ip
-		0, // error_corrected
-		"", // details
-		0 // runtime
-	);
-#endif
-	return true;
-}
-
-bool EcosKernelTestCampaign::init_results()
-{
-	// read already existing results
-	bool file_exists = false;
-	ifstream oldresults(filename_results().c_str(), ios::in);
-	if (oldresults.is_open()) {
-		file_exists = true;
-		char buf[16*1024];
-		std::string variant, benchmark;
-		unsigned ignore;
-		int instr2;
-		address_t data_address;
-		int bit_width;
-		int rowcount = 0;
-		int expcount = 0;
-		m_log << "scanning existing results ..." << endl;
-		while (oldresults.getline(buf, sizeof(buf)).good()) {
-			stringstream ss;
-			ss << buf;
-			ss >> hex >> variant >> benchmark >> ignore >> instr2 >> ignore
-			   >> data_address >> ignore >> bit_width;
-			if (ss.fail()) {
-				continue;
-			}
-			++rowcount;
-			expcount += bit_width;
-			// TODO: sanity check (duplicates?)
-			available_results
-				[AvailableResultMap::key_type(variant, benchmark)]
-				[data_address].insert(instr2);
-		}
-		m_log << "found " << dec << expcount << " existing experiment results ("
-		      << rowcount << " CSV rows)" << endl;
-		oldresults.close();
-	}
-
-	// non-destructive: due to the CSV header we can always manually recover
-	// from an accident (append mode)
-	resultstream.open(filename_results().c_str(), ios::out | ios::app);
-	if (!resultstream.is_open()) {
-		m_log << "failed to open " << filename_results() << endl;
-		return false;
-	}
-	// only write CSV header if file didn't exist before
-	if (!file_exists) {
-		resultstream << "variant\tbenchmark\tec_instr1\tec_instr2\t"
-		                "ec_instr2_absolute\tec_data_address\tbitnr\tbit_width\t"
-						"resulttype\tecos_test_result\tlatest_ip\t"
-						"error_corrected\tdetails\truntime" << endl;
-	}
-	return true;
-}
-
-bool EcosKernelTestCampaign::check_available(const std::string& variant, const std::string& benchmark,
-	address_t data_address, int instr2)
-{
-	AvailableResultMap::const_iterator it_variant =
-		available_results.find(AvailableResultMap::key_type(variant, benchmark));
-	if (it_variant == available_results.end()) {
-		return false;
-	}
-	AvailableResultMap::mapped_type::const_iterator it_address =
-		it_variant->second.find(data_address);
-	if (it_address == it_variant->second.end()) {
-		return false;
-	}
-	AvailableResultMap::mapped_type::mapped_type::const_iterator it_instr =
-		it_address->second.find(instr2);
-	if (it_instr == it_address->second.end()) {
-		return false;
-	}
-	return true;
-}
-
-void EcosKernelTestCampaign::add_result(const std::string& variant, const std::string& benchmark,
-	int instr1, int instr2, address_t instr2_absolute, address_t ec_data_address,
+void EcosKernelTestCampaign::add_result(unsigned pilot_id,
+	int instr2, address_t instr2_absolute, address_t ec_data_address,
 	int bitnr, int bit_width, int resulttype, int ecos_test_result, address_t latest_ip,
 	int error_corrected, const std::string& details, float runtime)
 {
-#ifndef __puma
-	boost::lock_guard<boost::mutex> guard(m_result_mutex);
-#endif
-	resultstream << hex
-		<< variant << "\t"
-		<< benchmark << "\t"
-		<< instr1 << "\t"
-		<< instr2 << "\t"
-		<< instr2_absolute << "\t"
-		<< ec_data_address << "\t"
-		<< bitnr << "\t"
-		<< bit_width << "\t"
-		<< resulttype << "\t"
-		<< ecos_test_result << "\t"
-		<< latest_ip << "\t"
-		<< error_corrected << "\t"
-		<< details << "\t"
-		<< runtime << "\n";
-	//resultstream.flush(); // for debugging purposes
-}
-
-void EcosKernelTestCampaign::finalize_results()
-{
-	resultstream.close();
+	std::stringstream ss;
+	ss << "INSERT DELAYED INTO " << m_result_table << " "
+	   << "(pilot_id, bitnr, bit_width, resulttype, ecos_test_result, latest_ip, error_corrected, details, runtime) VALUES "
+	   << "(" << pilot_id << "," << bitnr << "," << bit_width << "," << resulttype << "," << ecos_test_result << ","
+	   << latest_ip << "," << error_corrected << ",'" << details << "'," << runtime << ")";
+	// Database::query is protected by a mutex
+	db_recv->query(ss.str().c_str());
 }
 
 void EcosKernelTestCampaign::collect_results()
@@ -526,7 +390,7 @@ void EcosKernelTestCampaign::collect_results()
 				bit_width++;
 				continue;
 			}
-			add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+			add_result(res->msg.pilot_id(),
 				res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
 				first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
 				prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),
@@ -541,7 +405,7 @@ void EcosKernelTestCampaign::collect_results()
 		bit_width = 8;
 		prev_singleres = &res->msg.result(0);
 #endif
-		add_result(res->msg.variant(), res->msg.benchmark(), res->msg.instr1_offset(),
+		add_result(res->msg.pilot_id(),
 			res->msg.instr2_offset(), res->msg.instr2_address(), res->msg.mem_addr(),
 			first_bit, bit_width, prev_singleres->resulttype(), prev_singleres->ecos_test_result(),
 			prev_singleres->latest_ip(), prev_singleres->error_corrected(), prev_singleres->details(),

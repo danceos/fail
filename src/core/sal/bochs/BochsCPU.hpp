@@ -36,13 +36,13 @@ public:
 	 * @param reg the register pointer of interest (cannot be \c NULL)
 	 * @return the content of the register \c reg
 	 */
-	regdata_t getRegisterContent(Register* reg) const;
+	regdata_t getRegisterContent(const Register* reg) const;
 	/**
 	 * Sets the content of the register \c reg to \c value.
 	 * @param reg the destination register object pointer (cannot be \c NULL)
 	 * @param value the new value to assign
 	 */
-	void setRegisterContent(Register* reg, regdata_t value);
+	void setRegisterContent(const Register* reg, regdata_t value);
 	/**
 	 * Returns the current instruction pointer (aka program counter).
 	 * @return the current (e)ip register content

@@ -29,13 +29,13 @@ public:
 	 * @param reg the destination register whose content should be retrieved
 	 * @return the content of register \c reg
 	 */
-	regdata_t getRegisterContent(Register* reg) const;
+	regdata_t getRegisterContent(const Register* reg) const;
 	/**
 	 * Sets the register content for the  \a current CPU.
 	 * @param reg the (initialized) register object whose content should be set
 	 * @param value the new content of the register \c reg
 	 */
-	void setRegisterContent(Register* reg, regdata_t value);
+	void setRegisterContent(const Register* reg, regdata_t value);
 	/**
 	 * Retrieves the current instruction pointer (IP aka program counter, PC for short)
 	 * for the current CPU \c this.

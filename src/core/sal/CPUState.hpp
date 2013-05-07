@@ -20,13 +20,13 @@ public:
 	 * Gets the content of the passed Register.
 	 * @param reg the register to get the content from
 	 */
-	virtual regdata_t getRegisterContent(Register* reg) const = 0;
+	virtual regdata_t getRegisterContent(const Register* reg) const = 0;
 	/**
 	 * Writes the passed value into the given register.
 	 * @param reg the register that should be written to
 	 * @param value the value that should be written into the register
 	 */
-	virtual void setRegisterContent(Register* reg, regdata_t value) = 0;
+	virtual void setRegisterContent(const Register* reg, regdata_t value) = 0;
 	/**
 	 * Returns the current instruction pointer.
 	 * @return the current eip

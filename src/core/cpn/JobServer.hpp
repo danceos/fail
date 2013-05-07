@@ -7,6 +7,7 @@
 #include "util/SynchronizedMap.hpp"
 #include "config/FailConfig.hpp"
 #include "comm/FailControlMessage.pb.h"
+#include "comm/SocketComm.hpp"
 
 #include <list>
 #include <ctime>
@@ -81,6 +82,7 @@ public:
 	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
 		m_maxThreads(128), m_threadtimeout(0), m_undoneJobs(SERVER_OUT_QUEUE_SIZE)
 	{
+		SocketComm::init();
 		m_runid = std::time(0);
 #ifndef __puma
 		m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread.

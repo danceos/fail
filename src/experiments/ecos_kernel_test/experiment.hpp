@@ -16,7 +16,7 @@ public:
 	bool run();
 
 	void parseOptions();
-	bool retrieveGuestAddresses(fail::guest_address_t addr_finish); // step 0
+	bool retrieveGuestAddresses(fail::guest_address_t addr_finish, fail::guest_address_t addr_data_start, fail::guest_address_t addr_data_end); // step 0
 	bool establishState(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish, fail::guest_address_t addr_errors_corrected); // step 1
 	bool performTrace(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish); // step 2
 	bool faultInjection(); // step 3
@@ -28,5 +28,7 @@ public:
 		fail::guest_address_t& errors_corrected,
 		fail::guest_address_t& panic,
 		fail::guest_address_t& text_start,
-		fail::guest_address_t& text_end);
+		fail::guest_address_t& text_end,
+		fail::guest_address_t& data_start,
+		fail::guest_address_t& data_end);
 };

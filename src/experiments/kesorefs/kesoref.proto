@@ -1,27 +1,26 @@
-message KesoRefProtoMsg {
-	// parameters
-	required int32 pc_address = 1;
-	required int32 ram_address = 2;
-	required int32 bit_offset = 3;
+import "DatabaseCampaignMessage.proto";
 
-	// results
-	// make these optional to reduce overhead for server->client communication
-	enum ResultType {
-		CALCDONE = 1;
-		TIMEOUT = 2;
-		TRAP = 3;
-		EXC_ERROR = 4;
-		EXC_PARITY = 5;
-		EXC_NULLPOINTER = 6;
-		EXC_OOBOUNDS = 7;
-		MEMACCESS = 8;
-		UNKNOWN = 9;
+message KesoRefProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+		// make these optional to reduce overhead for server->client communication
+		enum ResultType {
+			CALCDONE = 1;
+			TIMEOUT = 2;
+			TRAP = 3;
+			EXC_ERROR = 4;
+			EXC_PARITY = 5;
+			EXC_NULLPOINTER = 6;
+			EXC_OOBOUNDS = 7;
+			MEMACCESS = 8;
+       	                NOINJECTION = 9;
+	                UNKNOWN = 10;
+		}
+		// result type, see above
+		required ResultType resulttype = 4;
+		required uint32 original_value = 5;
+	        required uint32 bitoffset = 6 [(sql_primary_key) = true];
+		optional string details = 7;
 	}
-	// result type, see above
-	optional ResultType resulttype = 4;
-  optional uint32 original_value = 5;
-	// did ECC correct the fault?
-	//optional int32 error_corrected = 6;
-	// optional textual description of what happened
-	optional string details = 7;
 }

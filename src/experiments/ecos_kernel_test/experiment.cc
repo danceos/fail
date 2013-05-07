@@ -27,15 +27,13 @@
 #define LOCAL 0
 
 #ifndef PREREQUISITES
-  #define PREREQUISITES 0 // 1: do step 0-2 ; 0: do step 3
+  #error Configure experimentInfo.hpp properly!
 #endif
 
 // create/use multiple snapshots to speed up long experiments
 // FIXME: doesn't work properly, trace changes! (reason unknown; incorrectly restored serial timers?)
 #define MULTIPLE_SNAPSHOTS 0
 #define MULTIPLE_SNAPSHOTS_DISTANCE 1000000
-
-#define TIMER_GRANULARITY 10 // microseconds
 
 #define VIDEOMEM_START 0xb8000
 #define VIDEOMEM_SIZE  (80*25*2 *2) // two text mode screens
@@ -61,7 +59,13 @@ using namespace fail;
 #endif
 
 #if PREREQUISITES
-bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish) {
+bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
+#if BASELINE_ASSESSMENT
+	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
+	MemoryMap mm;
+	mm.add(addr_data_start, addr_data_end - addr_data_start);
+	mm.writeToFile(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
+#else
 	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
 
 	// run until func_finish is reached
@@ -113,6 +117,7 @@ bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finis
 
 	// close serialized mm
 	mm.close();
+#endif
 
 	return true;
 }
@@ -199,13 +204,8 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	simulator.addListener(&ev_count);
 	unsigned instr_counter = 0;
 
-	// on the way, count elapsed time
-	TimerListener time_step(TIMER_GRANULARITY); //TODO: granularity?
-	//elapsed_time.setCounter(0xFFFFFFFFU); // not working for TimerListener
-	simulator.addListener(&time_step);
-	unsigned elapsed_time = 1; // always run 1 step
-	// just increase elapsed_time counter by 1, which serves as time for ECC recovery algorithm
-	++elapsed_time; // (this is a rough guess ... TODO)
+	// measure elapsed time
+	simtime_t time_start = simulator.getTimerTicks();
 
 	// on the way, record lowest and highest memory address accessed
 	MemAccessListener ev_mem(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
@@ -227,13 +227,6 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 			}
 			simulator.addListener(&ev_count);
 		}
-		else if(ev == &time_step) {
-			if(elapsed_time++ == 0xFFFFFFFFU) {
-				log << "ERROR: elapsed_time overflowed" << endl;
-				return false;
-			}
-			simulator.addListener(&time_step);
-		}
 		else if(ev == &ev_mem) {
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
@@ -252,16 +245,14 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 		ev = simulator.resume();
 	}
 
-	unsigned long long estimated_timeout_overflow_check = ((unsigned long long)elapsed_time) * time_step.getTimeout();
-	if(estimated_timeout_overflow_check > 0xFFFFFFFFU) {
-		log << "Timeout estimation overflowed" << endl;
-		return false;
-	}
-	unsigned estimated_timeout = (unsigned)estimated_timeout_overflow_check;
+	unsigned long long estimated_timeout_overflow_check =
+		simulator.getTimerTicks() - time_start + 10000;
+	unsigned estimated_timeout =
+		(unsigned) (estimated_timeout_overflow_check * 1000000 / simulator.getTimerTicksPerSecond());
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [0x" << mem1_low << ", 0x" << mem1_high << "] u [0x" << mem2_low << ", 0x" << mem2_high << "] (ignoring VGA mem)" << endl;
-	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout * TIMER_GRANULARITY / 1000000.0) << "s" << endl;
+	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout / 1000000.0) << "s" << endl;
 
 	// sanitize memory ranges
 	if (mem1_low > mem1_high) {
@@ -296,12 +287,14 @@ bool EcosKernelTestExperiment::faultInjection() {
 	unsigned instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
 	// ELF symbol addresses
 	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
-	                addr_panic, addr_text_start, addr_text_end;
+	                addr_panic, addr_text_start, addr_text_end,
+	                addr_data_start, addr_data_end;
 
 	BPSingleListener bp;
 	
 #if !LOCAL
-	for (int i = 0; i < 50 || (m_jc.getNumberOfUndoneJobs() != 0) ; ++i) { // only do 50 sequential experiments, to prevent swapping
+	for (int experiments = 0;
+		experiments < 500 || (m_jc.getNumberOfUndoneJobs() != 0); ) { // stop after ~500 experiments to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
 #endif
 
@@ -335,7 +328,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 	readELFSymbols(addr_entry, addr_finish, addr_test_output,
-		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end);
+		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
+		addr_data_start, addr_data_end);
 
 	int state_instr_offset = instr_offset - (instr_offset % MULTIPLE_SNAPSHOTS_DISTANCE);
 	string statename;
@@ -356,6 +350,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 	// for each job with the SINGLEBITFLIP fault model we're actually doing *8*
 	// experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
+		++experiments;
+
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
@@ -424,6 +420,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 			result->set_details(ss.str());
 
 			continue;
+		}
+		if (param.msg.has_instr2_address()) {
+			log << "Absolute IP sanity check OK" << endl;
 		}
 
 		// --- aftermath ---
@@ -625,7 +624,9 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& errors_corrected,
 	fail::guest_address_t& panic,
 	fail::guest_address_t& text_start,
-	fail::guest_address_t& text_end)
+	fail::guest_address_t& text_end,
+	fail::guest_address_t& data_start,
+	fail::guest_address_t& data_end)
 {
 	ElfReader elfreader(EcosKernelTestCampaign::filename_elf(m_variant, m_benchmark).c_str());
 	entry            = elfreader.getSymbol("cyg_start").getAddress();
@@ -635,10 +636,13 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	panic            = elfreader.getSymbol("_Z9ecc_panicv").getAddress();
 	text_start       = elfreader.getSymbol("_stext").getAddress();
 	text_end         = elfreader.getSymbol("_etext").getAddress();
+	data_start       = elfreader.getSymbol("__ram_data_start").getAddress();
+	data_end         = elfreader.getSymbol("__bss_end").getAddress();
 
 	// it's OK if errors_corrected or ecc_panic are missing
 	if (entry == ADDR_INV || finish == ADDR_INV || test_output == ADDR_INV ||
-	    text_start == ADDR_INV || text_end == ADDR_INV) {
+	    text_start == ADDR_INV || text_end == ADDR_INV ||
+	    data_start == ADDR_INV || data_end == ADDR_INV) {
 		return false;
 	}
 	return true;
@@ -680,36 +684,36 @@ bool EcosKernelTestExperiment::run()
 	parseOptions();
 #endif
 
-	#if PREREQUISITES
+#if PREREQUISITES
 	log << "retrieving ELF symbol addresses ..." << endl;
 	guest_address_t entry, finish, test_output, errors_corrected,
-	                panic, text_start, text_end;
+	                panic, text_start, text_end, data_start, data_end;
 	if (!readELFSymbols(entry, finish, test_output, errors_corrected,
-	               panic, text_start, text_end)) {
+	               panic, text_start, text_end, data_start, data_end)) {
 		log << "failed, essential symbols are missing!" << endl;
 		simulator.terminate(1);
 	}
 
 	// step 0
-	if(retrieveGuestAddresses(finish)) {
+	if (retrieveGuestAddresses(finish, data_start, data_end)) {
 		log << "STEP 0 finished: rebooting ..." << endl;
 		simulator.reboot();
 	} else { return false; }
 
 	// step 1
-	if(establishState(entry, finish, errors_corrected)) {
+	if (establishState(entry, finish, errors_corrected)) {
 		log << "STEP 1 finished: proceeding ..." << endl;
 	} else { return false; }
 
 	// step 2
-	if(performTrace(entry, finish)) {
+	if (performTrace(entry, finish)) {
 		log << "STEP 2 finished: terminating ..." << endl;
 	} else { return false; }
 
-	#else // !PREREQUISITES
+#else // !PREREQUISITES
 	// step 3
 	faultInjection();
-	#endif // PREREQUISITES
+#endif // PREREQUISITES
 
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();

@@ -7,8 +7,8 @@ message EcosKernelTestProtoMsg {
 	// benchmark
 	required string benchmark = 2;
 
-	// equivalence class start (for storage)
-	required int32 instr1_offset = 3;
+	// pilot ID (database)
+	required int32 pilot_id = 3;
 	// FI at #instructions from experiment start
 	required int32 instr2_offset = 4;
 	// the exact IP value at this point in time (from golden run)

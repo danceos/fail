@@ -5,7 +5,7 @@
 
 namespace fail {
 
-regdata_t BochsCPU::getRegisterContent(Register* reg) const
+regdata_t BochsCPU::getRegisterContent(const Register* reg) const
 {
 	assert(reg != NULL && "FATAL ERROR: reg-ptr cannot be NULL!");
 	// TODO: BX_CPU(0) *always* correct?
@@ -26,7 +26,7 @@ regdata_t BochsCPU::getRegisterContent(Register* reg) const
   #endif // SIM_SUPPORT_64
 }
 
-void BochsCPU::setRegisterContent(Register* reg, regdata_t value)
+void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 {
 	assert(reg != NULL && "FATAL ERROR: reg-ptr cannot be NULL!");
 	// TODO: BX_CPU(0) *always* correct?
