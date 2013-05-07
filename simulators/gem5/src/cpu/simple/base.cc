@@ -377,12 +377,6 @@ BaseSimpleCPU::preExecute()
 
     TheISA::PCState pcState = thread->pcState();
 
-	// FAIL*
-	#if defined(CONFIG_EVENT_BREAKPOINTS) && defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
-		fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-		fail::simulator.onBreakpoint(cpu, instAddr(), -1);
-	#endif
-
     if (isRomMicroPC(pcState.microPC())) {
         stayAtPC = false;
         curStaticInst = microcodeRom.fetchMicroop(pcState.microPC(),
@@ -406,6 +400,14 @@ BaseSimpleCPU::preExecute()
         //Decode an instruction if one is ready. Otherwise, we'll have to
         //fetch beyond the MachInst at the current pc.
         instPtr = decoder->decode(pcState);
+        
+		// FAIL*
+	#if defined(CONFIG_EVENT_BREAKPOINTS) || defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
+		fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+		fail::simulator.setMnemonic(instPtr->getName());
+		fail::simulator.onBreakpoint(cpu, instAddr(), -1);
+	#endif
+        
         if (instPtr) {
             stayAtPC = false;
             thread->pcState(pcState);

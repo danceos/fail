@@ -9,8 +9,6 @@ class System;
 
 namespace fail {
 
-class Gem5Breakpoint;
-
 // Register-/Memory-related:
 regdata_t GetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t idx);
 void SetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t idx,
@@ -18,10 +16,6 @@ void SetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t 
 void WriteMemory(System* sys, guest_address_t addr, size_t cnt, void const *src);
 void ReadMemory(System* sys, guest_address_t addr, size_t cnt, void *dest);
 size_t GetPoolSize(System* sys);
-
-// Breakpoint-related:
-Gem5Breakpoint* OnBreakpointAddition(address_t watchInstrPtr);
-void OnBreakpointDeletion(Gem5Breakpoint* bp);
 
 // Controller-related:
 unsigned int GetCPUId(System* sys, int context);
