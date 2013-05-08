@@ -125,6 +125,21 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 		}
 	}
 
+	// Create an open EC for every entry in the memory map we didn't encounter
+	// in the trace.  If we don't, non-accessed rows in the fault space will be
+	// missing later (e.g., unused parts of the stack).  Without a memory map,
+	// we just don't know the extents of our fault space; just guessing by
+	// using the minimum and maximum addresses is not a good idea, we might
+	// have large holes in the fault space.
+	if (m_mm) {
+		for (MemoryMap::iterator it = m_mm->begin(); it != m_mm->end(); ++it) {
+			if (open_ecs.count(*it) == 0) {
+				open_ecs[*it].dyninstr = 0;
+				open_ecs[*it].time = time_trace_start;
+			}
+		}
+	}
+
 	// Close all open intervals (right end of the fault-space) with fake trace
 	// event.  This ensures we have a rectangular fault space (important for,
 	// e.g., calculating the total SDC rate), and unknown memory accesses after
