@@ -72,7 +72,9 @@ class VPtr
             return;
 
         FSTranslatingPortProxy &proxy = tc->getVirtProxy();
+#ifndef __puma // DanceOS (no matching function for call to `readBlob')
         proxy.readBlob(ptr, buffer, sizeof(T));
+#endif
     }
 
     bool

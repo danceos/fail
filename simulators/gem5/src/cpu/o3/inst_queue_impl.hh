@@ -1116,6 +1116,8 @@ InstructionQueue<Impl>::violation(DynInstPtr &store,
     memDepUnit[store->threadNumber].violation(store, faulting_load);
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template <class Impl>
 void
 InstructionQueue<Impl>::squash(ThreadID tid)
@@ -1135,6 +1137,8 @@ InstructionQueue<Impl>::squash(ThreadID tid)
     // Also tell the memory dependence unit to squash.
     memDepUnit[tid].squash(squashedSeqNum[tid], tid);
 }
+
+#endif // !__puma (DanceOS)
 
 template <class Impl>
 void

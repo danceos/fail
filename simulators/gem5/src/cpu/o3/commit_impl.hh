@@ -355,6 +355,8 @@ DefaultCommit<Impl>::setROB(ROB *rob_ptr)
     rob = rob_ptr;
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template <class Impl>
 void
 DefaultCommit<Impl>::initStage()
@@ -1341,6 +1343,8 @@ DefaultCommit<Impl>::markCompletedInsts()
         }
     }
 }
+
+#endif // !__puma (DanceOS)
 
 template <class Impl>
 bool

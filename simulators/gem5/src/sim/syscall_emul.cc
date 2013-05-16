@@ -796,7 +796,8 @@ cloneFunc(SyscallDesc *desc, int callnum, LiveProcess *process,
         ctc->clearArchRegs();
 
         // Arch-specific cloning code
-        #if THE_ISA == ALPHA_ISA or THE_ISA == X86_ISA
+//      #if THE_ISA == ALPHA_ISA or THE_ISA == X86_ISA
+        #if THE_ISA == ALPHA_ISA || THE_ISA == X86_ISA // DanceOS: "or" replaced with "||"
             // Cloning the misc. regs for these archs is enough
             TheISA::copyMiscRegs(tc, ctc);
         #elif THE_ISA == SPARC_ISA

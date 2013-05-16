@@ -58,7 +58,9 @@ inline void disableAllListeners() { ListenSocket::disableAll(); }
 inline void
 seedRandom(uint64_t seed)
 {
+#ifndef __puma // DanceOS
     random_mt.init(seed);
+#endif
 }
 
 %}

@@ -114,9 +114,12 @@ class InstRecord
     void setData(uint16_t d) { data.as_int = d; data_status = DataInt16; }
     void setData(uint8_t d) { data.as_int = d; data_status = DataInt8; }
 
+// DanceOS modification
+#ifndef __puma // bug #375
     void setData(int64_t d) { setData((uint64_t)d); }
     void setData(int32_t d) { setData((uint32_t)d); }
     void setData(int16_t d) { setData((uint16_t)d); }
+#endif
     void setData(int8_t d)  { setData((uint8_t)d); }
 
     void setData(double d) { data.as_double = d; data_status = DataDouble; }

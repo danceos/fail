@@ -69,6 +69,7 @@ class Random
         value = genrand() & (int8_t)-1;
     }
 
+#ifndef __puma // DanceOS (redefinition of `_random')
     void
     _random(int16_t &value)
     {
@@ -86,6 +87,7 @@ class Random
     {
         value = (int64_t)genrand() << 32 | (int64_t)genrand();
     }
+#endif // DanceOS
 
     void
     _random(uint8_t &value)
@@ -136,6 +138,7 @@ class Random
         return static_cast<int8_t>(min + genrand(diff));
     }
 
+#ifndef __puma // DanceOS (redefinition of `_random')
     int16_t
     _random(int16_t min, int16_t max)
     {
@@ -156,6 +159,7 @@ class Random
         uint64_t diff = max - min;
         return static_cast<int64_t>(min + genrand(diff));
     }
+#endif // DanceOS
 
     uint8_t
     _random(uint8_t min, uint8_t max)

@@ -103,7 +103,9 @@ T OrionConfig::get(const string& key_) const
     it = m_params_map.find(key_);
     if (it == m_params_map.end()) 
     {
+#ifndef __puma // error: invalid operand to binary `<<'
         std::cerr << key_ << " NOT FOUND!" << std::endl;
+#endif
         throw key_not_found(key_);
     }
     return string_as_T<T>(it->second);
@@ -138,8 +140,10 @@ inline bool OrionConfig::string_as_T<bool>(const string& str_)
     }
     else
     {
+#ifndef __puma
         std::cerr << "Invalid bool value: '" << str_ <<
           "'. Treated as FALSE." << std::endl;
+#endif
         ret = false;
     }
     return ret;

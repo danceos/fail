@@ -934,6 +934,7 @@ fstatfsFunc(SyscallDesc *desc, int callnum, LiveProcess *process,
         return -EBADF;
 
     struct statfs hostBuf;
+    int fstatfs(int fd, struct statfs *buf); // DanceOS (added forward decl.)
     int result = fstatfs(fd, &hostBuf);
 
     if (result < 0)

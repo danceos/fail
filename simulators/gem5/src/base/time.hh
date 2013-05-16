@@ -264,7 +264,10 @@ operator-(const Time &l, const Time &r)
 inline std::ostream &
 operator<<(std::ostream &out, const Time &time)
 {
+	// DanceOS modification
+#ifndef __puma
     out << time.date();
+#endif
     return out;
 }
 

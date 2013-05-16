@@ -582,12 +582,23 @@ class FloatRegOperand(Operand):
             func = 'setFloatRegOperandBits'
         if self.write_code != None:
             return self.buildWriteCode(func)
-        wb = '''
-        {
-            %s final_val = %s;
-            xc->%s(this, %d, final_val);\n
-            if (traceData) { traceData->setData(final_val); }
-        }''' % (self.ctype, self.base_name, func, self.dest_reg_idx)
+        # (DanceOS hack begin...
+        if self.ctype == 'int32_t' or self.ctype == 'int16_t':
+            print "Applying Fail* hack in %s@%s ... :-)" % \
+            (__file__, inspect.currentframe().f_lineno)
+            wb = '''
+            {
+                %s final_val = %s;
+                xc->%s(this, %d, final_val);\n
+                if (traceData) { traceData->setData((%s)final_val); }
+            }''' % (self.ctype, self.base_name, func, self.dest_reg_idx, "u%s" % self.ctype)
+        else: # ...DanceOS hack end)
+            wb = '''
+            {
+                %s final_val = %s;
+                xc->%s(this, %d, final_val);\n
+                if (traceData) { traceData->setData(final_val); }
+            }''' % (self.ctype, self.base_name, func, self.dest_reg_idx)
         return wb
 
 class ControlRegOperand(Operand):

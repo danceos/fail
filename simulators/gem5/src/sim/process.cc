@@ -198,7 +198,9 @@ Process::openInputFile(const string &filename)
 
     if (fd == -1) {
         perror(NULL);
+#ifndef __puma // DanceOS (invalid operand to binary `<<')
         cerr << "unable to open \"" << filename << "\" for reading\n";
+#endif
         fatal("can't open input file");
     }
 
@@ -213,7 +215,9 @@ Process::openOutputFile(const string &filename)
 
     if (fd == -1) {
         perror(NULL);
+#ifndef __puma // DanceOS (invalid operand to binary `<<')
         cerr << "unable to open \"" << filename << "\" for writing\n";
+#endif
         fatal("can't open output file");
     }
 

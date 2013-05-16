@@ -335,6 +335,8 @@ DefaultRename<Impl>::takeOverFrom()
     }
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template <class Impl>
 void
 DefaultRename<Impl>::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
@@ -1337,6 +1339,8 @@ DefaultRename<Impl>::checkSignalsAndUpdate(ThreadID tid)
     // cause rename to change its status.  Rename remains the same as before.
     return false;
 }
+
+#endif // !__puma (DanceOS)
 
 template<class Impl>
 void

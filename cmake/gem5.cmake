@@ -15,6 +15,10 @@ if(BUILD_GEM5)
   # - make gem5_build_config configurable in CMake
   #   (alternative: gem5_build_config is set based on the CMake build
   #    config, e.g., "Debug" or "Release")
+  # - Ideally, there is no additional "gem5-clean" target. Instead,
+  #   calling "make clean" should also invoke a clean command in the
+  #   gem5 root dir. This seems easy for "make only" projects--things
+  #   get shaky due to "scons".
 
   # Enable ExternalProject CMake module
   include(ExternalProject)
@@ -29,9 +33,14 @@ if(BUILD_GEM5)
     SOURCE_DIR ${gem5_src_dir}
     BINARY_DIR ${gem5_src_dir}
     # Build gem5 using scons build system:
-    BUILD_COMMAND scons EXTRAS=${gem5_wrapper} ${gem5_build_config} -j${core_count}
+    BUILD_COMMAND scons "CXX=${CMAKE_CXX_COMPILER} -p ${gem5_src_dir} --Xcompiler" EXTRAS=${gem5_wrapper} ${gem5_build_config} -j${core_count}
     # Disable install step (for now)
     INSTALL_COMMAND ""
+  )
+  add_custom_target(gem5-allclean
+    COMMAND @echo "Cleaning Fail* and gem5 ..."
+    COMMAND cd "${PROJECT_BINARY_DIR}/" && make clean
+    COMMAND cd "${gem5_src_dir}/" && scons -c
   )
 
   # Build "fail" library first (will be statically linked to gem5)

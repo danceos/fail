@@ -214,6 +214,8 @@ DefaultDecode<Impl>::checkStall(ThreadID tid) const
     return ret_val;
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template<class Impl>
 inline bool
 DefaultDecode<Impl>::fetchInstsValid()
@@ -759,3 +761,5 @@ DefaultDecode<Impl>::decodeInsts(ThreadID tid)
         wroteToTimeBuffer = true;
     }
 }
+
+#endif // !__puma (DanceOS)

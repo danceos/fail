@@ -488,6 +488,9 @@ if main['GCC'] + main['SUNCC'] + main['ICC'] + main['CLANG'] > 1:
     print 'Error: How can we have two at the same time?'
     Exit(1)
 
+main['GCC'] = True
+main['GCC_VERSION'] = '4.4.5'
+
 # Set up default C++ compiler flags
 if main['GCC']:
     main.Append(CCFLAGS=['-pipe'])
@@ -496,14 +499,14 @@ if main['GCC']:
     # Read the GCC version to check for versions with bugs
     # Note CCVERSION doesn't work here because it is run with the CC
     # before we override it from the command line
-    gcc_version = readCommand([main['CXX'], '-dumpversion'], exception=False)
-    main['GCC_VERSION'] = gcc_version
-    if not compareVersions(gcc_version, '4.4.1') or \
-       not compareVersions(gcc_version, '4.4.2'):
-        print 'Info: Tree vectorizer in GCC 4.4.1 & 4.4.2 is buggy, disabling.'
-        main.Append(CCFLAGS=['-fno-tree-vectorize'])
-    if compareVersions(gcc_version, '4.6') >= 0:
-        main.Append(CXXFLAGS=['-std=c++0x'])
+#    gcc_version = readCommand([main['CXX'], '-dumpversion'], exception=False)
+#    main['GCC_VERSION'] = gcc_version
+#    if not compareVersions(gcc_version, '4.4.1') or \
+#       not compareVersions(gcc_version, '4.4.2'):
+#        print 'Info: Tree vectorizer in GCC 4.4.1 & 4.4.2 is buggy, disabling.'
+#        main.Append(CCFLAGS=['-fno-tree-vectorize'])
+#    if compareVersions(gcc_version, '4.6') >= 0:
+#        main.Append(CXXFLAGS=['-std=c++0x'])
 elif main['ICC']:
     pass #Fix me... add warning flags once we clean up icc warnings
 elif main['SUNCC']:

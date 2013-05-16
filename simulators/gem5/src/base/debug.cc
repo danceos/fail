@@ -101,14 +101,18 @@ void
 CompoundFlag::enable()
 {
     SimpleFlag::enable();
+#ifndef __puma // DanceOS (error: no matching function for call to `mem_fun')
     for_each(_kids.begin(), _kids.end(), mem_fun(&Flag::enable));
+#endif
 }
 
 void
 CompoundFlag::disable()
 {
     SimpleFlag::disable();
+#ifndef __puma // DanceOS (error: no matching function for call to `mem_fun')
     for_each(_kids.begin(), _kids.end(), mem_fun(&Flag::disable));
+#endif    
 }
 
 struct AllFlags : public Flag

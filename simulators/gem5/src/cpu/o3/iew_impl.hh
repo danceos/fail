@@ -281,6 +281,8 @@ DefaultIEW<Impl>::regStats()
     wbRate = writebackCount / cpu->numCycles;
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template<class Impl>
 void
 DefaultIEW<Impl>::initStage()
@@ -1668,3 +1670,5 @@ DefaultIEW<Impl>::checkMisprediction(DynInstPtr &inst)
         }
     }
 }
+
+#endif // !__puma (DanceOS)

@@ -41,8 +41,9 @@ ConfigFile::ConfigFile( string filename, string delimiter,
     std::ifstream in( filename.c_str() );
 
     if( !in ) throw file_not_found( filename ); 
-
+#ifndef __puma
     in >> (*this);
+#endif
 }
 
 

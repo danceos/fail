@@ -826,6 +826,8 @@ DefaultFetch<Impl>::squash(const TheISA::PCState &newPC,
     cpu->removeInstsNotInROB(tid);
 }
 
+#ifndef __puma // DanceOS (left operand of `->' not pointer to class object)
+
 template <class Impl>
 void
 DefaultFetch<Impl>::tick()
@@ -1513,6 +1515,8 @@ DefaultFetch<Impl>::lsqCount()
 
     return InvalidThreadID;
 }
+
+#endif // !__puma (DanceOS)
 
 template<class Impl>
 ThreadID

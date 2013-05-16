@@ -102,7 +102,10 @@ string
 EthAddr::string() const
 {
     stringstream stream;
+// DanceOS modification
+#ifndef __puma
     stream << *this;
+#endif
     return stream.str();
 }
 
