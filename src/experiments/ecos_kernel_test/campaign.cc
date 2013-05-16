@@ -20,11 +20,13 @@ using namespace fail;
 #if BASELINE_ASSESSMENT
 const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites-baseline");
 const std::string EcosKernelTestCampaign::dir_images("images-baseline");
+#elif STACKPROTECTION
+const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites-stackprotection");
+const std::string EcosKernelTestCampaign::dir_images("images-stackprotection");
 #else
 const std::string EcosKernelTestCampaign::dir_prerequisites("prerequisites");
 const std::string EcosKernelTestCampaign::dir_images("images");
 #endif
-const std::string EcosKernelTestCampaign::dir_results("results");
 
 bool EcosKernelTestCampaign::writeTraceInfo(unsigned instr_counter, unsigned timeout,
 	unsigned mem1_low, unsigned mem1_high, // < 1M
@@ -134,12 +136,18 @@ std::string EcosKernelTestCampaign::filename_elf(const std::string& variant, con
 typedef std::map<address_t, int> AddrLastaccessMap;
 
 char const *variants[] = {
+#if !STACKPROTECTION
 	"bitmap_vanilla",
 	"bitmap_SUM+DMR",
 	"bitmap_CRC",
 	"bitmap_CRC+DMR",
 	"bitmap_TMR",
-	// "bitmap_Hamming"
+	// "bitmap_Hamming",
+#elif STACKPROTECTION
+	"bitmap_min_stacks_baseline",
+	"bitmap_min_stacks_detection",
+	"bitmap_min_stacks_protected",
+#endif
 	0
 };
 
@@ -152,8 +160,13 @@ char const *benchmarks[] = {
 	/*"clocktruth",*/ "cnt_sem1", "except1", "flag1", /*"kill",*/ "mqueue1", "mutex1",
 	"mutex2", /*"mutex3",*/ "release", "sched1", "sync2", "sync3", "thread0",
 	"thread1", "thread2",
+#elif 0 // clocktruth, mutex3, kill; sync2, bin_sem2; clockcnv
+	"bin_sem0", "bin_sem1", /*"bin_sem2",*/ "bin_sem3", "clock1", "clockcnv",
+	/**"clocktruth",*/ "cnt_sem1", "except1", "flag1", /**"kill",*/ "mqueue1", "mutex1",
+	"mutex2", /**"mutex3",*/ "release", "sched1", /*"sync2",*/ "sync3", "thread0",
+	"thread1", "thread2",
 #elif 0
-	"sync2",
+	"thread1",
 #endif
 	0
 };

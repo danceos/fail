@@ -60,7 +60,7 @@ using namespace fail;
 
 #if PREREQUISITES
 bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
-#if BASELINE_ASSESSMENT
+#if BASELINE_ASSESSMENT || STACKPROTECTION
 	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
 	MemoryMap mm;
 	mm.add(addr_data_start, addr_data_end - addr_data_start);
@@ -246,7 +246,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	}
 
 	unsigned long long estimated_timeout_overflow_check =
-		simulator.getTimerTicks() - time_start + 10000;
+		simulator.getTimerTicks() - time_start + 55000; // 1s/18.2
 	unsigned estimated_timeout =
 		(unsigned) (estimated_timeout_overflow_check * 1000000 / simulator.getTimerTicksPerSecond());
 
@@ -400,6 +400,10 @@ bool EcosKernelTestExperiment::faultInjection() {
 			bit_offset = 8; // enforce loop termination
 		} else if (!param.msg.has_faultmodel() || param.msg.faultmodel() == param.msg.SINGLEBITFLIP) {
 			newdata = data ^ (1 << bit_offset);
+		} else {
+			// Won't happen with current campaign implementation.  Keeps
+			// compiler happy.
+			newdata = data;
 		}
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
