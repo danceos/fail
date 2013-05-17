@@ -182,6 +182,13 @@ Steps to run an experiment with gem5:
  1. Create a directory which will be used as gem5 system directory (which
     will contain the guest system and boot image). Further called $SYSTEM.
  2. Create two directories $SYSTEM/binaries and $SYSTEM/disks.
- 3. Put guestsystem kernel to $SYSTEM/binaries and boot image to $SYSTEM/disks
- 4. Run gem5 with:
+ 3. Put guestsystem kernel to $SYSTEM/binaries and boot image to $SYSTEM/disks.
+    For ARM targets, you can use the "linux-arm-ael.img" image contained in
+      http://www.gem5.org/dist/current/arm/arm-system-2011-08.tar.bz2
+    As an example, the resulting directory structure might look like this
+      boecke@kos:~/$FAIL_DIR/build/gem5sys$ find
+        ./binaries/abo-simple-arm.elf # your experiment binary (!= gem5)
+        ./disks/linux-arm-ael.img     # the ARM image (FIXME: whats this exactly?)
+        ./disks/boot.arm              # the ARM bootloader (FIXME: dito)
+ 4. Run gem5 in  $FAIL_DIR/simulators/gem5/  with:
       $ M5_PATH=$SYSTEM build/ARM/gem5.debug configs/example/fs.py --bare-metal --kernel kernelname

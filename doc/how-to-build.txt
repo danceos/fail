@@ -188,38 +188,49 @@ IPS: 66124283 average = 66964789
 Building gem5:
 **********************************************************************
 
-Fail* configuration:
+For the first time (incl. selecting an experiment):
 ------------------------------------------------------------
- - BUILD_GEM5 ON
- - BUILD_ARM ON
- - all configuration options specific for other simulators OFF
- - Release or Debug choice must match gem5 in the following
+ 1. Change to the Fail* directory (expects to be in ${FAIL_DIR}) and
+    create a new build directory.
+      $ cd ${FAIL_DIR}; mkdir build; cd build
+ 3. Start the configuration by typing
+      $ cmake ..
+ 4. Modify the generated configuration according to your needs using
+      $ ccmake .
+    At least, you should set an experiment and turn on the following
+    flags: BUILD_GEM5 = BUILD_ARM = ON. Additionally, all config
+    options specific for other simulator should be turned OFF. Finally,
+    edit ${FAIL_DIR}/src/core/sal/gem5/SConscript: search for a line
+    with "gStaticLibs" and ensure that this line lists all the various
+    target you want to include in the binary (especially your experiment
+    target and perhabs an additional plugin), i.e. change
+    -lfail-arch-test to -lfail-[EXPERIMENTNAME|PLUGINNAME].
+ 5. Typing
+      $ make   (or  nice make -jN)
+    will start the build process of Fail* and gem5. This automatically
+    builds the debug variant for ARM targets. (Note that this build will
+    automatically include the ${FAIL_DIR}/src/core/sal/gem5 as an
+    "EXTRAS" feature, see gem5/scons build system documentation for
+    further information. That means, adding another directory containing
+    gem5-specific code requires to modify the gem5 build command, see
+    ${FAIL_DIR}/cmake/gem5.cmake.) The build process for gem5 currently
+    uses 9 cores for a parallel build regardless whether you specify a
+    different core count in the -jN option. This and various other stuff
+    (e.g. a release build, i.e. using "gem5.fast" instead of "gem5.debug")
+    can be changed in the aforementioned gem5.cmake file.
 
-For the first time:
+After changes to Fail*/gem5 code (incl. aspect headers):
 ------------------------------------------------------------
- 1. Change to the gem5 simulator directory (expects to be in ${FAIL_DIR}):
-      $ cd simulators/gem5
- 2. Build gem5 using the commands below until it fails finding the fail-libs
- 3. Build fail
- 4. Select an experiment (see below)
- 5. Build gem5 again. THe fail-libs should be found now.
-
-Optimized build:
-------------------------------------------------------------
-      $ cd ../simulator/gem5
-      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.fast
-(add -jN for a parallel build)
-
-Debug build:
-------------------------------------------------------------
-      $ cd ../simulator/gem5
-      $ scons EXTRAS=../../src/core/sal/gem5 build/ARM/gem5.debug
-(add -jN for a parallel build)
-
-Selecting an experiment:
-------------------------------------------------------------
- 1. Edit ../src/core/sal/gem5/SConscript
-    In line starting with (gStaticLibs = ...) change -lfail-arch-test to
-    -lfail-EXPERIMENTNAME
-
+ 1. Clean the current build by typing 
+      $ make gem5-allclean
+    (in your build dir ${FAIL_DIR}/build). This cleans the current
+    Fail* and gem5 build directories. Note that "make clean" only cleans
+    the Fail* build directory. Additionally note, that changing the
+    specified experiment target requires editing
+    ${FAIL_DIR}/src/core/sal/gem5/SConscript (see above). Furthermore, all
+    remaining CMake remnants should be deleted:
+      $ find -name CMakeCache.txt | xargs rm
+ 2. Rebuild by typing
+      $ make   (or  nice make -jN)
+    (as in the last step of the previous section).
 
