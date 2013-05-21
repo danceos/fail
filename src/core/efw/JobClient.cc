@@ -30,28 +30,29 @@ JobClient::~JobClient()
 
 bool JobClient::connectToServer()
 {
-	// Connect to server
-	struct sockaddr_in serv_addr;
-	m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(m_sockfd < 0) {
-		perror("[Client@socket()]");
-		// TODO: Log-level?
-		exit(0);
-	}
-
-	/* Enable address reuse */
-	int on = 1;
-	setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
-
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
-	serv_addr.sin_port = htons(m_server_port);
-
 	int retries = CLIENT_RETRY_COUNT;
 	while (true) {
+		// Connect to server
+		struct sockaddr_in serv_addr;
+		m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (m_sockfd < 0) {
+			perror("[Client@socket()]");
+			// TODO: Log-level?
+			exit(0);
+		}
+
+		/* Enable address reuse */
+		int on = 1;
+		setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+
+		memset(&serv_addr, 0, sizeof(serv_addr));
+		serv_addr.sin_family = AF_INET;
+		memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
+		serv_addr.sin_port = htons(m_server_port);
+
 		if (connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
 			perror("[Client@connect()]");
+			close(m_sockfd);
 			// TODO: Log-level?
 			if (retries > 0) {
 				// Wait CLIENT_RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
