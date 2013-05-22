@@ -1,12 +1,9 @@
 #include "Gem5Controller.hpp"
+//#include "Gem5Connector.hpp"
 
 #include "../Listener.hpp"
 
 #include "Gem5Wrapper.hpp"
-
-#include "base/trace.hh"
-#include "debug/FailState.hh"
-#include "sim/root.hh"
 
 namespace fail {
 
@@ -37,23 +34,16 @@ Gem5Controller::~Gem5Controller()
 	delete m_Mem;
 }
 
-void Gem5Controller::save(const std::string &path)
+bool Gem5Controller::save(const std::string &path)
 {
-	DPRINTF(FailState, "Saving state to %s.\n", path);
-	
-	Root* root = Root::root();
-	root->Serializable::serializeAll(path);
+//	connector.save(path); // FIXME: not working?!
 
 	return true;
 }
 
 void Gem5Controller::restore(const std::string &path)
 {
-	// FIXME: not working currently
-	Root* root = Root::root();
-	Checkpoint cp(path);
-
-	root->loadState(&cp);
+//	connector.restore(path); // FIXME: not working?!
 }
 
 // TODO: Implement reboot
