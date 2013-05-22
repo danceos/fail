@@ -41,7 +41,8 @@ void Gem5Controller::save(const std::string &path)
 {
 	DPRINTF(FailState, "Saving state to %s.\n", path);
 	
-	Serializable::serializeAll(path);
+	Root* root = Root::root();
+	root->Serializable::serializeAll(path);
 
 	return true;
 }
