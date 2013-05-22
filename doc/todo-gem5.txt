@@ -1,4 +1,10 @@
+ToDo:
+
 - funktionsfähiges save/restore implementieren (rh)
 - Überarbeitung der Breakpoint-Listener (ab)
-- Dokumentation korrigieren und überarbeiten
 - fs.py so anpassen, dass kein Startimage nötig ist
+
+
+Erledigt:
+
+- Dokumentation korrigieren und überarbeiten (ab)
