@@ -3,13 +3,13 @@ Import('*')
 if env['TARGET_ISA'] == 'no':
     Return()
 
-env.Prepend(CPPPATH=Dir('../../../../../src/core/'))
-env.Prepend(CPPPATH=Dir('../../../../../build/src/core/'))
+env.Prepend(CPPPATH=Dir('${PROJECT_SOURCE_DIR}/src/core/'))
+env.Prepend(CPPPATH=Dir('${PROJECT_BINARY_DIR}/src/core/'))
 
 env.Append(CXXFLAGS = '-Wno-deprecated')
 
-env.Prepend(LIBPATH=Dir('../../../../../build/lib/'))
-gStaticLibs = ['-lfail-sal', '-lfail-arch-test', '-lfail-comm', '-lfail-cpn', '-lfail-efw', '-lfail-util', '-lpcl', '-lprotobuf']
+env.Prepend(LIBPATH=Dir('${LIBRARY_OUTPUT_PATH}'))
+gStaticLibs = [${additional_libs} '-lfail-sal',  '-lfail-comm', '-lfail-cpn', '-lfail-efw', '-lfail-util', '-lpcl', '-lprotobuf', '-liberty']
 
 if (len(gStaticLibs)>0):
 	linkFlags = ['-Wl,--start-group']
@@ -25,4 +25,4 @@ if (len(gStaticLibs)>0):
 DebugFlag('FailState')
 CompoundFlag('Fail', ['FailState'])
 
-Source('Gem5Wrapper.cc')
+Source(${GEM5_SAL_SRCS})
