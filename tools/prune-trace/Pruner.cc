@@ -59,7 +59,7 @@ bool Pruner::create_database() {
 	    "  data_address int(10) unsigned NOT NULL,"
 	    "  fspmethod_id int(11) NOT NULL,"
 	    "  PRIMARY KEY (id),"
-	    "  KEY fspmethod_id (fspmethod_id,variant_id,instr2,data_address)"
+	    "  KEY fspmethod_id (fspmethod_id,variant_id,data_address,instr2)"
 	    ") engine=MyISAM ";
 	bool success = (bool) db->query(create_statement.c_str());
 	if (!success) return false;
@@ -70,7 +70,7 @@ bool Pruner::create_database() {
 	    "  data_address    int(10) unsigned NOT NULL,"
 	    "  fspmethod_id    int(11) NOT NULL,"
 	    "  pilot_id        int(11) NOT NULL,"
-	    "  PRIMARY KEY (variant_id, instr2, data_address, fspmethod_id, pilot_id),"
+	    "  PRIMARY KEY (variant_id, data_address, instr2, fspmethod_id, pilot_id),"
 	    "  KEY joinresults (pilot_id,fspmethod_id)) engine=MyISAM";
 
 	return db->query(create_statement.c_str());
