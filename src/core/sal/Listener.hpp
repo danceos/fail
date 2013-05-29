@@ -13,10 +13,15 @@
 #include "perf/BufferInterface.hpp"
 #include "util/ElfReader.hpp"
 
+#include "config/FailConfig.hpp"
 
 namespace fail {
 
 class ExperimentFlow;
+
+// Warning: Inheriting from these listeners breaks the (static) dependency check for
+// derived classes. One should therefore deploy a check for derived classes in
+// the same way.
 
 /**
  * \class BaseListener
@@ -199,6 +204,14 @@ public:
 	virtual bool isMatching(const BPEvent* pEv) const = 0;
 };
 
+#if defined CONFIG_EVENT_BREAKPOINTS
+  #define BP_CTOR_SCOPE public
+#else
+  #define BP_CTOR_SCOPE protected
+  // This prevents an experiment from instantiating an object of BPSingleListener
+  // without having enabled the appropriate configuration flag, i.e.,
+  // CONFIG_EVENT_BREAKPOINTS = ON.
+#endif
 /**
  * \class BPSingleListener
  * A Breakpoint listener to observe specific instruction pointers.
@@ -206,7 +219,7 @@ public:
 class BPSingleListener : public BPListener {
 protected:
 	address_t m_WatchInstrPtr;
-public:
+BP_CTOR_SCOPE:
 	/**
 	 * Creates a new breakpoint listener.
 	 * @param ip the instruction pointer of the breakpoint. If the control
@@ -218,6 +231,7 @@ public:
 	 */
 	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR, ConcreteCPU* cpu = NULL)
 		: BPListener(address_space, cpu), m_WatchInstrPtr(ip) { }
+public: // reset scope in order to allow compiling the various other Fail* sources
 	/**
 	 * Returns the instruction pointer this listener waits for.
 	 * @return the instruction pointer specified in the constructor or by
@@ -237,6 +251,11 @@ public:
 	bool isMatching(const BPEvent* pEv) const;
 };
 
+#if defined CONFIG_EVENT_BREAKPOINTS_RANGE
+  #define BPRANGE_CTOR_SCOPE public
+#else
+  #define BPRANGE_CTOR_SCOPE protected
+#endif
 /**
  * \class BPRangeListener
  * A listener type to observe ranges of instruction pointers.
@@ -245,7 +264,7 @@ class BPRangeListener : public BPListener {
 protected:
 	address_t m_WatchStartAddr;
 	address_t m_WatchEndAddr;
-public:
+BPRANGE_CTOR_SCOPE:
 	/**
 	 * Creates a new breakpoint-range listener.  The range's ends are both
 	 * inclusive, i.e. an address matches if start <= addr <= end.
@@ -256,6 +275,7 @@ public:
 					ConcreteCPU* cpu = NULL)
 		: BPListener(address_space, cpu), m_WatchStartAddr(start), m_WatchEndAddr(end)
 	{ }
+public:
 	/**
 	 * Returns the instruction pointer watch range of this listener.
 	 * @return the listener's range
@@ -279,6 +299,14 @@ public:
 	bool isMatching(const BPEvent* pEv) const;
 };
 
+#if defined CONFIG_EVENT_MEMREAD || defined CONFIG_EVENT_MEMWRITE
+  #define WP_CTOR_SCOPE public
+#else
+  #define WP_CTOR_SCOPE protected
+  // Note: "private" works only in case of a "final class" (a leaf class) because when using
+  // "private", the derived classes wouldn't compile anymore (even if they are not used anyway).
+  // Clearly, MemAccessListener is *not* a leaf class.
+#endif
 /**
  * \class MemAccessListener
  * Observes memory read/write accesses.
@@ -295,7 +323,7 @@ protected:
 	 */
 	MemAccessEvent::access_type_t m_WatchType;
 	MemAccessEvent m_Data;
-public:
+WP_CTOR_SCOPE:
 	MemAccessListener(MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchWidth(1), m_WatchType(type) { }
@@ -307,7 +335,7 @@ public:
 	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_WatchAddr(symbol.getAddress()), m_WatchWidth(symbol.getSize()), m_WatchType(type) { }
-
+public:
 	/**
 	 * Returns the physical memory address to be observed.
 	 */
@@ -384,30 +412,45 @@ public:
 	bool isMatching(const MemAccessEvent* pEv) const;
 };
 
+#ifdef CONFIG_EVENT_MEMREAD
+  #define WPREAD_CTOR_SCOPE public
+#else
+  #define WPREAD_CTOR_SCOPE protected
+#endif
 /**
  * \class MemReadListener
  * Observes memory read accesses.
  */
 class MemReadListener : public MemAccessListener {
-public:
+WPREAD_CTOR_SCOPE:
 	MemReadListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
 	MemReadListener(address_t addr, ConcreteCPU* cpu = NULL)
 		: MemAccessListener(addr, MemAccessEvent::MEM_READ, cpu) { }
 };
 
+#ifdef CONFIG_EVENT_MEMWRITE
+  #define WPWRITE_CTOR_SCOPE public
+#else
+  #define WPWRITE_CTOR_SCOPE protected
+#endif
 /**
  * \class MemWriteListener
  * Observes memory write accesses.
  */
 class MemWriteListener : public MemAccessListener {
-public:
+WPWRITE_CTOR_SCOPE:
 	MemWriteListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
 	MemWriteListener(address_t addr, ConcreteCPU* cpu = NULL)
 		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE, cpu) { }
 };
 
+#if defined CONFIG_EVENT_INTERRUPT || defined CONFIG_EVENT_TRAP
+  #define TROUBLE_CTOR_SCOPE public
+#else
+  #define TROUBLE_CTOR_SCOPE protected
+#endif
 /**
  * \class TroubleListener
  * Observes interrupt/trap activties.
@@ -420,10 +463,11 @@ protected:
 	 * or ANY_INTERRUPT/ANY_TRAP.
 	 */
 	std::vector<unsigned> m_WatchNumbers;
-public:
+TROUBLE_CTOR_SCOPE:
 	TroubleListener(ConcreteCPU* cpu = NULL) : BaseListener(cpu) { }
 	TroubleListener(unsigned troubleNumber, ConcreteCPU* cpu = NULL) : BaseListener(cpu)
 	{ addWatchNumber(troubleNumber); }
+public:
 	/**
 	 * Add an interrupt/trap-number which should be observed.
 	 * @param troubleNumber number of an interrupt or trap
@@ -468,6 +512,11 @@ public:
 	unsigned getTriggerNumber() const { return m_Data.getTriggerNumber(); }
 };
 
+#ifdef CONFIG_EVENT_INTERRUPT
+  #define INT_CTOR_SCOPE public
+#else
+  #define INT_CTOR_SCOPE protected
+#endif
 /**
  * \class InterruptListener
  * Observes interrupts of the guest system.
@@ -475,10 +524,11 @@ public:
 class InterruptListener : public TroubleListener {
 protected:
 	InterruptEvent m_Data; //!< event related data, e.g. NMI flag
-public:
+INT_CTOR_SCOPE:
 	InterruptListener(ConcreteCPU* cpu = NULL) : TroubleListener(cpu) { }
 	InterruptListener(unsigned interrupt, ConcreteCPU* cpu = NULL) : TroubleListener(cpu)
 	{ addWatchNumber(interrupt); }
+public:
 	/**
 	 * Returns \c true if the interrupt is non maskable, \c false otherwise.
 	 */
@@ -489,17 +539,27 @@ public:
 	void setNMI(bool enabled) { m_Data.setNMI(enabled); }
 };
 
+#ifdef CONFIG_EVENT_TRAP
+  #define TRAP_CTOR_SCOPE public
+#else
+  #define TRAP_CTOR_SCOPE protected
+#endif
 /**
  * \class TrapListener
  * Observes traps of the guest system.
  */
 class TrapListener : public TroubleListener {
-public:
+TRAP_CTOR_SCOPE:
 	TrapListener(ConcreteCPU* cpu = NULL) : TroubleListener(cpu) { }
 	TrapListener(unsigned trap, ConcreteCPU* cpu = NULL) : TroubleListener(cpu)
 	{ addWatchNumber(trap); }
 };
 
+#ifdef CONFIG_EVENT_GUESTSYS
+  #define GUESTSYS_CTOR_SCOPE public
+#else
+  #define GUESTSYS_CTOR_SCOPE protected
+#endif
 /**
  * \class GuestListener
  * Used to receive data from the guest system.
@@ -510,8 +570,9 @@ public:
 class GuestListener : public BaseListener {
 protected:
 	GuestEvent m_Data;
-public:
+GUESTSYS_CTOR_SCOPE:
 	GuestListener() { }
+public:
 	/**
 	 * Returns the data, transmitted by the guest system.
 	 */
@@ -530,6 +591,11 @@ public:
 	void setPort(unsigned port) { m_Data.setPort(port); }
 };
 
+#ifdef CONFIG_EVENT_IOPORT
+  #define IOPORT_CTOR_SCOPE public
+#else
+  #define IOPORT_CTOR_SCOPE protected
+#endif
 /**
  * \class IOPortListener
  * Observes I/O access on architectures with a separate I/O access mechanism (e.g. IA-32)
@@ -539,7 +605,7 @@ protected:
 	IOPortEvent m_Data;
 	unsigned m_Port;
 	bool m_Out;
-public:
+IOPORT_CTOR_SCOPE:
 	/**
 	 * Initialises an IOPortListener
 	 *
@@ -550,6 +616,7 @@ public:
 	 */
 	IOPortListener(unsigned port, bool out, ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_Port(port), m_Out(out) { }
+public:
 	/**
 	 * Returns the data sent to the specified port
 	 */
@@ -593,6 +660,11 @@ public:
 	void setOut(bool out) { m_Out = out; }
 };
 
+#ifdef CONFIG_EVENT_JUMP
+  #define JUMP_CTOR_SCOPE public
+#else
+  #define JUMP_CTOR_SCOPE protected
+#endif
 /**
  * \class JumpListener
  * JumpListeners are used to observe conditional jumps (if...else if...else).
@@ -600,7 +672,7 @@ public:
 class JumpListener : public BaseListener {
 protected:
 	JumpEvent m_Data;
-public:
+JUMP_CTOR_SCOPE:
 	/**
 	 * Constructs a new listener object.
 	 * @param opcode the opcode of the jump-instruction to be observed
@@ -608,6 +680,7 @@ public:
 	 */
 	JumpListener(unsigned opcode = ANY_INSTR, ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_Data(opcode) { }
+public:
 	/**
 	 * Retrieves the opcode of the jump-instruction.
 	 */
