@@ -1,4 +1,5 @@
 /**
+ * \file CampaignManager.hpp
  * \brief The manager for an entire campaign
  */
 

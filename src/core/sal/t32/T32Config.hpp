@@ -1,4 +1,5 @@
 /**
+ * \file T32Config.hpp
  * \brief Type definitions and configuration settings for the
  *        T32 target backend.
  */

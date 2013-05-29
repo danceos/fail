@@ -1,4 +1,5 @@
 /**
+ * \file Gem5Config.hpp
  * \brief Type definitions and configuration settings for
  *        the gem5 simulator.
  */

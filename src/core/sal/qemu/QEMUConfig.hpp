@@ -1,4 +1,5 @@
 /**
+ * \file QEMUConfig.hpp
  * \brief Type definitions and configuration settings for the
  * qemu-system-x86_64 target backend.
  */

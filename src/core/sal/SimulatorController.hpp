@@ -11,6 +11,8 @@
 #include "SALConfig.hpp"
 #include "ConcreteCPU.hpp"
 
+
+/// All classes, functions, constants, etc. are encapsulated in the namespace "fail".
 namespace fail {
 
 // Incomplete types suffice here:

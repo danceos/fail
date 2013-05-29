@@ -1,4 +1,5 @@
 /**
+ * \file Minion.hpp
  * \brief The representation of a minion.
  */
 

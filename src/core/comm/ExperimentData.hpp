@@ -1,8 +1,3 @@
-/**
- * \brief This is the base class for all user-defined data types for
- *        experiment parameter and results.
- */
-
 #ifndef __EXPERIMENT_DATA_HPP__
   #define __EXPERIMENT_DATA_HPP__
 

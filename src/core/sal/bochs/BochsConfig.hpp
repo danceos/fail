@@ -1,4 +1,5 @@
 /**
+ * \file BochsConfig.hpp
  * \brief Type definitions and configuration settings for
  *        the Bochs simulator.
  */
