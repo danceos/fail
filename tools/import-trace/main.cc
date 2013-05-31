@@ -84,6 +84,10 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle MEMORYMAP =
 		cmd.addOption("m", "memorymap", Arg::Required,
 			"-m/--memorymap \tMemory map to intersect with trace (may be used more than once; default: UNSET)");
+	CommandLine::option_handle NO_DELETE =
+		cmd.addOption("", "no-delete", Arg::None,
+			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
+
 
 	// variant 1: care (synthetic Rs)
 	// variant 2: don't care (synthetic Ws)
@@ -200,7 +204,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	if (!importer->clear_database()) {
+	if (cmd[NO_DELETE].count() == 0 && !importer->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
