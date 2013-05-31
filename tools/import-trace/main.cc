@@ -1,5 +1,3 @@
-#include "util/optionparser/optionparser.h"
-#include "util/optionparser/optionparser_ext.hpp"
 #include "util/CommandLine.hpp"
 #include "util/Database.hpp"
 #include "util/ElfReader.hpp"
@@ -8,8 +6,11 @@
 #include "util/Logger.hpp"
 #include <fstream>
 #include <string>
-
 #include "MemoryImporter.hpp"
+
+#ifdef BUILD_LLVM_DISASSEMBLER
+#include "InstructionImporter.hpp"
+#endif
 
 
 using namespace fail;
@@ -118,9 +119,14 @@ int main(int argc, char *argv[]) {
 
 	if (cmd[IMPORTER].count() > 0) {
 		std::string imp(cmd[IMPORTER].first()->arg);
-		if (imp == "BasicImporter" || imp == "MemoryImporter") {
+		if (imp == "BasicImporter" || imp == "MemoryImporter" || imp == "memory" || imp == "mem") {
 			LOG << "Using MemoryImporter" << endl;
 			importer = new MemoryImporter();
+#ifdef BUILD_LLVM_DISASSEMBLER
+		} else if (imp == "InstructionImporter" || imp == "code") {
+			LOG << "Using InstructionImporter" << endl;
+			importer = new InstructionImporter();
+#endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
@@ -160,7 +166,7 @@ int main(int argc, char *argv[]) {
 	if (cmd[ELF_FILE].count() > 0) {
 		elf_file = new ElfReader(cmd[ELF_FILE].first()->arg);
 	}
-	importer->set_elf_file(elf_file);
+	importer->set_elf(elf_file);
 
 	if (cmd[MEMORYMAP].count() > 0) {
 		memorymap = new MemoryMap();

@@ -78,7 +78,8 @@ public:
 								 const Trace_Event &ev) = 0;
 
 
-	void set_elf_file(fail::ElfReader *elf) { m_elf = elf; }
+	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
+
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
