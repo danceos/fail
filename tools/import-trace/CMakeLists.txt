@@ -1,7 +1,6 @@
 set(SRCS
   Importer.cc
   BasicImporter.cc
-  DCiAOKernelImporter.cc
 )
 
 add_executable(import-trace main.cc ${SRCS})

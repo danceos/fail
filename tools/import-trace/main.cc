@@ -10,7 +10,6 @@
 #include <string>
 
 #include "BasicImporter.hpp"
-#include "DCiAOKernelImporter.hpp"
 
 
 using namespace fail;
@@ -118,9 +117,6 @@ int main(int argc, char *argv[]) {
 		if (imp == "BasicImporter") {
 			LOG << "Using BasicImporter" << endl;
 			importer = new BasicImporter();
-		} else if (imp == "DCiAOKernelImporter") {
-			LOG << "Using DCiAOKernelImporter" << endl;
-			importer = new DCiAOKernelImporter();
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
