@@ -5,6 +5,7 @@ if("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
   # (makes cmake 2.8.4 and newer)
   cmake_policy(SET CMP0017 NEW)
 endif("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
+ENABLE_TESTING()
 
 PROJECT(Fail*)
 
@@ -19,6 +20,12 @@ SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 ## (The autoconf'd Bochs instance is placed in the auto-configured path,
 ## as we still just call Bochs' Makefile's make install)
 
+# where will executable tests be written ?
+IF (EXECUTABLE_OUTPUT_PATH)
+    SET (CXX_TEST_PATH ${EXECUTABLE_OUTPUT_PATH})
+ELSE (EXECUTABLE_OUTPUT_PATH)
+    SET (CXX_TEST_PATH .)
+ENDIF (EXECUTABLE_OUTPUT_PATH)
 
 #### Setup search path for custom cmake scipts  ####
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

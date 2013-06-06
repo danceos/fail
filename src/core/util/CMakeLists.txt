@@ -62,3 +62,9 @@ mark_as_advanced(FAIL_OBJDUMP)
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
 target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} )
+
+option(BUILD_LLVM_DISASSEMBLER "Build the llvm based disassembler (exactly llvm 3.1 required)" OFF)
+if (BUILD_LLVM_DISASSEMBLER)
+  add_subdirectory(llvmdisassembler)
+endif (BUILD_LLVM_DISASSEMBLER)
+

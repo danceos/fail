@@ -10,6 +10,8 @@
 #cmakedefine BUILD_X86
 #cmakedefine BUILD_ARM
 
+#cmakedefine BUILD_LLVM_DISASSEMBLER
+
 #define ARCH_TOOL_PREFIX "@ARCH_TOOL_PREFIX@"
 
 #endif // __VARIANT_CONFIG_HPP__
