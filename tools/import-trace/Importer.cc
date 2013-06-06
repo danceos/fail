@@ -18,6 +18,24 @@ bool Importer::init(const std::string &variant, const std::string &benchmark, Da
 	return true;
 }
 
+bool Importer::create_database() {
+	std::string create_statement = "CREATE TABLE IF NOT EXISTS trace ("
+		"	variant_id int(11) NOT NULL,"
+		"	instr1 int(10) unsigned NOT NULL,"
+		"	instr1_absolute int(10) unsigned DEFAULT NULL,"
+		"	instr2 int(10) unsigned NOT NULL,"
+		"	instr2_absolute int(10) unsigned DEFAULT NULL,"
+		"	time1 bigint(10) unsigned NOT NULL,"
+		"	time2 bigint(10) unsigned NOT NULL,"
+		"	data_address int(10) unsigned NOT NULL,"
+		"	width tinyint(3) unsigned NOT NULL,"
+		"	accesstype enum('R','W') NOT NULL,"
+		"	PRIMARY KEY (variant_id,instr2,data_address)"
+		") engine=MyISAM ";
+	return db->query(create_statement.c_str());
+}
+
+
 bool Importer::clear_database() {
 	std::stringstream ss;
 	ss << "DELETE FROM trace WHERE variant_id = " << m_variant_id;
@@ -28,30 +46,24 @@ bool Importer::clear_database() {
 }
 
 bool Importer::copy_to_database(fail::ProtoIStream &ps) {
-	unsigned row_count = 0, row_count_fake = 0;
-	// map for keeping one "open" EC for every address
-	// (maps injection data address =>
-	// dyn. instruction count / time information for equivalence class left margin)
-	AddrLastaccessMap open_ecs;
-
-	// time the trace started/ended
 	// For now we just use the min/max occuring timestamp; for "sparse" traces
 	// (e.g., only mem accesses, only a subset of the address space) it might
 	// be a good idea to store this explicitly in the trace file, though.
-	simtime_t time_trace_start = 0, curtime = 0;
+	simtime_t curtime = 0;
 
 	// instruction counter within trace
 	instruction_count_t instr = 0;
 
+	// the currently processed event
 	Trace_Event ev;
 
 	while (ps.getNext(&ev)) {
 		if (ev.has_time_delta()) {
 			// record trace start
 			// it suffices to do this once, the events come in sorted
-			if (time_trace_start == 0) {
-				time_trace_start = ev.time_delta();
-				LOG << "trace start time: " << time_trace_start << std::endl;
+			if (m_time_trace_start == 0) {
+				m_time_trace_start = ev.time_delta();
+				LOG << "trace start time: " << m_time_trace_start << std::endl;
 			}
 			// curtime also always holds the max time, provided we only get
 			// nonnegative deltas
@@ -67,126 +79,43 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 				LOG << "error: instruction_count_t overflow, aborting at instr=" << instr << std::endl;
 				return false;
 			}
-			instr++;
-			continue;
-		}
-
-		address_t from = ev.memaddr(), to = ev.memaddr() + ev.width();
-		// Iterate over all accessed bytes
-		// FIXME Keep complete trace information (access width)?
-		//   advantages: may be used for pruning strategies, complete value would be visible; less DB entries
-		//   disadvantages: may need splitting when width varies, lots of special case handling
-		//   Probably implement this in a separate importer when necessary.
-		for (address_t data_address = from; data_address < to; ++data_address) {
-			// skip events outside a possibly supplied memory map
-			if (m_mm && !m_mm->isMatching(data_address)) {
-				continue;
-			}
-			margin_info_t right_margin;
-			margin_info_t left_margin = open_ecs[data_address];
-			// defaulting to 0 is not such a good idea, memory reads at the
-			// beginning of the trace would get an unnaturally high weight:
-			if (left_margin.time == 0) {
-				left_margin.time = time_trace_start;
-			}
-			right_margin.time = curtime;
-			right_margin.dyninstr = instr; // !< The current instruction
-			right_margin.ip = ev.ip();
-
-			// skip zero-sized intervals: these can occur when an instruction
-			// accesses a memory location more than once (e.g., INC, CMPXCHG)
-			// FIXME: look at timing instead?
-			if (left_margin.dyninstr > right_margin.dyninstr) {
-				continue;
-			}
-
-			ev.set_width(1);
-			ev.set_memaddr(data_address);
-
-			// we now have an interval-terminating R/W event to the memaddr
-			// we're currently looking at; the EC is defined by
-			// data_address, dynamic instruction start/end, the absolute PC at
-			// the end, and time start/end
-			if (!add_trace_event(left_margin, right_margin, ev)) {
-				LOG << "add_trace_event failed" << std::endl;
+			/* Another instruction was executed, handle it in the
+			   subclass */
+			if (!handle_ip_event(curtime, instr, ev)) {
 				return false;
 			}
-			row_count ++;
-			if (row_count % 10000 == 0) {
-				LOG << "Inserted " << row_count << " trace events into the database" << std::endl;
-			}
 
-			// next interval must start at next instruction; the aforementioned
-			// skipping mechanism wouldn't work otherwise
-			open_ecs[data_address].dyninstr = instr + 1;
-			open_ecs[data_address].time     = curtime  + 1;
-			// FIXME: This should be the next IP, not the current, or?
-			open_ecs[data_address].ip       = ev.ip();
-		}
-	}
-
-	// Create an open EC for every entry in the memory map we didn't encounter
-	// in the trace.  If we don't, non-accessed rows in the fault space will be
-	// missing later (e.g., unused parts of the stack).  Without a memory map,
-	// we just don't know the extents of our fault space; just guessing by
-	// using the minimum and maximum addresses is not a good idea, we might
-	// have large holes in the fault space.
-	if (m_mm) {
-		for (MemoryMap::iterator it = m_mm->begin(); it != m_mm->end(); ++it) {
-			if (open_ecs.count(*it) == 0) {
-				open_ecs[*it].dyninstr = 0;
-				open_ecs[*it].time = time_trace_start;
+			instr++;
+		} else {
+			if (!handle_mem_event(curtime, instr, ev)) {
+				return false;
 			}
 		}
 	}
 
-	// Close all open intervals (right end of the fault-space) with fake trace
-	// event.  This ensures we have a rectangular fault space (important for,
-	// e.g., calculating the total SDC rate), and unknown memory accesses after
-	// the end of the trace are properly taken into account: Either with a
-	// "don't care" (a synthetic memory write at the right margin), or a "care"
-	// (synthetic read), the latter resulting in more experiments to be done.
-	for (AddrLastaccessMap::iterator lastuse_it = open_ecs.begin();
-		lastuse_it != open_ecs.end(); ++lastuse_it) {
+	// Why -1?	In most cases it does not make sense to inject before the
+	// very last instruction, as we won't execute it anymore.  This *only*
+	// makes sense if we also inject into parts of the result vector.  This
+	// is not the case in this experiment, and with -1 we'll get a result
+	// comparable to the non-pruned campaign.
+	m_last_time = curtime;
+	m_last_instr = instr - 1; // - 1?
+	m_last_ip = ev.ip();      // The last event in the log
 
-		Trace_Event fake_ev;
-		fake_ev.set_memaddr(lastuse_it->first);
-		fake_ev.set_width(1);
-		fake_ev.set_accesstype(m_faultspace_rightmargin == 'R' ? fake_ev.READ : fake_ev.WRITE);
+	/* Signal that the trace was completely imported */
+	LOG << "trace duration: " << (curtime - m_time_trace_start) << " ticks" << std::endl;
+	LOG << "Inserted " << m_row_count << " real trace events into the database" << std::endl;
 
-		margin_info_t left_margin, right_margin;
-		left_margin = lastuse_it->second;
 
-		// Why -1?	In most cases it does not make sense to inject before the
-		// very last instruction, as we won't execute it anymore.  This *only*
-		// makes sense if we also inject into parts of the result vector.  This
-		// is not the case in this experiment, and with -1 we'll get a result
-		// comparable to the non-pruned campaign.
-		right_margin.dyninstr = instr - 1;
-		right_margin.time     = curtime; // -1?
-		right_margin.ip       = ev.ip(); // The last event in the log.
-// #else
-//		// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
-//		FIXME probably implement this with cmdline parameter FAULTSPACE_CUTOFF
-//		right_margin.dyninstr = instr_rightmost;
-// #endif
+	/* All addresses that were specified in the memory map get an open
+	   EC */
+	open_unused_ec_intervals();
 
-		// zero-sized?	skip.
-		// FIXME: look at timing instead?
-		if (left_margin.dyninstr > right_margin.dyninstr) {
-			continue;
-		}
-
-		if (!add_trace_event(left_margin, right_margin, fake_ev, true)) {
-			LOG << "add_trace_event failed" << std::endl;
-			return false;
-		}
-		++row_count_fake;
+	/* Close all open EC intervals */
+	if (!close_ec_intervals()) {
+		return false;
 	}
 
-	LOG << "trace duration: " << (curtime - time_trace_start) << " ticks" << std::endl;
-	LOG << "Inserted " << row_count << " trace events (+" << row_count_fake
-	    << " fake events) into the database" << std::endl;
 
 	// sanity checks
 	if (m_sanitychecks) {
@@ -285,5 +214,135 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 		}
 	}
 
+	return true;
+}
+
+bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
+							   access_info_t &access, bool is_fake) {
+	static MYSQL_STMT *stmt = 0;
+	if (!stmt) {
+		std::string sql("INSERT INTO trace (variant_id, instr1, instr1_absolute, instr2, instr2_absolute, time1, time2, data_address, width,"
+		                "					accesstype)"
+		                "VALUES (?,?,?,?,?,?,?,?,?,?)");
+		stmt = mysql_stmt_init(db->getHandle());
+		if (mysql_stmt_prepare(stmt, sql.c_str(), sql.length())) {
+			LOG << "query '" << sql << "' failed: " << mysql_error(db->getHandle()) << std::endl;
+			return false;
+		}
+	}
+
+	MYSQL_BIND bind[10];
+	my_bool is_null = is_fake;
+	my_bool null = true;
+	long unsigned accesstype_len = 1;
+
+	// LOG << m_variant_id  << "-" << ":" << begin.dyninstr << ":" << end.dyninstr << "-" << data_address << " " << accesstype << std::endl;
+
+
+	memset(bind, 0, sizeof(bind));
+	for (unsigned i = 0; i < sizeof(bind)/sizeof(*bind); ++i) {
+		bind[i].buffer_type = MYSQL_TYPE_LONG;
+		bind[i].is_unsigned = 1;
+		switch (i) {
+		case 0: bind[i].buffer = &m_variant_id; break;
+		case 1: bind[i].buffer = &begin.dyninstr; break;
+		case 2: bind[i].buffer = &begin.ip;
+			bind[i].is_null = begin.ip == 0 ? &null : &is_null;
+			break;
+		case 3: bind[i].buffer = &end.dyninstr; break;
+		case 4: bind[i].buffer = &end.ip;
+			bind[i].is_null = &is_null; break;
+		case 5: bind[i].buffer = &begin.time;
+			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
+			break;
+		case 6: bind[i].buffer = &end.time;
+			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
+			break;
+		case 7: bind[i].buffer = &access.data_address; break;
+		case 8: bind[i].buffer = &access.data_width; break;
+		case 9: bind[i].buffer = &access.access_type;
+			bind[i].buffer_type = MYSQL_TYPE_STRING;
+			bind[i].buffer_length = accesstype_len;
+			bind[i].length = &accesstype_len;
+			break;
+		}
+	}
+	if (mysql_stmt_bind_param(stmt, bind)) {
+		LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(stmt) << std::endl;
+		return false;
+	}
+	if (mysql_stmt_execute(stmt)) {
+		LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
+		LOG << "IP: " << std::hex << end.ip << std::endl;
+		return false;
+	}
+
+	m_row_count ++;
+	if (m_row_count % 10000 == 0) {
+		LOG << "Inserted " << m_row_count << " trace events into the database" << std::endl;
+	}
+
+	return true;
+}
+
+void Importer::open_unused_ec_intervals() {
+	// Create an open EC for every entry in the memory map we didn't encounter
+	// in the trace.  If we don't, non-accessed rows in the fault space will be
+	// missing later (e.g., unused parts of the stack).  Without a memory map,
+	// we just don't know the extents of our fault space; just guessing by
+	// using the minimum and maximum addresses is not a good idea, we might
+	// have large holes in the fault space.
+	if (m_mm) {
+		for (MemoryMap::iterator it = m_mm->begin(); it != m_mm->end(); ++it) {
+			if (m_open_ecs.count(*it) == 0) {
+				newOpenEC(*it, m_time_trace_start, 0, 0);
+			}
+		}
+	}
+}
+
+bool Importer::close_ec_intervals() {
+	unsigned row_count_real = m_row_count;
+
+	// Close all open intervals (right end of the fault-space) with fake trace
+	// event.  This ensures we have a rectangular fault space (important for,
+	// e.g., calculating the total SDC rate), and unknown memory accesses after
+	// the end of the trace are properly taken into account: Either with a
+	// "don't care" (a synthetic memory write at the right margin), or a "care"
+	// (synthetic read), the latter resulting in more experiments to be done.
+	for (AddrLastaccessMap::iterator lastuse_it = m_open_ecs.begin();
+		lastuse_it != m_open_ecs.end(); ++lastuse_it) {
+
+		access_info_t access;
+		access.access_type  = m_faultspace_rightmargin;
+		access.data_address = lastuse_it->first;
+		access.data_width   = 1; // One Byte
+
+		margin_info_t left_margin, right_margin;
+		left_margin = lastuse_it->second;
+
+		right_margin.dyninstr = m_last_instr;
+		right_margin.time     = m_last_time; // -1?
+		right_margin.ip       = m_last_ip; // The last event in the log.
+// #else
+//		// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
+//		FIXME probably implement this with cmdline parameter FAULTSPACE_CUTOFF
+//		right_margin.dyninstr = instr_rightmost;
+// #endif
+
+		// zero-sized?	skip.
+		// FIXME: look at timing instead?
+		if (left_margin.dyninstr > right_margin.dyninstr) {
+			continue;
+		}
+
+
+		if (!add_trace_event(left_margin, right_margin, access, true)) {
+			LOG << "add_trace_event failed" << std::endl;
+			return false;
+		}
+	}
+
+	LOG << "Inserted " << (m_row_count - row_count_real) << " fake trace events into the database" << std::endl;
 	return true;
 }

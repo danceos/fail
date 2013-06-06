@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 
-#include "BasicImporter.hpp"
+#include "MemoryImporter.hpp"
 
 
 using namespace fail;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 			"-b/--benchmark \tBenchmark label (default: \"none\")\n");
 	CommandLine::option_handle IMPORTER =
 		cmd.addOption("i", "importer", Arg::Required,
-			"-i/--importer \tWhich import method to use (default: BasicImporter)");
+			"-i/--importer \tWhich import method to use (default: MemoryImporter)");
 	CommandLine::option_handle IMPORTER_ARGS =
 		cmd.addOption("I", "importer-args", Arg::Required,
 			"-I/--importer-args \tWhich import method to use (default: "")");
@@ -114,17 +114,17 @@ int main(int argc, char *argv[]) {
 
 	if (cmd[IMPORTER].count() > 0) {
 		std::string imp(cmd[IMPORTER].first()->arg);
-		if (imp == "BasicImporter") {
-			LOG << "Using BasicImporter" << endl;
-			importer = new BasicImporter();
+		if (imp == "BasicImporter" || imp == "MemoryImporter") {
+			LOG << "Using MemoryImporter" << endl;
+			importer = new MemoryImporter();
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
 		}
 
 	} else {
-		LOG << "Using BasicImporter" << endl;
-		importer = new BasicImporter();
+		LOG << "Using MemoryImporter" << endl;
+		importer = new MemoryImporter();
 	}
 
 	if (cmd[HELP]) {

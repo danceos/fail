@@ -1,6 +1,6 @@
 set(SRCS
   Importer.cc
-  BasicImporter.cc
+  MemoryImporter.cc
 )
 
 add_executable(import-trace main.cc ${SRCS})
