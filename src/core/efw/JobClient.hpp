@@ -31,7 +31,9 @@ private:
 	uint64_t m_server_runid;
 
 	WallclockTimer m_job_runtime;
+	double m_job_runtime_total;
 	int m_job_throughput;
+	int m_job_total;
 	std::deque<ExperimentData*> m_parameters;
 	std::deque<ExperimentData*> m_results;
 

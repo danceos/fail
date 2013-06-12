@@ -182,12 +182,23 @@ bool JobClient::sendResult(ExperimentData& result)
 	m_results.push_back( temp_exp );
 
 	if (m_parameters.size() != 0) {
+		//If job request time is over send back all existing results
+		if (CLIENT_JOB_REQUEST_SEC < (double)m_job_runtime) {
+			m_job_runtime_total += (double) m_job_runtime;
+			m_job_runtime.reset();
+			m_job_runtime.startTimer();
+			m_job_total += m_results.size();
+			sendResultsToServer();
+		}
+
 		//If there are more jobs for the experiment store result
 		return true;
 	} else {
 		//Stop time measurement and calculate new throughput
 		m_job_runtime.stopTimer();
-		m_job_throughput = 0.5 * m_job_throughput + 0.5*(CLIENT_JOB_REQUEST_SEC/((double)m_job_runtime/m_results.size()));
+		m_job_runtime_total += (double) m_job_runtime;
+		m_job_total += m_results.size();
+		m_job_throughput = 0.5 * m_job_throughput + 0.5*(CLIENT_JOB_REQUEST_SEC/(m_job_runtime_total/m_job_total));
 
 		if (m_job_throughput > CLIENT_JOB_LIMIT) {
 			m_job_throughput = CLIENT_JOB_LIMIT;
@@ -195,8 +206,10 @@ bool JobClient::sendResult(ExperimentData& result)
 			m_job_throughput = 1;
 		}
 
-		//Reset timer for new time measurement
+		//Timer/Counter cleanup
 		m_job_runtime.reset();
+		m_job_runtime_total = 0;
+		m_job_total = 0;
 
 		return sendResultsToServer();
 	}
