@@ -10,8 +10,9 @@ regdata_t BochsCPU::getRegisterContent(const Register* reg) const
 	assert(reg != NULL && "FATAL ERROR: reg-ptr cannot be NULL!");
 	// TODO: BX_CPU(0) *always* correct?
 
-	if (reg->getId() == RID_FLAGS) // EFLAGS register?
-		return static_cast<regdata_t>(BX_CPU(id)->eflags);
+	if (reg->getId() == RID_FLAGS) { // EFLAGS register?
+		return static_cast<regdata_t>(BX_CPU(id)->read_eflags());
+    }
 
   #ifdef SIM_SUPPORT_64
 	if (reg->getId() == RID_PC) // program counter?
@@ -32,13 +33,15 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 	// TODO: BX_CPU(0) *always* correct?
 
 	if (reg->getId() == RID_FLAGS) { // EFLAGS register?
-		regdata_t* pData = reinterpret_cast<regdata_t*>(&(BX_CPU(id)->eflags));
+		regdata_t regdata = getRegisterContent(reg);
 	  #ifdef SIM_SUPPORT_64
 		// We are in 64 bit mode: Just assign the lower 32 bits!
-		*pData = ((*pData) & 0xFFFFFFFF00000000ULL) | (value & 0xFFFFFFFFULL);
+		BX_CPU(id)->writeEFlags((regdata & 0xFFFFFFFF00000000ULL) | (value & 0xFFFFFFFFULL),
+								0xffffffff);
 	  #else
-		*pData = value;
+		BX_CPU(id)->writeEFlags(value, 0xffffffff);
 	  #endif
+		BX_CPU(id)->force_flags();
 		return;
 	}
 
