@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <sstream>
 #include "comm/TracePlugin.pb.h"
 #include "util/ProtoStream.hpp"
 #include "../../src/core/util/Logger.hpp"
@@ -8,7 +8,7 @@
 #include "util/CommandLine.hpp"
 
 using namespace fail;
-using std::string;
+using std::stringstream;
 using std::endl;
 using std::cout;
 using std::cerr;
@@ -98,26 +98,23 @@ int main(int argc, char *argv[])
 				cout << "IP " << hex << ev.ip() << dec << " t=" << acctime << "\n";
 			}
 		} else {
-			string ext = ""; // FIXME: use stringstream?
+			stringstream ext;
 			if (ev.has_trace_ext() && !stats_only) {
 				const Trace_Event_Extended& temp_ext = ev.trace_ext();
-				ext = " DATA ";
-				ext += temp_ext.data();
-				int i;
-				for (i = 0 ; i < temp_ext.registers_size() ; i++) {
+				ext << " DATA " << std::hex;
+				ext << (uint64_t) temp_ext.data();
+				for (int i = 0; i < temp_ext.registers_size(); i++) {
 					const Trace_Event_Extended_Registers& temp_reg = temp_ext.registers(i);
-					ext += "REG: " ;
-					ext += temp_reg.id();
-					ext += " ";
-					ext += temp_reg.value();
-					ext += "=";
-					ext += temp_reg.value_deref();
+					ext << " REG "
+					    << (unsigned) temp_reg.id() << " = "
+					    << (uint32_t) temp_reg.value() << " -> "
+					    << (uint32_t) temp_reg.value_deref();
 				}
 				if (temp_ext.stack_size() > 0 ) {
-					ext += " STACK: ";
-					for (i = 0 ; i< temp_ext.stack_size() ; i++) {
+					ext << " STACK:";
+					for (int i = 0; i < temp_ext.stack_size(); i++) {
 						const Trace_Event_Extended_Stack& temp_stack = temp_ext.stack(i);
-						ext += temp_stack.value();
+						ext << " " << (uint32_t) temp_stack.value();
 					}
 				}
 			}
@@ -128,7 +125,7 @@ int main(int argc, char *argv[])
 				     << dec << " width " << ev.width()
 				     << hex << " IP " << ev.ip()
 				     << dec << " t=" << acctime
-				     << ext << "\n";
+				     << ext.str() << "\n";
 			}
 			stats_reads += (ev.accesstype() == Trace_Event_AccessType_READ);
 			stats_writes += (ev.accesstype() == Trace_Event_AccessType_WRITE);
