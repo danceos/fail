@@ -42,22 +42,6 @@
 using namespace std;
 using namespace fail;
 
-// Check if configuration dependencies are satisfied:
-#if PREREQUISITES == 1
-  #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-      !defined(CONFIG_SR_SAVE) || !defined(CONFIG_EVENT_GUESTSYS) || \
-      !defined(CONFIG_SR_REBOOT) || !defined(CONFIG_EVENT_MEMREAD) || \
-      !defined(CONFIG_EVENT_MEMWRITE) // -> tracing plugin
-    #error This experiment needs: breakpoints, save, restore, memread, memwrite, reboot and guest.
-  #endif
-#else
-  #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-      !defined(CONFIG_EVENT_TRAP) || !defined(CONFIG_EVENT_MEMREAD) || \
-      !defined(CONFIG_EVENT_MEMWRITE) || !defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
-    #error This experiment needs: breakpoints (+range), traps, memread, memwrite and restore.
-  #endif
-#endif
-
 #if PREREQUISITES
 bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
 #if BASELINE_ASSESSMENT || STACKPROTECTION
