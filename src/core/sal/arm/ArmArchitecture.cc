@@ -23,6 +23,13 @@ ArmArchitecture::ArmArchitecture()
 	Register *reg = new Register(RI_IP, 32);
 	reg->setName("IP");
 	m_addRegister(reg, RT_IP);
+
+	// Registers used for extended tracing:
+	size_t ids[] = {RI_R0, RI_R1, RI_R2, RI_R3, RI_R4, RI_R5, RI_R6, RI_R7,
+	                RI_R8, RI_R9, RI_R10, RI_R11, RI_R12, RI_R13, RI_R14};
+	for (size_t i = 0; i < sizeof(ids)/sizeof(*ids); ++i) {
+		m_addRegister(getRegister(ids[i]), RT_TRACE);
+	}
 }
 
 ArmArchitecture::~ArmArchitecture()

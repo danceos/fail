@@ -23,7 +23,9 @@ enum RegisterType {
 	RT_GP,   //!< general purpose
 	RT_FP,   //!< floating point register
 	RT_IP,   //!< program counter / instruction pointer
-	RT_ST    //!< status register
+	RT_ST,   //!< status register
+
+	RT_TRACE //!< registers to be recorded in an extended trace
 };
 
 /**

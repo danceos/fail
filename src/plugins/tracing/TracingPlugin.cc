@@ -28,15 +28,8 @@ bool TracingPlugin::run()
 		ps = new ProtoOStream(m_protoStreamFile);
 	}
 
-#ifdef BUILD_X86
-	size_t ids[] = {RID_CSP, RID_CBP, RID_FLAGS};
-#else
-    size_t ids[] = {};
-#endif
-
-	Register *regs[sizeof(ids)/sizeof(*ids)];
-	for (unsigned i = 0; i < sizeof(ids)/sizeof(*ids); ++i)
-		regs[i] = simulator.getCPU(0).getRegister(ids[i]);
+	UniformRegisterSet *extended_trace_regs =
+		simulator.getCPU(0).getRegisterSetOfType(RT_TRACE);
 
 	// the first event gets an absolute time stamp, all others a delta to their
 	// predecessor
@@ -107,10 +100,11 @@ bool TracingPlugin::run()
 					mm.getBytes(addr, width, &data);
 					ext.set_data(data);
 
-					for (unsigned i = 0; i < sizeof(ids)/sizeof(*ids); ++i) {
+					for (UniformRegisterSet::iterator it = extended_trace_regs->begin();
+						it != extended_trace_regs->end(); ++it) {
 						Trace_Event_Extended_Registers *er = ext.add_registers();
-						er->set_id(ids[i]);
-						er->set_value(simulator.getCPU(0).getRegisterContent(regs[i]));
+						er->set_id((*it)->getId());
+						er->set_value(simulator.getCPU(0).getRegisterContent(*it));
 						if (er->value() <= mm.getPoolSize() - 4) {
 							uint32_t value_deref;
 							mm.getBytes(er->value(), 4, &value_deref);

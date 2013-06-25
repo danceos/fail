@@ -41,6 +41,12 @@ X86Architecture::X86Architecture()
 	Register* pFlagReg = new Register(RID_FLAGS, 32);
 	pFlagReg->setName("EFLAGS");
 	m_addRegister(pFlagReg, RT_ST);
+
+	// Registers used for extended tracing:
+	size_t ids[] = {RID_CAX, RID_CBX, RID_CCX, RID_CDX, RID_CSI, RID_CDI, RID_CSP, RID_CBP, RID_FLAGS};
+	for (size_t i = 0; i < sizeof(ids)/sizeof(*ids); ++i) {
+		m_addRegister(getRegister(ids[i]), RT_TRACE);
+	}
 }
 
 X86Architecture::~X86Architecture()
