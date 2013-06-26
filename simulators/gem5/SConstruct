@@ -169,6 +169,9 @@ AddLocalOption('--update-ref', dest='update_ref', action='store_true',
                help='Update test reference outputs')
 AddLocalOption('--verbose', dest='verbose', action='store_true',
                help='Print full tool command lines')
+# DanceOS-specific:
+AddLocalOption('--dummy', dest='dummy', action='store_true',
+               help='Only generate files (do not actually compile)')
 
 termcap = get_termcap(GetOption('use_colors'))
 
@@ -488,8 +491,18 @@ if main['GCC'] + main['SUNCC'] + main['ICC'] + main['CLANG'] > 1:
     print 'Error: How can we have two at the same time?'
     Exit(1)
 
+# DanceOS-specific: BEGIN
 main['GCC'] = True
 main['GCC_VERSION'] = '4.4.5'
+
+if '--dummy' in sys.argv:
+	print 'Info: Compiling in dummy-mode (generate files only)!'
+	# Set the dummy build tools:
+	main['CXX'] = 'true'
+	main['AR'] = 'true'
+	main['RANLIB'] = 'true'
+	main['LINK'] = 'true'
+# DanceOS-specific: END
 
 # Set up default C++ compiler flags
 if main['GCC']:
@@ -499,6 +512,7 @@ if main['GCC']:
     # Read the GCC version to check for versions with bugs
     # Note CCVERSION doesn't work here because it is run with the CC
     # before we override it from the command line
+# DanceOS (commented out):
 #    gcc_version = readCommand([main['CXX'], '-dumpversion'], exception=False)
 #    main['GCC_VERSION'] = gcc_version
 #    if not compareVersions(gcc_version, '4.4.1') or \

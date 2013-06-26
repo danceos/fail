@@ -199,12 +199,7 @@ For the first time (incl. selecting an experiment):
       $ ccmake .
     At least, you should set an experiment and turn on the following
     flags: BUILD_GEM5 = BUILD_ARM = ON. Additionally, all config
-    options specific for other simulator should be turned OFF. Finally,
-    edit ${FAIL_DIR}/src/core/sal/gem5/SConscript: search for a line
-    with "gStaticLibs" and ensure that this line lists all the various
-    target you want to include in the binary (especially your experiment
-    target and perhabs an additional plugin), i.e. change
-    -lfail-arch-test to -lfail-[EXPERIMENTNAME|PLUGINNAME].
+    options specific for other simulator should be turned OFF.
  5. Typing
       $ make   (or  nice make -jN)
     will start the build process of Fail* and gem5. This automatically
@@ -225,10 +220,8 @@ After changes to Fail*/gem5 code (incl. aspect headers):
       $ make gem5-allclean
     (in your build dir ${FAIL_DIR}/build). This cleans the current
     Fail* and gem5 build directories. Note that "make clean" only cleans
-    the Fail* build directory. Additionally note, that changing the
-    specified experiment target requires editing
-    ${FAIL_DIR}/src/core/sal/gem5/SConscript (see above). Furthermore, all
-    remaining CMake remnants should be deleted:
+    the Fail* build directory. Furthermore, all remaining CMake remnants
+    should be deleted:
       $ find -name CMakeCache.txt | xargs rm
  2. Rebuild by typing
       $ make   (or  nice make -jN)
