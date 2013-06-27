@@ -8,9 +8,9 @@ namespace fail {
 
 void CoroutineManager::m_invoke(void* pData)
 {
-	//std::cerr << "CORO m_invoke " << co_current() << std::endl;
-	// TODO: Log-Level?
-	reinterpret_cast<ExperimentFlow*>(pData)->coroutine_entry();
+	ExperimentFlow *flow = reinterpret_cast<ExperimentFlow*>(pData);
+	flow->coroutine_entry();
+	simulator.removeFlow(flow);
 	//m_togglerstack.pop();
 	// FIXME: need to pop our caller
 	co_exit(); // deletes the associated coroutine memory as well
@@ -20,7 +20,12 @@ void CoroutineManager::m_invoke(void* pData)
 	while (1); // freeze.
 }
 
-CoroutineManager::~CoroutineManager() { }
+CoroutineManager::~CoroutineManager()
+{
+	// Note that we do not destroy the associated coroutines; this causes
+	// problems when shutting down.
+	m_Flows.clear();
+}
 
 void CoroutineManager::toggle(ExperimentFlow* flow)
 {
@@ -53,7 +58,9 @@ void CoroutineManager::remove(ExperimentFlow* flow)
 	// find coroutine handle for this flow
 	flowmap_t::iterator it = m_Flows.find(flow);
 	if (it == m_Flows.end()) {
-		assert(false && "FATAL ERROR: Cannot remove flow");
+		// Not finding the flow to remove is not an error; especially when
+		// shutting down this is the common case, as ~CoroutineManager probably
+		// clears the flow list before the ExperimentFlow destructors run.
 		return;
 	}
 	corohandle_t coro = it->second;
@@ -67,7 +74,9 @@ void CoroutineManager::remove(ExperimentFlow* flow)
 	// delete coroutine (and handle the special case we're removing
 	// ourselves)
 	if (coro == co_current()) {
-		co_exit();
+		if (!m_Terminated) {
+			co_exit();
+		}
 	} else {
 		co_delete(coro);
 	}

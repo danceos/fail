@@ -217,6 +217,8 @@ void SimulatorController::terminate(int exCode)
 	// Attention: This could cause problems, e.g., because of non-closed sockets
 	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
 	// TODO: (Non-)Verbose-Mode? Log-Level?
+
+	m_Flows.setTerminated(); // we are about to terminate
 	exit(exCode);
 }
 
