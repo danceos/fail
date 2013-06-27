@@ -302,8 +302,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 	BPSingleListener bp;
 	
+	int experiments = 0;
 #if !LOCAL
-	for (int experiments = 0;
+	for (experiments = 0;
 		experiments < 500 || (m_jc.getNumberOfUndoneJobs() != 0); ) { // stop after ~500 experiments to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
 #endif
