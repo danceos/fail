@@ -275,7 +275,7 @@ bool EcosKernelTestCampaign::run()
 	unsigned deleted_rows = db->affected_rows();
 	ss.str("");
 	m_log << "Deleted " << deleted_rows << " rows from incomplete jobs" << std::endl;
-	std::string sql_select = "SELECT STRAIGHT_JOIN p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address ";
+	std::string sql_select = "SELECT p.id AS pilot_id, v.id AS variant_id, v.variant, v.benchmark, p.injection_instr, p.injection_instr_absolute, p.data_address ";
 	ss << "FROM variant v "
 	   << "JOIN fsppilot p ON p.variant_id = v.id "
 	   << "LEFT JOIN done_pilots d ON d.id = p.id "
@@ -341,8 +341,6 @@ bool EcosKernelTestCampaign::run()
 		std::cerr << "mysql_fetch_row failed: " << mysql_error(db->getHandle()) << std::endl;
 	}
 
-	delete db;
-
 	m_log << "finished, waiting for the clients to complete ..." << std::endl;
 	campaignmanager.noMoreParameters();
 
@@ -350,7 +348,12 @@ bool EcosKernelTestCampaign::run()
 	collect_thread.join();
 #endif
 	delete db_recv;
-	m_log << "results complete, terminating." << std::endl;
+	m_log << "results complete, updating DB statistics ..." << std::endl;
+	ss.str("");
+	ss << "ANALYZE TABLE " << m_result_table;
+	if (!db->query(ss.str().c_str())) return false;
+	delete db;
+	m_log << "terminating." << std::endl;
 	return true;
 }
 
