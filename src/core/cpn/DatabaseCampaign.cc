@@ -63,8 +63,7 @@ bool DatabaseCampaign::run() {
 		pruner = "basic";
 
 	db = Database::cmdline_connect();
-	variant_id = db->get_variant_id(variant, benchmark);
-	log_send << "Variant to use " << variant << "/" << benchmark << " (ID: " << variant_id << ")" << std::endl;
+	log_send << "Variant to use " << variant << "/" << benchmark << std::endl;
 	fspmethod_id = db->get_fspmethod_id(pruner);
 	log_send << "Pruner to use " << pruner << " (ID: " << fspmethod_id << ")" << std::endl;
 
@@ -80,56 +79,17 @@ bool DatabaseCampaign::run() {
 	boost::thread collect_thread(&DatabaseCampaign::collect_result_thread, this);
 #endif
 
-	/* Gather all unfinished jobs */
-	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address";
-	std::stringstream ss;
-	ss << " FROM fspgroup g"
-	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
-	   << " WHERE p.known_outcome = 0 "
-	   << "	   AND g.fspmethod_id = "  << fspmethod_id
-	   << "	   AND g.variant_id = "	<< variant_id
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id) < 8"
-	   << "    ORDER BY p.injection_instr";
-	std::string sql_body = ss.str();
-
-	/* Get the number of unfinished experiments */
-	MYSQL_RES *count = db->query(("SELECT COUNT(*) " + sql_body).c_str(), true);
-	MYSQL_ROW row = mysql_fetch_row(count);
-	experiment_count = atoi(row[0]);
-
-
-	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
-
-	log_send << "Found " << experiment_count << " unfinished experiments in database." << std::endl;
-
-	sent_pilots = 0;
-	while ((row = mysql_fetch_row(pilots)) != 0) {
-		unsigned pilot_id        = atoi(row[0]);
-		unsigned injection_instr = atoi(row[3]);
-		unsigned data_address    = atoi(row[5]);
-
-		DatabaseCampaignMessage pilot;
-		pilot.set_pilot_id(pilot_id);
-		pilot.set_fspmethod_id(fspmethod_id);
-		pilot.set_variant_id(variant_id);
-		pilot.set_injection_instr(injection_instr);
-		if (row[4]) {
-			unsigned injection_instr_absolute = atoi(row[4]);
-			pilot.set_injection_instr_absolute(injection_instr_absolute);
-		}
-		pilot.set_data_address(data_address);
-
-		this->cb_send_pilot(pilot);
-
-		if ((++sent_pilots) % 1000 == 0) {
-			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
+	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
+	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
+		 it != variants.end(); ++it) {
+		if(!run_variant(*it)) {
+			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
+			return false;
 		}
 	}
 
 	log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 	log_send << "wait for the clients to complete" << std::endl;
-
 	campaignmanager.noMoreParameters();
 
 #ifndef __puma
@@ -149,3 +109,58 @@ void DatabaseCampaign::collect_result_thread() {
 	}
 }
 
+bool DatabaseCampaign::run_variant(Database::Variant variant) {
+	/* Gather all unfinished jobs */
+	int experiment_count;
+	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address ";
+	std::stringstream ss;
+	ss << " FROM fspgroup g"
+	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
+	   << " WHERE p.known_outcome = 0 "
+	   << "	   AND g.fspmethod_id = "  << fspmethod_id
+	   << "	   AND g.variant_id = "	<< variant.id
+	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id)"
+	   << " < " << expected_number_of_results(variant.variant, variant.benchmark)
+	   << "    ORDER BY p.injection_instr";
+	std::string sql_body = ss.str();
+
+	/* Get the number of unfinished experiments */
+	MYSQL_RES *count = db->query(("SELECT COUNT(*) " + sql_body).c_str(), true);
+	MYSQL_ROW row = mysql_fetch_row(count);
+	experiment_count = atoi(row[0]);
+
+
+	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
+
+	log_send << "Found " << experiment_count << " unfinished experiments in database. (" 
+			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
+
+	sent_pilots = 0;
+	while ((row = mysql_fetch_row(pilots)) != 0) {
+		unsigned pilot_id        = atoi(row[0]);
+		unsigned injection_instr = atoi(row[3]);
+		unsigned data_address    = atoi(row[5]);
+
+
+		DatabaseCampaignMessage pilot;
+		pilot.set_pilot_id(pilot_id);
+		pilot.set_fspmethod_id(fspmethod_id);
+		pilot.set_variant_id(variant.id);
+		pilot.set_injection_instr(injection_instr);
+		pilot.set_variant(variant.variant);
+		pilot.set_benchmark(variant.benchmark);
+		if (row[4]) {
+			unsigned injection_instr_absolute = atoi(row[4]);
+			pilot.set_injection_instr_absolute(injection_instr_absolute);
+		}
+		pilot.set_data_address(data_address);
+
+		this->cb_send_pilot(pilot);
+
+		if ((++sent_pilots) % 1000 == 0) {
+			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
+		}
+	}
+	return true;
+
+}

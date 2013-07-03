@@ -74,36 +74,56 @@ my_ulonglong Database::affected_rows()
 }
 
 
-int Database::get_variant_id(const std::string &variant, const std::string &benchmark)
-{
+std::vector<Database::Variant> Database::get_variants(const std::string &variant, const std::string &benchmark) {
+	std::vector<Variant> result;
+
 	if (!query("CREATE TABLE IF NOT EXISTS variant ("
 		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
 		  "	 variant varchar(255) NOT NULL,"
 		  "	 benchmark varchar(255) NOT NULL,"
 		  "	 PRIMARY KEY (id),"
 		  "UNIQUE KEY variant (variant,benchmark))")) {
-		return 0;
+		return result;
 	}
 
-	int variant_id;
 	std::stringstream ss;
 	// FIXME SQL injection possible
-	ss << "SELECT id FROM variant WHERE variant LIKE '" << variant << "' AND benchmark LIKE '" << benchmark << "'";
+	ss << "SELECT id, variant, benchmark FROM variant WHERE variant LIKE '" << variant << "' AND benchmark LIKE '" << benchmark << "'";
 	MYSQL_RES *variant_id_res = query(ss.str().c_str(), true);
+
 	if (!variant_id_res) {
-		return 0;
+		return result;
 	} else if (mysql_num_rows(variant_id_res)) {
-		MYSQL_ROW row = mysql_fetch_row(variant_id_res);
-		variant_id = atoi(row[0]);
-	} else {
-		ss.str("");
+		for (unsigned int i = 0; i < mysql_num_rows(variant_id_res); ++i) {
+			MYSQL_ROW row = mysql_fetch_row(variant_id_res);
+			Variant var;
+			var.id = atoi(row[0]);
+			var.variant = std::string(row[1]);
+			var.benchmark = std::string(row[2]);
+			result.push_back(var);
+		}
+	}
+
+	return result;
+}
+
+int Database::get_variant_id(const std::string &variant, const std::string &benchmark)
+{
+	std::vector<Variant> variants = get_variants(variant, benchmark);
+	if (variants.size() == 0) {
+		// Insert a new variant
+		std::stringstream ss;
 		ss << "INSERT INTO variant (variant, benchmark) VALUES ('" << variant << "', '" << benchmark << "')";
 		if (!query(ss.str().c_str())) {
 			return 0;
 		}
-		variant_id = mysql_insert_id(handle);
+		return mysql_insert_id(handle);
+	} else if (variants.size() == 1) {
+		return variants[0].id;
+	} else {
+		LOG << "Variant identifier " << variant << "/" << benchmark << " is ambigious!" << std::endl;
+		return 0;
 	}
-	return variant_id;
 }
 
 int Database::get_fspmethod_id(const std::string &method)
