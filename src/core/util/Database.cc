@@ -88,7 +88,7 @@ int Database::get_variant_id(const std::string &variant, const std::string &benc
 	int variant_id;
 	std::stringstream ss;
 	// FIXME SQL injection possible
-	ss << "SELECT id FROM variant WHERE variant = '" << variant << "' AND benchmark = '" << benchmark << "'";
+	ss << "SELECT id FROM variant WHERE variant LIKE '" << variant << "' AND benchmark LIKE '" << benchmark << "'";
 	MYSQL_RES *variant_id_res = query(ss.str().c_str(), true);
 	if (!variant_id_res) {
 		return 0;
