@@ -10,6 +10,7 @@
 
 #ifdef BUILD_LLVM_DISASSEMBLER
 #include "InstructionImporter.hpp"
+#include "RegisterImporter.hpp"
 #endif
 
 
@@ -126,6 +127,9 @@ int main(int argc, char *argv[]) {
 		} else if (imp == "InstructionImporter" || imp == "code") {
 			LOG << "Using InstructionImporter" << endl;
 			importer = new InstructionImporter();
+		} else if (imp == "RegisterImporter" || imp == "regs") {
+			LOG << "Using RegisterImporter" << endl;
+			importer = new RegisterImporter();
 #endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;

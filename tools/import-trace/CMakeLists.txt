@@ -6,6 +6,7 @@ set(SRCS
 if (BUILD_LLVM_DISASSEMBLER)
   set(SRCS ${SRCS}
     InstructionImporter.cc
+    RegisterImporter.cc
   )
 
   include(FindLLVM)
@@ -29,6 +30,5 @@ target_link_libraries(import-trace
 if (BUILD_LLVM_DISASSEMBLER)
   target_link_libraries(import-trace fail-llvmdisassembler fail-sal ${LLVM_LIBS} ${LLVM_LDFLAGS})
 endif (BUILD_LLVM_DISASSEMBLER)
-
 
 install(TARGETS import-trace RUNTIME DESTINATION bin)
