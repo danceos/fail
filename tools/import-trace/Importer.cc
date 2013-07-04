@@ -30,7 +30,7 @@ bool Importer::create_database() {
 		"	data_address int(10) unsigned NOT NULL,"
 		"	width tinyint(3) unsigned NOT NULL,"
 		"	accesstype enum('R','W') NOT NULL,"
-		"	PRIMARY KEY (variant_id,instr2,data_address)"
+		"	PRIMARY KEY (variant_id,data_address,instr2)"
 		") engine=MyISAM ";
 	return db->query(create_statement.c_str());
 }
