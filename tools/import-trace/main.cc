@@ -11,6 +11,7 @@
 #ifdef BUILD_LLVM_DISASSEMBLER
 #include "InstructionImporter.hpp"
 #include "RegisterImporter.hpp"
+#include "RandomJumpImporter.hpp"
 #endif
 
 
@@ -127,9 +128,14 @@ int main(int argc, char *argv[]) {
 		} else if (imp == "InstructionImporter" || imp == "code") {
 			LOG << "Using InstructionImporter" << endl;
 			importer = new InstructionImporter();
+
 		} else if (imp == "RegisterImporter" || imp == "regs") {
 			LOG << "Using RegisterImporter" << endl;
 			importer = new RegisterImporter();
+
+		} else if (imp == "RandomJumpImporter") {
+			LOG << "Using RandomJumpImporter" << endl;
+			importer = new RandomJumpImporter();
 #endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
@@ -141,7 +147,16 @@ int main(int argc, char *argv[]) {
 		importer = new MemoryImporter();
 	}
 
+	if (importer && !(importer->cb_commandline_init())) {
+		std::cerr << "Cannot call importers command line initialization!" << std::endl;
+		exit(-1);
+	}
+
 	if (cmd[HELP]) {
+		// Since the importer might have added command line options,
+		// we need to reparse all arguments in order to prevent a
+		// segfault within optionparser
+		cmd.parse();
 		cmd.printUsage();
 		exit(0);
 	}

@@ -7,6 +7,7 @@ if (BUILD_LLVM_DISASSEMBLER)
   set(SRCS ${SRCS}
     InstructionImporter.cc
     RegisterImporter.cc
+    RandomJumpImporter.cc
   )
 
   include(FindLLVM)
