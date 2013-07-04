@@ -2,7 +2,6 @@
 #include "Gem5Wrapper.hpp"
 #include "../Listener.hpp"
 #include "base/trace.hh"
-#include "debug/FailState.hh"
 #include "sim/root.hh"
 
 #include <fstream>
@@ -38,8 +37,6 @@ Gem5Controller::~Gem5Controller()
 
 bool Gem5Controller::save(const std::string &path)
 {
-	DPRINTF(FailState, "Saving state to %s.\n", path);
-
 	Serializable::serializeAll(path);
 
 	// Test if save was successful
