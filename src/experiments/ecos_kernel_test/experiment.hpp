@@ -31,4 +31,6 @@ public:
 		fail::guest_address_t& text_end,
 		fail::guest_address_t& data_start,
 		fail::guest_address_t& data_end);
+
+	void handle_func_test_output(bool &test_failed, bool& test_passed);
 };

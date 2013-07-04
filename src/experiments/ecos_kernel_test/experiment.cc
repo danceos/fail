@@ -264,6 +264,32 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 }
 
 #else // !PREREQUISITES
+void EcosKernelTestExperiment::handle_func_test_output(bool &test_failed, bool& test_passed)
+{
+	// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
+	address_t stack_ptr = simulator.getCPU(0).getStackPointer(); // esp
+	int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
+
+	log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
+
+	/*
+	typedef enum {
+		CYGNUM_TEST_FAIL,
+		CYGNUM_TEST_PASS,
+		CYGNUM_TEST_EXIT,
+		CYGNUM_TEST_INFO,
+		CYGNUM_TEST_GDBCMD,
+		CYGNUM_TEST_NA
+	} Cyg_test_code;
+	*/
+
+	if (cyg_test_output_argument == 0) {
+		test_failed = true;
+	} else if (cyg_test_output_argument == 1) {
+		test_passed = true;
+	}
+}
+
 bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
@@ -355,9 +381,20 @@ bool EcosKernelTestExperiment::faultInjection() {
 		job.close();
 */
 
+		// the outcome of ecos' test case
+		bool ecos_test_passed = false;
+		bool ecos_test_failed = false;
+
 		// reaching finish() could happen before OR after FI
 		BPSingleListener func_finish(addr_finish);
 		simulator.addListener(&func_finish);
+
+		// reaching cyg_test_output() could happen before OR after FI
+		// eCos' test output function, which will show if the test PASSed or FAILed
+		BPSingleListener func_test_output(addr_test_output);
+		simulator.addListener(&func_test_output);
+
+		BaseListener* ev;
 
 		// no need to wait if offset is 0
 		if (instr_offset > 0) {
@@ -366,12 +403,17 @@ bool EcosKernelTestExperiment::faultInjection() {
 			bp.setCounter(instr_offset);
 			simulator.addListener(&bp);
 
-			// finish() before FI?
-			if (simulator.resume() == &func_finish) {
-				log << "experiment reached finish() before FI" << endl;
-
-				// wait for bp
-				simulator.resume();
+			while (true) {
+				ev = simulator.resume();
+				if (ev == &func_test_output) {
+					// re-add this listener
+					simulator.addListener(&func_test_output);
+					handle_func_test_output(ecos_test_failed, ecos_test_passed);
+				} else if (ev == &func_finish) {
+					log << "experiment reached finish() before FI" << endl;
+				} else {
+					break;
+				}
 			}
 		}
 
@@ -466,10 +508,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 		//ev_end.setCounter(instr_counter - instr_offset + ECOS_RECOVERYINSTR);
 		//simulator.addListener(&ev_end);
 		
-		// eCos' test output function, which will show if the test PASSed or FAILed
-		BPSingleListener func_test_output(addr_test_output);
-		simulator.addListener(&func_test_output);
-
 		// function called by ecc aspects, when an uncorrectable error is detected
 		BPSingleListener func_ecc_panic(addr_panic);
 		if (addr_panic != ADDR_INV) {
@@ -486,41 +524,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addFlow(&tp);
 #endif
 
-		// the outcome of ecos' test case
-		bool ecos_test_passed = false;
-		bool ecos_test_failed = false;
-
-		BaseListener* ev;
-
 		// wait until experiment-terminating event occurs
 		while (true) {
 			ev = simulator.resume();
 			if (ev == &func_test_output) {
 				// re-add this listener
 				simulator.addListener(&func_test_output);
-
-				// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
-				address_t stack_ptr = simulator.getCPU(0).getStackPointer(); // esp
-				int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
-
-				log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
-
-				/*
-				typedef enum {
-					CYGNUM_TEST_FAIL,
-					CYGNUM_TEST_PASS,
-					CYGNUM_TEST_EXIT,
-					CYGNUM_TEST_INFO,
-					CYGNUM_TEST_GDBCMD,
-					CYGNUM_TEST_NA
-				} Cyg_test_code;
-				*/
-
-				if (cyg_test_output_argument == 0) {
-					ecos_test_failed = true;
-				} else if (cyg_test_output_argument == 1) {
-					ecos_test_passed = true;
-				}
+				handle_func_test_output(ecos_test_failed, ecos_test_passed);
 
 			// special case: except1 and clockcnv actively generate traps
 			} else if (ev == &ev_trap
