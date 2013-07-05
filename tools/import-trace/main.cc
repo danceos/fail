@@ -12,6 +12,7 @@
 #include "InstructionImporter.hpp"
 #include "RegisterImporter.hpp"
 #include "RandomJumpImporter.hpp"
+#include "AdvancedMemoryImporter.hpp"
 #endif
 
 
@@ -133,6 +134,8 @@ int main(int argc, char *argv[]) {
 
 		} else if (imp == "RandomJumpImporter") {
 			importer = new RandomJumpImporter();
+		} else if (imp == "AdvancedMemoryImporter") {
+			importer = new AdvancedMemoryImporter();
 #endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
@@ -233,6 +236,11 @@ int main(int argc, char *argv[]) {
 
 	if (!importer->copy_to_database(ps)) {
 		LOG << "copy_to_database() failed" << endl;
+		exit(-1);
+	}
+
+	if (!importer->finalize()) {
+		LOG << "finalize() failed" << endl;
 		exit(-1);
 	}
 }

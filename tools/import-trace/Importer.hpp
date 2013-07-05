@@ -75,6 +75,13 @@ public:
 	virtual bool cb_commandline_init() { return true; }
 
 	virtual bool create_database();
+	/**
+	 * Allows specialized importers to add more table columns instead of
+	 * completely overriding create_database().  The returned SQL CREATE TABLE
+	 * snippet should be terminated with a comma if non-empty.  Should call and
+	 * pass through their parent's implementation.
+	 */
+	virtual std::string database_additional_columns() { return ""; }
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
 	/**
@@ -96,7 +103,11 @@ public:
 								 Trace_Event &ev) = 0;
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
 								 Trace_Event &ev) = 0;
-
+	/**
+	 * May be overridden by importers that need to do stuff after the last
+	 * event was consumed.
+	 */
+	virtual bool finalize() { return true; }
 
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
 

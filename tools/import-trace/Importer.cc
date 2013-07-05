@@ -41,6 +41,7 @@ bool Importer::create_database() {
 			create_statement << " r" << (*it)->getId() << "_deref int(10) unsigned NULL,";
 		}
 	}
+	create_statement << database_additional_columns();
 	create_statement <<
 		"	PRIMARY KEY (variant_id,data_address,instr2)"
 		") engine=MyISAM ";

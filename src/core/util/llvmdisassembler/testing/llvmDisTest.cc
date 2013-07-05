@@ -62,6 +62,10 @@ int main(int argc, char* argv[]) {
 			 it != instr.reg_defs.end(); ++it) {
 			std::cout << reg_info.getName(*it) << "(" << *it << ") ";
 		}
+
+		if (instr.conditional_branch) {
+			std::cout << "(conditional branch)";
+		}
 		std::cout << std::endl;
 	}
 }

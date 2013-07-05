@@ -8,6 +8,7 @@ if (BUILD_LLVM_DISASSEMBLER)
     InstructionImporter.cc
     RegisterImporter.cc
     RandomJumpImporter.cc
+    AdvancedMemoryImporter.cc
   )
 
   include(FindLLVM)
