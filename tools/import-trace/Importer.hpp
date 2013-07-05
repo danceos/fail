@@ -6,6 +6,7 @@
 #include "util/ProtoStream.hpp"
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
+#include "sal/Architecture.hpp"
 #include "util/Database.hpp"
 #include "util/MemoryMap.hpp"
 #include "comm/TracePlugin.pb.h"
@@ -22,7 +23,10 @@ protected:
 	fail::MemoryMap *m_mm;
 	char m_faultspace_rightmargin;
 	bool m_sanitychecks;
+	bool m_extended_trace;
 	fail::Database *db;
+	fail::Architecture m_arch;
+	fail::UniformRegisterSet *m_extended_trace_regs;
 
 	/* How many rows were inserted into the database */
 	unsigned m_row_count;
@@ -61,7 +65,7 @@ protected:
 	fail::simtime_t m_last_time;
 
 public:
-	Importer() : m_sanitychecks(false), m_row_count(0), m_time_trace_start(0) {}
+	Importer() : m_sanitychecks(false), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	/**
@@ -73,15 +77,25 @@ public:
 	virtual bool create_database();
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
+	/**
+	 * Use this variant if passing through the IP/MEM event does not make any
+	 * sense for your Importer implementation.
+	 */
 	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
 								 access_info_t &event, bool is_fake = false);
+	/**
+	 * Use this variant for passing through the IP/MEM event your Importer
+	 * received.
+	 */
+	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
+								 Trace_Event &event, bool is_fake = false);
 	virtual void open_unused_ec_intervals();
 	virtual bool close_ec_intervals();
 
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev) = 0;
+								 Trace_Event &ev) = 0;
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev) = 0;
+								 Trace_Event &ev) = 0;
 
 
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
@@ -89,9 +103,7 @@ public:
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
-
-
-
+	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
 };
 
 #endif

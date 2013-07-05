@@ -29,7 +29,7 @@ bool RegisterImporter::cb_commandline_init() {
 
 
 bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t instr,
-										const Trace_Event &ev,
+										Trace_Event &ev,
 										const LLVMtoFailTranslator::reginfo_t &info,
 										char access_type) {
 	address_t from = info.toDataAddress();
@@ -57,11 +57,12 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-		access_info_t access;
-		access.access_type	= access_type; // instruction fetch is always a read
-		access.data_address = data_address;
-		access.data_width	 = 1; // exactly one byte
-		if (!add_trace_event(left_margin, right_margin, access)) {
+
+		// pass through potentially available extended trace information
+		ev.set_width(1); // exactly one byte
+		ev.set_memaddr(data_address);
+		ev.set_accesstype(access_type == 'R' ? ev.READ : ev.WRITE);
+		if (!add_trace_event(left_margin, right_margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}
@@ -75,7 +76,7 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 
 
 bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-									   const Trace_Event &ev) {
+									   Trace_Event &ev) {
 	if (!binary) {
 		// Parse command line again, for jump-from and jump-to
 		// operations

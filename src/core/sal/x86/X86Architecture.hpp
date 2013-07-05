@@ -18,6 +18,10 @@ public:
 	~X86Architecture();
 };
 
+#ifdef BUILD_X86
+typedef X86Architecture Architecture;
+#endif
+
 /**
  * \enum GPRegisterId
  * Symbolic identifier to access the x86 general purpose register

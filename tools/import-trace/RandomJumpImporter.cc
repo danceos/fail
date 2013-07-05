@@ -25,7 +25,7 @@ bool RandomJumpImporter::cb_commandline_init() {
 }
 
 bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-									   const Trace_Event &ev) {
+									   Trace_Event &ev) {
 	if (!binary) {
 		// Parse command line again, for jump-from and jump-to
 		// operations
@@ -116,11 +116,12 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-		access_info_t access;
-		access.access_type  = 'R'; // instruction fetch is always a read
-		access.data_address = to_addr;
-		access.data_width    = 4; // exactly one byte
-		if (!add_trace_event(margin, margin, access)) {
+
+		// pass through potentially available extended trace information
+		ev.set_accesstype(ev.READ); // instruction fetch is always a read
+		ev.set_memaddr(to_addr);
+		ev.set_width(4); // FIXME arbitrary?
+		if (!add_trace_event(margin, margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}

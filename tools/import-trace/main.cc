@@ -87,7 +87,9 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
-
+	CommandLine::option_handle EXTENDED_TRACE =
+		cmd.addOption("", "extended-trace", Arg::None,
+			"--extended-trace \tImport extended trace information if available");
 
 	// variant 1: care (synthetic Rs)
 	// variant 2: don't care (synthetic Ws)
@@ -207,6 +209,9 @@ int main(int argc, char *argv[]) {
 
 	if (cmd[ENABLE_SANITYCHECKS].count() > 0) {
 		importer->set_sanitychecks(true);
+	}
+	if (cmd[EXTENDED_TRACE].count() > 0) {
+		importer->set_extended_trace(true);
 	}
 
 	if (!importer->init(variant, benchmark, db)) {
