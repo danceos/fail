@@ -108,7 +108,7 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			return false;
 		}
 
-		ObjectFile *obj = dyn_cast<ObjectFile>(binary.get());
+		ObjectFile *obj = dyn_cast<ObjectFile, Binary>(binary.get());
 
 		disas.reset(new LLVMDisassembler(obj));
 		disas->disassemble();
