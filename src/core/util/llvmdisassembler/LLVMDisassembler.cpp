@@ -95,7 +95,7 @@ void LLVMDisassembler::disassemble()
 				// This symbol has the same address as the next symbol. Skip it.
 				continue;
 
-			for (Index = Start; Index < End; Index += Size) {
+			for (Index = Start; Index <= End; Index += Size) {
 				MCInst Inst;
 
 				if (disas->getInstruction(Inst, Size, memoryObject, Index,
