@@ -22,6 +22,7 @@ void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 Register* CPUArchitecture::getRegister(size_t i) const
 {
 	assert(i < m_Registers.size() && "FATAL ERROR: Invalid index provided!");
+	assert(m_Registers[i]->getId() == i && "FATAL ERROR: Register index mismatch");
 	return m_Registers[i];
 }
 

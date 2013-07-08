@@ -102,7 +102,7 @@ public:
 	 */
 	iterator begin() { return m_Regs.begin(); }
 	/**
-	 * Returns an iterator to the end of the interal data structure.
+	 * Returns an iterator to the end of the internal data structure.
 	 * \code
 	 * [1|2| ... |n]X
 	 *              ^

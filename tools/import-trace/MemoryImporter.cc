@@ -54,4 +54,3 @@ bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t ins
 	}
 	return true;
 }
-

@@ -17,12 +17,12 @@ static Logger LOG("RegisterImporter");
 bool RegisterImporter::cb_commandline_init() {
 	CommandLine &cmd = CommandLine::Inst();
 
-	NO_GP	= cmd.addOption("", "no-gp", Arg::None,
-							"--no-gp\t RegisterImporter: do not inject general purpose registers\n");
+	NO_GP = cmd.addOption("", "no-gp", Arg::None,
+		"--no-gp \tRegisterImporter: do not inject general purpose registers");
 	FLAGS = cmd.addOption("", "flags", Arg::None,
-						  "--flags: RegisterImporter: trace flags register\n");
-	IP	 = cmd.addOption("", "ip", Arg::None,
-						 "--ip: RegisterImporter: trace instruction pointer\n");
+		"--flags \tRegisterImporter: inject flags register");
+	IP    = cmd.addOption("", "ip", Arg::None,
+		"--ip \tRegisterImporter: inject instruction pointer");
 
 	return true;
 }
@@ -85,17 +85,9 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			std::cerr << "Error parsing arguments." << std::endl;
 			return false;
 		}
-
-		// Read FROM memory file
-		if (cmd[NO_GP].count() > 0) {
-			do_gp = false;
-		}
-		if (cmd[FLAGS].count() > 0) {
-			do_flags = true;
-		}
-		if (cmd[IP].count() > 0) {
-			do_ip = true;
-		}
+		do_gp = !cmd[NO_GP];
+		do_flags = cmd[FLAGS];
+		do_ip = cmd[IP];
 
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
@@ -125,7 +117,7 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
 	//const MCRegisterInfo &reg_info = disas->getRegisterInfo();
 
-	fail::LLVMtoFailTranslator & ltof =	 disas->getTranslator() ;
+	fail::LLVMtoFailTranslator & ltof = disas->getTranslator() ;
 
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_uses.begin();
 		 it != opcode.reg_uses.end(); ++it) {

@@ -217,7 +217,7 @@ void Database::cmdline_setup() {
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
 								  "-h/--hostname \tMYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)");
+								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)\n");
 }
 
 Database * Database::cmdline_connect() {

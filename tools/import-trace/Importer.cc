@@ -117,7 +117,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	m_last_ip = ev.ip();      // The last event in the log
 
 	/* Signal that the trace was completely imported */
-	LOG << "trace duration: " << (curtime - m_time_trace_start) << " ticks" << std::endl;
+	LOG << "trace duration: " << std::dec << (curtime - m_time_trace_start) << " ticks" << std::endl;
 	LOG << "Inserted " << m_row_count << " real trace events into the database" << std::endl;
 
 
