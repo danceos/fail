@@ -50,7 +50,7 @@ ProtoIStream openProtoStream(std::string input_file) {
 
 int main(int argc, char *argv[]) {
 	std::string trace_file, username, hostname, database, benchmark;
-	std::string variant, importer_args;
+	std::string variant;
 	ElfReader *elf_file = 0;
 	MemoryMap *memorymap = 0;
 
@@ -78,9 +78,6 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle IMPORTER =
 		cmd.addOption("i", "importer", Arg::Required,
 			"-i/--importer \tWhich import method to use (default: MemoryImporter)");
-	CommandLine::option_handle IMPORTER_ARGS =
-		cmd.addOption("I", "importer-args", Arg::Required,
-			"-I/--importer-args \tWhich import method to use (default: "")");
 	CommandLine::option_handle ELF_FILE =
 		cmd.addOption("e", "elf-file", Arg::Required,
 			"-e/--elf-file \tELF File (default: UNSET)");
@@ -178,9 +175,6 @@ int main(int argc, char *argv[]) {
 		benchmark = std::string(cmd[BENCHMARK].first()->arg);
 	else
 		benchmark = "none";
-
-	if (cmd[IMPORTER_ARGS].count() > 0)
-		importer_args = std::string(cmd[IMPORTER_ARGS].first()->arg);
 
 	if (cmd[ELF_FILE].count() > 0) {
 		elf_file = new ElfReader(cmd[ELF_FILE].first()->arg);
