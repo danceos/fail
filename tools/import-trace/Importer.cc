@@ -108,6 +108,11 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 		}
 	}
 
+	if (!trace_end_reached()) {
+		LOG << "trace_end_reached() failed" << std::endl;
+		return false;
+	}
+
 	// Why -1?	In most cases it does not make sense to inject before the
 	// very last instruction, as we won't execute it anymore.  This *only*
 	// makes sense if we also inject into parts of the result vector.  This
@@ -256,6 +261,8 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	stmt = extended ? &stmt_extended : &stmt_basic;
 	columns = extended ? &columns_extended : &columns_basic;
 
+	static unsigned num_additional_columns = 0;
+
 	if (!*stmt) {
 		std::stringstream sql;
 		sql << "INSERT INTO trace (variant_id, instr1, instr1_absolute, instr2, instr2_absolute, time1, time2, "
@@ -270,8 +277,18 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 			}
 		}
 
+		// Ask specialized importers whether they want to INSERT additional
+		// columns.
+		std::string additional_columns;
+		database_insert_columns(additional_columns, num_additional_columns);
+		sql << additional_columns;
+
 		sql << ") VALUES (?";
-		for (unsigned i = 1; i < *columns + (extended ? m_extended_trace_regs->count() * 2 : 0); ++i) {
+		for (unsigned i = 1;
+		     i < *columns +
+		         (extended ? m_extended_trace_regs->count() * 2 : 0) +
+		         num_additional_columns;
+		     ++i) {
 			sql << ",?";
 		}
 		sql << ")";
@@ -299,7 +316,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	}
 
 	// C99 / g++ extension VLA to the rescue:
-	MYSQL_BIND bind[*columns + m_extended_trace_regs->count() * 2];
+	MYSQL_BIND bind[*columns + m_extended_trace_regs->count() * 2 + num_additional_columns];
 	my_bool fake_null = is_fake;
 	my_bool null = true, not_null = false;
 	long unsigned accesstype_len = 1;
@@ -366,6 +383,15 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 			}
 		}
 	}
+
+	// Ask specialized importers what concrete data they want to INSERT.
+	if (num_additional_columns) {
+		unsigned pos = *columns + (extended ? m_extended_trace_regs->count() * 2 : 0);
+		if (!database_insert_data(event, bind + pos, num_additional_columns, is_fake)) {
+			return false;
+		}
+	}
+
 	if (mysql_stmt_bind_param(*stmt, bind)) {
 		LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(*stmt) << std::endl;
 		return false;

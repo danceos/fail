@@ -15,6 +15,79 @@ std::string AdvancedMemoryImporter::database_additional_columns()
 		"jumphistory INT UNSIGNED NULL, ";
 }
 
+void AdvancedMemoryImporter::database_insert_columns(std::string& sql, unsigned& num_columns)
+{
+	// FIXME upcall?
+	sql = ", opcode, jumphistory";
+	num_columns = 2;
+}
+
+//#include <google/protobuf/text_format.h>
+
+bool AdvancedMemoryImporter::database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake)
+{
+	static my_bool null = true;
+	// FIXME upcall?
+	assert(num_columns == 2);
+#if 0
+	// sanity check
+	if (!is_fake && delayed_entries.size() > 0 && ev.ip() != delayed_entries.front().ev.ip()) {
+		std::string out;
+		google::protobuf::TextFormat::PrintToString(ev, &out);
+		std::cout << "ev: " << out << std::endl;
+		google::protobuf::TextFormat::PrintToString(delayed_entries.front().ev, &out);
+		std::cout << "delayed_entries.front.ev: " << out << std::endl;
+	}
+#endif
+	assert(is_fake || delayed_entries.size() == 0 || ev.ip() == delayed_entries.front().ev.ip());
+	bind[0].buffer_type = MYSQL_TYPE_LONG;
+	bind[0].is_unsigned = 1;
+	bind[0].buffer = &delayed_entries.front().opcode;
+	bind[1].buffer_type = MYSQL_TYPE_LONG;
+	bind[1].is_unsigned = 1;
+	bind[1].buffer = &m_cur_branchmask;
+	if (is_fake) {
+		bind[0].is_null = &null;
+		bind[1].is_null = &null;
+	}
+	return true;
+}
+
+void AdvancedMemoryImporter::insert_delayed_entries(bool finalizing)
+{
+	unsigned branchmask;
+	unsigned last_branches_before = UINT_MAX;
+	// If we don't know enough future, and there's a chance we'll learn more,
+	// delay further.
+	for (std::deque<DelayedTraceEntry>::iterator it = delayed_entries.begin();
+	     it != delayed_entries.end() &&
+	     (it->branches_before + BRANCH_WINDOW_SIZE <= branches_taken.size() ||
+	      finalizing);
+	     it = delayed_entries.erase(it)) {
+		// determine branche decisions before / after this mem event
+		if (it->branches_before != last_branches_before) {
+			branchmask = 0;
+			int pos = std::max(-(signed)BRANCH_WINDOW_SIZE, - (signed) it->branches_before);
+			int maxpos = std::min(BRANCH_WINDOW_SIZE, branches_taken.size() - it->branches_before);
+			for (; pos < maxpos; ++pos) {
+				branchmask |=
+					((unsigned) branches_taken[it->branches_before + pos])
+					<< (16 - pos - 1);
+			}
+			m_cur_branchmask = branchmask;
+		}
+
+		//LOG << "AdvancedMemoryImporter::insert_delayed_entries instr = " << it->instr << " data_address = " << it->ev.memaddr() << std::endl;
+
+		// trigger INSERT
+		// (will call back via database_insert_data() and ask for additional data)
+		MemoryImporter::handle_mem_event(it->curtime, it->instr, it->ev);
+	}
+
+	// FIXME branches_taken could be shrunk here to stay within a bounded
+	// memory footprint
+}
+
 bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
 	Trace_Event &ev)
 {
@@ -23,6 +96,10 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 		m_last_was_conditional_branch = false;
 		branches_taken.push_back(ev.ip() != m_ip_jump_not_taken);
 	}
+
+	// Check whether we know enough branch-taken future to INSERT a few more
+	// (delayed) trace entries
+	insert_delayed_entries(false);
 
 	if (!binary) {
 		/* Disassemble the binary if necessary */
@@ -67,7 +144,10 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 		m_ip_jump_not_taken = opcode.address + opcode.length;
 	}
 
-	return MemoryImporter::handle_ip_event(curtime, instr, ev);
+	// IP events may need to be delayed, too, if the parent Importer draws any
+	// information from them.  MemoryImporter does not, though.
+	//return MemoryImporter::handle_ip_event(curtime, instr, ev);
+	return true;
 }
 
 bool AdvancedMemoryImporter::handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
@@ -75,67 +155,17 @@ bool AdvancedMemoryImporter::handle_mem_event(fail::simtime_t curtime, instructi
 {
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
-	TraceEntry entry = { instr, ev.memaddr(), ev.width(), opcode.opcode, branches_taken.size() };
-	update_entries.push_back(entry);
+	DelayedTraceEntry entry = { curtime, instr, ev, opcode.opcode, branches_taken.size() };
+	delayed_entries.push_back(entry);
 
-	return MemoryImporter::handle_mem_event(curtime, instr, ev);
+	// delay upcall to handle_mem_event until we know enough future branch decisions
+	return true;
 }
 
-bool AdvancedMemoryImporter::finalize()
+bool AdvancedMemoryImporter::trace_end_reached()
 {
-	LOG << "adding opcodes and jump history to trace events ..." << std::endl;
-
-	MYSQL_STMT *stmt = 0;
-	std::stringstream sql;
-	sql << "UPDATE trace SET opcode = ?, jumphistory = ? "
-	       "WHERE variant_id = " << m_variant_id << " AND data_address BETWEEN ? AND ? AND instr2 = ?";
-	stmt = mysql_stmt_init(db->getHandle());
-	if (mysql_stmt_prepare(stmt, sql.str().c_str(), sql.str().length())) {
-	LOG << "query '" << sql.str() << "' failed: " << mysql_error(db->getHandle()) << std::endl;
-		return false;
-	}
-	MYSQL_BIND bind[5];
-
-	unsigned rowcount = 0, rowcount_blocks = 0;
-	for (std::vector<TraceEntry>::iterator it = update_entries.begin();
-	     it != update_entries.end(); ++it) {
-		// determine branche decisions before / after this mem event
-		unsigned branchmask = 0;
-		int pos = std::max(-16, - (signed) it->branches_before);
-		int maxpos = std::min((unsigned) 16, branches_taken.size() - it->branches_before);
-		for (; pos < maxpos; ++pos) {
-			branchmask |=
-				((unsigned) branches_taken[it->branches_before + pos])
-				<< (16 - pos - 1);
-		}
-
-		memset(bind, 0, sizeof(bind));
-		for (unsigned i = 0; i < sizeof(bind)/sizeof(*bind); ++i) {
-			bind[i].buffer_type = MYSQL_TYPE_LONG;
-			bind[i].is_unsigned = 1;
-		}
-		bind[0].buffer = &it->opcode;
-		bind[1].buffer = &branchmask;
-		bind[2].buffer = &it->data_address;
-		unsigned rightmargin = it->data_address + it->data_width - 1;
-		bind[3].buffer = &rightmargin;
-		bind[4].buffer = &it->instr2;
-
-		if (mysql_stmt_bind_param(stmt, bind)) {
-			LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(stmt) << std::endl;
-			return false;
-		} else if (mysql_stmt_execute(stmt)) {
-			LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
-			return false;
-		}
-		rowcount += mysql_stmt_affected_rows(stmt);
-
-		if (rowcount >= rowcount_blocks + 10000) {
-			LOG << "Updated " << rowcount << " trace events" << std::endl;
-			rowcount_blocks += 10000;
-		}
-	}
-	LOG << "Updated " << rowcount << " trace events.  Done." << std::endl;
-
+	LOG << "inserting remaining trace events ..." << std::endl;
+	// INSERT the remaining entries (with incomplete branch future)
+	insert_delayed_entries(true);
 	return true;
 }

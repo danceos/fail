@@ -238,9 +238,4 @@ int main(int argc, char *argv[]) {
 		LOG << "copy_to_database() failed" << endl;
 		exit(-1);
 	}
-
-	if (!importer->finalize()) {
-		LOG << "finalize() failed" << endl;
-		exit(-1);
-	}
 }

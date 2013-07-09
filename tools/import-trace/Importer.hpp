@@ -82,6 +82,19 @@ public:
 	 * pass through their parent's implementation.
 	 */
 	virtual std::string database_additional_columns() { return ""; }
+	/**
+	 * Similar to database_additional_columns(), this allows specialized
+	 * importers to define which additional columns it wants to INSERT
+	 * alongside what add_trace_event() adds by itself.  This may be identical
+	 * to or a subset of what database_additional_columns() specifies.  The SQL
+	 * snippet should *begin* with a comma if non-empty.
+	 */
+	virtual void database_insert_columns(std::string& sql, unsigned& num_columns) { num_columns = 0; }
+	/**
+	 * Will be called back from add_trace_event() to fill in data for the
+	 * columns specified by database_insert_columns().
+	 */
+	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake) { return true; }
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
 	/**
@@ -107,7 +120,7 @@ public:
 	 * May be overridden by importers that need to do stuff after the last
 	 * event was consumed.
 	 */
-	virtual bool finalize() { return true; }
+	virtual bool trace_end_reached() { return true; }
 
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
 
