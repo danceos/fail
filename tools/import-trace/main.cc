@@ -87,6 +87,10 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
+	CommandLine::option_handle NO_WRITE_ECS =
+		cmd.addOption("", "no-write-ecs", Arg::None,
+			"--no-write-ecs \tDo not import any write ECs into the database; "
+			"results in a perforated fault space and is OK if you only use absolute failure numbers");
 	CommandLine::option_handle EXTENDED_TRACE =
 		cmd.addOption("", "extended-trace", Arg::None,
 			"--extended-trace \tImport extended trace information if available");
@@ -214,6 +218,7 @@ int main(int argc, char *argv[]) {
 
 	importer->set_sanitychecks(cmd[ENABLE_SANITYCHECKS]);
 	importer->set_extended_trace(cmd[EXTENDED_TRACE]);
+	importer->set_import_write_ecs(!cmd[NO_WRITE_ECS]);
 
 	if (!importer->init(variant, benchmark, db)) {
 		LOG << "importer->init() failed" << endl;

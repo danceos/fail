@@ -249,6 +249,10 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 
 bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 							   Trace_Event &event, bool is_fake) {
+	if (!m_import_write_ecs && event.accesstype() == event.WRITE) {
+		return true;
+	}
+
 	// insert extended trace info if configured and available
 	bool extended = m_extended_trace && event.has_trace_ext();
 

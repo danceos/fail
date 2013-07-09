@@ -23,6 +23,7 @@ protected:
 	fail::MemoryMap *m_mm;
 	char m_faultspace_rightmargin;
 	bool m_sanitychecks;
+	bool m_import_write_ecs;
 	bool m_extended_trace;
 	fail::Database *db;
 	fail::Architecture m_arch;
@@ -111,7 +112,7 @@ protected:
 	virtual bool trace_end_reached() { return true; }
 
 public:
-	Importer() : m_sanitychecks(false), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
+	Importer() : m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	/**
@@ -129,6 +130,7 @@ public:
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
+	void set_import_write_ecs(bool enabled) { m_import_write_ecs = enabled; }
 	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
 };
 
