@@ -23,6 +23,7 @@ public:
 	 */
 	virtual bool cb_commandline_init();
 
+protected:
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
 								 Trace_Event &ev);
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,

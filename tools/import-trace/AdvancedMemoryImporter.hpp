@@ -45,6 +45,8 @@ class AdvancedMemoryImporter : public MemoryImporter {
 
 public:
 	AdvancedMemoryImporter() : m_last_was_conditional_branch(false) {}
+
+protected:
 	virtual std::string database_additional_columns();
 	virtual void database_insert_columns(std::string& sql, unsigned& num_columns);
 	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake);

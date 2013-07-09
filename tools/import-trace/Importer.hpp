@@ -64,17 +64,7 @@ protected:
 	instruction_count_t m_last_instr;
 	fail::simtime_t m_last_time;
 
-public:
-	Importer() : m_sanitychecks(false), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
-	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
-
-	/**
-	 * Callback function that can be used to add command line options
-	 * to the cmd interface
-	 */
-	virtual bool cb_commandline_init() { return true; }
-
-	virtual bool create_database();
+protected:
 	/**
 	 * Allows specialized importers to add more table columns instead of
 	 * completely overriding create_database().  The returned SQL CREATE TABLE
@@ -95,8 +85,6 @@ public:
 	 * columns specified by database_insert_columns().
 	 */
 	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake) { return true; }
-	virtual bool copy_to_database(fail::ProtoIStream &ps);
-	virtual bool clear_database();
 	/**
 	 * Use this variant if passing through the IP/MEM event does not make any
 	 * sense for your Importer implementation.
@@ -121,6 +109,20 @@ public:
 	 * event was consumed.
 	 */
 	virtual bool trace_end_reached() { return true; }
+
+public:
+	Importer() : m_sanitychecks(false), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
+	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
+
+	/**
+	 * Callback function that can be used to add command line options
+	 * to the cmd interface
+	 */
+	virtual bool cb_commandline_init() { return true; }
+
+	virtual bool create_database();
+	virtual bool copy_to_database(fail::ProtoIStream &ps);
+	virtual bool clear_database();
 
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
 
