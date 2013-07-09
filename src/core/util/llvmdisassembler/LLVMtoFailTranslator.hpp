@@ -39,11 +39,8 @@ protected:
 
 	LLVMtoFailTranslator(){};
 
-#ifndef __puma
 	typedef std::map<unsigned int, struct reginfo_t> ltof_map_t;
 	ltof_map_t llvm_to_fail_map;
-#endif
-
 
 public:
 	const reginfo_t &  getFailRegisterID(unsigned int regid);

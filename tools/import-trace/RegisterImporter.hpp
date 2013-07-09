@@ -5,13 +5,10 @@
 #include "util/CommandLine.hpp"
 #include "Importer.hpp"
 
-#ifndef __puma
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
-#endif
 
 
 class RegisterImporter : public Importer {
-#ifndef __puma
 	llvm::OwningPtr<llvm::object::Binary> binary;
 	llvm::OwningPtr<fail::LLVMDisassembler> disas;
 
@@ -19,8 +16,6 @@ class RegisterImporter : public Importer {
 						  const Trace_Event &ev,
 						  const fail::LLVMtoFailTranslator::reginfo_t &info,
 						  char access_type);
-#endif
-
 
 	fail::CommandLine::option_handle NO_GP, FLAGS, IP;
 	bool do_gp, do_flags, do_ip;

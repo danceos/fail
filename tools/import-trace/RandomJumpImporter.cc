@@ -1,4 +1,3 @@
-#ifndef __puma
 #include <sstream>
 #include <iostream>
 #include "util/Logger.hpp"
@@ -129,6 +128,3 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 
 	return true;
 }
-
-
-#endif // !__puma

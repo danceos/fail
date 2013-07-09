@@ -1,8 +1,6 @@
 #ifndef __LLVMDISASSEMBLER_HPP__
 #define __LLVMDISASSEMBLER_HPP__
 
-#ifndef __puma
-
 #include <iostream>
 #include <vector>
 #include <map>
@@ -137,5 +135,4 @@ public:
 
 
 }
-#endif // puma
 #endif // __LLVMDISASSEMBLER_HPP__

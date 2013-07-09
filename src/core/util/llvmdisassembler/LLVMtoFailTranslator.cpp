@@ -4,7 +4,6 @@
 using namespace fail;
 
 const LLVMtoFailTranslator::reginfo_t &	 LLVMtoFailTranslator::getFailRegisterID(unsigned int regid) {
-#ifndef __puma
 	ltof_map_t::iterator it = llvm_to_fail_map.find(regid);
 	if( it != llvm_to_fail_map.end() ) {// found
 		return (*it).second;
@@ -13,7 +12,6 @@ const LLVMtoFailTranslator::reginfo_t &	 LLVMtoFailTranslator::getFailRegisterID
 		//exit(EXIT_FAILURE);
 		return notfound;
 	}
-#endif
 }
 
 regdata_t LLVMtoFailTranslator::getRegisterContent(ConcreteCPU& cpu, const reginfo_t &reginfo){

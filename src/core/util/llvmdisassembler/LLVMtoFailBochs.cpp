@@ -4,7 +4,6 @@
 using namespace fail;
 
 LLVMtoFailBochs::LLVMtoFailBochs() {
-#ifndef __puma
 	/* These magic numbers are taken from the llvm compiler (MC), they
 	   do not appear in any header. They hopefully will never
 	   change */
@@ -46,5 +45,4 @@ LLVMtoFailBochs::LLVMtoFailBochs() {
 	llvm_to_fail_map[54]  = reginfo_t(RID_CSP); // ESP
 	llvm_to_fail_map[117] = reginfo_t(RID_CSP, 16, 0);	// SP
 	llvm_to_fail_map[118] = reginfo_t(RID_CSP, 8, 0);		// SPL
-#endif
 }

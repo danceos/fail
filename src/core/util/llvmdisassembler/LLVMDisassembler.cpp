@@ -1,4 +1,3 @@
-#ifndef __puma
 #include "LLVMDisassembler.hpp"
 
 using namespace fail;
@@ -147,5 +146,3 @@ void LLVMDisassembler::disassemble()
 }
 
 void LLVMDisassembler::StringRefMemoryObject::anchor() {}
-
-#endif
