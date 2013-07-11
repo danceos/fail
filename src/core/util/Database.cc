@@ -82,7 +82,7 @@ std::vector<Database::Variant> Database::get_variants(const std::string &variant
 		  "	 variant varchar(255) NOT NULL,"
 		  "	 benchmark varchar(255) NOT NULL,"
 		  "	 PRIMARY KEY (id),"
-		  "UNIQUE KEY variant (variant,benchmark))")) {
+		  "UNIQUE KEY variant (variant,benchmark)) ENGINE=MyISAM")) {
 		return result;
 	}
 
@@ -131,7 +131,7 @@ int Database::get_fspmethod_id(const std::string &method)
 	if (!query("CREATE TABLE IF NOT EXISTS fspmethod ("
 		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
 		  "	 method varchar(255) NOT NULL,"
-		  "	 PRIMARY KEY (id), UNIQUE KEY method (method))")) {
+		  "	 PRIMARY KEY (id), UNIQUE KEY method (method)) ENGINE=MyISAM")) {
 		return 0;
 	}
 
