@@ -73,6 +73,10 @@ my_ulonglong Database::affected_rows()
 	return mysql_affected_rows(handle);
 }
 
+my_ulonglong Database::insert_id()
+{
+	return mysql_insert_id(handle);
+}
 
 std::vector<Database::Variant> Database::get_variants(const std::string &variant, const std::string &benchmark) {
 	std::vector<Variant> result;

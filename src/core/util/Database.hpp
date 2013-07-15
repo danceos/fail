@@ -86,6 +86,11 @@ namespace fail {
 		my_ulonglong affected_rows();
 
 		/**
+		 * AUTO_INCREMENT id from the last INSERT or UPDATE statement.
+		 */
+		my_ulonglong insert_id();
+
+		/**
 		 * Interface to the util/CommandLine.hpp interface. In you
 		 * application you first call cmdline_setup(), which adds
 		 * different command line options. The cmdline_connect()
