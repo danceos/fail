@@ -21,6 +21,14 @@ Database::Database(const std::string &username, const std::string &host, const s
 	LOG << "opened MYSQL connection" << std::endl;
 }
 
+Database::~Database()
+{
+	// flush cached INSERTs if available
+	insert_multiple();
+
+	mysql_close(handle);
+}
+
 MYSQL_RES* Database::query(char const *query, bool get_result) {
 #ifndef __puma
 	boost::lock_guard<boost::mutex> guard(m_handle_lock);
@@ -67,6 +75,43 @@ MYSQL_RES* Database::query_stream(char const *query)
 	return res;
 }
 
+bool Database::insert_multiple(char const *insertquery, char const *values)
+{
+	// different insertquery, but still cached values?
+	if (insertquery && m_insertquery != insertquery && m_insertquery_values.size() > 0) {
+		// flush cache
+		insert_multiple();
+	} else if (!insertquery && m_insertquery.size() == 0) {
+		// don't know how to INSERT, no insertquery available!
+		return false;
+	}
+
+	if (insertquery) {
+		m_insertquery = insertquery;
+	}
+
+	if (values) {
+		m_insertquery_values.push_back(values);
+	}
+
+	if ((!values && m_insertquery_values.size() > 0) || m_insertquery_values.size() >= 32) {
+		std::stringstream sql;
+		sql << m_insertquery;
+		bool first = true;
+		for (std::vector<std::string>::const_iterator it = m_insertquery_values.begin();
+		     it != m_insertquery_values.end(); ++it) {
+			if (!first) {
+				sql << ",";
+			}
+			first = false;
+			sql << *it;
+		}
+		m_insertquery_values.clear();
+		return query(sql.str().c_str());
+	}
+
+	return true;
+}
 
 my_ulonglong Database::affected_rows()
 {

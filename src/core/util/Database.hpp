@@ -24,13 +24,15 @@ namespace fail {
 #ifndef __puma
 		boost::mutex m_handle_lock;
 #endif
+		std::string m_insertquery;
+		std::vector<std::string> m_insertquery_values;
 
 	public:
 		/**
 		 * Constructor that connects instantly to the database
 		 */
 		Database(const std::string &username, const std::string &host, const std::string &database);
-		~Database() { mysql_close(handle); }
+		~Database();
 
 		struct Variant {
 			int id;
@@ -79,6 +81,12 @@ namespace fail {
 		 * behaves as a normal MYSQL_RES pointer.
 		 */
 		MYSQL_RES *query_stream(char const *query);
+
+		/**
+		 * Caches multiple value tuples to combine into multi-value INSERTs.
+		 * Call without parameters to flush the cache.
+		 */
+		bool insert_multiple(char const *insertquery = 0, char const *values = 0);
 
 		/**
 		 * How many rows were affected by the last query
