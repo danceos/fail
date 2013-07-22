@@ -75,7 +75,6 @@ namespace fail {
    */
 
   class ElfReader {
-
     public:
       typedef ElfSymbol entry_t;
       typedef std::vector<entry_t> container_t;
@@ -153,9 +152,11 @@ namespace fail {
       container_t::const_iterator sec_begin() { return m_sectiontable.begin(); }
       container_t::const_iterator sec_end() { return m_sectiontable.end(); }
 
+	  const std::string & getFilename() { return m_filename; }
 
     private:
       Logger m_log;
+	  std::string m_filename;
 
       void setup(const char*);
       int process_symboltable(int sect_num, FILE* fp);

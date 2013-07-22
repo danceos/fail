@@ -1,0 +1,49 @@
+#ifndef __REGISTER_IMPORTER_H__
+#define __REGISTER_IMPORTER_H__
+
+
+#include "util/CommandLine.hpp"
+#include "Importer.hpp"
+
+#ifndef __puma
+#include "util/llvmdisassembler/LLVMDisassembler.hpp"
+#endif
+
+
+class RegisterImporter : public Importer {
+#ifndef __puma
+	llvm::OwningPtr<llvm::object::Binary> binary;
+	llvm::OwningPtr<fail::LLVMDisassembler> disas;
+
+	bool addRegisterTrace(fail::simtime_t curtime, instruction_count_t instr,
+						  const Trace_Event &ev,
+						  const fail::LLVMtoFailTranslator::reginfo_t &info,
+						  char access_type);
+#endif
+
+
+	fail::CommandLine::option_handle NO_GP, FLAGS, IP;
+	bool do_gp, do_flags, do_ip;
+
+public:
+	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false) {}
+	/**
+	 * Callback function that can be used to add command line options
+	 * to the cmd interface
+	 */
+	virtual bool cb_commandline_init();
+
+	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
+								 const Trace_Event &ev);
+	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
+								  const Trace_Event &ev) {
+		/* ignore on purpose */
+		return true;
+	}
+
+	virtual void open_unused_ec_intervals() {
+		/* empty, Memory Map has a different meaning in this importer */
+	}
+};
+
+#endif

@@ -55,6 +55,9 @@ int main(int argc, char *argv[])
 	CommandLine::option_handle STATS =
 		cmd.addOption("s", "stats", Arg::None,
 			"-s/--stats \tShow trace stats");
+	CommandLine::option_handle EXTENDED_TRACE =
+		cmd.addOption("", "extended-trace", Arg::None,
+			"--extended-trace \tDump extended trace information if available");
 
 	for (int i = 1; i < argc; ++i) {
 		cmd.add_args(argv[i]);
@@ -73,10 +76,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	bool stats_only = false;
-	if (cmd[STATS]) {
-		stats_only = true;
-	}
+	bool stats_only = cmd[STATS];
+	bool extended = cmd[EXTENDED_TRACE];
 
 	std::ifstream normal_stream;
 	igzstream gz_stream;
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
 			}
 		} else {
 			stringstream ext;
-			if (ev.has_trace_ext() && !stats_only) {
+			if (ev.has_trace_ext() && !stats_only && extended) {
 				const Trace_Event_Extended& temp_ext = ev.trace_ext();
 				ext << " DATA " << std::hex;
 				ext << (uint64_t) temp_ext.data();

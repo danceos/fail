@@ -48,6 +48,8 @@ void ElfReader::setup(const char* path) {
     return;
   }
 
+  m_filename = std::string(path);
+
   // Evaluate headers
   Elf32_Ehdr ehdr;
   Elf32_Shdr sec_hdr;

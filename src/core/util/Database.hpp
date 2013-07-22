@@ -5,6 +5,7 @@
 #include <boost/thread.hpp>
 #endif
 
+#include <vector>
 #include <mysql/mysql.h>
 #include <iostream>
 #include <string>
@@ -31,12 +32,25 @@ namespace fail {
 		Database(const std::string &username, const std::string &host, const std::string &database);
 		~Database() { mysql_close(handle); }
 
+		struct Variant {
+			int id;
+			std::string variant;
+			std::string benchmark;
+		};
+
 		/**
 		 * Get the variant id for a specific variant/benchmark pair,
 		 * if it isn't defined in the database (variant table), it is
 		 * inserted
 		 */
 		int get_variant_id(const std::string &variant, const std::string &benchmark);
+
+		/**
+		 * Get all variants that fit the given patterns (will be
+		 * queried with SQL LIKE).
+		 */
+		std::vector<Variant> get_variants(const std::string &variant, const std::string &benchmark);
+
 
 		/**
 		 * Get the fault space pruning method id for a specific

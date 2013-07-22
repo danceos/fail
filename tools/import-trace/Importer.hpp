@@ -64,6 +64,12 @@ public:
 	Importer() : m_sanitychecks(false), m_row_count(0), m_time_trace_start(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
+	/**
+	 * Callback function that can be used to add command line options
+	 * to the cmd interface
+	 */
+	virtual bool cb_commandline_init() { return true; }
+
 	virtual bool create_database();
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
@@ -78,7 +84,8 @@ public:
 								 const Trace_Event &ev) = 0;
 
 
-	void set_elf_file(fail::ElfReader *elf) { m_elf = elf; }
+	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
+
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }

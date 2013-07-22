@@ -24,7 +24,6 @@ class DatabaseCampaign : public Campaign {
 	Database *db; // !< The database connection object
 	DatabaseProtobufAdapter db_connect;
 
-	int variant_id; // !< Which variant do we work on (from CMDLINE)
 	int fspmethod_id; // !< Which fspmethod should be put out to the clients
 
 	void collect_result_thread();
@@ -40,6 +39,20 @@ public:
 	 * @return \c true if the campaign was successful, \c false otherwise
 	 */
 	virtual bool run();
+
+	/**
+	 * Is called by run() for every variant, returned by the variant
+	 * filter (SQL LIKE).
+	 * @return \c true if the campaign was successful, \c false otherwise
+	 */
+	virtual bool run_variant(fail::Database::Variant);
+
+	/**
+	 * How many results have to are expected from each fsppilot. If
+	 * there are less result rows, the pilot will be again sent to the clients
+	 * @return \c exptected number of results
+	 */
+	virtual int expected_number_of_results(std::string variant, std::string benchmark) { return 8;}
 
 	/**
 	 * Callback function that can be used to add command line options

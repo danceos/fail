@@ -265,7 +265,7 @@ bool EcosKernelTestCampaign::run()
 	   << "  AND p.fspmethod_id = " << fspmethod_id << " "
 	   << "  AND (" << sql_variants << ") ";
 #elif 1
-	if (!db->query("CREATE TEMPORARY TABLE done_pilots (id INT UNSIGNED NOT NULL PRIMARY KEY)")) return false;
+	if (!db->query("CREATE TEMPORARY TABLE done_pilots (id INT UNSIGNED NOT NULL PRIMARY KEY) ENGINE=MyISAM")) return false;
 	ss << "INSERT INTO done_pilots SELECT pilot_id FROM " << m_result_table << " GROUP BY pilot_id HAVING SUM(bit_width) = 8";
 	if (!db->query(ss.str().c_str())) return false;
 	unsigned finished_jobs = db->affected_rows();

@@ -1,5 +1,3 @@
-#include "util/optionparser/optionparser.h"
-#include "util/optionparser/optionparser_ext.hpp"
 #include "util/CommandLine.hpp"
 #include "util/Database.hpp"
 #include "util/ElfReader.hpp"
@@ -8,8 +6,13 @@
 #include "util/Logger.hpp"
 #include <fstream>
 #include <string>
-
 #include "MemoryImporter.hpp"
+
+#ifdef BUILD_LLVM_DISASSEMBLER
+#include "InstructionImporter.hpp"
+#include "RegisterImporter.hpp"
+#include "RandomJumpImporter.hpp"
+#endif
 
 
 using namespace fail;
@@ -47,7 +50,7 @@ ProtoIStream openProtoStream(std::string input_file) {
 
 int main(int argc, char *argv[]) {
 	std::string trace_file, username, hostname, database, benchmark;
-	std::string variant, importer_args;
+	std::string variant;
 	ElfReader *elf_file = 0;
 	MemoryMap *memorymap = 0;
 
@@ -75,9 +78,6 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle IMPORTER =
 		cmd.addOption("i", "importer", Arg::Required,
 			"-i/--importer \tWhich import method to use (default: MemoryImporter)");
-	CommandLine::option_handle IMPORTER_ARGS =
-		cmd.addOption("I", "importer-args", Arg::Required,
-			"-I/--importer-args \tWhich import method to use (default: "")");
 	CommandLine::option_handle ELF_FILE =
 		cmd.addOption("e", "elf-file", Arg::Required,
 			"-e/--elf-file \tELF File (default: UNSET)");
@@ -118,9 +118,22 @@ int main(int argc, char *argv[]) {
 
 	if (cmd[IMPORTER].count() > 0) {
 		std::string imp(cmd[IMPORTER].first()->arg);
-		if (imp == "BasicImporter" || imp == "MemoryImporter") {
+		if (imp == "BasicImporter" || imp == "MemoryImporter" || imp == "memory" || imp == "mem") {
 			LOG << "Using MemoryImporter" << endl;
 			importer = new MemoryImporter();
+#ifdef BUILD_LLVM_DISASSEMBLER
+		} else if (imp == "InstructionImporter" || imp == "code") {
+			LOG << "Using InstructionImporter" << endl;
+			importer = new InstructionImporter();
+
+		} else if (imp == "RegisterImporter" || imp == "regs") {
+			LOG << "Using RegisterImporter" << endl;
+			importer = new RegisterImporter();
+
+		} else if (imp == "RandomJumpImporter") {
+			LOG << "Using RandomJumpImporter" << endl;
+			importer = new RandomJumpImporter();
+#endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
@@ -131,7 +144,16 @@ int main(int argc, char *argv[]) {
 		importer = new MemoryImporter();
 	}
 
+	if (importer && !(importer->cb_commandline_init())) {
+		std::cerr << "Cannot call importers command line initialization!" << std::endl;
+		exit(-1);
+	}
+
 	if (cmd[HELP]) {
+		// Since the importer might have added command line options,
+		// we need to reparse all arguments in order to prevent a
+		// segfault within optionparser
+		cmd.parse();
 		cmd.printUsage();
 		exit(0);
 	}
@@ -154,13 +176,10 @@ int main(int argc, char *argv[]) {
 	else
 		benchmark = "none";
 
-	if (cmd[IMPORTER_ARGS].count() > 0)
-		importer_args = std::string(cmd[IMPORTER_ARGS].first()->arg);
-
 	if (cmd[ELF_FILE].count() > 0) {
 		elf_file = new ElfReader(cmd[ELF_FILE].first()->arg);
 	}
-	importer->set_elf_file(elf_file);
+	importer->set_elf(elf_file);
 
 	if (cmd[MEMORYMAP].count() > 0) {
 		memorymap = new MemoryMap();
