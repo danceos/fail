@@ -485,7 +485,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// FIXME: It would be nice to have a MemAccessListener that accepts a
 		// MemoryMap, to have MemoryMaps that store addresses in a compact way,
 		// and that are invertible.
-		assert(mem1_low < mem1_high && mem1_high < VIDEOMEM_START && VIDEOMEM_END < mem2_low && mem2_low < mem2_high);
+		assert(mem1_low <= mem1_high && mem1_high < VIDEOMEM_START && VIDEOMEM_END < mem2_low && mem2_low <= mem2_high);
 		MemAccessListener ev_mem_outside1(0x0, MemAccessEvent::MEM_READWRITE);
 		ev_mem_outside1.setWatchWidth(mem1_low);
 		MemAccessListener ev_mem_outside2(mem1_high + 1, MemAccessEvent::MEM_READWRITE);
