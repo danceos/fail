@@ -854,8 +854,9 @@ def makeEnv(label, objsfx, strip = False, **kwargs):
         swig_env.Append(CCFLAGS='-Wno-sign-compare')
         swig_env.Append(CCFLAGS='-Wno-parentheses')
         swig_env.Append(CCFLAGS='-Wno-unused-label')
-        if compareVersions(env['GCC_VERSION'], '4.6') >= 0:
-            swig_env.Append(CCFLAGS='-Wno-unused-but-set-variable')
+        # DanceOS (We are faking gcc 4.4.5--see above--but the underlying gcc might be newer.)
+        # if compareVersions(env['GCC_VERSION'], '4.6'):
+        swig_env.Append(CCFLAGS='-Wno-unused-but-set-variable')
     if env['CLANG']:
         swig_env.Append(CCFLAGS=['-Wno-unused-label'])
 
