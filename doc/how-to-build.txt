@@ -4,6 +4,7 @@ Additional libraries/packages/tools needed for Fail*:
 
 Required for Fail*:
 **********************************************************************
+ - libmysqlclient-dev or libmariadbclient-dev
  - libprotobuf-dev
  - libpcl1-dev
  - libboost-thread-dev
