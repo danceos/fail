@@ -18,6 +18,7 @@ public:
 	 * @return the current lr
 	 */
 	virtual address_t getLinkRegister() const = 0;
+	virtual ~ArmCPUState() { }
 };
 
 // TODO: Enum for misc registers
