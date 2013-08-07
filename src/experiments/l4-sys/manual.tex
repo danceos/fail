@@ -13,7 +13,8 @@
 
 %opening
 \title{L4Sys User Manual}
-\author{Martin Unzner (\href{mailto:munzner@os.inf.tu-dresden.de}{munzner@os.inf.tu-dresden.de})}
+\author{Martin Unzner (\href{mailto:munzner@os.inf.tu-dresden.de}{munzner@os.inf.tu-dresden.de}), \\
+        Björn Döbel (\href{mailto:doebel@os.inf.tu-dresden.de}{doebel@os.inf.tu-dresden.de})}    
 
 \begin{document}
 
@@ -59,60 +60,77 @@ might fail because they tried to execute the same faulty instruction.
 
 \section{Emulator Setup}
 
-These experiments work with Bochs only. This is partly due to some
-issues with timing --- as soon as a valid model of
-time in the target emulator as well as an assembler/disassembler
-functionality in the Fail* framework are established, I would recommend a
-backend change, as Bochs' reliability is very limited.
+L4Sys fault injection experiments work with Bochs only. This is partly due to
+some issues with timing --- as soon as a valid model of time in the target
+emulator as well as an assembler/disassembler functionality in the Fail*
+framework are established, I would recommend a backend change, as Bochs'
+reliability is very limited.
 
-To setup your system, first, you need a dedicated \texttt{bochsrc} file.
-It has proven handy to have
-a Bochs resource file or an independent Bochs instance with GUI enabled
-for the initial testing, however the experiments are intended to be
-conducted without graphical output.
+To setup your system, first, you need a dedicated \texttt{bochsrc} file.  It
+has proven useful to have a Bochs resource file or an independent Bochs
+instance with GUI enabled for the initial testing, however the experiments are
+intended to be conducted without graphical output.
+
+Bochs should be booted using a CD image containing your setup. To obtain this
+setup, first build Fiasco.OC and L4Re separately as described in their
+respective \href{https://os.inf.tu-dresden.de/L4Re/build.html}{build
+instructions}. Make sure your setup is running, e.g., in QEMU. Once this
+works, create an ISO image using the L4 build system's 
+\verb+make grub2iso E=<entry>+ command. Validate that this ISO boots and runs
+in Bochs.
 
 \section{Client Setup}
 
-All parameters of the L4Sys experiment client can be found
-in the file \texttt{experimentInfo.hpp}. Normally, it should
-not be necessary to change the program flow directly, however,
-if something bothers you, you are always free to take a look
-at \texttt{experiment.cc}, too.
+All parameters of the L4Sys experiment client can be found in the file
+\texttt{experimentInfo.hpp}. Normally, it should not be necessary to change
+the program flow directly. However, if something bothers you, you are always
+free to take a look at \texttt{experiment.cc}, too.
 
 \subsection{Constants}
 
-Some values are constant throughout all steps of the preparation
-and also when the workload program is run.
-The most important constant is \verb+L4SYS_BOCHS_IPS+,
-which has to be consistent with your \texttt{bochsrc} setting
-and is used for several timely calculations in the client.
+Some values are constant throughout all steps of the preparation and also when
+the workload program is run.  The most important constant is
+\verb+L4SYS_BOCHS_IPS+, which has to be consistent with your \texttt{bochsrc}
+setting and is used for several timely calculations in the client.
 
 \subsection{Step 0: Determine the address space}
 
-First, you need to find what are the addresses of the
-start and end instructions of your
-workload program. Therefore, you should use a
-disassembler like \emph{objdump} or \emph{IDA Pro} and
-set \verb+L4SYS_FUNC_ENTRY+ and \verb+L4SYS_FUNC_EXIT+
-accordingly. \verb+L4SYS_NUMINSTR+
-is determined automatically in a later preparation step and
-can be ignored for now.
+First, we need to find the start and end instruction addresses for our
+workload program and our given experiment. For this purpose, use a
+disassembler, such as \texttt{objdump} or \emph{IDA Pro}. Determine the first
+and last instruction for your campaign and set  \verb+L4SYS_FUNC_ENTRY+ and
+\verb+L4SYS_FUNC_EXIT+ in the header file accordingly. \verb+L4SYS_NUMINSTR+
+is determined automatically in a later preparation step and can be ignored for
+now.
 
-To test instructions that are run only in a specific address space,
-L4Sys uses the address space filtering mechanism of Fail*.
-If your fault injection campaign is not limited to a specific address space,
-you may set \verb+L4SYS_ADDRESS_SPACE+ to \verb+ANY_ADDR+. Keep in mind that in
-that case, your instruction addresses must be unique among all those
-executed in the system, which in general is not the case.
+If you want your campaign only to affect a specific address space (e.g.,
+because you are only interested in faults at the application level), L4Sys
+leverages Fail*'s address space filtering mechanism. To determine the address
+space identifier, you will have to use Bochs'
+\href{http://bochs.sourceforge.net/doc/docbook/user/internal-debugger.html}{internal
+debugger} and perform the following actions:
+\begin{enumerate}
+  \item Compile Bochs with support for the internal debugger. This can either
+        be done by configuring and rebuilding the fail client accordingly or
+        using a separate Bochs installation - we don't need Fail*
+        functionality here.
+  \item Boot your system in Bochs. The debugger prompt (or window) will
+        appear. Use the \verb+lbreak+ command to set an instruction breakpoint
+        to an address in your application. (Hint: Remember you already figured
+        out \verb+L4SYS_FUNC_ENTRY+ previously.)
+  \item Run Bochs until the breakpoint is hit. Verify that you are in the
+        right address space (instruction pointers may be similar in different
+        applications as L4's BID links all programs to the same starting
+        address by default).
+  \item Use the \verb+creg+ command to look at the current control registers.
+        Set \verb+L4SYS_ADDRESS_SPACE+ to the value of the CR3 (page table
+        control) register.     
+\end{enumerate}
 
-To find out the value of the address space identifier, you will have to
-look up the value in
-the emulator using a debugger. In the case of Bochs, you may want to
-study
-\href{http://bochs.sourceforge.net/doc/docbook/user/internal-debugger.html}{this page},
-and, according to its instructions,
-dump the content of the CR3 control register at the
-beginning of your program.
+If you are not interested in address space filtering, you may set
+\verb+L4SYS_ADDRESS_SPACE+ to \verb+ANY_ADDR+. Note that in this case you will
+probably encounter instruction pointers across various address spaces and may
+not get the unique results you want.
 
 \subsection{Step 1: Save the initial state of the machine}
 
