@@ -49,7 +49,7 @@ BuildNRun
 # now get ready to rumble...
 echo -e "\033[35;1m[$(date)] ================== Step 4: Build Injection Client ==============\033[0m"
 cat $BAK | sed -e "s/L4SYS_NUMINSTR.*/L4SYS_NUMINSTR $((num_inst*10))/" >$BAK.2
-cat $BAK.2 | sed -e "s/PREPARATION_STEP.*/PREPARATION_STEP 0/"
+cat $BAK.2 | sed -e "s/PREPARATION_STEP.*/PREPARATION_STEP 0/">$CFG
 rm $BAK $BAK.2
 buildfail
 
