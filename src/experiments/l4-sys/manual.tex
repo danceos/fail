@@ -1,6 +1,7 @@
-\documentclass[a4paper,10pt]{article}
+\documentclass[a4paper,times,9pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{hyphenat}
+\usepackage{enumitem}
 \tolerance 2414
 \hbadness 2414
 \emergencystretch 1.5em
@@ -11,8 +12,10 @@
 \raggedbottom
 \usepackage{hyperref}
 
+\newcommand{\lfs}{L4Sys}
+
 %opening
-\title{L4Sys User Manual}
+\title{L4Sys Fault Injection Campaign -- User Manual}
 \author{Martin Unzner (\href{mailto:munzner@os.inf.tu-dresden.de}{munzner@os.inf.tu-dresden.de}), \\
         Björn Döbel (\href{mailto:doebel@os.inf.tu-dresden.de}{doebel@os.inf.tu-dresden.de})}    
 
@@ -27,19 +30,36 @@ please read the source code or contact me. Still, I would like
 you to read this whole document before investigating further.
 \end{abstract}
 
-This is the user manual on the L4Sys generic system test framework.
-It provides four experiment types: GPRFlip to simulate a bit flip
-in a general purpose register, RATFlip to simulate a wrong association
-in the register allocation table, IDCFLip to corrupt a specific instruction
-and ALUInstrFlip to modify the behaviour of the arithmetic logic unit,
-so that it performs a different calculation using the same parameters.
+\section{Overview}
+
+This is the user manual of the \lfs{} generic system test framework.
+The framework builds on Fail* and provides means to perform fault injection
+experiments for applications running on top of the Fiasco.OC/L4Re
+microkernel-based operating system as well as the underlying microkernel.
+
+\noindent \lfs{} provides four experiment types:
+\begin{enumerate}[topsep=0em,itemsep=0em]
+  \item \emph{GPRFlip} simulates bit flips in general purpose registers.
+  \item \emph{RATFlip} simulates errors in the association between the
+        physical register file and general purpose registers.
+  \item \emph{IDCFlip} simulates errors occurring during instruction decoding.
+  \item \emph{ALUInstrFlip} simulates errors in the processor's arithmetic
+        logic unit.
+\end{enumerate}
+
+\noindent \lfs{} currently works for x86/32 running in Fail/Bochs only.
+This is partly due to some issues with timing --- as soon as a valid model of
+time in the target emulator as well as an assembler/disassembler functionality
+in the Fail* framework are established, I would recommend a backend change, as
+Bochs' reliability is very limited.
 
 \section{Framework Setup}
 
-Configure Fail* as described in \texttt{doc/how-to-build.txt}. In addition,
-the following CMake flags need to be set:
+To prepare a fault injection campaign you will first need to configure and
+build Fail* itself. This process is described in \texttt{doc/how-to-build.txt}.
+The following CMake flags need to be set:
 
-\begin{itemize}
+\begin{itemize}[itemsep=0em]
 \item \verb+BUILD_BOCHS = ON+
 \item \verb+BUILD_X86 = ON+
 \item \verb+CONFIG_BOCHS_NO_ABORT = ON+
@@ -60,16 +80,11 @@ might fail because they tried to execute the same faulty instruction.
 
 \section{Emulator Setup}
 
-L4Sys fault injection experiments work with Bochs only. This is partly due to
-some issues with timing --- as soon as a valid model of time in the target
-emulator as well as an assembler/disassembler functionality in the Fail*
-framework are established, I would recommend a backend change, as Bochs'
-reliability is very limited.
-
-To setup your system, first, you need a dedicated \texttt{bochsrc} file.  It
-has proven useful to have a Bochs resource file or an independent Bochs
-instance with GUI enabled for the initial testing, however the experiments are
-intended to be conducted without graphical output.
+The next step is to prepare an L4Re application setup to run in Bochs.  To
+setup your system, first, you need a dedicated \texttt{bochsrc} file.  It has
+proven useful to have a Bochs resource file or an independent Bochs instance
+with GUI enabled for the initial testing, however the experiments are intended
+to be conducted without graphical output.
 
 Bochs should be booted using a CD image containing your setup. To obtain this
 setup, first build Fiasco.OC and L4Re separately as described in their
@@ -79,12 +94,30 @@ works, create an ISO image using the L4 build system's
 \verb+make grub2iso E=<entry>+ command. Validate that this ISO boots and runs
 in Bochs.
 
+
 \section{Client Setup}
 
-All parameters of the L4Sys experiment client can be found in the file
+Now that we have Fail* and the L4Re setup running, we can prepare our fault
+injection campaign. This requires three (+ one optional) steps:
+\begin{enumerate}[topsep=0em,itemsep=0em]
+  \item \emph{OPTIONAL:} If we want to perform a campaign that only targets
+        a single application, we need to determine this application's address
+        space ID.
+  \item \emph{REQUIRED:} We perform an initial run of our setup in Bochs until
+        the point where Bochs is booted and the application in question
+        starts. At this point we take a snapshot of the emulator so that we
+        can skip everything upfront in the remaining runs.
+  \item \emph{REQUIRED:} The \lfs{} campaign uses \verb+L4SYS_NUM_INSTR+ to
+        determine the set of instructions to inject faults in. We need to
+        perform one run of our setup to determine this number.
+  \item \emph{REQUIRED:} We need to perform a \emph{golden run} without any
+        fault injections. Later faults are then compared against this run.
+\end{enumerate}
+
+All parameters of the \lfs{} experiment can be configured via file
 \texttt{experimentInfo.hpp}. Normally, it should not be necessary to change
-the program flow directly. However, if something bothers you, you are always
-free to take a look at \texttt{experiment.cc}, too.
+the program flow directly. However, the interested reader is invited to take a
+look at \texttt{experiment.cc}, too.
 
 \subsection{Constants}
 
@@ -104,16 +137,18 @@ is determined automatically in a later preparation step and can be ignored for
 now.
 
 If you want your campaign only to affect a specific address space (e.g.,
-because you are only interested in faults at the application level), L4Sys
+because you are only interested in faults at the application level), \lfs{}
 leverages Fail*'s address space filtering mechanism. To determine the address
 space identifier, you will have to use Bochs'
 \href{http://bochs.sourceforge.net/doc/docbook/user/internal-debugger.html}{internal
 debugger} and perform the following actions:
-\begin{enumerate}
+\begin{enumerate}[topsep=0em,itemsep=0em]
   \item Compile Bochs with support for the internal debugger. This can either
         be done by configuring and rebuilding the fail client accordingly or
         using a separate Bochs installation - we don't need Fail*
-        functionality here.
+        functionality here.\footnote{BD: I saw differing values when using
+        another Bochs installation, though. Perhaps it's safer to use the same
+        Bochs build for testing and injection.}
   \item Boot your system in Bochs. The debugger prompt (or window) will
         appear. Use the \verb+lbreak+ command to set an instruction breakpoint
         to an address in your application. (Hint: Remember you already figured
@@ -221,7 +256,7 @@ subdirectory of Fail*.
 \section{Format of the result file}
 
 When the campaign is finished, the campaign server generates a report
-file (by default called \texttt{l4sys.csv}) in a primitive CSV dialect.
+file (by default called \texttt{lfsys.csv}) in a primitive CSV dialect.
 The only syntax rules are that the columns are separated by commas,
 that the respective data sets are separated by line breaks (\verb+\n+),
 and that the cells do not contain line breaks or commas.
@@ -229,11 +264,11 @@ and that the cells do not contain line breaks or commas.
 This section lists and describes the columns in the report generated by
 the campaign server, from left to right.
 
-\begin{enumerate}
+\begin{enumerate}[topsep=0em,itemsep=0em]
  \item \verb+exp_type+\\
        Names the experiment that generated the return data.
        If it is none of the following, a writing error occurred:
-       \begin{itemize}
+       \begin{itemize}[itemsep=0em]
         \item Unknown
         \item GPR Flip
         \item RAT Flip
@@ -252,7 +287,7 @@ the campaign server, from left to right.
        When the fault injection experiment affects a general purpose register,
        it is listed here. This column should have one of the following values;
        if it does not, a writing error occurred:
-       \begin{enumerate}
+       \begin{enumerate}[itemsep=0em]
         \item Unknown
         \item EAX
         \item ECX
@@ -281,7 +316,7 @@ the campaign server, from left to right.
        The result of the fault injection.
        This column should have one of the following values;
        if it does not, a writing error occurred:
-       \begin{enumerate}
+       \begin{enumerate}[itemsep=0em]
         \item Unknown
         \item No effect
         \item Incomplete execution
