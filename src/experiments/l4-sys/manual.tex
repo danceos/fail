@@ -185,8 +185,8 @@ enables the filter functionality to store only those
 instructions that match the filter.
 Each instruction in the trace requires
 an address plus an unsigned breakpoint counter,
-which means 8 bytes per instruction on a 32-bit system
-and 12 bytes per instruction on a 64-bit system.
+which means~8 bytes per instruction on a 32-bit system
+and 12~bytes per instruction on a 64-bit system.
 
 If \verb+L4SYS_FILTER_INSTRUCTIONS+ is not set, the instruction
 to perform the fault injection at is determined by single-stepping
@@ -203,7 +203,7 @@ To obtain this number and optionally the instruction trace,
 set \verb+PREPARATION_STEP+ to \texttt{2} and recompile, then execute
 the experiment client. You do not have to pass parameters to Bochs
 any more, because the configuration is overwritten with the
-state saved in step 1.
+state saved in step~1.
 
 After the program has finished, you will get a summary on the
 total of instructions executed.
