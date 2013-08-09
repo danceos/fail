@@ -47,7 +47,7 @@ public:
 	 *          \c false otherwise
 	 */
 	bool isValidInstr(address_t ip, char const *instr) const
-	{ return (beginAddress < ip && ip < endAddress); }
+	{ return (beginAddress <= ip && ip <= endAddress); }
 private:
 	address_t beginAddress; //<! the beginning of the address range
 	address_t endAddress; //<! the end of the address range
