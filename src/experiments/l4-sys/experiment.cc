@@ -118,8 +118,8 @@ void L4SysExperiment::logInjection() {
 	address_t injection_ip = param->msg.injection_ip();
 
 	log << "job " << id << " exp_type " << exp_type << endl;
-	log << "inject @ ip " << injection_ip << " (offset " << dec << instr_offset
-			<< ")" << " bit " << bit_offset << endl;
+	log << "inject @ ip " << hex << injection_ip << " (offset " << dec << instr_offset
+	    << ")" << " bit " << bit_offset << endl;
 }
 
 BaseListener *L4SysExperiment::singleStep(bool preserveAddressSpace) {
@@ -257,6 +257,8 @@ bool L4SysExperiment::run() {
                 reinterpret_cast<char const*>(calculateInstructionAddress()))) {
 			accepted++;
 			TraceInstr new_instr;
+			log << "writing IP " << hex << curr_addr << " counter "
+				<< dec << times_called << endl;
 			new_instr.trigger_addr = curr_addr;
 			new_instr.bp_counter = times_called;
 
@@ -267,7 +269,7 @@ bool L4SysExperiment::run() {
 	log << "saving instructions triggered during normal execution" << endl;
 	instr_list_file.close();
 	log << "test function calculation position reached after "
-			<< dec << count << " instructions; " << accepted << " accepted" << endl;
+	    << dec << count << " instructions; " << accepted << " accepted" << endl;
 #else
 	int count = 0;
 	int ul = 0, kernel = 0;
@@ -353,6 +355,9 @@ bool L4SysExperiment::run() {
 	int bit_offset = param->msg.bit_offset();
 	int exp_type = param->msg.exp_type();
 
+	log << "   got job parameters: offs " << hex << instr_offset
+	    << " bit " << bit_offset << " exp " << exp_type << endl;
+
 #ifdef L4SYS_FILTER_INSTRUCTIONS
 	ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
 
@@ -363,10 +368,18 @@ bool L4SysExperiment::run() {
 
 	TraceInstr curr_instr;
 	instr_list_file.seekg(instr_offset * sizeof(TraceInstr));
+	log << instr_list_file.eof() << " " << instr_list_file.bad() << " "
+	    << instr_list_file.fail() << endl;
+	if (instr_list_file.eof()) {
+		log << "Job parameters indicate position outside the traced instruction list." << endl;
+		terminate(1);
+	}
 	instr_list_file.read(reinterpret_cast<char*>(&curr_instr), sizeof(TraceInstr));
 	instr_list_file.close();
 
+	log << "setting watchpoint at " << hex << curr_instr.trigger_addr << endl;
 	bp.setWatchInstructionPointer(curr_instr.trigger_addr);
+	log << "setting bp counter " << hex << curr_instr.bp_counter << endl;
 	bp.setCounter(curr_instr.bp_counter);
 #else
 	bp.setWatchInstructionPointer(ANY_ADDR);
@@ -409,8 +422,9 @@ bool L4SysExperiment::run() {
 
 		// do the logging in case everything worked out
 		logInjection();
-		log << "register data: 0x" << hex << ((int) data) << " -> 0x"
-				<< ((int) newdata) << endl;
+		log << "IP " << hex << simulator.getCPU(0).getInstructionPointer()
+			<< " register data: 0x" << hex << ((int) data) << " -> 0x"
+  		    << ((int) newdata) << endl;
 	} else if (exp_type == param->msg.IDCFLIP) {
 		// this is a twisted one
 
@@ -626,11 +640,13 @@ bool L4SysExperiment::run() {
 	// aftermath
 	BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
 	simulator.addListener(&ev_done);
-	unsigned instr_left = L4SYS_NUMINSTR - instr_offset;
+	
+	unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
 	BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
 	ev_incomplete.setCounter(
 	    static_cast<unsigned>(instr_left * 1.1));
 	simulator.addListener(&ev_incomplete);
+
 	TimerListener ev_timeout(calculateTimeout(instr_left));
 	simulator.addListener(&ev_timeout);
 
