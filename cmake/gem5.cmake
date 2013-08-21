@@ -4,7 +4,7 @@ if(BUILD_GEM5)
   SET(VARIANT gem5)
 
   set(gem5_src_dir       ${PROJECT_SOURCE_DIR}/simulators/gem5)
-  set(gem5_wrapper       ${PROJECT_SOURCE_DIR}/src/core/sal/gem5)
+  set(gem5_wrapper       ${PROJECT_BINARY_DIR}/src/core/sal/gem5)
   set(gem5_build_config  build/ARM/gem5.debug)
   ## Determine the number of cores:
   set(core_count 0) # unknown

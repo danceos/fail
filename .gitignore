@@ -33,3 +33,5 @@ simulators/bochs/install
 
 simulators/gem5/.hg
 simulators/gem5/m5out/
+
+src/core/sal/gem5/SConscript
