@@ -24,9 +24,11 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 			return false;
 		}
 
-		ObjectFile *obj = dyn_cast<ObjectFile, Binary>(binary.get());
-
+// necessary due to an AspectC++ bug triggered by LLVM 3.3's dyn_cast()
+#ifndef __puma
+		ObjectFile *obj = llvm::dyn_cast<ObjectFile>(binary.get());
 		disas.reset(new LLVMDisassembler(obj));
+#endif
 		disas->disassemble();
 		LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 		LOG << "instructions disassembled: " << instr_map.size() << " Triple: " << disas->GetTriple() <<  std::endl;
