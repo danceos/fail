@@ -15,6 +15,11 @@ Required for Fail*:
  - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
    obtained from http://www.aspectc.org; nightlies can be downloaded from
    http://akut.aspectc.org
+ - optional:
+   * LLVM 3.3 (needed for several importers in tools/import-trace)
+     (compiles/links with 3.1 or 3.2, but fails to properly import information
+     from ELF binaries not compiled with -ffunction-sections)
+
 
 Required for the Bochs simulator backend:
 **********************************************************************
