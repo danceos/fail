@@ -9,16 +9,18 @@ Required for Fail*:
  - libpcl1-dev
  - libboost-thread-dev
  - protobuf-compiler
- - cmake
+ - cmake 2.8.2 (2.8.11 preferred)
  - cmake-curses-gui
  - binutils-dev
  - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
-   obtained from http://www.aspectc.org; nightlies can be downloaded from
-   http://akut.aspectc.org
+   obtained from <http://www.aspectc.org>; nightlies can be downloaded from
+   <http://akut.aspectc.org>.  Make sure you use the 64-bit version if running
+   in a 64-bit environment.
  - optional:
    * LLVM 3.3 (needed for several importers in tools/import-trace)
      (compiles/links with 3.1 or 3.2, but fails to properly import information
      from ELF binaries not compiled with -ffunction-sections)
+   * a MySQL 5.0+ or MariaDB 5.1+ (MariaDB 5.5 recommended) server
 
 
 Required for the Bochs simulator backend:
@@ -66,11 +68,8 @@ For the first time:
       $ cd fail/
  2. (Optional) Cleanup previous CMake remnants:
       $ find -name CMakeCache.txt | xargs rm
- 3. Create out of source build directory (${BUILD_DIR}, see also "fail-structure.txt"):
+ 3. Create out-of-source build directory (${BUILD_DIR}, see also "fail-structure.txt"):
       $ mkdir build
-    Note that currently this build directory must be located somewhere below
-    the fail/ directory, as generated .ah files in there will not be included
-    in the compile process otherwise.
  4. Enter out-of-source build directory.  All generated files end up there.
       $ cd build
  5. Generate CMake environment.
@@ -168,6 +167,7 @@ Configure Bochs to use debugging-related compiler flags (expects to be in ${BUIL
   $ CFLAGS="-g -O0" CXXFLAGS="-g -O0" ./configure --prefix=... ... (see above)
 You might additionally want to configure the rest of Fail* into debug mode by
 setting CMAKE_BUILD_TYPE to "Debug" (ccmake, see above).
+FIXME: Does this still work?
 
 
 Profiling-based optimization build:
@@ -233,3 +233,27 @@ After changes to Fail*/gem5 code (incl. aspect headers):
       $ make   (or  nice make -jN)
     (as in the last step of the previous section).
 
+=========================================================================================
+Database backend setup: MySQL / MariaDB
+=========================================================================================
+ 1. Install MySQL or MariaDB via your favourite package manager.  (MariaDB
+    offers repositories for all major distributions.)
+ 2. Increase network timeouts in /etc/mysql/my.cnf to a reasonably high value,
+    campaigns tend to timeout on a regular basis with the default settings:
+      net_write_timeout = 3600
+      net_read_timeout = 3600
+    You may also want to tune other settings, especially increase memory usage.
+    There's lots of tuning knowledge on the web, and also automatic tuning
+    scripts such as the "Tuning Primer" <https://launchpad.net/mysql-tuning-primer>
+    or "MySQL Tuner" <http://mysqltuner.com>.
+ 3. Setup a non-root DB user.  <http://dev.mysql.com/doc/refman/5.5/en/adding-users.html>
+    Create a ~/.my.cnf (mode 0600) to avoid having to pass user name and
+    password to every program contacting the DB:
+      [client]
+      user=XXX
+      password=XXX
+ 4. Create a database for each FI campaign you want to conduct, and grant all
+    permissions to your non-root user.
+    <http://dev.mysql.com/doc/refman/5.5/en/create-database.html>
+    <http://dev.mysql.com/doc/refman/5.5/en/grant.html>
+    <http://dev.mysql.com/doc/refman/5.5/en/adding-users.html>
