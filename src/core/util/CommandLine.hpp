@@ -4,10 +4,17 @@
 #include <vector>
 #include <string>
 #include <assert.h>
+
+// Ignore warnings regarding const removal, we don't use this part of
+// optionparser's interface anyways.  (Works with GCC 4.6 and above, throws a
+// warning with earlier versions.  The reset to "warning" is necessary for
+// those earlier versions.)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 #include "optionparser/optionparser.h"
 #include "optionparser/optionparser_ext.hpp"
-
-
+#pragma GCC diagnostic warning "-Wcast-qual"
+#pragma GCC diagnostic pop
 
 namespace fail {
     /**
