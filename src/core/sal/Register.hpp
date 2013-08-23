@@ -19,10 +19,11 @@ namespace fail {
  * specific to a simulator/architecture.
  */
 enum RegisterType {
-	RT_GP, //!< general purpose
-	RT_FP, //!< floating point register
-	RT_IP, //!< program counter / instruction pointer
-	RT_ST  //!< status register
+	RT_NONE, //!< no classification
+	RT_GP,   //!< general purpose
+	RT_FP,   //!< floating point register
+	RT_IP,   //!< program counter / instruction pointer
+	RT_ST    //!< status register
 };
 
 /**
@@ -33,13 +34,8 @@ enum RegisterType {
  */
 class Register {
 protected:
-	RegisterType m_Type; //!< the type of this register
 	regwidth_t m_Width; //!< the register width
 	unsigned int m_Id; //!< the unique id of this register
-	//! \c true if register has already been assigned, \c false otherwise
-	bool m_Assigned;
-	//! The index in it's register set if assigned (\c -1 otherwise)
-	size_t m_Index;
 	std::string m_Name; //!< The (optional) name, maybe empty
 	friend class UniformRegisterSet;
 public:
@@ -49,14 +45,8 @@ public:
 	 * @param t the type of the register to be constructed
 	 * @param w the width of the register in bits
 	 */
-	Register(unsigned int id, RegisterType t, regwidth_t w)
-		: m_Type(t), m_Width(w), m_Id(id), m_Assigned(false),
-		  m_Index(static_cast<size_t>(-1)) { }
-	/**
-	 * Returns the (fixed) type of this register.
-	 * @return the type of this register
-	 */
-	RegisterType getType() const { return m_Type; }
+	Register(unsigned int id, regwidth_t w)
+		: m_Width(w), m_Id(id) { }
 	/**
 	 * Returns the (fixed) width of this register.
 	 * @return the width in bits
@@ -72,20 +62,6 @@ public:
 	 * @return the textual register description
 	 */
 	const std::string& getName() const { return m_Name; }
-	/**
-	 * Retrieves the unique index within it's assigned register set.
-	 * If the register has not been assigned, \c (size_t)-1 will be
-	 * returned.
-	 * @return the register index or -1 if not assigned
-	 * @see isAssigned()
-	 */
-	size_t getIndex() const { return m_Index; }
-	/**
-	 * Checks whether this register has already been assigned. On
-	 * creation the register isn't initially assigned.
-	 * @return \c true if assigned, \c false otherwise
-	 */
-	bool isAssigned() const { return m_Assigned; }
 	/**
 	 * Returns the unique id of this register.
 	 * @return the unique id

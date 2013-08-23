@@ -1,15 +1,19 @@
+#include <algorithm>
 #include "CPU.hpp"
 
 namespace fail {
 
-void CPUArchitecture::m_addRegister(Register* reg)
+void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 {
-	assert(!reg->isAssigned() && "FATAL ERROR: The register is already assigned!");
-	m_Registers.push_back(reg);
+	// We may be called multiple times with the same register, if it needs to
+	// reside in multiple subsets.
+	if (std::find(m_Registers.begin(), m_Registers.end(), reg) == m_Registers.end()) {
+		m_Registers.push_back(reg);
+	}
 
-	UniformRegisterSet* urs = getRegisterSetOfType(reg->getType());
-	if (urs == NULL) {
-		urs = new UniformRegisterSet(reg->getType());
+	UniformRegisterSet* urs = getRegisterSetOfType(type);
+	if (!urs) {
+		urs = new UniformRegisterSet(type);
 		m_RegisterSubsets.push_back(urs);
 	}
 	urs->m_add(reg);
@@ -34,7 +38,7 @@ UniformRegisterSet* CPUArchitecture::getRegisterSetOfType(RegisterType t) const
 		if ((*it)->getType() == t)
 			return *it;
 	}
-	return NULL;
+	return 0;
 }
 
 } // end-of-namespace: fail

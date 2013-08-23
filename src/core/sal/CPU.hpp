@@ -73,7 +73,7 @@ protected:
 	 * @param reg a pointer to the register object to be added
 	 * @see getType()
 	 */
-	void m_addRegister(Register* reg);
+	void m_addRegister(Register* reg, RegisterType type = RT_NONE);
 };
 
 } // end-of-namespace: fail

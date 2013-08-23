@@ -10,11 +10,8 @@ Register* UniformRegisterSet::getRegister(size_t i) const
 
 void UniformRegisterSet::m_add(Register* preg)
 {
-	assert(!preg->m_Assigned &&
-		"FATAL ERROR: The register has already been assigned.");
+	assert(std::find(m_Regs.begin(), m_Regs.end(), preg) == m_Regs.end());
 	m_Regs.push_back(preg);
-	preg->m_Assigned = true;
-	preg->m_Index = m_Regs.size()-1; // the index within the vector (set)
 }
 
 } // end-of-namespace: fail

@@ -13,34 +13,34 @@ X86Architecture::X86Architecture()
   	const  std::string names[] = { "RAX", "RCX", "RDX", "RBX", "RSP", "RBP", "RSI", "RDI", "R8",
   	                               "R9", "R10", "R11", "R12", "R13", "R14", "R15" };
 	for (unsigned short i = 0; i < 16; i++) {
-		Register* pReg = new Register(i, RT_GP, 64);
+		Register* pReg = new Register(i, 64);
 		pReg->setName(names[i]);
-		m_addRegister(pReg);
+		m_addRegister(pReg, RT_GP);
 	}
   #else
   	// -- 32 bit register --
   	const std::string names[] = { "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
 	for (unsigned short i = 0; i < 8; i++) {
-		Register* pReg = new Register(i, RT_GP, 32);
+		Register* pReg = new Register(i, 32);
 		pReg->setName(names[i]);
-		m_addRegister(pReg);
+		m_addRegister(pReg, RT_GP);
 	}
   #endif // SIM_SUPPORT_64
 	// -------------------------------------
 	// Add the program counter (PC) register:
   #ifdef SIM_SUPPORT_64
-	Register* pPCReg = new Register(RID_PC, RT_IP, 64);
+	Register* pPCReg = new Register(RID_PC, 64);
 	pPCReg->setName("RIP");
   #else
-    Register* pPCReg = new Register(RID_PC, RT_IP, 32);
+    Register* pPCReg = new Register(RID_PC, 32);
 	pPCReg->setName("EIP");
   #endif // SIM_SUPPORT_64
-	m_addRegister(pPCReg);
+	m_addRegister(pPCReg, RT_IP);
     // -------------------------------------
 	// Add the status register (EFLAGS):
-	Register* pFlagReg = new Register(RID_FLAGS, RT_ST, 32);
+	Register* pFlagReg = new Register(RID_FLAGS, 32);
 	pFlagReg->setName("EFLAGS");
-	m_addRegister(pFlagReg);
+	m_addRegister(pFlagReg, RT_ST);
 }
 
 X86Architecture::~X86Architecture()
