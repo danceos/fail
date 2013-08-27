@@ -26,6 +26,7 @@ public:
 	 * @returns \c true if the instruction should be included, \c false otherwise
 	 */
 	virtual bool isValidInstr(address_t ip, char const *instr) const = 0;
+	virtual ~InstructionFilter() {}
 };
 
 /**
