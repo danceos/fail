@@ -6,6 +6,7 @@
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
+#include "sal/Listener.hpp"
 
 class L4SysExperimentData;
 
@@ -106,6 +107,20 @@ private:
 	 * Send back the experiment parameter set with a description of the error.
 	 */
 	void terminateWithError(std::string details, int reason);
+	/**
+	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
+	 * phase 1)
+	 */
+	void startAndSaveInitState(fail::BPSingleListener& bp);
+	/**
+	 * Collect list of executed instructions, considering instruction
+	 * filtering if configured (experiment preparation, phase 2).
+	 */
+	void collectInstructionTrace(fail::BPSingleListener& bp);
+	/**
+	 * Perform the golden run (experiment preparation, phase 3)
+	 */
+	void goldenRun(fail::BPSingleListener& bp);
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__

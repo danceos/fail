@@ -203,14 +203,9 @@ void L4SysExperiment::terminateWithError(string details, int reason) {
 	terminate(reason);
 }
 
-bool L4SysExperiment::run() {
-	BPSingleListener bp(0, L4SYS_ADDRESS_SPACE);
-	srand(time(NULL));
 
-	log << "startup" << endl;
-
-#if PREPARATION_STEP == 1
-	// STEP 1: run until interesting function starts, and save state
+void L4SysExperiment::startAndSaveInitState(fail::BPSingleListener& bp)
+{
 	bp.setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
 	simulator.addListenerAndResume(&bp);
 
@@ -221,8 +216,10 @@ bool L4SysExperiment::run() {
 			<< endl;
 	log << "check the source code if the two instruction pointers are not equal" << endl;
 	simulator.save(L4SYS_STATE_FOLDER);
-#elif PREPARATION_STEP == 2
-	// STEP 2: determine instructions executed
+}
+    
+void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
+{
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
 	log << "EIP = " << hex
@@ -288,9 +285,10 @@ bool L4SysExperiment::run() {
 			<< dec << count << " instructions; "
 			<< "ul: " << ul << ", kernel: " << kernel << endl;
 #endif
+}
 
-#elif PREPARATION_STEP == 3
-	// STEP 3: determine the output of a "golden run"
+void L4SysExperiment::goldenRun(fail::BPSingleListener& bp)
+{
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
 	log << "EIP = " << hex
@@ -316,6 +314,25 @@ bool L4SysExperiment::run() {
 
 	log << "saving output generated during normal execution" << endl;
 	golden_run_file.close();
+}
+
+
+bool L4SysExperiment::run() {
+	BPSingleListener bp(0, L4SYS_ADDRESS_SPACE);
+	srand(time(NULL));
+
+	log << "startup" << endl;
+
+#if PREPARATION_STEP == 1
+	// STEP 1: run until interesting function starts, and save state
+    startAndSaveInitState(bp);
+#elif PREPARATION_STEP == 2
+	// STEP 2: determine instructions executed
+    collectInstructionTrace(bp);
+
+#elif PREPARATION_STEP == 3
+	// STEP 3: determine the output of a "golden run"
+    goldenRun(bp);
 
 #elif PREPARATION_STEP == 0
 	// LAST STEP: The actual experiment.
