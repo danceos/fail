@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "Register.hpp"
 
 namespace fail {
