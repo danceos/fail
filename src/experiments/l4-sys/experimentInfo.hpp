@@ -6,10 +6,21 @@
 
 // the bounds of the program (space, instructions and time)
 #define L4SYS_ADDRESS_SPACE		0x1fd4c000
+
+// FUNC_{ENTRY,EXIT} specifies the range that needs to
+// be captured to log program output properly
 #define L4SYS_FUNC_ENTRY		0x010002a0
 #define L4SYS_FUNC_EXIT			0x01000380
+// FILTER_{ENTRY,EXIT} specifies the range that injections
+// should be carried out on (should be a subset of the above)
+// and only works with FILTER_INSTRUCTIONS turned on
+#define L4SYS_FILTER_ENTRY      0x0100031c
+#define L4SYS_FILTER_EXIT       0x01000380
 
 // select instruction filtering
+// XXX: this should be always on and the code should be
+//      reworked to do the non-filtering work with an empty
+//      filter list
 #define L4SYS_FILTER_INSTRUCTIONS 1
 
 // kernel: 2377547, userland: 79405472

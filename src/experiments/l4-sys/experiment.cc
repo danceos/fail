@@ -228,11 +228,12 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
 
 #ifdef L4SYS_FILTER_INSTRUCTIONS
 	ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
-    RangeSetInstructionFilter rsif(L4SYS_FILTER);
+    RangeSetInstructionFilter filtering(L4SYS_FILTER);
 	bp.setWatchInstructionPointer(ANY_ADDR);
 
 	size_t count = 0, accepted = 0;
 	map<address_t, unsigned> times_called_map;
+    bool injecting = false;
     
 	while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 		simulator.addListenerAndResume(&bp);
@@ -245,10 +246,19 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
 		unsigned times_called = times_called_map[curr_addr];
 		times_called++;
 		times_called_map[curr_addr] = times_called;
+        
+        if (curr_addr == L4SYS_FILTER_ENTRY) {
+            injecting = true;
+        }
+
+        if (curr_addr == L4SYS_FILTER_EXIT) {
+            injecting = false;
+        }
 
 		// now check if we want to add the instruction for fault injection
-        if (rsif.isValidInstr(curr_addr,
-                              reinterpret_cast<char const*>(calculateInstructionAddress()))) {
+        if (injecting and filtering.isValidInstr(curr_addr,
+                              reinterpret_cast<char const*>(calculateInstructionAddress()))
+           ) {
 			accepted++;
 			TraceInstr new_instr;
 			log << "writing IP " << hex << curr_addr << " counter "
