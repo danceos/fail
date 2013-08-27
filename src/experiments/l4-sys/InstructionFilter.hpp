@@ -3,6 +3,7 @@
 
 #include "sal/SALConfig.hpp"
 #include "cpu/instr.h"
+#include <vector>
 
 using namespace fail;
 
@@ -52,6 +53,36 @@ public:
 private:
 	address_t beginAddress; //<! the beginning of the address range
 	address_t endAddress; //<! the end of the address range
+};
+
+
+/**
+ * \class RangeSetInstructionFilter
+ * 
+ * Collects a list of filter ranges from an input file.
+ */
+class RangeSetInstructionFilter : public InstructionFilter {
+private:
+	std::vector<RangeInstructionFilter> _filters;
+
+public:
+	RangeSetInstructionFilter(char const *filename);
+	~RangeSetInstructionFilter() {}
+
+	bool isValidInstr(address_t ip, char const *instr) const
+	{
+		std::vector<RangeInstructionFilter>::const_iterator it;
+		for (it = _filters.begin(); it != _filters.end(); ++it) {
+			if (it->isValidInstr(ip, instr))
+				return true;
+		}
+		return false;
+	}
+	
+	void addFilter(address_t startAddr, address_t endAddr)
+	{
+		_filters.push_back(RangeInstructionFilter(startAddr, endAddr));
+	}
 };
 
 #endif /* __L4SYS_INSTRUCTIONFILTER_HPP__ */
