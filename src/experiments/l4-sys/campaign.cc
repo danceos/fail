@@ -37,6 +37,21 @@ bool L4SysCampaign::run() {
 	int count = 0;
 	srand(time(NULL));
 
+	for (int i = 0; i < L4SYS_NUMINSTR; ++i) {
+		for (int r = 1; r < 9; ++r) {
+			for (int b = 0; b < 32; ++b) {
+				L4SysExperimentData *d = new L4SysExperimentData;
+				d->msg.set_exp_type(d->msg.GPRFLIP);
+				d->msg.set_register_offset(static_cast<L4SysProtoMsg_RegisterType>(r));
+				d->msg.set_instr_offset(i);
+				d->msg.set_bit_offset(b);
+				campaignmanager.addParam(d);
+				++count;
+			}
+		}
+	}
+	
+#if 0
 	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
@@ -91,6 +106,7 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
+#endif
 
 	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
