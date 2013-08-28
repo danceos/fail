@@ -24,7 +24,7 @@
 #define L4SYS_FILTER_INSTRUCTIONS 1
 
 // kernel: 2377547, userland: 79405472
-#define L4SYS_NUMINSTR 15099
+#define L4SYS_NUMINSTR 2223
 #define L4SYS_TOTINSTR 60214
 #define L4SYS_BOCHS_IPS			5000000
 
@@ -38,6 +38,6 @@
 // flags
 //  0 - preparation complete
 // >0 - next step to execute
-#define PREPARATION_STEP 2
+#define PREPARATION_STEP 0
 
 #endif // __L4SYS_EXPERIMENT_INFO_HPP__

@@ -19,6 +19,8 @@
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
 #include "config/FailConfig.hpp"
+#include "util/ProtoStream.hpp"
+#include "TracePlugin.pb.h"
 
 #include "l4sys.pb.h"
 
@@ -235,6 +237,9 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
 	map<address_t, unsigned> times_called_map;
     bool injecting = false;
     
+    std::ofstream out("trace.pb");
+    ProtoOStream *os = new ProtoOStream(&out);
+    
 	while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 		simulator.addListenerAndResume(&bp);
 		count++;
@@ -260,13 +265,24 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
                               reinterpret_cast<char const*>(calculateInstructionAddress()))
            ) {
 			accepted++;
+
+
+            // 1) The 'old' way of logging instructions -> DEPRECATE soon
 			TraceInstr new_instr;
 			log << "writing IP " << hex << curr_addr << " counter "
-				<< dec << times_called << endl;
+				<< dec << times_called << "(" << hex << BX_CPU(0)->cr3 << ")"
+                << endl;
 			new_instr.trigger_addr = curr_addr;
 			new_instr.bp_counter = times_called;
 
 			instr_list_file.write(reinterpret_cast<char*>(&new_instr), sizeof(TraceInstr));
+
+            // 2) The 'new' way -> generate Events that can be processed by
+            // the generic *-trace tools
+            // XXX: need to log CR3 if we want multiple binaries here
+            Trace_Event e;
+            e.set_ip(curr_addr);
+            os->writeMessage(&e);
 		}
 	}
 	log << "saving instructions triggered during normal execution" << endl;
