@@ -6,12 +6,12 @@ namespace fail {
 
 regdata_t Gem5ArmCPU::getRegisterContent(const Register* reg) const
 {
-	return GetRegisterContent(m_System, m_Id, reg->getType(), reg->getIndex());
+	return GetRegisterContent(m_System, m_Id, reg->getId());
 }
 
 void Gem5ArmCPU::setRegisterContent(const Register* reg, regdata_t value)
 {
-	SetRegisterContent(m_System, m_Id, reg->getType(), reg->getIndex(), value);
+	SetRegisterContent(m_System, m_Id, reg->getId(), value);
 }
 
 } // end-of-namespace: fail
