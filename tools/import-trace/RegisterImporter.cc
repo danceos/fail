@@ -33,9 +33,8 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 										const Trace_Event &ev,
 										const LLVMtoFailTranslator::reginfo_t &info,
 										char access_type) {
-	LLVMtoFailTranslator::reginfo_t one_byte_window = info;
-	one_byte_window.width = 8;
-	address_t from = one_byte_window.toDataAddress(), to = one_byte_window.toDataAddress() + (info.width) / 8;
+	address_t from = info.toDataAddress();
+	address_t to = from + info.width / 8;
 
 	// Iterate over all accessed bytes
 	for (address_t data_address = from; data_address < to; ++data_address) {

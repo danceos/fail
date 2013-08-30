@@ -13,6 +13,12 @@ namespace fail {
  */
 class LLVMtoFailTranslator {
 public:
+	/**
+	 * Maps registers to/from linear addresses usable for def/use-pruning
+	 * purposes and storage in the database.  Takes care that the linear
+	 * addresses of x86 subregisters (e.g., AX represents the lower 16 bits of
+	 * EAX) overlap with their siblings.
+	 */
 	struct reginfo_t {
 		int id;
 		regwidth_t width;
@@ -20,17 +26,16 @@ public:
 		byte_t offset;
 
 		int toDataAddress() const {
-			// .. 5 4 | 7 6 5 4 | 3 2 1 0
-			// <reg>  | <width> | <offset>
-			return (id << 8) | ((width/8) << 4) | (offset / 8);
+			// .. 5 4 | 3 2 1 0
+			// <reg>  | <offset>
+			return (id << 4) | (offset / 8);
 		}
+		// does not recreate width or mask
 		static reginfo_t fromDataAddress(int addr) {
-			int id = addr >> 8;
-			regwidth_t width = ((addr >> 4) & 0xf) * 8;
-			byte_t	  offset = (addr & 0xf) * 8;
-			return reginfo_t(id, width, offset);
+			int id = addr >> 4;
+			byte_t offset = (addr & 0xf) * 8;
+			return reginfo_t(id, 0, offset);
 		}
-
 
 		reginfo_t(int id=-1, regwidth_t width = 32, byte_t offs = 0)
 			: id(id), width(width), mask((regwidth_t)((((long long)1 << width) - 1) << offs)), offset(offs) {};
