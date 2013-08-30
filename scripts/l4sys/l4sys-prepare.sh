@@ -13,7 +13,7 @@
 
 BAK=experimentInfo.hpp.bak
 CFG=experimentInfo.hpp
-FAIL_CMD="fail-client -q -rc bochs-dbg.rc"
+FAIL_CMD="fail-client -q" # -rc bochs-dbg.rc"
 FAILDIR=/home/doebel/src/fail
 
 function buildfail {
@@ -56,6 +56,10 @@ cat $BAK.2 | sed -e "s/L4SYS_TOTINSTR.*/L4SYS_TOTINSTR $total_instr/" >$BAK.3
 cat $BAK.3 | sed -e "s/PREPARATION_STEP.*/PREPARATION_STEP 0/">$CFG
 rm $BAK $BAK.2 $BAK.3
 buildfail
+
+echo -e "\033[35;1m[$(date)] ================== Step 5: Trace Import/Prune ==============\033[0m"
+import-trace --importer RegisterImporter -e fiasco.image -d fail
+prune-trace -d fail
 
 echo -e "\033[32;1m=========================================================================================="
 echo "[$(date)] Preparations are finished. Happy injecting...."
