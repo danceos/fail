@@ -1,4 +1,7 @@
+import "DatabaseCampaignMessage.proto";
+
 message L4SysProtoMsg {
+
 	// experiment types
 	enum ExperimentType {
 		GPRFLIP = 1;
@@ -6,10 +9,6 @@ message L4SysProtoMsg {
 		IDCFLIP = 3;
 		ALUINSTR = 4;
 	}
-	// parameters
-	required ExperimentType exp_type = 1;
-	required int32 instr_offset = 2;
-	required int32 bit_offset = 3;
 
 	// registers
 	enum RegisterType {
@@ -22,7 +21,6 @@ message L4SysProtoMsg {
 		ESI = 7;
 		EDI = 8;
 	}
-	optional RegisterType register_offset = 4;
 
 	// results
 	// make these optional to reduce overhead for server->client communication
@@ -33,14 +31,26 @@ message L4SysProtoMsg {
 		WRONG = 4;
 		UNKNOWN = 5;
 	}
-	// instruction pointer where injection was done
-	optional uint32 injection_ip = 5;
-	// result type, see above
-	optional ResultType resulttype = 6;
-	// result data, depending on resulttype (see source code)
-	optional uint32 resultdata = 7;
-	// generated output
-	optional string output = 8;
-	// optional textual description of what happened
-	optional string details = 9;
+
+	required DatabaseCampaignMessage fsppilot = 1;
+	required ExperimentType exp_type = 2;
+
+	repeated group Result = 3 {
+		// parameters
+		required int32 instr_offset = 1;
+		required int32 bit_offset = 2 [(sql_primary_key) = true];
+
+		optional RegisterType register_offset = 3;
+
+		// instruction pointer where injection was done
+		optional uint32 injection_ip = 4;
+		// result type, see above
+		optional ResultType resulttype = 5;
+		// result data, depending on resulttype (see source code)
+		optional uint32 resultdata = 6;
+		// generated output
+		optional string output = 7;
+		// optional textual description of what happened
+		optional string details = 8;
+	}
 }

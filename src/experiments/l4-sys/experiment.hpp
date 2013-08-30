@@ -30,6 +30,7 @@ private:
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
 	fail::Logger log; //<! the logger
 	L4SysExperimentData *param; //<! the parameter set currently in use by the client
+	std::string currentOutput; //<! output for the current experiment run
 public:
 	L4SysExperiment();
 	~L4SysExperiment();

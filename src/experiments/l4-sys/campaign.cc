@@ -4,6 +4,7 @@
 #include "campaign.hpp"
 #include "experimentInfo.hpp"
 #include "conversion.hpp"
+#include "comm/DatabaseCampaignMessage.pb.h"
 #include "cpn/CampaignManager.hpp"
 #include "util/Logger.hpp"
 #include "sal/SALConfig.hpp"
@@ -17,6 +18,7 @@ extern L4SysConversion l4sysResultConversion;
 extern L4SysConversion l4sysExperimentConversion;
 extern L4SysConversion l4sysRegisterConversion;
 
+#if 0
 bool L4SysCampaign::run() {
 	Logger log("L4SysCampaign");
 
@@ -51,7 +53,6 @@ bool L4SysCampaign::run() {
 		}
 	}
 	
-#if 0
 	for (int i = 0; i < 20000; ++i) {
 		L4SysExperimentData *d = new L4SysExperimentData;
 		d->msg.set_exp_type(d->msg.GPRFLIP);
@@ -106,7 +107,6 @@ bool L4SysCampaign::run() {
 		campaignmanager.addParam(d);
 		++count;
 	}
-#endif
 
 	campaignmanager.noMoreParameters();
 	log << "done enqueueing parameter sets (" << count << ")." << endl;
@@ -142,4 +142,22 @@ bool L4SysCampaign::run() {
 	results.close();
 
 	return true;
+}
+#endif
+
+using namespace google::protobuf;
+
+void L4SysCampaign::cb_send_pilot(DatabaseCampaignMessage p)
+{
+#if 0
+	int inj_instr = p.injection_instr();
+	int data_addr = p.data_address();
+	int reg   = (data_addr >> 8) & 0xF;
+	int width = (data_addr >> 4) & 0xF;
+	int offs  =  data_addr       & 0xF;
+#endif
+	L4SysExperimentData *d = new L4SysExperimentData;
+	d->msg.mutable_fsppilot()->CopyFrom(p);
+	d->msg.set_exp_type(d->msg.GPRFLIP);
+	campaignmanager.addParam(d);
 }

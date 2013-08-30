@@ -37,10 +37,10 @@ add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SR
 find_package(LibUdis86 REQUIRED)
 include_directories(${LIBUDIS86_INCLUDE_DIRS})
 link_directories(${LIBUDIS86_LINK_DIRS})
-add_dependencies(fail-${EXPERIMENT_NAME} fail-comm fail-tracing)
+add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
 target_link_libraries(fail-${EXPERIMENT_NAME} ${LIBUDIS86_LIBRARIES} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
-target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} fail ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})   
+target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} -Wl,--start-group fail-sal fail-util fail-cpn fail-comm ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} -lmysqlclient -Wl,--end-group)
 install(TARGETS ${EXPERIMENT_NAME}-server RUNTIME DESTINATION bin)
