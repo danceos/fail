@@ -11,7 +11,7 @@ set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "ag++")
 set(CMAKE_AGPP_FLAGS "--real-instances" CACHE STRING "Additional ag++ flags, e.g. --real-instances --keep_woven")
   ## Here we add the build dir holding the generated header files (protobuf)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --Xweaver -p ${CMAKE_SOURCE_DIR} ${CMAKE_AGPP_FLAGS} --Xcompiler")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --Xweaver -p ${PROJECT_SOURCE_DIR}/src -p ${PROJECT_SOURCE_DIR}/simulators -p ${PROJECT_SOURCE_DIR}/debuggers -p ${PROJECT_SOURCE_DIR}/tools -p ${PROJECT_BINARY_DIR}/src ${CMAKE_AGPP_FLAGS} --Xcompiler")
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
