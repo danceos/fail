@@ -10,9 +10,8 @@ class System;
 namespace fail {
 
 // Register-/Memory-related:
-regdata_t GetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t idx);
-void SetRegisterContent(System* sys, unsigned int id, RegisterType type, size_t idx,
-                        regdata_t value);
+regdata_t GetRegisterContent(System* sys, unsigned int id, size_t idx);
+void SetRegisterContent(System* sys, unsigned int id, size_t idx, regdata_t value);
 void WriteMemory(System* sys, guest_address_t addr, size_t cnt, void const *src);
 void ReadMemory(System* sys, guest_address_t addr, size_t cnt, void *dest);
 size_t GetPoolSize(System* sys);
