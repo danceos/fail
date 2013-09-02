@@ -51,6 +51,12 @@ protected:
 
 
 public:
+	/**
+	 * Translates a backend-specific register ID to a Fail register ID.
+	 * @param regid A backend-specific register ID.
+	 * @return A Fail* register ID, or LLVMtoFailTranslator::notfound if no
+	 *         mapping was found.
+	 */
 	const reginfo_t &  getFailRegisterID(unsigned int regid);
 
 	regdata_t getRegisterContent(ConcreteCPU & cpu, const reginfo_t & reg);
@@ -63,7 +69,7 @@ public:
 	}
 
 	int getFailRegisterId(unsigned int regid) { return this->getFailRegisterID(regid).id; };
-private:
+
 	reginfo_t notfound;
 };
 
