@@ -22,14 +22,17 @@ find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+find_package(MySQL REQUIRED)
+include_directories(${MYSQL_INCLUDE_DIR})
+
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 
 ## Build library
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 add_dependencies(fail-${EXPERIMENT_NAME} fail-tracing fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY} -lmysqlclient_r)
+target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY} ${MYSQL_LIBRARIES})
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
-target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} fail ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} -lmysqlclient_r)
+target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} fail ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} ${MYSQL_LIBRARIES})
 install(TARGETS ${EXPERIMENT_NAME}-server RUNTIME DESTINATION bin)

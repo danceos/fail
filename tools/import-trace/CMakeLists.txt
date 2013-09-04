@@ -17,13 +17,14 @@ if (BUILD_LLVM_DISASSEMBLER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS} -fexceptions")
 endif(BUILD_LLVM_DISASSEMBLER)
 
-
+find_package(MySQL REQUIRED)
+include_directories(${MYSQL_INCLUDE_DIR})
 
 add_executable(import-trace main.cc ${SRCS})
 
 target_link_libraries(import-trace 
   ${PROTOBUF_LIBRARY} 
-  -lmysqlclient 
+  ${MYSQL_LIBRARIES}
   fail-util 
   fail-comm
   fail-sal)
