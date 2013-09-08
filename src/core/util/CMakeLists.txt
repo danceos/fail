@@ -48,6 +48,10 @@ if(${LIB_IBERTY} STREQUAL LIB_IBERTY-NOTFOUND)
   message(FATAL_ERROR "libiberty not found. Try installing binutils-dev: [ sudo aptitude install binutils-dev ]")
 endif()
 
+# libz required by gzstream
+find_package(ZLIB REQUIRED)
+include_directories(${ZLIB_INCLUDE_DIRS})
+
 # objdump required by Diassembler.cc
 
 set(THE_OBJDUMP "${ARCH_TOOL_PREFIX}objdump")
@@ -61,7 +65,7 @@ mark_as_advanced(FAIL_OBJDUMP)
 
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
-target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} )
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} ${ZLIB_LIBRARIES})
 
 option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 preferred, for 3.1 and 3.2 read doc/how-to-build.txt)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
