@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 			if (!stats_only) {
 				cout << "MEM "
 				     << (ev.accesstype() == Trace_Event_AccessType_READ ? "R" : "W") << " "
-				     << ev.memaddr()
+				     << hex << ev.memaddr()
 				     << dec << " width " << ev.width()
 				     << hex << " IP " << ev.ip()
 				     << dec << " t=" << acctime
