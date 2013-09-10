@@ -309,7 +309,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             ++mem_valid;
 
             Trace_Event te;
-            if (deltatime != 0) { te.set_time_delta(deltatime) };
+            if (deltatime != 0) { te.set_time_delta(deltatime); };
             te.set_ip(curr_addr);
             te.set_memaddr(ML.getTriggerAddress());
             te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
@@ -336,7 +336,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             // the generic *-trace tools
             // XXX: need to log CR3 if we want multiple binaries here
             Trace_Event e;
-            if (deltatime != 0) { e.set_time_delta(deltatime) };
+            if (deltatime != 0) { e.set_time_delta(deltatime); };
             e.set_ip(curr_addr);
             os_instr->writeMessage(&e);
         } else {
