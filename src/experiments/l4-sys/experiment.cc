@@ -30,9 +30,10 @@ using namespace fail;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
+    !defined(CONFIG_EVENT_MEMREAD) || !defined(CONFIG_EVENT_MEMWRITE) || \
     !defined(CONFIG_SR_SAVE) || \
     !defined(CONFIG_EVENT_IOPORT)
-#error This experiment needs: breakpoints and I/O port events, \
+#error This experiment needs: breakpoints, memory accesses, I/O port events, \
   save, and restore. Enable these in the configuration.
 #endif
 
@@ -240,24 +241,49 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
     RangeSetInstructionFilter filtering(L4SYS_FILTER);
 	bp.setWatchInstructionPointer(ANY_ADDR);
 
-	size_t count = 0, accepted = 0;
+    fail::MemAccessListener ML(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
+    if (!simulator.addListener(&ML)) {
+        log << "did not add memory listener..." << std::endl;
+        exit(1);
+    }
+    if (!simulator.addListener(&bp)) {
+        log << "did not add breakpoint listener..." << std::endl;
+        exit(1);
+    }
+
+	size_t count = 0, inst_accepted = 0, mem = 0, mem_valid = 0;
+    simtime_t prevtime = 0, currtime;
+    simtime_diff_t deltatime;
 	map<address_t, unsigned> times_called_map;
     bool injecting = false;
     
-    ogzstream out("trace.pb");
-    ProtoOStream *os = new ProtoOStream(&out);
+    ogzstream out_instr("trace_inst.pb");
+    ogzstream out_mem("trace_mem.pb");
+    ProtoOStream *os_instr = new ProtoOStream(&out_instr);
+    ProtoOStream *os_mem   = new ProtoOStream(&out_mem);
     
 	while (bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
-		simulator.addListenerAndResume(&bp);
-		count++;
-		//short sanity check
-		address_t curr_addr = bp.getTriggerInstructionPointer();
-		assert(
-				curr_addr == simulator.getCPU(0).getInstructionPointer());
-
-		unsigned times_called = times_called_map[curr_addr];
-		times_called++;
-		times_called_map[curr_addr] = times_called;
+		fail::BaseListener *res = simulator.resume();
+        address_t curr_addr = 0;
+        
+        // XXX: See the API problem below!
+        if (res == &ML) {
+            curr_addr = ML.getTriggerInstructionPointer();
+            simulator.addListener(&ML);
+            ++mem;
+        } else if (res == &bp) {
+            curr_addr = bp.getTriggerInstructionPointer();
+            assert(curr_addr == simulator.getCPU(0).getInstructionPointer());
+            simulator.addListener(&bp);
+            ++count;
+        }
+        
+        currtime = simulator.getTimerTicks();
+        deltatime = currtime - prevtime;
+        
+        unsigned times_called = times_called_map[curr_addr];
+        ++times_called;
+        times_called_map[curr_addr] = times_called;
         
         if (curr_addr == L4SYS_FILTER_ENTRY) {
             injecting = true;
@@ -267,36 +293,64 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             injecting = false;
         }
 
-		// now check if we want to add the instruction for fault injection
-        if (injecting and filtering.isValidInstr(curr_addr,
-                              reinterpret_cast<char const*>(calculateInstructionAddress()))
-           ) {
-			accepted++;
+        if (!injecting or
+            !filtering.isValidInstr(curr_addr, reinterpret_cast<char const*>(calculateInstructionAddress()))) {
+            //log << "connt..." << std::endl;
+            continue;
+        }
 
+        if (res == &ML) {
+#if 0
+            log << "Memory event IP " << std::hex << ML.getTriggerInstructionPointer()
+                << " @ " << ML.getTriggerAddress() << "("
+                << ML.getTriggerAccessType() << "," << ML.getTriggerWidth()
+                << ")" << std::endl;
+#endif
+            ++mem_valid;
+
+            Trace_Event te;
+            if (deltatime != 0) { te.set_time_delta(deltatime) };
+            te.set_ip(curr_addr);
+            te.set_memaddr(ML.getTriggerAddress());
+            te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
+            te.set_width(ML.getTriggerWidth());
+            os_mem->writeMessage(&te);
+        } else if (res == &bp) {
+            //log << "breakpoint event" << std::endl;
+            // now check if we want to add the instruction for fault injection
+            ++inst_accepted;
 
             // 1) The 'old' way of logging instructions -> DEPRECATE soon
-			TraceInstr new_instr;
-			log << "writing IP " << hex << curr_addr << " counter "
-				<< dec << times_called << "(" << hex << BX_CPU(0)->cr3 << ")"
-                << endl;
-			new_instr.trigger_addr = curr_addr;
-			new_instr.bp_counter = times_called;
+            //    BUT: we are currently using the bp_counter stored in this
+            //    file!
+            TraceInstr new_instr;
+            //log << "writing IP " << hex << curr_addr << " counter "
+            //    << dec << times_called << "(" << hex << BX_CPU(0)->cr3 << ")"
+            //    << endl;
+            new_instr.trigger_addr = curr_addr;
+            new_instr.bp_counter = times_called;
 
-			instr_list_file.write(reinterpret_cast<char*>(&new_instr), sizeof(TraceInstr));
+            instr_list_file.write(reinterpret_cast<char*>(&new_instr), sizeof(TraceInstr));
 
             // 2) The 'new' way -> generate Events that can be processed by
             // the generic *-trace tools
             // XXX: need to log CR3 if we want multiple binaries here
             Trace_Event e;
-            e.set_time_delta(1);
+            if (deltatime != 0) { e.set_time_delta(deltatime) };
             e.set_ip(curr_addr);
-            os->writeMessage(&e);
-		}
+            os_instr->writeMessage(&e);
+        } else {
+            printf("Unknown res? %p\n", res);
+        }
+
+		//short sanity check
+        //log << "continue..." << std::endl;
 	}
 	log << "saving instructions triggered during normal execution" << endl;
 	instr_list_file.close();
 	log << "test function calculation position reached after "
-	    << dec << count << " instructions; " << accepted << " accepted" << endl;
+	    << dec << count << " instructions; " << inst_accepted << " accepted" << endl;
+    log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
 #else
 	int count = 0;
 	int ul = 0, kernel = 0;
