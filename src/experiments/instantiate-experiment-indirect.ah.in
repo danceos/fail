@@ -12,6 +12,10 @@
 // You need to provide the implementation of this function in your experiment
 // directory:
 void instantiate@EXPERIMENT_TYPE@();
+// The experiment needs to be instantiated dynamically (on the stack, or the
+// heap), as the ExperimentFlow destructor deregisters from the
+// CoroutineManager which may not exist anymore if the global
+// construction/destruction order is inappropriate.
 
 aspect @EXPERIMENT_TYPE@ExperimentHook {
 	advice execution ("void fail::SimulatorController::initExperiments()") : after () {

@@ -4,7 +4,6 @@
 using namespace fail;
 
 LLVMtoFailGem5::LLVMtoFailGem5() {
-#ifndef __puma
 	/* These magic numbers are taken from the machine descriptions of
 	   LLVM they (hopefully) will not change, since they are not exported
 	   via a header */
@@ -24,5 +23,4 @@ LLVMtoFailGem5::LLVMtoFailGem5() {
 	llvm_to_fail_map[105]	= reginfo_t(RI_SP);
 	llvm_to_fail_map[40]   = reginfo_t(RI_LR);
 	llvm_to_fail_map[43]   = reginfo_t(RI_IP);
-#endif
 }

@@ -5,16 +5,11 @@
 #include "util/CommandLine.hpp"
 #include "Importer.hpp"
 
-#ifndef __puma
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
-#endif
-
 
 class RandomJumpImporter : public Importer {
-#ifndef __puma
 	llvm::OwningPtr<llvm::object::Binary> binary;
 	llvm::OwningPtr<fail::LLVMDisassembler> disas;
-#endif
 
 	fail::CommandLine::option_handle FROM, TO;
 

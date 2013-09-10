@@ -29,10 +29,12 @@ private:
 	std::stack<corohandle_t> m_togglerstack;
 	//! manages the run-calls for each ExperimentFlow-object
 	static void m_invoke(void* pData);
+	//! \c true if terminated explicitly using simulator.terminate()
+	bool m_Terminated;
 public:
 	static const ExperimentFlow* SIM_FLOW; //!< the simulator coroutine flow
 
-	CoroutineManager() : m_simCoro(co_current()) { }
+	CoroutineManager() : m_simCoro(co_current()), m_Terminated(false) { }
 	~CoroutineManager();
 	/**
 	 * Creates a new coroutine for the specified experiment flow.
@@ -63,6 +65,12 @@ public:
 	 * @return the current experiment flow.
 	 */
 	ExperimentFlow* getCurrent();
+	/**
+	 * Sets the termination flag. This should be called when Fail
+	 * exists due to a call to \c ::exit() (used, e.g., in
+	 * \c SimulatorController::terminate()). This cannot be undone.
+	 */
+	 void setTerminated() { m_Terminated = true; }
 };
 
 } // end-of-namespace: fail

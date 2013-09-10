@@ -1,4 +1,3 @@
-#ifndef __puma
 #include <sstream>
 #include <iostream>
 #include "InstructionImporter.hpp"
@@ -77,6 +76,3 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 
 	return true;
 }
-
-
-#endif // !__puma

@@ -13,6 +13,11 @@ namespace fail {
 class ExperimentFlow {
 public:
 	ExperimentFlow() { }
+	virtual ~ExperimentFlow()
+	{
+		simulator.clearListeners(this); // remove residual events
+		simulator.removeFlow(this);
+	}
 	/**
 	 * Defines the experiment flow.
 	 * @return \c true if the experiment was successful, \c false otherwise

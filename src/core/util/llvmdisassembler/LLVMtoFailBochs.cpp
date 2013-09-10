@@ -4,7 +4,6 @@
 using namespace fail;
 
 LLVMtoFailBochs::LLVMtoFailBochs() {
-#ifndef __puma
 	/* These magic numbers are taken from the llvm compiler (MC), they
 	   do not appear in any header. They hopefully will never
 	   change */
@@ -19,12 +18,12 @@ LLVMtoFailBochs::LLVMtoFailBochs() {
 	llvm_to_fail_map[45] = reginfo_t(RID_CBX, 32, 0);		// EBX
 
 	llvm_to_fail_map[9]	 = reginfo_t(RID_CCX, 8, 8);		// CH
-	llvm_to_fail_map[10] = reginfo_t(RID_CCX, 0xff);		// CL
+	llvm_to_fail_map[10] = reginfo_t(RID_CCX, 8, 0);		// CL
 	llvm_to_fail_map[28] = reginfo_t(RID_CCX, 16, 0);		// CX
 	llvm_to_fail_map[46] = reginfo_t(RID_CCX);	// ECX
 
 	llvm_to_fail_map[29] = reginfo_t(RID_CDX, 8, 8);		// DH
-	llvm_to_fail_map[32] = reginfo_t(RID_CDX, 0xff);		// DL
+	llvm_to_fail_map[32] = reginfo_t(RID_CDX, 8, 0);		// DL
 	llvm_to_fail_map[42] = reginfo_t(RID_CDX, 16, 0);		// DX
 	llvm_to_fail_map[48] = reginfo_t(RID_CDX);	// EDX
 
@@ -46,5 +45,4 @@ LLVMtoFailBochs::LLVMtoFailBochs() {
 	llvm_to_fail_map[54]  = reginfo_t(RID_CSP); // ESP
 	llvm_to_fail_map[117] = reginfo_t(RID_CSP, 16, 0);	// SP
 	llvm_to_fail_map[118] = reginfo_t(RID_CSP, 8, 0);		// SPL
-#endif
 }
