@@ -23,6 +23,9 @@ bool RegisterImporter::cb_commandline_init() {
 						  "--flags: RegisterImporter: trace flags register\n");
 	IP	 = cmd.addOption("", "ip", Arg::None,
 						 "--ip: RegisterImporter: trace instruction pointer\n");
+	NO_SPLIT	 = cmd.addOption("", "do-not-split", Arg::None,
+						 "--do-not-split: RegisterImporter: Do not split the registers into one byte chunks\n");
+
 
 	return true;
 }
@@ -32,8 +35,23 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 										const Trace_Event &ev,
 										const LLVMtoFailTranslator::reginfo_t &info,
 										char access_type) {
-	address_t from = info.toDataAddress();
-	address_t to = from + info.width / 8;
+	address_t from, to;
+	int chunk_width;
+	if (do_split_registers) {
+		/* If we want to split the registers into one byte chunks (to
+		   enable proper pruning, we use a one byte window register,
+		   to determine beginning and end address */
+		LLVMtoFailTranslator::reginfo_t one_byte_window = info;
+		one_byte_window.width = 8;
+		from = one_byte_window.toDataAddress();
+		to   = one_byte_window.toDataAddress() + info.width / 8;
+		chunk_width = 1; // One byte chunks
+	} else {
+		/* We trace whole registers */
+		from = info.toDataAddress();
+		to = from + 1; /* exactly one trace event per register access*/
+		chunk_width = (info.width / 8);
+	}
 
 	// Iterate over all accessed bytes
 	for (address_t data_address = from; data_address < to; ++data_address) {
@@ -60,7 +78,7 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 		access_info_t access;
 		access.access_type	= access_type; // instruction fetch is always a read
 		access.data_address = data_address;
-		access.data_width	 = 1; // exactly one byte
+		access.data_width	 = chunk_width;
 		if (!add_trace_event(left_margin, right_margin, access)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
@@ -95,6 +113,10 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		if (cmd[IP].count() > 0) {
 			do_ip = true;
 		}
+		if (cmd[NO_SPLIT].count() > 0) {
+			do_split_registers = false;
+		}
+
 
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();

@@ -17,11 +17,12 @@ class RegisterImporter : public Importer {
 						  const fail::LLVMtoFailTranslator::reginfo_t &info,
 						  char access_type);
 
-	fail::CommandLine::option_handle NO_GP, FLAGS, IP;
-	bool do_gp, do_flags, do_ip;
+	fail::CommandLine::option_handle NO_GP, FLAGS, IP, NO_SPLIT;
+	bool do_gp, do_flags, do_ip, do_split_registers;
 
 public:
-	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false) {}
+	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false),
+						 do_split_registers(true) {}
 	/**
 	 * Callback function that can be used to add command line options
 	 * to the cmd interface
