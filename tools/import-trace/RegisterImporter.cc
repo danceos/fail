@@ -32,9 +32,8 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 										const Trace_Event &ev,
 										const LLVMtoFailTranslator::reginfo_t &info,
 										char access_type) {
-	LLVMtoFailTranslator::reginfo_t one_byte_window = info;
-	one_byte_window.width = 8;
-	address_t from = one_byte_window.toDataAddress(), to = one_byte_window.toDataAddress() + (info.width) / 8;
+	address_t from = info.toDataAddress();
+	address_t to = from + info.width / 8;
 
 	// Iterate over all accessed bytes
 	for (address_t data_address = from; data_address < to; ++data_address) {
@@ -130,6 +129,12 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_uses.begin();
 		 it != opcode.reg_uses.end(); ++it) {
 		const LLVMtoFailTranslator::reginfo_t &info = ltof.getFailRegisterID(*it);
+		if (&info == &ltof.notfound) {
+			LOG << "Could not find a mapping for LLVM input register #" << std::dec << *it
+			    << " at IP " << std::hex << ev.ip()
+			    << ", skipping" << std::endl;
+			continue;
+		}
 
 		/* if not tracing flags, but flags register -> ignore it
 		   if not tracing gp, but ! flags -> ignore it*/
@@ -146,6 +151,13 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_defs.begin();
 		 it != opcode.reg_defs.end(); ++it) {
 		const LLVMtoFailTranslator::reginfo_t &info = ltof.getFailRegisterID(*it);
+		if (&info == &ltof.notfound) {
+			LOG << "Could not find a mapping for LLVM output register #" << std::dec << *it
+			    << " at IP " << std::hex << ev.ip()
+			    << ", skipping" << std::endl;
+			continue;
+		}
+
 		/* if not tracing flags, but flags register -> ignore it
 		   if not tracing gp, but ! flags -> ignore it*/
 		if (info.id == RID_FLAGS && !do_flags)
