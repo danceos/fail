@@ -15,9 +15,9 @@ bool BasicPruner::prune_all() {
 	std::string injection_instr = this->use_instr1 ? "instr1" : "instr2";
 	std::string injection_instr_absolute = this->use_instr1 ? "instr1_absolute" : "instr2_absolute";
 
-	ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, fspmethod_id) "
+	ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, data_width, fspmethod_id) "
 		  "SELECT 0, variant_id, instr2, " << injection_instr << ", " << injection_instr_absolute << ", "
-		  "  data_address, " << m_method_id << " "
+		  "  data_address, width, " << m_method_id << " "
 		  "FROM trace "
 		  "WHERE variant_id IN (" << m_variant_id_query << ") AND accesstype = 'R'";
 	if (!db->query(ss.str().c_str())) return false; 
@@ -30,9 +30,9 @@ bool BasicPruner::prune_all() {
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res))) {
 		// single entry for known outcome (write access)
-		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, fspmethod_id) "
+		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, data_width, fspmethod_id) "
 			  "SELECT 1, variant_id, instr2, " << injection_instr << ", " << injection_instr_absolute << ", "
-			  "  data_address, " << m_method_id << " "
+			  "  data_address, width, " << m_method_id << " "
 			  "FROM trace "
 			  "WHERE variant_id = " << row[0] << " AND accesstype = 'W' "
 			  "LIMIT 1";

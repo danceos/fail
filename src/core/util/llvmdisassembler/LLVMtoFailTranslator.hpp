@@ -30,11 +30,11 @@ public:
 			// <reg>  | <offset>
 			return (id << 4) | (offset / 8);
 		}
-		// does not recreate width or mask
-		static reginfo_t fromDataAddress(int addr) {
+
+		static reginfo_t fromDataAddress(int addr, int width) {
 			int id = addr >> 4;
 			byte_t offset = (addr & 0xf) * 8;
-			return reginfo_t(id, 0, offset);
+			return reginfo_t(id, width * 8, offset);
 		}
 
 		reginfo_t(int id=-1, regwidth_t width = 32, byte_t offs = 0)

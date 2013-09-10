@@ -57,6 +57,7 @@ bool Pruner::create_database() {
 	    "  injection_instr int(10) unsigned NOT NULL,"
 	    "  injection_instr_absolute int(10) unsigned,"
 	    "  data_address int(10) unsigned NOT NULL,"
+	    "  data_width int(10) unsigned NOT NULL,"
 	    "  fspmethod_id int(11) NOT NULL,"
 	    "  PRIMARY KEY (id),"
 	    "  KEY fspmethod_id (fspmethod_id,variant_id,data_address,instr2)"

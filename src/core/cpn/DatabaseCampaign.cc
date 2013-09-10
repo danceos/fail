@@ -112,7 +112,7 @@ void DatabaseCampaign::collect_result_thread() {
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather all unfinished jobs */
 	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address ";
+	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address, p.data_width ";
 	std::stringstream ss;
 	ss << " FROM fspgroup g"
 	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
@@ -140,6 +140,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned pilot_id        = atoi(row[0]);
 		unsigned injection_instr = atoi(row[3]);
 		unsigned data_address    = atoi(row[5]);
+		unsigned data_width      = atoi(row[6]);
 
 
 		DatabaseCampaignMessage pilot;
@@ -149,11 +150,14 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		pilot.set_injection_instr(injection_instr);
 		pilot.set_variant(variant.variant);
 		pilot.set_benchmark(variant.benchmark);
+
 		if (row[4]) {
 			unsigned injection_instr_absolute = atoi(row[4]);
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
+		pilot.set_data_width(data_width);
+
 
 		this->cb_send_pilot(pilot);
 
