@@ -8,7 +8,15 @@ static fail::Logger LOG("Database", true);
 
 using namespace fail;
 
+#ifndef __puma
+boost::mutex Database::m_global_lock;
+#endif
+
 Database::Database(const std::string &username, const std::string &host, const std::string &database) {
+#ifndef __puma
+	boost::lock_guard<boost::mutex> guard(m_global_lock);
+#endif
+
 	handle = mysql_init(0);
 	last_result = 0;
 	mysql_options(handle, MYSQL_READ_DEFAULT_FILE, "~/.my.cnf");
@@ -26,6 +34,9 @@ Database::~Database()
 	// flush cached INSERTs if available
 	insert_multiple();
 
+#ifndef __puma
+	boost::lock_guard<boost::mutex> guard(m_global_lock);
+#endif
 	mysql_close(handle);
 }
 

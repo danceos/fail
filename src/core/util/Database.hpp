@@ -23,6 +23,7 @@ namespace fail {
 		MYSQL_RES *last_result; // !< Used for mysql_result_free
 #ifndef __puma
 		boost::mutex m_handle_lock;
+		static boost::mutex m_global_lock;
 #endif
 		std::string m_insertquery;
 		std::vector<std::string> m_insertquery_values;
