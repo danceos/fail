@@ -71,6 +71,7 @@ BaseListener* L4SysExperiment::waitIOOrOther(bool clear_output) {
 		//simulator.removeListener(&ev_ioport);
 		if (ev == &ev_ioport) {
 			currentOutput += ev_ioport.getData();
+            //log << currentOutput << std::endl;
 		} else {
 			break;
 		}
@@ -444,34 +445,8 @@ void L4SysExperiment::readGoldenRun(std::string& target)
 }
 
 
-fail::BPSingleListener*
-L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
+void L4SysExperiment::setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset)
 {
-    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
-    log << "Memory fault injection at instruction " << std::hex << offset
-        << ", ip " << ip << ", address " << dataAddress << std::endl;
-    bp->setWatchInstructionPointer(ip & 0xFFFFFFFF);
-    bp->setCounter(offset);
-    return bp;
-}
-
-
-fail::BPSingleListener*
-L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
-{
-    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
-    
-	int reg, width, regOffset;
-	reg    = ((dataAddress >> 8) & 0xF) + 1; // regs start at 1
-	width  = (dataAddress >> 4) & 0xF;
-	regOffset = dataAddress & 0xF;
-
-	log << "GPR bitflip at instr. offset " << offset
-	    << " reg data (" << reg << ", " << width << ", "
-        << regOffset << ")" << std::endl;
-
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-    // XXX still needed???
     ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
 
     if (!instr_list_file.good()) {
@@ -480,7 +455,7 @@ L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
     }
 
     TraceInstr curr_instr;
-    instr_list_file.seekg(offset * sizeof(TraceInstr));
+    instr_list_file.seekg(instOffset * sizeof(TraceInstr));
     log << instr_list_file.eof() << " " << instr_list_file.bad() << " "
         << instr_list_file.fail() << endl;
     if (instr_list_file.eof()) {
@@ -494,6 +469,44 @@ L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
     bp->setWatchInstructionPointer(curr_instr.trigger_addr);
     log << "setting bp counter " << hex << curr_instr.bp_counter << endl;
     bp->setCounter(curr_instr.bp_counter);
+}
+
+
+fail::BPSingleListener*
+L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
+{
+    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
+    log << "\033[34;1mMemory fault injection\033[0m at instruction " << std::hex << offset
+        << ", ip " << ip << ", address " << dataAddress << std::endl;
+
+#ifdef L4SYS_FILTER_INSTRUCTIONS
+    setupFilteredBreakpoint(bp, offset);
+    assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
+#else
+    bp->setWatchInstructionPointer(ANY_ADDR);
+    bp->setCounter(instr_offset);
+#endif
+    return bp;
+}
+
+
+fail::BPSingleListener*
+L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
+{
+    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
+    
+	int reg, regOffset;
+	reg    = ((dataAddress >> 4) & 0xF) + 1; // regs start at 1
+	regOffset = dataAddress & 0xF;
+
+	log << "\033[32;1mGPR bitflip\033[0m at instr. offset " << offset
+	    << " reg data (" << reg << ", " 
+        << regOffset << ")" << std::endl;
+
+#ifdef L4SYS_FILTER_INSTRUCTIONS
+    setupFilteredBreakpoint(bp, offset);
+    assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
+    log << bp->getCounter() << std::endl;
 #else
     bp->setWatchInstructionPointer(ANY_ADDR);
     bp->setCounter(instr_offset);
@@ -515,9 +528,8 @@ void L4SysExperiment::doMemoryInjection(int address, int bit)
 
 void L4SysExperiment::doRegisterInjection(int regDesc, int bit)
 {
-	int reg, width, offset;
-	reg    = ((regDesc >> 8) & 0xF) + 1; // regs start at 1
-	width  = (regDesc >> 4) & 0xF;
+	int reg, offset;
+	reg    = (regDesc >> 4) + 1; // regs start at 1
 	offset = regDesc & 0xF;
     
     ConcreteCPU& cpu = simulator.getCPU(0);
@@ -615,11 +627,14 @@ bool L4SysExperiment::run()
 
         unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
         BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
-        ev_incomplete.setCounter(static_cast<unsigned>(instr_left * 1.1));
+        ev_incomplete.setCounter(instr_left);
         simulator.addListener(&ev_incomplete);
 
         TimerListener ev_timeout(calculateTimeout(instr_left));
         simulator.addListener(&ev_timeout);
+        log << "continue... (" <<  simulator.getListenerCount()
+            << " breakpoints, timeout @ " << ev_timeout.getTimeout()
+            << std::endl;
 
         //do not discard output recorded so far
         BaseListener *ev = waitIOOrOther(false);
