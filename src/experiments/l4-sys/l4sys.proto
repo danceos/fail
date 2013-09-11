@@ -8,6 +8,7 @@ message L4SysProtoMsg {
 		RATFLIP = 2;
 		IDCFLIP = 3;
 		ALUINSTR = 4;
+		MEM = 5;
 	}
 
 	// registers
