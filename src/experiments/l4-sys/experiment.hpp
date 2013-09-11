@@ -112,16 +112,25 @@ private:
 	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
 	 * phase 1)
 	 */
-	void startAndSaveInitState(fail::BPSingleListener& bp);
+	void startAndSaveInitState(fail::BPSingleListener* bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
 	 * filtering if configured (experiment preparation, phase 2).
 	 */
-	void collectInstructionTrace(fail::BPSingleListener& bp);
+	void collectInstructionTrace(fail::BPSingleListener* bp);
 	/**
 	 * Perform the golden run (experiment preparation, phase 3)
 	 */
-	void goldenRun(fail::BPSingleListener& bp);
+	void goldenRun(fail::BPSingleListener* bp);
+
+	void validatePrerequisites();
+	void getJobParameters();
+	void readGoldenRun(std::string& target);
+
+	fail::BPSingleListener* prepareMemoryExperiment(int ip, int offset, int dataAddress);
+	fail::BPSingleListener* prepareRegisterExperiment(int ip, int offset, int dataAddress);
+	void doMemoryInjection(int address, int bit);
+	void doRegisterInjection(int regDesc, int bit);
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__
