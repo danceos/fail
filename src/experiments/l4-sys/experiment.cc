@@ -67,7 +67,8 @@ BaseListener* L4SysExperiment::waitIOOrOther(bool clear_output) {
 	while (true) {
 		simulator.addListener(&ev_ioport);
 		ev = simulator.resume();
-		simulator.removeListener(&ev_ioport);
+        //log << "hello " << simulator.getListenerCount() << std::endl;
+		//simulator.removeListener(&ev_ioport);
 		if (ev == &ev_ioport) {
 			currentOutput += ev_ioport.getData();
 		} else {
@@ -252,8 +253,6 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
     }
 
 	size_t count = 0, inst_accepted = 0, mem = 0, mem_valid = 0;
-    simtime_t prevtime = 0, currtime;
-    simtime_diff_t deltatime;
 	map<address_t, unsigned> times_called_map;
     bool injecting = false;
     
@@ -277,9 +276,6 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             simulator.addListener(&bp);
             ++count;
         }
-        
-        currtime = simulator.getTimerTicks();
-        deltatime = currtime - prevtime;
         
         unsigned times_called = times_called_map[curr_addr];
         ++times_called;
@@ -309,7 +305,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             ++mem_valid;
 
             Trace_Event te;
-            if (deltatime != 0) { te.set_time_delta(deltatime); };
+            te.set_time_delta(1);
             te.set_ip(curr_addr);
             te.set_memaddr(ML.getTriggerAddress());
             te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
@@ -336,7 +332,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener& bp)
             // the generic *-trace tools
             // XXX: need to log CR3 if we want multiple binaries here
             Trace_Event e;
-            if (deltatime != 0) { e.set_time_delta(deltatime); };
+            e.set_time_delta(1);
             e.set_ip(curr_addr);
             os_instr->writeMessage(&e);
         } else {
@@ -454,6 +450,32 @@ bool L4SysExperiment::run() {
 	int exp_type     = param->msg.exp_type();
 	int instr_offset = param->msg.fsppilot().injection_instr();
 	int regData      = param->msg.fsppilot().data_address();
+
+
+    if (exp_type == param->msg.MEM) {
+        currentOutput.clear();
+		currentOutput.reserve(teststruct.st_size);
+        simulator.clearListeners();
+
+        log << "Memory fault injection at instruction " << std::hex << instr_offset
+            << ", ip " << param->msg.fsppilot().injection_instr_absolute() << ", address "
+            << regData << std::endl;
+        bp.setWatchInstructionPointer(
+            param->msg.fsppilot().injection_instr_absolute() & 0xFFFFFFFF);
+        bp.setCounter(1);
+        log << bp.getWatchInstructionPointer() << " - " << bp.getCounter() << std::endl;
+
+        simulator.restore(L4SYS_STATE_FOLDER);
+
+        simtime_t now = simulator.getTimerTicks();
+		simulator.addListener(&bp);
+		//and log the output
+		waitIOOrOther(true);
+        log << "Hit BP. Start time " << now << ", new time " << simulator.getTimerTicks()
+            << ", diff = " << simulator.getTimerTicks() - now << std::endl;
+        //assert(ev == &bp);
+        exit(1);
+    }
 
 	int reg, width, offset;
 	reg    = ((regData >> 8) & 0xF) + 1; // regs start at 1
