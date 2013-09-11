@@ -474,7 +474,73 @@ bool L4SysExperiment::run() {
         log << "Hit BP. Start time " << now << ", new time " << simulator.getTimerTicks()
             << ", diff = " << simulator.getTimerTicks() - now << std::endl;
         //assert(ev == &bp);
-        exit(1);
+        for (unsigned bit_offset = 0; bit_offset < 8; ++bit_offset) {
+            currentOutput.clear();
+            currentOutput.reserve(teststruct.st_size);
+            simulator.clearListeners();
+            
+            log << "restoring state" << endl;
+            simulator.restore(L4SYS_STATE_FOLDER);
+            log << simulator.getCPU(0).getInstructionPointer()
+                << " injecting bit " << bit_offset << std::endl;
+            
+            L4SysProtoMsg_Result *result = param->msg.add_result();
+            result->set_instr_offset(instr_offset);
+            result->set_bit_offset(bit_offset);
+            
+            MemoryManager& mm = simulator.getMemoryManager();
+            byte_t data = mm.getByte(regData);
+            byte_t newdata = data ^ (1 << bit_offset);
+            mm.setByte(regData, newdata);
+            log << (int)data << " -> " << (int)newdata << std::endl;
+        
+            BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
+            simulator.addListener(&ev_done);
+
+            unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
+            BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
+            ev_incomplete.setCounter(static_cast<unsigned>(instr_left * 1.1));
+            simulator.addListener(&ev_incomplete);
+
+            TimerListener ev_timeout(calculateTimeout(instr_left));
+            simulator.addListener(&ev_timeout);
+
+            //do not discard output recorded so far
+            BaseListener *ev = waitIOOrOther(false);
+
+            /* copying a string object that contains control sequences
+             * unfortunately does not work with the library I am using,
+             * which is why output is passed on as C string and
+             * the string compare is done on C strings
+             */
+            if (ev == &ev_done) {
+                if (strcmp(currentOutput.c_str(), golden_run.c_str()) == 0) {
+                    log << "Result DONE" << endl;
+                    result->set_resulttype(param->msg.DONE);
+                } else {
+                    log << "Result WRONG" << endl;
+                    result->set_resulttype(param->msg.WRONG);
+                    result->set_output(sanitised(currentOutput.c_str()));
+                }
+            } else if (ev == &ev_incomplete) {
+                log << "Result INCOMPLETE" << endl;
+                result->set_resulttype(param->msg.INCOMPLETE);
+                result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
+                result->set_output(sanitised(currentOutput.c_str()));
+            } else if (ev == &ev_timeout) {
+                log << "Result TIMEOUT" << endl;
+                result->set_resulttype(param->msg.TIMEOUT);
+                result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
+                result->set_output(sanitised(currentOutput.c_str()));
+            } else {
+                log << "Result WTF?" << endl;
+                stringstream ss;
+                ss << "eventid " << ev;
+                terminateWithError(ss.str(), 50);
+            }
+        }
+        m_jc.sendResult(*param);
+        terminate(0);
     }
 
 	int reg, width, offset;
@@ -496,7 +562,7 @@ bool L4SysExperiment::run() {
 
 		L4SysProtoMsg_Result *result = param->msg.add_result();
 		result->set_instr_offset(instr_offset);
-		result->set_bit_offset(bit_offset + 8 * offset);
+		result->set_bit_offset(bit_offset);
 		result->set_register_offset(static_cast<L4SysProtoMsg_RegisterType>(reg));
 
 		// restore experiment state
