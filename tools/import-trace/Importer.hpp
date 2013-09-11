@@ -6,6 +6,7 @@
 #include "util/ProtoStream.hpp"
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
+#include "sal/Architecture.hpp"
 #include "util/Database.hpp"
 #include "util/MemoryMap.hpp"
 #include "comm/TracePlugin.pb.h"
@@ -22,7 +23,11 @@ protected:
 	fail::MemoryMap *m_mm;
 	char m_faultspace_rightmargin;
 	bool m_sanitychecks;
+	bool m_import_write_ecs;
+	bool m_extended_trace;
 	fail::Database *db;
+	fail::Architecture m_arch;
+	fail::UniformRegisterSet *m_extended_trace_regs;
 
 	/* How many rows were inserted into the database */
 	unsigned m_row_count;
@@ -60,8 +65,54 @@ protected:
 	instruction_count_t m_last_instr;
 	fail::simtime_t m_last_time;
 
+protected:
+	/**
+	 * Allows specialized importers to add more table columns instead of
+	 * completely overriding create_database().  The returned SQL CREATE TABLE
+	 * snippet should be terminated with a comma if non-empty.  Should call and
+	 * pass through their parent's implementation.
+	 */
+	virtual std::string database_additional_columns() { return ""; }
+	/**
+	 * Similar to database_additional_columns(), this allows specialized
+	 * importers to define which additional columns it wants to INSERT
+	 * alongside what add_trace_event() adds by itself.  This may be identical
+	 * to or a subset of what database_additional_columns() specifies.  The SQL
+	 * snippet should *begin* with a comma if non-empty.
+	 */
+	virtual void database_insert_columns(std::string& sql, unsigned& num_columns) { num_columns = 0; }
+	/**
+	 * Will be called back from add_trace_event() to fill in data for the
+	 * columns specified by database_insert_columns().
+	 */
+	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake) { return true; }
+	/**
+	 * Use this variant if passing through the IP/MEM event does not make any
+	 * sense for your Importer implementation.
+	 */
+	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
+								 access_info_t &event, bool is_fake = false);
+	/**
+	 * Use this variant for passing through the IP/MEM event your Importer
+	 * received.
+	 */
+	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
+								 Trace_Event &event, bool is_fake = false);
+	virtual void open_unused_ec_intervals();
+	virtual bool close_ec_intervals();
+
+	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
+								 Trace_Event &ev) = 0;
+	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
+								 Trace_Event &ev) = 0;
+	/**
+	 * May be overridden by importers that need to do stuff after the last
+	 * event was consumed.
+	 */
+	virtual bool trace_end_reached() { return true; }
+
 public:
-	Importer() : m_sanitychecks(false), m_row_count(0), m_time_trace_start(0) {}
+	Importer() : m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	/**
@@ -73,25 +124,14 @@ public:
 	virtual bool create_database();
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
-	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
-								 access_info_t &event, bool is_fake = false);
-	virtual void open_unused_ec_intervals();
-	virtual bool close_ec_intervals();
-
-	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev) = 0;
-	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev) = 0;
-
 
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
 
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
 	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
-
-
-
+	void set_import_write_ecs(bool enabled) { m_import_write_ecs = enabled; }
+	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
 };
 
 #endif

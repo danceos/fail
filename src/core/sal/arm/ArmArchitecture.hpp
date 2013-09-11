@@ -17,6 +17,10 @@ public:
 	~ArmArchitecture();
 };
 
+#ifdef BUILD_ARM
+typedef ArmArchitecture Architecture;
+#endif
+
 /**
  * \enum GPRegIndex
  * Defines the general purpose (GP) register identifier for the ARM

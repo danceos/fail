@@ -105,6 +105,7 @@ void LLVMDisassembler::disassemble()
 					instr_info.opcode = Inst.getOpcode();
 					instr_info.length = Size;
 					instr_info.address = SectionAddr + Index;
+					instr_info.conditional_branch = desc.isConditionalBranch();
 
 					unsigned int  pos = 0;
 					for (MCInst::iterator it = Inst.begin(); it != Inst.end(); ++it) {

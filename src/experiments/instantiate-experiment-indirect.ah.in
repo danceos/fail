@@ -5,10 +5,6 @@
 // includes generated headers (e.g., protobuf message definitions) that are not
 // guaranteed to exist when the aspect is woven.
 
-// FIXME: cmake does not remove these .ah files when the user configures
-// another experiment (or even makes "clean").  Currently, this needs to be
-// worked around by manually removing $BUILDDIR/core/experiments/*/*.ah .
-
 // You need to provide the implementation of this function in your experiment
 // directory:
 void instantiate@EXPERIMENT_TYPE@();

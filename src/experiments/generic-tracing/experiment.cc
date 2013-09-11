@@ -41,7 +41,7 @@ void  GenericTracing::parseOptions() {
 
 	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None, "--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
-															"-m,--memory-symbol \tELF symbol(s) to trace accesses (without specifiying all mem read/writes are traced)");
+															"-m,--memory-symbol \tELF symbol(s) to trace accesses (default: all mem read/writes are traced)");
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
 															"-M,--memory-region \trestrict memory region which is traced"
 															"	Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>");

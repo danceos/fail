@@ -13,7 +13,7 @@ class RegisterImporter : public Importer {
 	llvm::OwningPtr<fail::LLVMDisassembler> disas;
 
 	bool addRegisterTrace(fail::simtime_t curtime, instruction_count_t instr,
-						  const Trace_Event &ev,
+						  Trace_Event &ev,
 						  const fail::LLVMtoFailTranslator::reginfo_t &info,
 						  char access_type);
 
@@ -29,10 +29,11 @@ public:
 	 */
 	virtual bool cb_commandline_init();
 
+protected:
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev);
+								 Trace_Event &ev);
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
-								  const Trace_Event &ev) {
+								  Trace_Event &ev) {
 		/* ignore on purpose */
 		return true;
 	}

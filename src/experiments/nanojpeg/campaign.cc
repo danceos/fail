@@ -52,14 +52,14 @@ bool NanoJPEGCampaign::run()
 	// list: latest accesses (instr offset | bit mask)
 	map<GPRegisterId, std::list<std::pair<unsigned, uint64_t> > > reg_cascade;
 	// open up an equivalence class for all bits in all GPRs
-	reg_cascade[RID_EAX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_EBX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_ECX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_EDX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_ESP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_EBP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_ESI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
-	reg_cascade[RID_EDI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CAX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CBX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CCX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CDX].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CSP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CBP].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CSI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
+	reg_cascade[RID_CDI].push_front(std::pair<unsigned, uint64_t>(0, 0xffffffffffffffffULL));
 
 	// load trace
 	ifstream tracef(NANOJPEG_TRACE);
@@ -145,7 +145,7 @@ bool NanoJPEGCampaign::run()
 				acc->second &= ~common_mask;
 
 				// new EC with experiments: acc->first -- instr, common_mask
-//				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+//				if (reg != RID_CBP && reg != RID_CSI && reg != RID_CDI) {
 					count_exp += add_experiment_ec(acc->first, instr, absolute_instr, reg, common_mask);
 //				}
 
@@ -189,7 +189,7 @@ bool NanoJPEGCampaign::run()
 				// skip empty EC (because register was read within the same instruction)?
 				if (acc->first <= instr) {
 					// new EC with known result: acc->first -- instr, common_mask
-//					if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+//					if (reg != RID_CBP && reg != RID_CSI && reg != RID_CDI) {
 						count_known += add_known_ec(acc->first, instr, absolute_instr, reg, common_mask);
 //					}
 				}
@@ -234,7 +234,7 @@ bool NanoJPEGCampaign::run()
 			// skip empty EC (because register was read within the same instruction)?
 			if (acc->first <= instr) {
 				// new EC with known result: acc->first -- instr, common_mask
-//				if (reg != RID_EBP && reg != RID_ESI && reg != RID_EDI) {
+//				if (reg != RID_CBP && reg != RID_CSI && reg != RID_CDI) {
 					count_exp += add_experiment_ec(acc->first, instr, absolute_instr, reg, common_mask);
 //				}
 			}

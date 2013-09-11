@@ -5,12 +5,12 @@ using namespace fail;
 static fail::Logger LOG("MemoryImporter");
 
 
-bool MemoryImporter::handle_ip_event(simtime_t curtime, instruction_count_t instr, const Trace_Event &ev) {
+bool MemoryImporter::handle_ip_event(simtime_t curtime, instruction_count_t instr, Trace_Event &ev) {
 	return true;
 }
 
 bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t instr,
-									  const Trace_Event &ev) {
+									  Trace_Event &ev) {
 	address_t from = ev.memaddr(), to = ev.memaddr() + ev.width();
 	// Iterate over all accessed bytes
 	// FIXME Keep complete trace information (access width)?
@@ -39,11 +39,11 @@ bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t ins
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-		access_info_t access;
-		access.access_type  = ev.accesstype() == ev.READ ? 'R' : 'W';
-		access.data_address = data_address;
-		access.data_width    = 1; // exactly one byte
-		if (!add_trace_event(left_margin, right_margin, access)) {
+
+		// pass through potentially available extended trace information
+		ev.set_memaddr(data_address);
+		ev.set_width(1); // exactly one byte
+		if (!add_trace_event(left_margin, right_margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}
@@ -54,4 +54,3 @@ bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t ins
 	}
 	return true;
 }
-

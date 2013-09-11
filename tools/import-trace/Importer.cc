@@ -13,13 +13,16 @@ bool Importer::init(const std::string &variant, const std::string &benchmark, Da
 	if (!m_variant_id) {
 		return false;
 	}
+	m_extended_trace_regs =
+		m_arch.getRegisterSetOfType(RT_TRACE);
 	LOG << "Importing to variant " << variant << "/" << benchmark
 		<< " (ID: " << m_variant_id << ")" << std::endl;
 	return true;
 }
 
 bool Importer::create_database() {
-	std::string create_statement = "CREATE TABLE IF NOT EXISTS trace ("
+	std::stringstream create_statement;
+	create_statement << "CREATE TABLE IF NOT EXISTS trace ("
 		"	variant_id int(11) NOT NULL,"
 		"	instr1 int(10) unsigned NOT NULL,"
 		"	instr1_absolute int(10) unsigned DEFAULT NULL,"
@@ -29,10 +32,20 @@ bool Importer::create_database() {
 		"	time2 bigint(10) unsigned NOT NULL,"
 		"	data_address int(10) unsigned NOT NULL,"
 		"	width tinyint(3) unsigned NOT NULL,"
-		"	accesstype enum('R','W') NOT NULL,"
+		"	accesstype enum('R','W') NOT NULL,";
+	if (m_extended_trace) {
+		create_statement << "   data_value int(10) unsigned NULL,";
+		for (UniformRegisterSet::iterator it = m_extended_trace_regs->begin();
+			it != m_extended_trace_regs->end(); ++it) {
+			create_statement << " r" << (*it)->getId() << " int(10) unsigned NULL,";
+			create_statement << " r" << (*it)->getId() << "_deref int(10) unsigned NULL,";
+		}
+	}
+	create_statement << database_additional_columns();
+	create_statement <<
 		"	PRIMARY KEY (variant_id,data_address,instr2)"
 		") engine=MyISAM ";
-	return db->query(create_statement.c_str());
+	return db->query(create_statement.str().c_str());
 }
 
 
@@ -82,15 +95,22 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			/* Another instruction was executed, handle it in the
 			   subclass */
 			if (!handle_ip_event(curtime, instr, ev)) {
+				LOG << "error: handle_ip_event() failed at instr=" << instr << std::endl;
 				return false;
 			}
 
 			instr++;
 		} else {
 			if (!handle_mem_event(curtime, instr, ev)) {
+				LOG << "error: handle_mem_event() failed at instr=" << instr << std::endl;
 				return false;
 			}
 		}
+	}
+
+	if (!trace_end_reached()) {
+		LOG << "trace_end_reached() failed" << std::endl;
+		return false;
 	}
 
 	// Why -1?	In most cases it does not make sense to inject before the
@@ -103,7 +123,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	m_last_ip = ev.ip();      // The last event in the log
 
 	/* Signal that the trace was completely imported */
-	LOG << "trace duration: " << (curtime - m_time_trace_start) << " ticks" << std::endl;
+	LOG << "trace duration: " << std::dec << (curtime - m_time_trace_start) << " ticks" << std::endl;
 	LOG << "Inserted " << m_row_count << " real trace events into the database" << std::endl;
 
 
@@ -219,60 +239,169 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 							   access_info_t &access, bool is_fake) {
-	static MYSQL_STMT *stmt = 0;
-	if (!stmt) {
-		std::string sql("INSERT INTO trace (variant_id, instr1, instr1_absolute, instr2, instr2_absolute, time1, time2, data_address, width,"
-		                "					accesstype)"
-		                "VALUES (?,?,?,?,?,?,?,?,?,?)");
-		stmt = mysql_stmt_init(db->getHandle());
-		if (mysql_stmt_prepare(stmt, sql.c_str(), sql.length())) {
-			LOG << "query '" << sql << "' failed: " << mysql_error(db->getHandle()) << std::endl;
+	Trace_Event e;
+	e.set_ip(end.ip);
+	e.set_memaddr(access.data_address);
+	e.set_width(access.data_width);
+	e.set_accesstype(access.access_type == 'R' ? e.READ : e.WRITE);
+	return add_trace_event(begin, end, e, is_fake);
+}
+
+bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
+							   Trace_Event &event, bool is_fake) {
+	if (!m_import_write_ecs && event.accesstype() == event.WRITE) {
+		return true;
+	}
+
+	// insert extended trace info if configured and available
+	bool extended = m_extended_trace && event.has_trace_ext();
+
+	MYSQL_STMT **stmt;
+	unsigned *columns;
+	static MYSQL_STMT *stmt_basic = 0;
+	static unsigned columns_basic = 0;
+	static MYSQL_STMT *stmt_extended = 0;
+	static unsigned columns_extended = 0;
+	stmt = extended ? &stmt_extended : &stmt_basic;
+	columns = extended ? &columns_extended : &columns_basic;
+
+	static unsigned num_additional_columns = 0;
+
+	if (!*stmt) {
+		std::stringstream sql;
+		sql << "INSERT INTO trace (variant_id, instr1, instr1_absolute, instr2, instr2_absolute, time1, time2, "
+		       "data_address, width, accesstype";
+		*columns = 10;
+		if (extended) {
+			sql << ", data_value";
+			(*columns)++;
+			for (UniformRegisterSet::iterator it = m_extended_trace_regs->begin();
+				it != m_extended_trace_regs->end(); ++it) {
+				sql << ", r" << (*it)->getId() << ", r" << (*it)->getId() << "_deref";
+			}
+		}
+
+		// Ask specialized importers whether they want to INSERT additional
+		// columns.
+		std::string additional_columns;
+		database_insert_columns(additional_columns, num_additional_columns);
+		sql << additional_columns;
+
+		sql << ") VALUES (?";
+		for (unsigned i = 1;
+		     i < *columns +
+		         (extended ? m_extended_trace_regs->count() * 2 : 0) +
+		         num_additional_columns;
+		     ++i) {
+			sql << ",?";
+		}
+		sql << ")";
+
+		*stmt = mysql_stmt_init(db->getHandle());
+		if (mysql_stmt_prepare(*stmt, sql.str().c_str(), sql.str().length())) {
+			LOG << "query '" << sql.str() << "' failed: " << mysql_error(db->getHandle()) << std::endl;
 			return false;
 		}
 	}
 
-	MYSQL_BIND bind[10];
-	my_bool is_null = is_fake;
-	my_bool null = true;
+	// extended trace:
+	// retrieve register / register-dereferenced values
+	std::map<int, uint32_t> register_values;
+	std::map<int, uint32_t> register_values_deref;
+	unsigned data_value = 0;
+	const Trace_Event_Extended& ev_ext = event.trace_ext();
+	if (extended) {
+		data_value = ev_ext.data();
+		for (int i = 0; i < ev_ext.registers_size(); i++) {
+			const Trace_Event_Extended_Registers& reg = ev_ext.registers(i);
+			register_values[reg.id()] = reg.value();
+			register_values_deref[reg.id()] = reg.value_deref();
+		}
+	}
+
+	// C99 / g++ extension VLA to the rescue:
+	MYSQL_BIND bind[*columns + m_extended_trace_regs->count() * 2 + num_additional_columns];
+	my_bool fake_null = is_fake;
+	my_bool null = true, not_null = false;
 	long unsigned accesstype_len = 1;
+
+	unsigned data_address = event.memaddr();
+	unsigned width = event.width();
+	char accesstype = event.accesstype() == event.READ ? 'R' : 'W';
 
 	// LOG << m_variant_id  << "-" << ":" << begin.dyninstr << ":" << end.dyninstr << "-" << data_address << " " << accesstype << std::endl;
 
-
+	// sizeof works fine for VLAs
 	memset(bind, 0, sizeof(bind));
-	for (unsigned i = 0; i < sizeof(bind)/sizeof(*bind); ++i) {
+	for (unsigned i = 0; i < *columns; ++i) {
 		bind[i].buffer_type = MYSQL_TYPE_LONG;
 		bind[i].is_unsigned = 1;
 		switch (i) {
 		case 0: bind[i].buffer = &m_variant_id; break;
 		case 1: bind[i].buffer = &begin.dyninstr; break;
 		case 2: bind[i].buffer = &begin.ip;
-			bind[i].is_null = begin.ip == 0 ? &null : &is_null;
+			bind[i].is_null = begin.ip == 0 ? &null : &fake_null;
 			break;
 		case 3: bind[i].buffer = &end.dyninstr; break;
 		case 4: bind[i].buffer = &end.ip;
-			bind[i].is_null = &is_null; break;
+			bind[i].is_null = &fake_null; break;
 		case 5: bind[i].buffer = &begin.time;
 			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
 			break;
 		case 6: bind[i].buffer = &end.time;
 			bind[i].buffer_type = MYSQL_TYPE_LONGLONG;
 			break;
-		case 7: bind[i].buffer = &access.data_address; break;
-		case 8: bind[i].buffer = &access.data_width; break;
-		case 9: bind[i].buffer = &access.access_type;
+		case 7: bind[i].buffer = &data_address; break;
+		case 8: bind[i].buffer = &width; break;
+		case 9: bind[i].buffer = &accesstype;
 			bind[i].buffer_type = MYSQL_TYPE_STRING;
 			bind[i].buffer_length = accesstype_len;
 			bind[i].length = &accesstype_len;
 			break;
+		// only visited in extended mode:
+		case 10: bind[i].buffer = &data_value;
+			bind[i].is_null = ev_ext.has_data() ? &not_null : &null; break;
 		}
 	}
-	if (mysql_stmt_bind_param(stmt, bind)) {
-		LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(stmt) << std::endl;
+	if (extended) {
+		unsigned i = 0;
+		for (UniformRegisterSet::iterator it = m_extended_trace_regs->begin();
+			it != m_extended_trace_regs->end(); ++it, ++i) {
+			assert(*columns + i*2 + 1 < sizeof(bind)/sizeof(*bind));
+			bind[*columns + i*2    ].buffer_type = MYSQL_TYPE_LONG;
+			bind[*columns + i*2    ].is_unsigned = 1;
+			if (register_values.count((*it)->getId())) {
+				bind[*columns + i*2    ].buffer = &register_values[(*it)->getId()];
+			} else {
+				bind[*columns + i*2    ].buffer = &width; // arbitrary
+				bind[*columns + i*2    ].is_null = &null;
+			}
+
+			bind[*columns + i*2 + 1].buffer_type = MYSQL_TYPE_LONG;
+			bind[*columns + i*2 + 1].is_unsigned = 1;
+			if (register_values_deref.count((*it)->getId())) {
+				bind[*columns + i*2 + 1].buffer = &register_values_deref[(*it)->getId()];
+			} else {
+				bind[*columns + i*2 + 1].buffer = &width; // arbitrary
+				bind[*columns + i*2 + 1].is_null = &null;
+			}
+		}
+	}
+
+	// Ask specialized importers what concrete data they want to INSERT.
+	if (num_additional_columns) {
+		unsigned pos = *columns + (extended ? m_extended_trace_regs->count() * 2 : 0);
+		if (!database_insert_data(event, bind + pos, num_additional_columns, is_fake)) {
+			return false;
+		}
+	}
+
+	if (mysql_stmt_bind_param(*stmt, bind)) {
+		LOG << "mysql_stmt_bind_param() failed: " << mysql_stmt_error(*stmt) << std::endl;
 		return false;
 	}
-	if (mysql_stmt_execute(stmt)) {
-		LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(stmt) << std::endl;
+	if (mysql_stmt_execute(*stmt)) {
+		LOG << "mysql_stmt_execute() failed: " << mysql_stmt_error(*stmt) << std::endl;
 		LOG << "IP: " << std::hex << end.ip << std::endl;
 		return false;
 	}

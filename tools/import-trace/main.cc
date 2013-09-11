@@ -12,6 +12,7 @@
 #include "InstructionImporter.hpp"
 #include "RegisterImporter.hpp"
 #include "RandomJumpImporter.hpp"
+#include "AdvancedMemoryImporter.hpp"
 #endif
 
 
@@ -49,8 +50,7 @@ ProtoIStream openProtoStream(std::string input_file) {
 }
 
 int main(int argc, char *argv[]) {
-	std::string trace_file, username, hostname, database, benchmark;
-	std::string variant;
+	std::string trace_file, variant, benchmark;
 	ElfReader *elf_file = 0;
 	MemoryMap *memorymap = 0;
 
@@ -87,7 +87,13 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
-
+	CommandLine::option_handle NO_WRITE_ECS =
+		cmd.addOption("", "no-write-ecs", Arg::None,
+			"--no-write-ecs \tDo not import any write ECs into the database; "
+			"results in a perforated fault space and is OK if you only use absolute failure numbers");
+	CommandLine::option_handle EXTENDED_TRACE =
+		cmd.addOption("", "extended-trace", Arg::None,
+			"--extended-trace \tImport extended trace information if available");
 
 	// variant 1: care (synthetic Rs)
 	// variant 2: don't care (synthetic Ws)
@@ -106,7 +112,7 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle ENABLE_SANITYCHECKS =
 		cmd.addOption("", "enable-sanitychecks", Arg::None,
 			"--enable-sanitychecks \tEnable sanity checks "
-			"(in case something looks fishy)"
+			"(in case something looks fishy) "
 			"(default: disabled)");
 
 	if (!cmd.parse()) {
@@ -116,28 +122,30 @@ int main(int argc, char *argv[]) {
 
 	Importer *importer;
 
-	if (cmd[IMPORTER].count() > 0) {
+	if (cmd[IMPORTER]) {
 		std::string imp(cmd[IMPORTER].first()->arg);
 		if (imp == "BasicImporter" || imp == "MemoryImporter" || imp == "memory" || imp == "mem") {
-			LOG << "Using MemoryImporter" << endl;
+			imp = "MemoryImporter";
 			importer = new MemoryImporter();
 #ifdef BUILD_LLVM_DISASSEMBLER
 		} else if (imp == "InstructionImporter" || imp == "code") {
-			LOG << "Using InstructionImporter" << endl;
+			imp = "InstructionImporter";
 			importer = new InstructionImporter();
 
 		} else if (imp == "RegisterImporter" || imp == "regs") {
-			LOG << "Using RegisterImporter" << endl;
+			imp = "RegisterImporter";
 			importer = new RegisterImporter();
 
 		} else if (imp == "RandomJumpImporter") {
-			LOG << "Using RandomJumpImporter" << endl;
 			importer = new RandomJumpImporter();
+		} else if (imp == "AdvancedMemoryImporter") {
+			importer = new AdvancedMemoryImporter();
 #endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
 			exit(-1);
 		}
+		LOG << "Using " << imp << endl;
 
 	} else {
 		LOG << "Using MemoryImporter" << endl;
@@ -158,30 +166,33 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	if (cmd[TRACE_FILE].count() > 0)
+	if (cmd[TRACE_FILE]) {
 		trace_file = std::string(cmd[TRACE_FILE].first()->arg);
-	else
+	} else {
 		trace_file = "trace.pb";
+	}
 
 	ProtoIStream ps = openProtoStream(trace_file);
 	Database *db = Database::cmdline_connect();
 
-	if (cmd[VARIANT].count() > 0)
+	if (cmd[VARIANT]) {
 		variant = std::string(cmd[VARIANT].first()->arg);
-	else
+	} else {
 		variant = "none";
+	}
 
-	if (cmd[BENCHMARK].count() > 0)
+	if (cmd[BENCHMARK]) {
 		benchmark = std::string(cmd[BENCHMARK].first()->arg);
-	else
+	} else {
 		benchmark = "none";
+	}
 
-	if (cmd[ELF_FILE].count() > 0) {
+	if (cmd[ELF_FILE]) {
 		elf_file = new ElfReader(cmd[ELF_FILE].first()->arg);
 	}
 	importer->set_elf(elf_file);
 
-	if (cmd[MEMORYMAP].count() > 0) {
+	if (cmd[MEMORYMAP]) {
 		memorymap = new MemoryMap();
 		for (option::Option *o = cmd[MEMORYMAP]; o; o = o->next()) {
 			if (!memorymap->readFromFile(o->arg)) {
@@ -191,7 +202,7 @@ int main(int argc, char *argv[]) {
 	}
 	importer->set_memorymap(memorymap);
 
-	if (cmd[FAULTSPACE_RIGHTMARGIN].count() > 0) {
+	if (cmd[FAULTSPACE_RIGHTMARGIN]) {
 		std::string rightmargin(cmd[FAULTSPACE_RIGHTMARGIN].first()->arg);
 		if (rightmargin == "W") {
 			importer->set_faultspace_rightmargin('W');
@@ -205,9 +216,9 @@ int main(int argc, char *argv[]) {
 		importer->set_faultspace_rightmargin('W');
 	}
 
-	if (cmd[ENABLE_SANITYCHECKS].count() > 0) {
-		importer->set_sanitychecks(true);
-	}
+	importer->set_sanitychecks(cmd[ENABLE_SANITYCHECKS]);
+	importer->set_extended_trace(cmd[EXTENDED_TRACE]);
+	importer->set_import_write_ecs(!cmd[NO_WRITE_ECS]);
 
 	if (!importer->init(variant, benchmark, db)) {
 		LOG << "importer->init() failed" << endl;
@@ -223,7 +234,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	if (cmd[NO_DELETE].count() == 0 && !importer->clear_database()) {
+	if (!cmd[NO_DELETE] && !importer->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}

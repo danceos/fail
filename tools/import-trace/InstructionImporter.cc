@@ -11,7 +11,7 @@ using namespace fail;
 static Logger LOG("InstructionImporter");
 
 bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-										  const Trace_Event &ev) {
+										  Trace_Event &ev) {
 	if (!binary) {
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
@@ -60,11 +60,12 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-		access_info_t access;
-		access.access_type  = 'R'; // instruction fetch is always a read
-		access.data_address = data_address;
-		access.data_width    = 1; // exactly one byte
-		if (!add_trace_event(left_margin, right_margin, access)) {
+
+		// pass through potentially available extended trace information
+		ev.set_accesstype(ev.READ); // instruction fetch is always a read
+		ev.set_memaddr(data_address);
+		ev.set_width(1); // exactly one byte
+		if (!add_trace_event(left_margin, right_margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}

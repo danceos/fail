@@ -112,6 +112,63 @@ An example for separate campaign/experiment implementations.
  2. Run the FailBochs instance, in properly defined environment:
       $ fail-client -q
 
+Experiment "dciao-kernelstructs":
+**********************************************************************
+This is an example for a database-driven FI campaign, with a campaign server
+instantiating the generic DatabaseCampaign.  The general workflow is as follows:
+ - Create a new database for this campaign, e.g., "dciao".  (See
+   how-to-build.txt, "Database backend setup")
+ - Record a trace using the generic tracing tool: Build a fail-client with the
+   "generic-tracing" experiment, and parametrize it with -Wf,[option] (e.g.,
+   "fail-client -Wf,--help").  Be aware that the generic tracing "experiment"
+   needs a complete simulator environment along with the ELF binary that
+   supplies symbol addresses; for FailBochs this means the usual bochsrc and
+   boot image files need to be present.
+   FIXME: dciao-kernelstructs has not been committed to
+          danceos/devel/experiment_targets/, use a "complete" example here
+ - Import the trace to the database using the import-trace tool (enable
+   BUILD_IMPORT_TRACE in the CMake configuration to get this built).  The
+   --variant/--benchmark parameters are only significant if you intend to
+   evaluate multiple protection variants and/or benchmarks.  Currently the
+   following importers (--importer X) are implemented:
+     MemoryImporter: Imports fault locations for single-location single-event
+       RAM faults (e.g., single-bit flips, or burst faults within the same
+       byte).  Directly maps memory access events from the trace to the DB.
+     AdvancedMemoryImporter: A MemoryImporter that additionally imports
+       Relyzer-style conditional branch history, instruction opcodes, and a
+       virtual duration = time2 - time1 + 1 column.
+     RegisterImporter: Imports fault locations for single-location single-event
+       register-file faults (e.g., single-bit flips in general-purpose
+       registers).  Considers only instruction addresses from the trace,
+       disassembles corresponding instructions in the supplied ELF binary (using
+       LLVM's disassembler library), and extracts used/defined registers.
+       Registers are mapped to/from "addresses" with fail::LLVMtoFailTranslator.
+     InstructionImporter: Interprets every instruction fetch as a memory read,
+       and handles it the same way the MemoryImporter handles "normal" memory
+       accesses.  Implements a fault model with faults in CPU instructions.
+     RandomJumpImporter: Implements multi-bit faults in the instruction pointer.
+       As the IP is read before every instruction, the fault space explodes
+       rapidly.  Should therefore be limited to small memory areas to jump
+       from/to.
+   Note that specifying an importer with --importer adds more parameters to the
+   --help output in some cases.
+   DB detail: This tool creates and fills the variant and trace tables.
+ - Prune the fault space with the prune-trace tool (enable BUILD_PRUNE_TRACE in
+   the CMake configuration).  This prepares all information necessary for
+   running the FI campaign.  Currently only the "basic" pruning method is
+   available, applying usual def/use pruning.
+   DB detail: This tool creates and fills the fsppilot, fspgroup and fspmethod
+   tables.
+ - Run the campaign server as usual.  In this case it does not do much more than
+   to instantiate the generic DatabaseCampaign, and to parametrize it with the
+   experiment-specific protobuf message type (DCIAOKernelProtoMsg) which must
+   adhere to some structural constraints (a required DatabaseCampaignMessage
+   fsppilot member, and a repeated group Result that contains no further
+   subgroups or repeated fields).  The DatabaseCampaign takes care of
+   distributing unfinished jobs, and collecting the results in an automatically
+   created result table with columns corresponding to the fields in the Result
+   group of the protobuf message.
+
 =========================================================================================
 Parallelization
 =========================================================================================
@@ -165,16 +222,6 @@ Some useful things to note:
  - The runcampaign.sh script starts the coolchecksum-server. Note that the server
    instance will terminate immediately (without notice), if there is still an
    existing coolcampaign.csv file.
- - In order to make the performance gains (mentioned above) take effect, a "workload
-   balancing" between the server and the clients is mandatory. This means that
-   the communication overhead (client <-> server) and the time needed to execute
-   the experiment code on the client-side should be in due proportion. More
-   specifically, for each experiment there will be exactly 2 TCP connections
-   (send parameter set to client, send result to server) established. Therefore
-   you should ensure that the jobs you distribute take enough time not to
-   overflow the server with requests. You may need to bundle parameters for
-   more than one experiment if a single experiment only takes a few hundred
-   milliseconds.  (See existing experiments for examples.)
 
 =========================================================================================
 Steps to run an experiment with gem5:

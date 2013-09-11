@@ -42,6 +42,7 @@ public:
 		unsigned int opcode;
 		unsigned int address;
 		unsigned char length;
+		bool conditional_branch;
 		std::vector<register_t> reg_uses;
 		std::vector<register_t> reg_defs;
 	};

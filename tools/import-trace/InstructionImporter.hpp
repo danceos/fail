@@ -9,11 +9,11 @@ class InstructionImporter : public Importer {
 	llvm::OwningPtr<llvm::object::Binary> binary;
 	llvm::OwningPtr<fail::LLVMDisassembler> disas;
 
-public:
+protected:
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-								 const Trace_Event &ev);
+								 Trace_Event &ev);
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
-								  const Trace_Event &ev) {
+								  Trace_Event &ev) {
 		/* ignore on purpose */
 		return true;
 	}

@@ -18,14 +18,14 @@ bool RandomJumpImporter::cb_commandline_init() {
 	CommandLine &cmd = CommandLine::Inst();
 
 	FROM = cmd.addOption("", "jump-from", Arg::Required,
-						 "--jump-from\t RandomJump: Which addresses should be jumped from\n");
+		"--jump-from \tRandomJump: Which addresses should be jumped from (a memory map; may be used more than once)");
 	TO   = cmd.addOption("", "jump-to", Arg::Required,
-						 "--jump-to\t RandomJump: Where to jump (a memory map>\n");
+		"--jump-to \tRandomJump: Where to jump (a memory map; may be used more than once)");
 	return true;
 }
 
 bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
-									   const Trace_Event &ev) {
+									   Trace_Event &ev) {
 	if (!binary) {
 		// Parse command line again, for jump-from and jump-to
 		// operations
@@ -35,8 +35,8 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 			return false;
 		}
 
-		// Read FROM memory file
-		if (cmd[FROM].count() > 0) {
+		// Read FROM memory map(s)
+		if (cmd[FROM]) {
 			m_mm_from = new MemoryMap();
 			for (option::Option *o = cmd[FROM]; o; o = o->next()) {
 				if (!m_mm_from->readFromFile(o->arg)) {
@@ -46,7 +46,8 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 			}
 		}
 
-		if (cmd[TO].count() > 0) {
+		// Read TO memory map(s)
+		if (cmd[TO]) {
 			m_mm_to = new MemoryMap();
 			for (option::Option *o = cmd[TO]; o; o = o->next()) {
 				if (!m_mm_to->readFromFile(o->arg)) {
@@ -81,7 +82,7 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 		/* Collect all addresses we want to jump to */
 		for (LLVMDisassembler::InstrMap::const_iterator instr = instr_map.begin();
 			 instr != instr_map.end(); ++instr) {
-			if (m_mm_to->isMatching(instr->first)) {
+			if (m_mm_to && m_mm_to->isMatching(instr->first)) {
 				m_jump_to_addresses.push_back(instr->first);
 			}
 		}
@@ -91,12 +92,12 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 
 	// skip events that are outside the memory map. -m instruction map
 	if (m_mm && !m_mm->isMatching(ev.ip())) {
-		return  true;
+		return true;
 	}
 
 	// skip events that are outside the --jump-from memory map.
-	if (!m_mm_from->isMatching(ev.ip())) {
-		return  true;
+	if (m_mm_from && !m_mm_from->isMatching(ev.ip())) {
+		return true;
 	}
 
 
@@ -116,11 +117,12 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-		access_info_t access;
-		access.access_type  = 'R'; // instruction fetch is always a read
-		access.data_address = to_addr;
-		access.data_width    = 4; // exactly one byte
-		if (!add_trace_event(margin, margin, access)) {
+
+		// pass through potentially available extended trace information
+		ev.set_accesstype(ev.READ); // instruction fetch is always a read
+		ev.set_memaddr(to_addr);
+		ev.set_width(4); // FIXME arbitrary, use Instr.length instead?
+		if (!add_trace_event(margin, margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}
