@@ -447,6 +447,22 @@ void L4SysExperiment::readGoldenRun(std::string& target)
 
 void L4SysExperiment::setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset)
 {
+    /*
+     * The L4Sys experiment uses instruction filtering to restrict the range
+     * of fault injection to only e.g., kernel instructions.
+     *
+     * To speed up injection, L4Sys furthermore does not use per-instruction
+     * breakpoints but only places a breakpoint on the actually interesting
+     * instruction (e.g., the injection EIP). Hence, we also do not count
+     * instructions from the beginning of the experiment, but we count how
+     * often a certain EIP was hit before the injection.
+     *
+     * To achieve these properties, we use an additional trace file that
+     * provides us with a 'hit counter' of each injection candidate. We use
+     * the global instruction ID (DataBaseCampaign: instruction_offset) to
+     * index into this trace file and determine the value for the breakpoint
+     * counter.
+     */
     ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
 
     if (!instr_list_file.good()) {
