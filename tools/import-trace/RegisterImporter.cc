@@ -74,20 +74,12 @@ bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t i
 		// we're currently looking at; the EC is defined by
 		// data_address, dynamic instruction start/end, the absolute PC at
 		// the end, and time start/end
-<<<<<<< HEAD
-		access_info_t access;
-		access.access_type	= access_type; // instruction fetch is always a read
-		access.data_address = data_address;
-		access.data_width	 = chunk_width;
-		if (!add_trace_event(left_margin, right_margin, access)) {
-=======
 
 		// pass through potentially available extended trace information
-		ev.set_width(1); // exactly one byte
+		ev.set_width(chunk_width);
 		ev.set_memaddr(data_address);
 		ev.set_accesstype(access_type == 'R' ? ev.READ : ev.WRITE);
 		if (!add_trace_event(left_margin, right_margin, ev)) {
->>>>>>> dcd2c021a5ac91d38187d397914e5f51e2fc8819
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}
@@ -110,27 +102,10 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			std::cerr << "Error parsing arguments." << std::endl;
 			return false;
 		}
-<<<<<<< HEAD
-
-		// Read FROM memory file
-		if (cmd[NO_GP].count() > 0) {
-			do_gp = false;
-		}
-		if (cmd[FLAGS].count() > 0) {
-			do_flags = true;
-		}
-		if (cmd[IP].count() > 0) {
-			do_ip = true;
-		}
-		if (cmd[NO_SPLIT].count() > 0) {
-			do_split_registers = false;
-		}
-
-=======
 		do_gp = !cmd[NO_GP];
 		do_flags = cmd[FLAGS];
 		do_ip = cmd[IP];
->>>>>>> dcd2c021a5ac91d38187d397914e5f51e2fc8819
+		do_split_registers = !cmd[NO_SPLIT];
 
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
