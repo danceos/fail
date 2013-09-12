@@ -273,6 +273,9 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             curr_addr = ML.getTriggerInstructionPointer();
             simulator.addListener(&ML);
             ++mem;
+            if (BX_CPU(0)->cr3 != L4SYS_ADDRESS_SPACE) {
+                continue;
+            }
         } else if (res == bp) {
             curr_addr = bp->getTriggerInstructionPointer();
             assert(curr_addr == simulator.getCPU(0).getInstructionPointer());
