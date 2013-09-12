@@ -112,16 +112,57 @@ private:
 	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
 	 * phase 1)
 	 */
-	void startAndSaveInitState(fail::BPSingleListener& bp);
+	void startAndSaveInitState(fail::BPSingleListener* bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
 	 * filtering if configured (experiment preparation, phase 2).
 	 */
-	void collectInstructionTrace(fail::BPSingleListener& bp);
+	void collectInstructionTrace(fail::BPSingleListener* bp);
 	/**
 	 * Perform the golden run (experiment preparation, phase 3)
 	 */
-	void goldenRun(fail::BPSingleListener& bp);
+	void goldenRun(fail::BPSingleListener* bp);
+
+	/**
+	 * Check that all required setup has been done before an experiment run.
+	 */
+	void validatePrerequisites();
+
+	/**
+	 * Load job parameters for an experiment.
+	 */
+	void getJobParameters();
+
+	/**
+	 * Read the golden run output into the target string.
+	 */
+	void readGoldenRun(std::string& target);
+
+	/*
+	 * Prepare memory experiment. Creates a breakpoint to run until the
+	 * injection location.
+	 */
+	fail::BPSingleListener* prepareMemoryExperiment(int ip, int offset, int dataAddress);
+
+	/*
+	 * Prepare register experiment. Creates a breakpoint to run until the
+	 * injection location.
+	 */
+	fail::BPSingleListener* prepareRegisterExperiment(int ip, int offset, int dataAddress);
+	
+	/**
+	 * Perform memory bit flip at (address, bit).
+	 */
+	void doMemoryInjection(int address, int bit);
+	
+	/**
+	 * Perform register bit flip in the specified (register, bit)
+	 * combination.
+	 */
+	void doRegisterInjection(int regDesc, int bit);
+	
+
+	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset);
 };
 
 #endif // __L4SYS_EXPERIMENT_HPP__
