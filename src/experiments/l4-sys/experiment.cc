@@ -260,6 +260,9 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
     
     ogzstream out("trace.pb");
     ProtoOStream *os = new ProtoOStream(&out);
+
+	simtime_t prevtime = 0, currtime;
+	simtime_diff_t deltatime;
     
 	while (bp->getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 		fail::BaseListener *res = simulator.resume();
@@ -277,8 +280,6 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             ++count;
         }
         
-        simtime_t prevtime = 0, currtime;
-        simtime_diff_t deltatime;
         currtime = simulator.getTimerTicks();
         deltatime = currtime - prevtime;
         
@@ -306,7 +307,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             ++mem_valid;
 
             Trace_Event te;
-            if (deltatime != 0) { te.set_time_delta(deltatime); };
+            if (deltatime != 0) { te.set_time_delta(1); };
             te.set_ip(curr_addr);
             te.set_memaddr(ML.getTriggerAddress());
             te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
@@ -337,7 +338,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             // the generic *-trace tools
             // XXX: need to log CR3 if we want multiple binaries here
             Trace_Event e;
-            if (deltatime != 0) { e.set_time_delta(deltatime); };
+            if (deltatime != 0) { e.set_time_delta(1); };
             e.set_ip(curr_addr);
             os->writeMessage(&e);
         } else {
@@ -615,29 +616,31 @@ bool L4SysExperiment::run()
         log << "Bit " << bit << ", restoring state." << endl;
         simulator.restore(L4SYS_STATE_FOLDER);
         log << " ... EIP = " << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
-        
+
         simulator.addListener(bp);
-        
+
         simtime_t now = simulator.getTimerTicks();
         fail::BaseListener *go = waitIOOrOther(true);
         assert(go == bp);
-        
+
         log << "Hit BP. Start time " << now << ", new time " << simulator.getTimerTicks()
             << ", diff = " << simulator.getTimerTicks() - now << std::endl;
 
         assert(bp->getTriggerInstructionPointer() == bp->getWatchInstructionPointer());
         result->set_injection_ip(bp->getTriggerInstructionPointer());
-        
+
         if (exp_type == param->msg.MEM) {
             result->set_bit_offset(bit);
             doMemoryInjection(param->msg.fsppilot().data_address(), bit);
         } else if (exp_type == param->msg.GPRFLIP) {
+            int reg = (param->msg.fsppilot().data_address() >> 4) + 1;
+            result->set_register_offset(static_cast<L4SysProtoMsg_RegisterType>(reg));
             result->set_bit_offset(bit + 8 * (param->msg.fsppilot().data_address() & 0xF));
             doRegisterInjection(param->msg.fsppilot().data_address(), bit);
         } else {
           log << "doing nothing for experiment type " << exp_type << std::endl;
         }
-            
+
         BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
         simulator.addListener(&ev_done);
 
