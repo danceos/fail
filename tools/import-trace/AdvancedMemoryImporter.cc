@@ -64,11 +64,12 @@ void AdvancedMemoryImporter::insert_delayed_entries(bool finalizing)
 	     (it->branches_before + BRANCH_WINDOW_SIZE <= branches_taken.size() ||
 	      finalizing);
 	     it = delayed_entries.erase(it)) {
-		// determine branche decisions before / after this mem event
+		// determine branch decisions before / after this mem event
 		if (it->branches_before != last_branches_before) {
 			branchmask = 0;
 			int pos = std::max(-(signed)BRANCH_WINDOW_SIZE, - (signed) it->branches_before);
-			int maxpos = std::min(BRANCH_WINDOW_SIZE, branches_taken.size() - it->branches_before);
+			int maxpos = std::min((signed)BRANCH_WINDOW_SIZE,
+				(signed)branches_taken.size() - (signed)it->branches_before);
 			for (; pos < maxpos; ++pos) {
 				branchmask |=
 					((unsigned) branches_taken[it->branches_before + pos])
@@ -155,7 +156,7 @@ bool AdvancedMemoryImporter::handle_mem_event(fail::simtime_t curtime, instructi
 {
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
-	DelayedTraceEntry entry = { curtime, instr, ev, opcode.opcode, branches_taken.size() };
+	DelayedTraceEntry entry = { curtime, instr, ev, opcode.opcode, (unsigned) branches_taken.size() };
 	delayed_entries.push_back(entry);
 
 	// delay upcall to handle_mem_event until we know enough future branch decisions
