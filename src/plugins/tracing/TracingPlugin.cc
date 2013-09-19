@@ -1,6 +1,7 @@
 #include <iostream>
 #include <assert.h>
 
+#include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Register.hpp"
 #include "sal/Memory.hpp"
@@ -9,6 +10,34 @@
 
 using namespace std;
 using namespace fail;
+
+void TracingPlugin::handleSingleIP(const BPListener &bp) {
+	address_t ip = bp.getTriggerInstructionPointer();
+	if (m_ipMap && !m_ipMap->isMatching(ip)) {
+		return;
+	}
+
+	m_curtime = simulator.getTimerTicks();
+	simtime_diff_t deltatime = m_curtime - m_prevtime;
+
+	if (m_os)
+		*m_os << "[Tracing] IP " << hex << ip << "\n";
+
+	if (m_protoStreamFile) {
+		Trace_Event e;
+		e.set_ip(ip);
+		// only store deltas != 0
+		if (deltatime != 0) {
+			e.set_time_delta(deltatime);
+		}
+		if (!ps) {
+			ps = new ProtoOStream (m_protoStreamFile);
+		}
+
+		ps->writeMessage(&e);
+	}
+}
+
 
 bool TracingPlugin::run()
 {
@@ -33,14 +62,13 @@ bool TracingPlugin::run()
 
 	// the first event gets an absolute time stamp, all others a delta to their
 	// predecessor
-	simtime_t prevtime = 0, curtime;
 	simtime_diff_t deltatime;
 
 	while (true) {
 		ev = simulator.resume();
 
-		curtime = simulator.getTimerTicks();
-		deltatime = curtime - prevtime;
+		m_curtime = simulator.getTimerTicks();
+		deltatime = m_curtime - m_prevtime;
 
 		if (ev == &ev_step) {
 			simulator.addListener(&ev_step);
@@ -122,7 +150,7 @@ bool TracingPlugin::run()
 
 		// do this only if the last delta was written
 		// (no, e.g., memory map mismatch)
-		prevtime = curtime;
+		m_prevtime = m_curtime;
 	}
 
 	return true;

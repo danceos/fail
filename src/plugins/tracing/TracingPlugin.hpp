@@ -7,6 +7,8 @@
 #include "util/ProtoStream.hpp"
 #include "efw/ExperimentFlow.hpp"
 #include "config/FailConfig.hpp"
+#include "sal/Listener.hpp"
+
 
 #include "TracePlugin.pb.h"
 
@@ -48,10 +50,14 @@ private:
 	std::ostream *m_os; //!< ostream to write human-readable trace into
 	fail::ProtoOStream *ps;
 
+	fail::simtime_t m_prevtime;
+	fail::simtime_t m_curtime;
+
 public:
 	TracingPlugin(bool full_trace = false)
 	 : m_memMap(0), m_ipMap(0), m_memonly(false), m_iponly(false),
-	   m_full_trace(full_trace), m_protoStreamFile(0), m_os(0) { }
+	   m_full_trace(full_trace), m_protoStreamFile(0), m_os(0),
+	   m_prevtime(0) { }
 	bool run();
 	/**
 	 * Restricts tracing to memory addresses listed in this MemoryMap.	An
@@ -88,6 +94,13 @@ public:
 	 * ProtoStream file to trace into (trace.proto instance)
 	 */
 	void setTraceFile(std::ostream *os) { m_protoStreamFile = os; }
+
+	/**
+	 * Handles a single IP event. This is important for starting the
+	 * tracing process after triggering a breakpoint. Just pass on the
+	 * breakpoint
+	 */
+	void handleSingleIP(const fail::BPListener &bp);
 };
 
 #endif // __TRACING_PLUGIN_HPP__
