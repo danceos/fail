@@ -37,8 +37,8 @@ def parseArgs():
     return options, args
 
 def execute(options, args, bochsrc, statedir):
-    command = "env FAIL_ELF_PATH=%s FAIL_STATEDIR=%s %s -q -f %s" %\
-    (options.elf_file, statedir, options.fail_client, bochsrc)
+    command = "env FAIL_ELF_PATH=%s FAIL_STATEDIR=%s %s -q -f %s %s" %\
+    (options.elf_file, statedir, options.fail_client, bochsrc, " ".join(args))
     print "executing: " + command
     p = Popen(command, shell=True)
     p.wait()
