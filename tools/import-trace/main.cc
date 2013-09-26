@@ -13,6 +13,7 @@
 #include "RegisterImporter.hpp"
 #include "RandomJumpImporter.hpp"
 #include "AdvancedMemoryImporter.hpp"
+#include "ElfImporter.hpp"
 #endif
 
 
@@ -140,6 +141,8 @@ int main(int argc, char *argv[]) {
 			importer = new RandomJumpImporter();
 		} else if (imp == "AdvancedMemoryImporter") {
 			importer = new AdvancedMemoryImporter();
+		} else if (imp == "ObjdumpImporter" || imp == "objdump" || imp == "ElfImporter") {
+			importer = new ElfImporter();
 #endif
 		} else {
 			LOG << "Unkown import method: " << imp << endl;
