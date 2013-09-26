@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+{%if overview %}
+    {% for tablekey, resulttable in overview.getTables().items()  %}
+    <h2>Result table: {{ resulttable.getDetails().getTitle() }}</h2>
+    -> <a href="{{ url_for('index', reload=1) }}">Reload data</a> <-
+    <dl>
+        <dt>Details:</td>
+        <dd>
+        {{ resulttable.getDetails().getDetails()  }}
+        <dd>
+    </dl>
+    {% if not objdump_there %}
+        No objdump found
+    {% endif %}
+    <table class="overviewtable" cellspacing="0px">
+        {% for varid, variant in resulttable.getVariants().items() %}
+        <tr><th>
+                {% set variant_title=variant.getDetails().getTitle() ~ " - " ~ variant.getBenchmarkDetails().getTitle() ~ " id: " ~ variant.getId() %}
+                {% if objdump_there %}
+                <a href="{{ url_for('code',table=resulttable.getDetails().getDBName(), variant_id=variant.getId() ) }}">{{ variant_title }}</a>
+                {% else %}
+                {{ variant_title }}
+                {% endif %}
+                (Total: {{ variant.getTotals() }})</a>
+        </th></tr>
+        <tr><td>
+                {% if variant.getDetails().getDetails() %}
+                Variant Details: {{ variant.getDetails().getDetails() }}
+                {% endif %}
+                {% if variant.getBenchmarkDetails().getDetails() %}
+                <br> Benchmark Details: {{ variant.getBenchmarkDetails().getDetails() }}</td></tr>
+                {% endif %}
+        <tr><td>
+            <dl class="horizontal">
+                {% for reslabel,count in variant.getResults().items() %}
+                <dt>
+                {% if objdump_there %}
+                <a href="{{ url_for('code', table=resulttable.getDetails().getDBName(), variant_id=variant.getId(), resulttype=reslabel ) }}">{{ reslabel }}</a>
+                {% else %}
+                {{ reslabel }}
+                {% endif %}
+                </dt>
+                    <dd><span style="width:{{count * 100 / variant.getTotals() }}%;">{{count}}</span></dd>
+                {% endfor %}
+            </dl></td></tr>
+        {% endfor %}
+    </table>
+    {% endfor %}
+{% else %}
+<h2> Sorry, no results found.</h2>
+{% endif %}
+
+{% endblock %}

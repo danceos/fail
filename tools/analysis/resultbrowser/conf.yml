@@ -1,0 +1,69 @@
+# YAML-based: http://yaml.org/
+# Online parser for testing: http://yaml-online-parser.appspot.com/
+# Some notes:
+#  YAML is case-sensitive and structured by indention!
+#
+# The 'defaults' section describes an *optional* default result type mapping for all tables.
+# The 'tables' section describes result tables in more detail.
+#   A table consists of variants, each variant of benchmarks.
+#   Each of these configuration items
+#    title: Table title
+#    details: Some textual description
+#    mapping: A distinct mapping, if not set, the parent item's mapping is used
+
+defaults:
+ mapping:
+  Everything OK:
+   - OK
+   - OK_DETECTED_ERROR
+   - OK_WRONG_CONTROL_FLOW
+  Outside Data Section:
+   - ERR_OUTSIDE_DATA
+  Hardware Trap:
+   - ERR_OUTSIDE_TEXT
+   - ERR_TRAP
+  Silent Data Corruption:
+   - ERR_WRONG_RESULT
+
+tables:
+ result_CoredVoterProtoMsg:
+  title: CoRed Voter Experiment Results
+  variants:
+   x86_cored_voter:
+    title: x86 CoRed Voter Experiment
+    details: Some interesting details about the experiment.
+
+    benchmarks:
+      ean-random-4:
+       title: Random 4 bit injections
+       details: |
+         The details can also written this way.
+         The pipe insert the newlines. Cool, isn't it?
+
+      ean-random-5:
+       title: Random 5 bit injections
+       details: Details about 5 bit random injection benchmark.
+       mapping:
+        Alright:
+         - OK
+         - OK_DETECTED_ERROR
+         - OK_WRONG_CONTROL_FLOW
+        Not Alright:
+         - ERR_OUTSIDE_DATA
+         - ERR_OUTSIDE_TEXT
+         - ERR_TRAP
+         - ERR_WRONG_RESULT
+        Timeout:
+         - ERR_TIMEOUT
+   # Another variant within result_CoredVoterProtoMsg
+   x86_cored_voter2:
+     title: variant title
+     details: variant details
+     benchmarks:
+       ean-random-2:
+        title: benchmarktitle
+        details: some benchmark details
+
+       ean-random-3:
+        title: benchmark random 3
+        details: some benchmark 3 details

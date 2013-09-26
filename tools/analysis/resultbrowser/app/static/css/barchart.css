@@ -1,0 +1,5 @@
+dl.horizontal {font-size:12px;  width:850px;}
+dl.horizontal dt {float:left; width:300px; clear:both; margin:0 0 5px 0; padding:3px;}
+dl.horizontal dd {float:left; width:500px; border:1px solid #aaaaaa; margin:0 0 5px 0; padding:2px; -moz-box-shadow: 1px  1px 3px #aaaaaa;}
+dl.horizontal dd span {background:#91b4e6; display:block; color:black; text-indent:4px;}
+

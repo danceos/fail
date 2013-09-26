@@ -1,0 +1,214 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #444;
+}
+
+a:visited {
+    color : #444;
+}
+
+a:link {
+    color : #444;
+    text-decoration: none;
+}
+/*
+ * Create dark grey header with a white logo
+ */
+
+header {
+  background-color: #2B2B2B;
+  height: 30px;
+  width: 100%;
+  opacity: .9;
+  margin-bottom: 10px;
+}
+
+header h1.logo {
+  margin: 0;
+  font-size: 1.5em;
+  color: #fff;
+  text-transform: uppercase;
+  float: left;
+}
+
+header h1.logo:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+
+/*
+ * Center the body content
+ */
+
+.container {
+  width: 95%;
+  margin: 0 auto;
+}
+
+div.jumbo {
+  padding: 10px 0 30px 0;
+  background-color: #eeeeee;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 6px;
+}
+
+h2 {
+  font-size: 1.2em;
+  margin-top: 40px;
+  text-align: center;
+  letter-spacing: -1px;
+}
+
+h3 {
+  font-size: 1.0em;
+  font-weight: 100;
+  margin-top: 30px;
+  text-align: center;
+  /*letter-spacing: -1px;*/
+  color: #999;
+}
+
+
+#footer {
+    text-align: center;
+    color: #444;
+    font-size:10pt;
+}
+
+/*
+ * Table styles
+ */
+
+.codetable, .resulttable, .overviewtable{
+    font-family: monospace; 
+    margin: auto;
+}
+
+.overviewtable {
+   border: 1px gray solid;
+    margin: auto;
+}
+/*
+.overviewtable tr:nth-child(4n), .overviewtable tr:nth-child(4n-1) {
+     background: #fff;
+}
+.overviewtable tr:nth-child(4n-2), .overviewtable tr:nth-child(4n-3) {
+    background: #e8ffb3;
+}
+*/
+
+.resulttable, .codetable, .overviewtable{
+    margin: auto;
+    border: solid #ccc 1px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border-radius: 6px;
+    -webkit-box-shadow: 0 1px 1px #ccc;
+    -moz-box-shadow: 0 1px 1px #ccc;
+    box-shadow: 0 1px 1px #ccc;
+}
+
+.codetable tr:hover, .resulttable tr:hover {
+    background: #fbf8e9;
+/*    -o-transition: all 0.1s ease-in-out;
+    -webkit-transition: all 0.1s ease-in-out;
+    -moz-transition: all 0.1s ease-in-out;
+    -ms-transition: all 0.1s ease-in-out;
+    transition: all 0.1s ease-in-out;
+*/
+}
+
+.resulttable td, .resulttable th, .codetable td, .codetable th {
+    border-left: none;
+    border-top: none;
+    padding: 2px;
+    text-align: left;
+    display: table-cell;
+}
+
+.codetable td a {
+    text-decoration: none;
+    display: block;
+    padding: 0px;
+    height: 100%;
+}
+
+.resulttable th, .codetable th, .overviewtable th {
+    background-color: #dce9f9;
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#efe), to(#91b4e6));
+    background-image: -webkit-linear-gradient(top, #efe, #91b4e6);
+    background-image:    -moz-linear-gradient(top, #efe, #91b4e6);
+    background-image:     -ms-linear-gradient(top, #efe, #91b4e6);
+    background-image:      -o-linear-gradient(top, #efe, #91b4e6);
+    background-image:         linear-gradient(top, #efe, #91b4e6);
+    -webkit-box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+    -moz-box-shadow:0 1px 0 rgba(255,255,255,.8) inset;
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+    border-top: none;
+    text-shadow: 0 1px 0 rgba(255,255,255,.5);
+}
+
+.resulttable td:first-child, .resulttable th:first-child, .codetable td:first-child, .codetable th:first-child {
+    border-left: none;
+}
+
+.resulttable th:first-child, .codetable th:first-child {
+    -moz-border-radius: 6px 0 0 0;
+    -webkit-border-radius: 6px 0 0 0;
+    border-radius: 6px 0 0 0;
+}
+
+.resulttable th:last-child, .codetable th:last-child {
+    -moz-border-radius: 0 6px 0 0;
+    -webkit-border-radius: 0 6px 0 0;
+    border-radius: 0 6px 0 0;
+}
+
+.resulttable th:only-child, .codetable th:only-child{
+    -moz-border-radius: 6px 6px 0 0;
+    -webkit-border-radius: 6px 6px 0 0;
+    border-radius: 6px 6px 0 0;
+}
+
+.resulttable tr:last-child td:first-child, .codetable tr:last-child td:first-child {
+    -moz-border-radius: 0 0 0 6px;
+    -webkit-border-radius: 0 0 0 6px;
+    border-radius: 0 0 0 6px;
+}
+
+.resulttable tr:last-child td:last-child, .codetable tr:last-child td:last-child {
+    -moz-border-radius: 0 0 6px 0;
+    -webkit-border-radius: 0 0 6px 0;
+    border-radius: 0 0 6px 0;
+}
+
+.resulttypemenu {
+    text-align: center;
+    font-size: 12px
+}
+/*
+ * Display navigation links inline
+ */
+
+.menu {
+  float: right;
+  margin-top: 8px;
+}
+
+.menu li {
+  display: inline;
+}
+
+.menu li + li {
+  margin-left: 35px;
+}
+
+.menu li a {
+  color: #999;
+  text-decoration: none;
+}

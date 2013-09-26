@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h1>Variant Results</h1>
+
+{% if resulttypes %}
+    <table>
+        <tr><td>Result Table</td><td><b>{{ variant_details.getTableDetails().getTitle() }}</b><td></tr>
+        <tr><td>Variant </td><td><b>{{ variant_details.getDetails().getTitle() }}</b></td></tr>
+        <tr><td>Details </td><td><b>{{ variant_details.getDetails().getDetails()   }}</b></td></tr>
+        <tr><td>Benchmark </td><td><b>{{ variant_details.getBenchmarkDetails().getTitle() }}</b></td></tr>
+        <tr><td>Details </td><td><b>{{ variant_details.getBenchmarkDetails().getDetails()   }}</b></td></tr>
+        <tr><td>Result Count </td><td><b>{{ results|length }}</b></td></tr>
+    </table>
+    <hr>
+    <p class='resulttypemenu'>| <a href="{{ url_for('code', variant_id=request.args.get('variant_id'), table=request.args.get('table')) }}">All Results</a> |
+    {% for restype in resulttypes %}
+        <a href="{{ url_for('code', variant_id=request.args.get('variant_id'), table=request.args.get('table'), resulttype=restype )}}">{{ restype}}</a> |
+    {% endfor %}
+    </p>
+    <hr>
+    <table class="codetable">
+        <tr>
+            <th>Address</th>
+            <th>Opcode</th>
+            <th>Disassembly</th>
+            <th>Comment</th>
+            <th>Results</th>
+            <th># Results</th>
+        </tr>
+        {% for d in results %}
+        {% set link =  url_for('instr_details', table=request.args.get('table'), variant_id=request.args.get('variant_id'), benchmark=request.args.get('benchmark'), variant=request.args.get('variant'), resulttype=request.args.get('resulttype'), instr_address=d['instr_address'] ) %}
+        <tr>
+            <td><a href="{{ link }}">{{ "0x%x"|format(d['instr_address'])  }}</a></td>
+            <td><a href="{{ link }}">{{ d['opcode']  }}</a></td>
+            <td><a href="{{ link }}">{{ d['disassemble']  }}</a></td>
+            <td><a href="{{ link }}">{{ d['comment']  }}</a></td>
+            <td><a href="{{ link }}">{{ d['results']  }}</a></td>
+            <td><a href="{{ link }}">{{ d['totals']  }}</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <h1> Sorry, no dump found.</h1>
+{% endif %}
+
+{%endblock %}
+
+

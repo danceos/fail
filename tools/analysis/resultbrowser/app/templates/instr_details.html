@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+{% if code %}
+<h1>Result by Instruction</h1>
+<table>
+        <tr><td>Result Table</td><td><b>{{ variant_details.getTableDetails().getTitle() }}</b><td></tr>
+        <tr><td>Variant </td><td><b>{{ variant_details.getDetails().getTitle() }}</b></td></tr>
+        <tr><td>Benchmark </td><td><b>{{ variant_details.getBenchmarkDetails().getTitle() }}</b></td></tr>
+        <tr><td>Details </td><td><b>{{ variant_details.getDetails().getDetails()   }}</b></td></tr>
+     <tr><td>Instruction Address </td><td><b>{{ "0x%x (Dec: %d)"|format(request.args.get('instr_address')|int, request.args.get('instr_address')|int) }}</b></td></tr>
+    <tr><td>Total Results</td><td><b>{{ result|length }}</b></td></tr>
+</table>
+<hr>
+<h2>Code</h2>
+<table class="codetable">
+    <tr>
+        <th>Address</th>
+        <th>Opcode</th>
+        <th>Disassembly</th>
+        <th>Comment</th>
+    </tr>
+    {% for d in code['below'] %}
+    <tr>
+        <td>{{ "0x%x"|format(d['instr_address'])  }}</td>
+        <td>{{ d['opcode']  }}</td>
+        <td>{{ d['disassemble']  }}</td>
+        <td>{{ d['comment']  }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight: bold">
+        <td>{{ "0x%x"|format(code['upper'][0]['instr_address'])  }}</td>
+        <td>{{ code['upper'][0]['opcode']  }}</td>
+        <td>{{ code['upper'][0]['disassemble']  }}</td>
+        <td>{{ code['upper'][0]['comment']  }}</td>
+    </tr>
+    {% for d in code['upper'][1:] %}
+    <tr>
+        <td>{{ "0x%x"|format(d['instr_address'])  }}</td>
+        <td>{{ d['opcode']  }}</td>
+        <td>{{ d['disassemble']  }}</td>
+        <td>{{ d['comment']  }}</td>
+    </tr>
+    {% endfor %}</table>
+<hr>
+<h2>Results ({{ result|length }})</h2>
+<table class="resulttable">
+    <tr>
+     {% for key, value in result[0].items() -%}
+     <th>{{ key }}</th>
+     {% endfor -%}
+     </tr>
+     {% for r in result -%}
+     <tr>
+         {% for k,v in r.items() -%}
+         <td>{{ v }}</td>
+         {% endfor -%}
+     </tr>
+     {% endfor -%}
+    </tr>
+</table>
+{% else %}
+	<h2> Sorry, no details found.</h2>
+{% endif %}
+{% endblock %}

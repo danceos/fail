@@ -1,0 +1,19 @@
+Fail* Result Browser
+
+Requirements:
+    * Python
+    * Flask (sudo pip install Flask)
+    * MySQLDB (sudo aptitude install python-mysqldb)
+    * YAML (sudo aptitude install python-yaml)
+
+Based on Flask web microframework (Werkzeug, Jinja 2)
+and old school MySQL bindings.
+
+Connects to a Fail* result database given by a mysql config file.
+
+Usage:
+    ./run.py
+    Defaults to mysql config file ~/.my.cnf, or
+    ./run.py -c <path to sqlconfig.cnf>
+
+YAML based configuration for table and variant details.

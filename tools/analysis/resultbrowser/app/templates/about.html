@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+{% if status %}
+<h2>About</h2>
+{{ status }}
+{% else %}
+	<h2> Sorry, no status information.</h2>
+{% endif %}
+{% endblock %}
