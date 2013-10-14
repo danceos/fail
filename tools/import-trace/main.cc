@@ -156,12 +156,11 @@ int main(int argc, char *argv[]) {
 		std::cerr << "Cannot call importers command line initialization!" << std::endl;
 		exit(-1);
 	}
+	// Since the importer might have added command line options, we need to
+	// reparse all arguments.
+	cmd.parse();
 
 	if (cmd[HELP]) {
-		// Since the importer might have added command line options,
-		// we need to reparse all arguments in order to prevent a
-		// segfault within optionparser
-		cmd.parse();
 		cmd.printUsage();
 		exit(0);
 	}
