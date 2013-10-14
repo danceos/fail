@@ -3,7 +3,7 @@
  */
 
 #ifndef __SOCKET_COMM_HPP__
-  #define __SOCKET_COMM_HPP__
+#define __SOCKET_COMM_HPP__
 
 #include <stdio.h>
 #include <unistd.h>
@@ -56,11 +56,11 @@ public:
 	static int timedAccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int timeout);
 
 private:
-	static char * getBuf(int sockfd, int *size);
+	static char *getBuf(int sockfd, int *size);
 	static ssize_t safe_write(int fd, const void *buf, size_t count);
 	static ssize_t safe_read(int fd, void *buf, size_t count);
 };
-  
+
 } // end-of-namespace: fail
 
 #endif // __SOCKET_COMM_HPP__

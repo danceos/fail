@@ -70,7 +70,7 @@ bool PSNR::load_refimage(char const *refimage_filename)
 
 	// one whitespace character
 	fs.ignore();
-	
+
 	get_remaining_file_contents(fs, refimg);
 	if (refimg.size() < refimg_width * refimg_height * 3) {
 		std::cerr << "image too small" << std::endl;

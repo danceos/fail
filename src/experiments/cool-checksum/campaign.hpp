@@ -1,5 +1,5 @@
 #ifndef __COOLCAMPAIGN_HPP__
-  #define __COOLCAMPAIGN_HPP__
+#define __COOLCAMPAIGN_HPP__
 
 #include "cpn/Campaign.hpp"
 #include "comm/ExperimentData.hpp"

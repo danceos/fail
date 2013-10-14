@@ -15,8 +15,10 @@ JobClient::JobClient(const std::string& server, int port)
 {
 	SocketComm::init();
 	m_server_ent = gethostbyname(m_server.c_str());
-  cout << "JobServer: " << m_server.c_str() << endl;
-	if(m_server_ent == NULL) {
+
+	cout << "JobServer: " << m_server.c_str() << endl;
+
+	if (m_server_ent == NULL) {
 		perror("[Client@gethostbyname()]");
 		// TODO: Log-level?
 		exit(1);
@@ -109,7 +111,6 @@ bool JobClient::getParam(ExperimentData& exp)
 
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
-
 	FailControlMessage ctrlmsg;
 
 	//Are there other jobs for the experiment
@@ -144,7 +145,7 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		switch (ctrlmsg.command()) {
 		case FailControlMessage::WORK_FOLLOWS:
 			uint32_t i;
-			for (i = 0 ; i < ctrlmsg.job_size() ; i++) {
+			for (i = 0; i < ctrlmsg.job_size(); i++) {
 				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
 
 				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
@@ -187,8 +188,6 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 	} else {
 		return ctrlmsg.command();
 	}
-
-
 }
 
 bool JobClient::sendResult(ExperimentData& result)
@@ -198,7 +197,7 @@ bool JobClient::sendResult(ExperimentData& result)
 	temp_exp->getMessage().CopyFrom(result.getMessage());
 	temp_exp->setWorkloadID(result.getWorkloadID());
 
-	m_results.push_back( temp_exp );
+	m_results.push_back(temp_exp);
 
 	if (m_parameters.size() != 0) {
 		//If job request time is over send back all existing results
@@ -259,7 +258,7 @@ bool JobClient::sendResultsToServer()
 		cout << "[Client] Sending back result [";
 
 		uint32_t i;
-		for (i = 0; i < m_results.size() ; i++) {
+		for (i = 0; i < m_results.size(); i++) {
 			ctrlmsg.add_workloadid(m_results[i]->getWorkloadID());
 			cout << std::dec << m_results[i]->getWorkloadID();
 			cout << " ";
@@ -272,7 +271,7 @@ bool JobClient::sendResultsToServer()
 			return false;
 		}
 
-		for (i = 0; i < ctrlmsg.job_size() ; i++) {
+		for (i = 0; i < ctrlmsg.job_size(); i++) {
 			if (!SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage())) {
 				close(m_sockfd);
 				return false;

@@ -1,5 +1,5 @@
 #ifndef __COROUTINE_MANAGER_HPP__
-  #define __COROUTINE_MANAGER_HPP__
+#define __COROUTINE_MANAGER_HPP__
 
 #include <map>
 #include <stack>

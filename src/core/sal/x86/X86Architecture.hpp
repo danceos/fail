@@ -1,5 +1,5 @@
 #ifndef __X86_ARCHITECTURE_HPP__
-  #define __X86_ARCHITECTURE_HPP__
+#define __X86_ARCHITECTURE_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"
@@ -35,8 +35,8 @@ enum GPRegisterId {
  #else // 32 bit register id's:
 	RID_EAX = 0, RID_ECX, RID_EDX, RID_EBX, RID_ESP, RID_EBP, RID_ESI, RID_EDI,
  #endif // common register id's (independent of the current register width):
-    RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI,
-    RID_LAST_GP_ID
+	RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI,
+	RID_LAST_GP_ID
 };
 
 /**

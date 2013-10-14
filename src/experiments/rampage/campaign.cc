@@ -112,7 +112,7 @@ uint64_t RAMpageCampaign::reverse_bits(uint64_t v)
 	int s = sizeof(v) * CHAR_BIT - 1; // extra shift needed at end
 
 	for (v >>= 1; v; v >>= 1)
-	{   
+	{
 		r <<= 1;
 		r |= v & 1;
 		s--;

@@ -1,5 +1,5 @@
 #ifndef __FAIL_CONFIG_HPP__
-  #define __FAIL_CONFIG_HPP__
+#define __FAIL_CONFIG_HPP__
 
 // #define / #undef the following configuration macros to enable/disable the
 // various event sources, fault injection sinks, and miscellaneous other

@@ -58,9 +58,9 @@ enum arm_instruction_type {
 	ARM_LDRH,
 	ARM_LDRSB,
 	ARM_LDRSH,
-  ARM_LDREX,
-  ARM_LDREXB,
-  ARM_LDREXH,
+	ARM_LDREX,
+	ARM_LDREXB,
+	ARM_LDREXH,
 	ARM_LDM,
 
 	ARM_STR,
@@ -69,9 +69,9 @@ enum arm_instruction_type {
 	ARM_STRBT,
 
 	ARM_STRH,
-  ARM_STREX,
-  ARM_STREXB,
-  ARM_STREXH,
+	ARM_STREX,
+	ARM_STREXB,
+	ARM_STREXH,
 	ARM_STM,
 
 	/* Status register access instructions */
@@ -167,10 +167,10 @@ struct arm_load_store_instr {
 		} reg;
 	} offset;
 
-  uint32_t address;
-  uint32_t value;
-  uint8_t width;
-  void evaluate(void);
+	uint32_t address;
+	uint32_t value;
+	uint8_t width;
+	void evaluate(void);
 };
 
 struct arm_load_store_multiple_instr {
@@ -196,21 +196,21 @@ struct arm_instruction {
 		struct arm_load_store_multiple_instr load_store_multiple;
 	} info;
 
-  bool isBranchInstruction(void) const {
-    return (type == ARM_B) || (type == ARM_BL) || (type == ARM_BX) || (type == ARM_BLX);
-  };
+	bool isBranchInstruction(void) const {
+		return (type == ARM_B) || (type == ARM_BL) || (type == ARM_BX) || (type == ARM_BLX);
+	};
 
-  bool isLoadInstruction(void) const {
-    return (type >= ARM_LDR) && (type <= ARM_LDM);
-  }
+	bool isLoadInstruction(void) const {
+		return (type >= ARM_LDR) && (type <= ARM_LDM);
+	}
 
-  bool isStoreInstruction(void) const {
-    return (type >= ARM_STR) && (type <= ARM_STM);
-  }
+	bool isStoreInstruction(void) const {
+		return (type >= ARM_STR) && (type <= ARM_STM);
+	}
 
-  bool isMemoryAccess(void) const {
-    return isLoadInstruction() || isStoreInstruction();
-  };
+	bool isMemoryAccess(void) const {
+		return isLoadInstruction() || isStoreInstruction();
+	};
 };
 
 int arm_evaluate_opcode(uint32_t opcode, uint32_t address,

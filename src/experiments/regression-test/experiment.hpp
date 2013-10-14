@@ -7,7 +7,7 @@ class RegressionTest : public fail::ExperimentFlow
 {
 	public:
 		RegressionTest() { }
-	
+
 		bool run();
 };
 

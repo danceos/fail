@@ -52,7 +52,7 @@ bool CoolChecksumCampaign::run()
 			CoolChecksumExperimentData *d = new CoolChecksumExperimentData;
 			d->msg.set_instr_offset(instr_offset);
 			d->msg.set_bit_offset(bit_offset);
-	  
+
 			campaignmanager.addParam(d);
 			++count;
 		}
@@ -107,8 +107,8 @@ bool CoolChecksumCampaign::run()
 		address_t instr_absolute = 0; // FIXME this one probably should also be recorded ...
 		Trace_Event ev;
 		ps.reset();
-		
-		while(ps.getNext(&ev)) {
+
+		while (ps.getNext(&ev)) {
 			// only count instruction events
 			if (!ev.has_memaddr()) {
 				// new instruction
@@ -131,7 +131,7 @@ bool CoolChecksumCampaign::run()
 			// we now have an interval-terminating R/W
 			// event to the memaddr we're currently looking
 			// at:
-			
+
 			// complete the equivalence interval
 			current_ec.instr2 = instr;
 			current_ec.instr2_absolute = instr_absolute;
@@ -150,7 +150,7 @@ bool CoolChecksumCampaign::run()
 			} else {
 				log << "WAT" << endl;
 			}
-		
+
 			// next interval must start at next
 			// instruction; the aforementioned
 			// skipping mechanism wouldn't work

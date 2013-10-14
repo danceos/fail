@@ -36,7 +36,7 @@ using namespace fail;
 bool NanoJPEGExperiment::run()
 {
 	Logger log("nJPEG", true);
-	
+
 	log << "startup" << endl;
 
 #if PREPARATION == 1

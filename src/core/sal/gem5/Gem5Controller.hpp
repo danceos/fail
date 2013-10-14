@@ -1,5 +1,5 @@
 #ifndef __GEM5_CONTROLLER_HPP__
-  #define __GEM5_CONTROLLER_HPP__
+#define __GEM5_CONTROLLER_HPP__
 
 #include <string>
 
@@ -42,7 +42,7 @@ public:
 	virtual simtime_t getTimerTicksPerSecond();
 #if defined(CONFIG_EVENT_BREAKPOINTS) ||\
     defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
-    void setMnemonic(const std::string& mn) { m_Mnemonic = mn; }
+	void setMnemonic(const std::string& mn) { m_Mnemonic = mn; }
 	const std::string& getMnemonic() const { return m_Mnemonic; }
 #endif
 };

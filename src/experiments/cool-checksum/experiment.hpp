@@ -1,6 +1,6 @@
 #ifndef __COOLEXPERIMENT_HPP__
-  #define __COOLEXPERIMENT_HPP__
-  
+#define __COOLEXPERIMENT_HPP__
+
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 

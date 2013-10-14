@@ -84,7 +84,7 @@ void SimulatorController::onBreakpoint(ConcreteCPU* cpu, address_t instrPtr, add
 }
 
 void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len,
-                                         bool is_write, address_t instrPtr)
+	bool is_write, address_t instrPtr)
 {
 	MemAccessEvent::access_type_t accesstype =
 		is_write ? MemAccessEvent::MEM_WRITE
@@ -114,7 +114,7 @@ void SimulatorController::onInterrupt(ConcreteCPU* cpu, unsigned interruptNum, b
 {
 	ListenerManager::iterator it = m_LstList.begin();
 	InterruptEvent tmp(nmi, interruptNum, cpu);
-	while (it != m_LstList.end()) { // check for active listeners 
+	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		InterruptListener* pie = dynamic_cast<InterruptListener*>(pev);
 		if (!pie || !pie->isMatching(&tmp)) {

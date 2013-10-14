@@ -1,5 +1,5 @@
 #ifndef __MEMORY_HPP__
-  #define __MEMORY_HPP__
+#define __MEMORY_HPP__
 
 #include <vector>
 #include <stdint.h>

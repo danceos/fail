@@ -80,14 +80,14 @@ void BochsController::onIOPort(ConcreteCPU* cpu, unsigned char data, unsigned po
 bool BochsController::save(const std::string& path)
 {
 	int stat;
-	
+
 	stat = mkdir(path.c_str(), 0777);
 	if (!(stat == 0 || errno == EEXIST)) {
 		return false;
 		// std::cout << "[FAIL] Can not create target-directory to save!" << std::endl;
 		// TODO: (Non-)Verbose-Mode? Log-level? Maybe better: use return value to indicate failure?
 	}
-	
+
 	save_bochs_request = true;
 	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
@@ -164,12 +164,12 @@ const std::string& BochsController::getMnemonic() const
 ConcreteCPU& BochsController::detectCPU(BX_CPU_C* pCPU) const
 {
 	unsigned i = 0;
-  #if BX_SUPPORT_SMP
+#if BX_SUPPORT_SMP
 	for (; i < BX_SMP_PROCESSORS; i++) {
 		if (BX_CPU_C[i] == pCPU) // cmp this ptr with all possible CPU objects
 			break; // index "i" found! -> stop!
 	}
-  #endif
+#endif
 	return getCPU(i);
 }
 

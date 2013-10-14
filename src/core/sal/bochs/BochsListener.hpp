@@ -1,5 +1,5 @@
 #ifndef __BOCHS_LISTENER_HPP__
-  #define __BOCHS_LISTENER_HPP__
+#define __BOCHS_LISTENER_HPP__
 
 namespace fail {
 

@@ -5,7 +5,7 @@ using namespace fail;
 
 const LLVMtoFailTranslator::reginfo_t &	 LLVMtoFailTranslator::getFailRegisterID(unsigned int regid) {
 	ltof_map_t::iterator it = llvm_to_fail_map.find(regid);
-	if( it != llvm_to_fail_map.end() ) {// found
+	if ( it != llvm_to_fail_map.end() ) {// found
 		return (*it).second;
 	} else { // not found
 		std::cout << "Fail ID for LLVM Register id " << std::dec << regid << " not found :(" << std::endl;

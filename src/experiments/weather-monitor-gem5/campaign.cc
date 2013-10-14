@@ -305,7 +305,7 @@ bool WeatherMonitorCampaign::run()
 		// is not the case in this experiment, and with -1 we'll get a result
 		// comparable to the non-pruned campaign.
 		// XXX still true for weathermonitor?
-		
+
 		current_ec.instr2 = instr - 1;
 		current_ec.instr2_absolute = 0; // unknown
 		current_ec.data_address = data_address;

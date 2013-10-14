@@ -1,5 +1,5 @@
 #ifndef __BOCHS_HELPERS_HPP__
-  #define __BOCHS_HELPERS_HPP__
+#define __BOCHS_HELPERS_HPP__
 
 #include "cpu/cpu.h"
 

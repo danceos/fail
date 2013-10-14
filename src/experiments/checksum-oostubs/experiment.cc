@@ -36,7 +36,7 @@ bool ChecksumOOStuBSExperiment::run()
 	char const *statename = "checksum-oostubs.state";
 	Logger log("Checksum-OOStuBS", false);
 	BPSingleListener bp;
-	
+
 	log << "startup" << endl;
 
 #if 0
@@ -107,7 +107,7 @@ bool ChecksumOOStuBSExperiment::run()
 	}
 
 	log << dec << "tracing finished after " << instr_counter  << endl;
-	
+
 	uint32_t results[OOSTUBS_RESULTS_BYTES / sizeof(uint32_t)];
 	simulator.getMemoryManager().getBytes(OOSTUBS_RESULTS_ADDR, sizeof(results), results);
 	for (unsigned i = 0; i < sizeof(results) / sizeof(*results); ++i) {
@@ -124,7 +124,7 @@ bool ChecksumOOStuBSExperiment::run()
 	}
 	of.close();
 	log << "trace written to " << tracefile << endl;
-	
+
 #elif 1
 	// STEP 3: The actual experiment.
 #if !LOCAL

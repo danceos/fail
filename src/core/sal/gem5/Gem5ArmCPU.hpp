@@ -1,5 +1,5 @@
 #ifndef __GEM5_ARM_CPU_HPP__
-  #define __GEM5_ARM_CPU_HPP__
+#define __GEM5_ARM_CPU_HPP__
 
 #include "../arm/ArmArchitecture.hpp"
 #include "../arm/ArmCPUState.hpp"

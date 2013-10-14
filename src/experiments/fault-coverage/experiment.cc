@@ -33,7 +33,7 @@ bool FaultCoverageExperiment::run()
 	    d) trap triggered
 	---- restore previously saved simulator state
 	*/
-	
+
 	// log the results on std::cout
 	Logger log("FaultCoverageExperiment", false);
 
@@ -55,7 +55,7 @@ bool FaultCoverageExperiment::run()
 
 	// Note: This heavily uses the save-restore feature which causes
 	//       causes a memory leak after several rounds (seg-fault).
-	
+
 	// iterate over all registers
 	ConcreteCPU cpu = simulator.getCPU(0);
 	for (ConcreteCPU::iterator it = cpu.begin(); it != cpu.end(); it++) {

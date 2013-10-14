@@ -6,7 +6,7 @@ using namespace llvm::object;
 
 
 LLVMtoFailTranslator & LLVMDisassembler::getTranslator() {
-	if ( ltofail == 0 ){
+	if ( ltofail == 0 ) {
 		std::cout << "ArchType: " << llvm::Triple::getArchTypeName(	 llvm::Triple::ArchType(object->getArch())	) << std::endl;
 
 		switch ( llvm::Triple::ArchType(object->getArch()) ) {

@@ -159,7 +159,7 @@ void JobServer::run()
 	// TODO: Log-level?
 #ifndef __puma
 	boost::thread* th;
-	while (!m_finish){
+	while (!m_finish) {
 		// Accept connection
 		int cs = SocketComm::timedAccept(s, (struct sockaddr*)&clientaddr, &clen, 100);
 		if (cs < 0) {

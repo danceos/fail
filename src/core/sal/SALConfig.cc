@@ -13,7 +13,7 @@ const unsigned        ANY_TRAP = static_cast<unsigned>  (-1);
 const unsigned   ANY_INTERRUPT = static_cast<unsigned>  (-1);
 const timer_id_t INVALID_TIMER = static_cast<timer_id_t> (0);
 #else
-  #error SAL Config Target not defined
+	#error SAL Config Target not defined
 #endif
 
 } // end-of-namespace: fail

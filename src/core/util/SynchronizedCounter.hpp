@@ -3,7 +3,7 @@
  */
 
 #ifndef __SYNCHRONIZED_COUNTER_HPP__
-  #define __SYNCHRONIZED_COUNTER_HPP__
+#define __SYNCHRONIZED_COUNTER_HPP__
 
 #ifndef __puma
 #include <boost/thread.hpp>
@@ -14,7 +14,7 @@ namespace fail {
 
 /**
  * \class ssd
- * 
+ *
  * Provides a thread safe (synchronized) counter. When a method is called,
  * the internal mutex is automatically locked. On return, the lock is
  * automatically released ("scoped lock").

@@ -8,27 +8,24 @@
 
 namespace fail {
 
-  class ArmMemoryInstructionAnalyzer : public MemoryInstructionAnalyzer {
-    fail::ElfReader m_elf;
-    fail::Disassembler m_dis;
+class ArmMemoryInstructionAnalyzer : public MemoryInstructionAnalyzer {
+	fail::ElfReader m_elf;
+	fail::Disassembler m_dis;
 
-    address_t findPrevious(address_t addr);
-    void evaluate(arm_instruction & inst, MemoryInstruction& result);
-    bool eval_ca9(address_t address, MemoryInstruction& result);
-    bool eval_cm3(address_t address, MemoryInstruction& result);
+	address_t findPrevious(address_t addr);
+	void evaluate(arm_instruction & inst, MemoryInstruction& result);
+	bool eval_ca9(address_t address, MemoryInstruction& result);
+	bool eval_cm3(address_t address, MemoryInstruction& result);
 
-    public:
+	public:
 
-    ArmMemoryInstructionAnalyzer() {
-      m_dis.init();
-    };
+	ArmMemoryInstructionAnalyzer() {
+		m_dis.init();
+	};
 
-    bool eval(address_t opcode, MemoryInstruction & result);
-
-  };
+	bool eval(address_t opcode, MemoryInstruction & result);
+};
 
 } //end of namespace fail
 
-
 #endif //  __ARMMEMORYINSTRUCITON_HPP__
-

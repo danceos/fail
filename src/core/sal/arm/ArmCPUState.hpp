@@ -1,5 +1,5 @@
 #ifndef __ARM_CPU_STATE_HPP__
-  #define __ARM_CPU_STATE_HPP__
+#define __ARM_CPU_STATE_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"

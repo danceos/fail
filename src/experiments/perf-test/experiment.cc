@@ -48,7 +48,7 @@ bool PerfTestExperiment::run()
 #if 1
 	log << "Activated: CASE A (Best-Case)..." << endl;
 	// Case A): A lot of non-BP listeners a only one (or none) BPs:
-	
+
 	log << "Adding " << NON_BP_COUNT << " non-BP listeners..." << endl;
 	MemReadListener mrl[NON_BP_COUNT];
 	for (unsigned i = 0; i < NON_BP_COUNT; ++i) {

@@ -1,5 +1,5 @@
 #ifndef __LISTENER_MANAGER_HPP__
-  #define __LISTENER_MANAGER_HPP__
+#define __LISTENER_MANAGER_HPP__
 
 #include <cassert>
 #include <list>
@@ -184,7 +184,7 @@ public:
 	 * regarding their location and performance-buffer reference, i.e. their index and
 	 * performance-buffer pointer will be invalidated (by setting \c INVALID_INDEX and
 	 * \c NULL, respectively).
-	 * To actually fire the listeners, call triggerActiveListeners(). 
+	 * To actually fire the listeners, call triggerActiveListeners().
 	 * @param pLi the listener object pointer to trigger; \c pLi will be removed in
 	 *        \c pLi->getPerformanceBuffer(). If the performance buffer-list ptr is
 	 *        \c NULL, nothing will be done.

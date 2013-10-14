@@ -75,16 +75,16 @@ bool ElfImporter::import_with_objdump(const std::string &binary) {
 	LOG << "Executing: " << command << std::endl;
 	redi::ipstream objdump( command );
 	std::string str;
-	while(std::getline(objdump, str)){
+	while (std::getline(objdump, str)) {
 		if (!evaluate_objdump_line(str)) {
 			objdump.close();
 			return false;
 		}
 	}
 	objdump.close();
-	if(objdump.rdbuf()->exited()){
+	if (objdump.rdbuf()->exited()) {
 		int ex = objdump.rdbuf()->status();
-		if(ex != 0){
+		if (ex != 0) {
 			clear_database();
 			LOG << "Could not disassemble!" << std::endl;
 			return false;
@@ -99,11 +99,11 @@ bool ElfImporter::evaluate_objdump_line(const std::string& line){
 #ifndef __puma
 	// Only read in real code lines:
 	// Code lines start with a leading whitespace! (hopefully in each objdump implementation!)
-	if(line.size() > 0 && isspace(line[0])){
+	if (line.size() > 0 && isspace(line[0])) {
 		// a line looks like: 800156c:\tdd14		  \tble.n	8001598 <_ZN2hw3hal7T32Term8PutBlockEPci+0x30>
 		static boost::regex expr("\\s+([A-Fa-f0-9]+):((?:\\s+[A-Fa-f0-9]{2})+)\\s+(.+?)(;.*)?$");
 		boost::smatch res;
-		if(boost::regex_search(line, res, expr)){
+		if (boost::regex_search(line, res, expr)) {
 			std::string address = res[1];
 			std::stringstream ss;
 			ss << std::hex << address;

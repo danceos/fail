@@ -4,7 +4,7 @@
  */
 
 #ifndef __MINION_HPP__
-  #define __MINION_HPP__
+#define __MINION_HPP__
 
 #include <string>
 
@@ -14,14 +14,14 @@ namespace fail {
 
 /**
  * \class Minion
- * 
- * Contains all informations about a minion. 
+ *
+ * Contains all informations about a minion.
  */
 class Minion {
 private:
 	std::string hostname;
 	bool isWorking;
-	ExperimentData* currentExperimentData;	
+	ExperimentData* currentExperimentData;
 	int sockfd;
 public:
 	Minion() : isWorking(false), currentExperimentData(0), sockfd(-1) { }

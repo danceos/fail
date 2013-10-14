@@ -30,7 +30,7 @@ bool CoolChecksumExperiment::run()
 {
 	Logger log("CoolChecksum", false);
 	BPSingleListener bp;
-	
+
 	log << "startup" << endl;
 
 #if 1

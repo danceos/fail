@@ -1,5 +1,5 @@
 #ifndef __QEMU_REGISTER_HPP__
-  #define __QEMU_REGISTER_HPP__
+#define __QEMU_REGISTER_HPP__
 
 #include "../Register.hpp"
 

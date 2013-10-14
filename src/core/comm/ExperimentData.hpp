@@ -1,5 +1,5 @@
 #ifndef __EXPERIMENT_DATA_HPP__
-  #define __EXPERIMENT_DATA_HPP__
+#define __EXPERIMENT_DATA_HPP__
 
 #include <string>
 #include <google/protobuf/message.h>

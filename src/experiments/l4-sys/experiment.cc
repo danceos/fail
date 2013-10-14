@@ -452,7 +452,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
     log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
 #else
 	bp->setWatchInstructionPointer(ANY_ADDR);
-	while(bp->getTriggerInstructionPointer() != L4SYS_FUNC_EXIT)
+	while (bp->getTriggerInstructionPointer() != L4SYS_FUNC_EXIT)
 	{
 		fail::BaseListener *res = simulator.resume();
         address_t curr_addr = 0;

@@ -1,9 +1,9 @@
 #ifndef __BREAKPOINT_BUFFER_HPP__
-  #define __BREAKPOINT_BUFFER_HPP__
+#define __BREAKPOINT_BUFFER_HPP__
 
 #include "BufferInterface.hpp"
 
-// TODOs: 
+// TODOs:
 //  - Make these implementations even faster (see below: continue PerfVecSortedSingleBP).
 
 namespace fail {
@@ -20,7 +20,7 @@ public:
 
 /**
  * \class PerfVecSortedSingleBP
- * 
+ *
  * This class implements a faster mechanism to store BPSingleListener
  * based on binary search on their corresponding instruction pointer.
  */
@@ -52,7 +52,7 @@ public:
 //			}
 		}
 	}
-	
+
 	static bool CompareInstrPtr(index_t arg1, index_t arg2, void* pStuff)
 	{
 		SimulatorController* pSim = static_cast<SimulatorController*>(pStuff);
@@ -80,9 +80,9 @@ public:
 
 		while (first <= last) {
 			int mid = (first + last) / 2; // compute mid point.
-			if (VAL(key) > VAL(vec[mid])) 
+			if (VAL(key) > VAL(vec[mid]))
 				first = mid + 1; // repeat search in top half.
-			else if (VAL(key) < VAL(vec[mid])) 
+			else if (VAL(key) < VAL(vec[mid]))
 				last = mid - 1; // repeat search in bottom half.
 			else
 				return mid; // found it. return position
@@ -100,7 +100,7 @@ public:
 		// TODO: Improve this by using binary search, too!
 		ResultSet res;
 		// Search for all indices of matching listener objects:
-		for(std::vector<index_t>::iterator it = m_BufList.begin(); it != m_BufList.end(); ++it) {
+		for (std::vector<index_t>::iterator it = m_BufList.begin(); it != m_BufList.end(); ++it) {
 			BPListener* pLi = static_cast<BPListener*>(simulator.dereference(*it));
 			if (pLi->isMatching(pData)) {
 				// Update trigger IPtr:

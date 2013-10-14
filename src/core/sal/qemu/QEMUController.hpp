@@ -1,5 +1,5 @@
 #ifndef __QEMU_CONTROLLER_HPP__
-  #define __QEMU_CONTROLLER_HPP__
+#define __QEMU_CONTROLLER_HPP__
 
 #include <string>
 #include <cassert>

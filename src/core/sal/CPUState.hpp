@@ -1,5 +1,5 @@
 #ifndef __CPU_STATE_HPP__
-  #define __CPU_STATE_HPP__
+#define __CPU_STATE_HPP__
 
 #include <cstring>
 #include <vector>

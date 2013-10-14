@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 			importer = new ElfImporter();
 #endif
 		} else {
-			LOG << "Unkown import method: " << imp << endl;
+			LOG << "Unknown import method: " << imp << endl;
 			exit(-1);
 		}
 		LOG << "Using " << imp << endl;

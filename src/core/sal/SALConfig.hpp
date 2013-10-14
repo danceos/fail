@@ -1,5 +1,5 @@
 #ifndef __SAL_CONFIG_HPP__
-  #define __SAL_CONFIG_HPP__
+#define __SAL_CONFIG_HPP__
 
 #include <stdint.h>
 
@@ -7,15 +7,15 @@
 
 // Type-config depends on the current selected simulator:
 #if defined BUILD_BOCHS
-  #include "bochs/BochsConfig.hpp"
+	#include "bochs/BochsConfig.hpp"
 #elif defined BUILD_GEM5
-  #include "gem5/Gem5Config.hpp"
+	#include "gem5/Gem5Config.hpp"
 #elif defined BUILD_QEMU
-  #include "qemu/QEMUConfig.hpp"
+	#include "qemu/QEMUConfig.hpp"
 #elif defined BUILD_T32
-  #include "t32/T32Config.hpp"
+	#include "t32/T32Config.hpp"
 #else
-  #error SAL Config Target not defined
+	#error SAL Config Target not defined
 #endif
 
 namespace fail {

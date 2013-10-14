@@ -1,6 +1,6 @@
 // Architecture.hpp: wraps architecture definition headers
 #ifndef __ARCHITECTURE_HPP__
-  #define __ARCHITECTURE_HPP__
+#define __ARCHITECTURE_HPP__
 
 #include "config/FailConfig.hpp"
 

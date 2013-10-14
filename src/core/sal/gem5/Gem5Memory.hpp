@@ -1,5 +1,5 @@
 #ifndef __GEM5_MEMORY_HPP__
-  #define __GEM5_MEMORY_HPP__
+#define __GEM5_MEMORY_HPP__
 
 #include "../Memory.hpp"
 #include "Gem5Wrapper.hpp"

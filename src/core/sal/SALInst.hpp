@@ -1,5 +1,5 @@
 #ifndef __SAL_INSTANCE_HPP__
-  #define __SAL_INSTANCE_HPP__
+#define __SAL_INSTANCE_HPP__
 
 #include "SALConfig.hpp"
 #include "config/VariantConfig.hpp"

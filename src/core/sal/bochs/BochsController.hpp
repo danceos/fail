@@ -1,5 +1,5 @@
 #ifndef __BOCHS_CONTROLLER_HPP__
-  #define __BOCHS_CONTROLLER_HPP__
+#define __BOCHS_CONTROLLER_HPP__
 
 #include <string>
 #include <cassert>
@@ -25,7 +25,7 @@ class ExperimentFlow;
 /**
  * \class BochsController
  * Bochs-specific implementation of a SimulatorController.
- * 
+ *
  * @note The instruction (IP) pointer modification handler (onBreakpoint())
  * is called (from the Breakpoints aspect) *every* time the Bochs-internal IP
  * changes. The handler itself evaluates if a breakpoint event needs to be
@@ -65,7 +65,7 @@ public:
 	 * object within the ListenerManager and fires such an event by calling
 	 * \c triggerActiveListeners().
 	 * @param thisPtr a pointer to the TimerListener-object triggered
-	 * 
+	 *
 	 * FIXME: Due to Bochs internal timer and ips-configuration related stuff,
 	 *        the simulator sometimes panics with "keyboard error:21" (see line
 	 *        1777 in bios/rombios.c, function keyboard_init()) if a TimerListener
@@ -112,7 +112,7 @@ public:
 	 */
 	void fireInterrupt(unsigned irq);
 	/**
-	 * Fire done: Callback from Simulator 
+	 * Fire done: Callback from Simulator
 	 */
 	void fireInterruptDone();
 	virtual simtime_t getTimerTicks() { return bx_pc_system.time_ticks(); }

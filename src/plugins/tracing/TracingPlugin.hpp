@@ -1,5 +1,5 @@
 #ifndef __TRACING_PLUGIN_HPP__
-  #define __TRACING_PLUGIN_HPP__
+#define __TRACING_PLUGIN_HPP__
 
 #include <ostream>
 
@@ -12,7 +12,7 @@
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_EVENT_MEMREAD) || !defined(CONFIG_EVENT_MEMWRITE)
-  #warning The tracing plugin may (depending on its use) need breakpoints and/or read/write memory access events. Enable these in the cmake configuration tool.
+	#warning The tracing plugin may (depending on its use) need breakpoints and/or read/write memory access events. Enable these in the cmake configuration tool.
 #endif
 
 /**
@@ -31,8 +31,6 @@
  * FIXME: more explicit startup/shutdown; listener-based event interface needed?
  *		  -> should simulator.removeFlow make sure all remaining active events
  *			 are delivered?
- * FIXME: trace a sequence of pb messages, not a giant single one (pb weren't
- *		  made for huge messages)
  * FIXME: destructor -> removeFlow?
  */
 class TracingPlugin : public fail::ExperimentFlow

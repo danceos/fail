@@ -1,5 +1,5 @@
 #ifndef __MEMORYMAP_HPP__
-  #define __MEMORYMAP_HPP__
+#define __MEMORYMAP_HPP__
 
 #ifdef BOOST_1_46_OR_NEWER
 #include <boost/icl/interval_set.hpp>
@@ -47,7 +47,7 @@ public:
 	}
 	/**
 	 * Determines whether a given memory access at address \a addr with width
-	 * \a size hits the map.  
+	 * \a size hits the map.
 	 */
 	bool isMatching(address_t addr, int size = 1)
 	{

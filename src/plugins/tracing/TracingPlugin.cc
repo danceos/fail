@@ -23,7 +23,7 @@ bool TracingPlugin::run()
 	if (m_tracetype | TRACE_MEM) {
 		simulator.addListener(&ev_mem);
 	}
-	if(m_protoStreamFile) {
+	if (m_protoStreamFile) {
 		ps = new ProtoOStream(m_protoStreamFile);
 	}
 

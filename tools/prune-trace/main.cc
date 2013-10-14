@@ -17,8 +17,9 @@ int main(int argc, char *argv[]) {
 
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
-	for (int i = 1; i < argc; ++i)
+	for (int i = 1; i < argc; ++i) {
 		cmd.add_args(argv[i]);
+	}
 
 	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
@@ -44,23 +45,23 @@ int main(int argc, char *argv[]) {
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
 
-	if(!cmd.parse()) {
+	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
 		exit(-1);
 	}
 
 	Pruner *pruner;
-	if (cmd[PRUNER].count() > 0) {
+	if (cmd[PRUNER]) {
 		std::string imp(cmd[PRUNER].first()->arg);
-		if (imp == "basic") {
+		if (imp == "BasicPruner" || imp == "basic") {
 			LOG << "Using BasicPruner" << endl;
 			pruner = new BasicPruner();
-		} else if (imp == "basic-left") {
+		} else if (imp == "BasicPrunerLeft" || imp == "basic-left") {
 			LOG << "Using BasicPruner (use left border, instr1)" << endl;
 			pruner = new BasicPruner(true);
 
 		} else {
-			LOG << "Unkown import method: " << imp << endl;
+			LOG << "Unknown pruning method: " << imp << endl;
 			exit(-1);
 		}
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
 	Database *db = Database::cmdline_connect();
 
 	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
-	if (cmd[VARIANT].count() > 0) {
+	if (cmd[VARIANT]) {
 		for (option::Option *o = cmd[VARIANT]; o; o = o->next()) {
 			variants.push_back(std::string(o->arg));
 		}
@@ -85,13 +86,13 @@ int main(int argc, char *argv[]) {
 		variants.push_back(std::string("none"));
 	}
 
-	if (cmd[VARIANT_EXCLUDE].count() > 0) {
+	if (cmd[VARIANT_EXCLUDE]) {
 		for (option::Option *o = cmd[VARIANT_EXCLUDE]; o; o = o->next()) {
 			variants_exclude.push_back(std::string(o->arg));
 		}
 	}
 
-	if (cmd[BENCHMARK].count() > 0) {
+	if (cmd[BENCHMARK]) {
 		for (option::Option *o = cmd[BENCHMARK]; o; o = o->next()) {
 			benchmarks.push_back(std::string(o->arg));
 		}
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 		benchmarks.push_back(std::string("none"));
 	}
 
-	if (cmd[BENCHMARK_EXCLUDE].count() > 0) {
+	if (cmd[BENCHMARK_EXCLUDE]) {
 		for (option::Option *o = cmd[BENCHMARK_EXCLUDE]; o; o = o->next()) {
 			benchmarks_exclude.push_back(std::string(o->arg));
 		}
@@ -118,7 +119,7 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	if (cmd[NO_DELETE].count() == 0 && !pruner->clear_database()) {
+	if (!cmd[NO_DELETE] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}

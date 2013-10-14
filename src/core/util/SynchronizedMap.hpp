@@ -3,7 +3,7 @@
  */
 
 #ifndef __SYNCHRONIZED_MAP_HPP__
-  #define __SYNCHRONIZED_MAP_HPP__
+#define __SYNCHRONIZED_MAP_HPP__
 
 #include <map>
 
@@ -20,7 +20,7 @@ class SynchronizedMap {
 private:
 	typedef std::map< Tkey, Tvalue > Tmap;
 	typedef typename Tmap::iterator Tit;
-	
+
 	Tmap m_map; //! Use STL map to store data
 #ifndef __puma
 	boost::mutex m_mutex; //! The mutex to synchronise on
@@ -75,7 +75,7 @@ public:
 	 * Add data to the map, return false if already present
 	 * @param key Map key
 	 * @param value value according to key
-	 * @return false if key already present 
+	 * @return false if key already present
 	 */
 	bool insert(const Tkey& key, const Tvalue& value)
 	{
@@ -83,20 +83,20 @@ public:
 #ifndef __puma
 		boost::unique_lock<boost::mutex> lock(m_mutex);
 #endif
-		if( m_map.find(key) == m_map.end() ){ // not present, add it
+		if ( m_map.find(key) == m_map.end() ) { // not present, add it
 			m_map[key] = value;
 			return true;
-		}else{ // item is already in, oops
+		} else { // item is already in, oops
 			return false;
 		}
-		
+
 	} // Lock is automatically released here
 
 	/**
 	 * Remove value from the map.
 	 * @param key The Map key to remove
 	 * @return false if key was not present
-	 * 
+	 *
 	 */
 	bool remove(const Tkey& key, Tvalue& value)
 	{

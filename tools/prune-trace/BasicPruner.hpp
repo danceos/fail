@@ -6,7 +6,7 @@
 class BasicPruner : public Pruner {
 	bool use_instr1;
 public:
-	BasicPruner(bool use_instr1 = false) : Pruner(), use_instr1(use_instr1) {}
+	BasicPruner(bool use_instr1 = false) : use_instr1(use_instr1) {}
 	virtual std::string method_name() { return std::string("basic") + (use_instr1 ? "-left" : ""); }
 	virtual bool prune_all();
 };

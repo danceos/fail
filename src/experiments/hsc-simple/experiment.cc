@@ -22,13 +22,13 @@ bool HSCSimpleExperiment::run()
 
 	// do funny things here...
 #if 1
-    // STEP 1
+	// STEP 1
 	BPSingleListener mainbp(0x00003c34);
 	simulator.addListenerAndResume(&mainbp);
 	log << "breakpoint reached, saving" << endl;
 	simulator.save("hello.state");
 #elif 0
-    // STEP 2
+	// STEP 2
 	log << "restoring ..." << endl;
 	simulator.restore("hello.state");
 	log << "restored!" << endl;

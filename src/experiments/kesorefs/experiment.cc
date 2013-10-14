@@ -132,7 +132,7 @@ bool KESOrefs::run()
 	while (executed_jobs < 25 || m_jc.getNumberOfUndoneJobs() > 0) {
 		m_log << "asking jobserver for parameters" << endl;
 		KesoRefExperimentData param;
-		if(!m_jc.getParam(param)){
+		if (!m_jc.getParam(param)) {
 			m_log << "Dying." << endl; // We were told to die.
 			simulator.terminate(1);
 		}
@@ -218,7 +218,7 @@ bool KESOrefs::run()
             m_log << "CDX has ended" << std::endl;
 
             // Evaluate result
-            if(l == &l_error) {
+            if (l == &l_error) {
                 handleEvent(*result, result->EXC_ERROR, "exc error");
             } else if ( l == &l_nullp ) {
                 handleEvent(*result, result->EXC_NULLPOINTER, "exc nullpointer");
@@ -241,10 +241,10 @@ bool KESOrefs::run()
                 sstr << "trap #" << l_trap.getTriggerNumber();
                 handleEvent(*result, result->TRAP, sstr.str());
 
-            } else if (l == &l_mem_text){
+            } else if (l == &l_mem_text) {
                 handleMemoryAccessEvent(*result, l_mem_text);
 
-            } else if (l == &l_mem_outerspace){
+            } else if (l == &l_mem_outerspace) {
                 handleMemoryAccessEvent(*result, l_mem_outerspace);
 
             } else {

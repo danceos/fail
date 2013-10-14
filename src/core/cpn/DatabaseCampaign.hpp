@@ -61,7 +61,7 @@ public:
 	virtual bool cb_commandline_init() { return true; }
 
 	/**
-	 * Callback to the campagin to get the result message descriptor
+	 * Callback to the campaign to get the result message descriptor
 	 */
 	virtual const google::protobuf::Descriptor * cb_result_message() = 0;
 

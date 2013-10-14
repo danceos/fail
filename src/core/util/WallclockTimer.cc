@@ -18,7 +18,7 @@ std::string WallclockTimer::getRuntimeAsString() const
 {
 	std::stringstream result;
 	result << getRuntimeAsDouble();
-	
+
 	return result.str().c_str();
 }
 
@@ -26,7 +26,7 @@ double WallclockTimer::getRuntimeAsDouble() const
 {
 	double result;
 	struct timeval current;
-	
+
 	if (m_IsRunning) {
 		gettimeofday(&current, NULL);
 		result = current.tv_sec - m_Start.tv_sec;
@@ -35,7 +35,7 @@ double WallclockTimer::getRuntimeAsDouble() const
 		result = m_End.tv_sec - m_Start.tv_sec;
 		result = result + (((double)m_End.tv_usec-m_Start.tv_usec)/1000000);
 	}
-	
+
 	return result;
 }
 
@@ -44,7 +44,7 @@ void WallclockTimer::stopTimer()
 	if (m_IsRunning) {
 		m_IsRunning = false;
 		gettimeofday(&m_End, NULL);
-	} 
+	}
 }
 
 void WallclockTimer::reset()

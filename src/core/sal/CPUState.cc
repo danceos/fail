@@ -26,7 +26,7 @@ bool CPUState::addSuppressedInterrupt(unsigned interruptNum)
 	// Check if already existing:
 	if (isSuppressedInterrupt(interruptNum+32))
 		return false; // already added: nothing to do here
-	
+
 	// FIXME: addSuppressedInterrupt(ANY_INTERRUPT) can still be called more
 	//        than once. This is not handled by the if-statement above.
 	if (interruptNum == ANY_INTERRUPT)

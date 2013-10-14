@@ -4,11 +4,11 @@
 namespace fail {
 
 void T32Controller::startup(){
-  // Do some T32-specific startup
-  addCPU(new ConcreteCPU(0));
-  // Startup generic SimulatorController
-  // TODO pass on command-line parameters
-  SimulatorController::startup();
+	// Do some T32-specific startup
+	addCPU(new ConcreteCPU(0));
+	// Startup generic SimulatorController
+	// TODO pass on command-line parameters
+	SimulatorController::startup();
 }
 
 

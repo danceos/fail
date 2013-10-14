@@ -1,5 +1,5 @@
 #ifndef __GEM5_WRAPPER_HPP__
-  #define __GEM5_WRAPPER_HPP__
+#define __GEM5_WRAPPER_HPP__
 
 #include "../Register.hpp"
 #include "../SALConfig.hpp"

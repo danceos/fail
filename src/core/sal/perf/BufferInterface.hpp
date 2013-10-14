@@ -1,5 +1,5 @@
 #ifndef __BUFFER_INTERFACE_HPP__
-  #define __BUFFER_INTERFACE_HPP__
+#define __BUFFER_INTERFACE_HPP__
 
 #include <cstddef>
 #include <vector>
@@ -58,7 +58,7 @@ public:
 
 /**
  * \class DefPerfVector
- * 
+ *
  * Default \c std::vector based performance implementation (abstract)
  */
 template<class T>

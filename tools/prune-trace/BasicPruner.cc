@@ -20,7 +20,7 @@ bool BasicPruner::prune_all() {
 		  "  data_address, width, " << m_method_id << " "
 		  "FROM trace "
 		  "WHERE variant_id IN (" << m_variant_id_query << ") AND accesstype = 'R'";
-	if (!db->query(ss.str().c_str())) return false; 
+	if (!db->query(ss.str().c_str())) return false;
 	ss.str("");
 
 	int rows = db->affected_rows();

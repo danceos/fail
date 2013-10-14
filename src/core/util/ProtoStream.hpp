@@ -1,4 +1,4 @@
-/** 
+/**
  * \brief One way to manage large protobuf-messages
  *
  * Google protobuf is not designed for large messages. That leads to
@@ -8,14 +8,14 @@
  * written sequentially in a file. Written in the format:
  *
  * \code
- * | 4 bytes length-information of the first message  | first message 
- * | 4 bytes length-information of the second message | second message 
+ * | 4 bytes length-information of the first message  | first message
+ * | 4 bytes length-information of the second message | second message
  * | ...
  * \endcode
  */
 
 #ifndef __PROTOSTREAM_HPP__
-  #define __PROTOSTREAM_HPP__
+#define __PROTOSTREAM_HPP__
 
 #include <iostream>
 #include <sys/types.h>
@@ -28,7 +28,7 @@ namespace fail {
 
 /**
  * \class ProtoOStream
- * 
+ *
  * This class can be used to sequentially write a large number of
  * protocol buffer messages to a \c std::ostream.
  */
@@ -41,16 +41,16 @@ public:
 	ProtoOStream(std::ostream *outfile);
 	virtual ~ProtoOStream() { }
 	/**
-	 *	Writes a message to a file. 
+	 *	Writes a message to a file.
 	 *  @param m The protobuf-message to be written
 	 *  @return Returns \c true on success, \c false otherwise
 	 */
-	bool writeMessage(google::protobuf::Message* m);
+	bool writeMessage(google::protobuf::Message *m);
 };
 
 /**
  * \class ProtoIStream
- * 
+ *
  * This class can be used to read protocol buffer messages sequentially
  * from a \c std::istream.
  */
@@ -73,7 +73,7 @@ public:
 	 *  @param m The output protobuf message
 	 *  @return Returns \c true on success, \c false otherwise
 	 */
-	bool getNext(google::protobuf::Message* m);
+	bool getNext(google::protobuf::Message * m);
 };
 
 } // end-of-namespace: fail

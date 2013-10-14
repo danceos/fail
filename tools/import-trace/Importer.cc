@@ -88,7 +88,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			curtime += ev.time_delta();
 		}
 
-		// instruction events just get counted
+		// instruction event?
 		if (!ev.has_memaddr()) {
 			// new instruction
 			// sanity check for overflow

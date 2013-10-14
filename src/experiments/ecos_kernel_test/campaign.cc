@@ -60,7 +60,7 @@ bool EcosKernelTestCampaign::readTraceInfo(unsigned &instr_counter, unsigned &ti
 
 	while (getline(file, buf)) {
 		stringstream ss(buf, ios::in);
-		switch(count) {
+		switch (count) {
 			case 0:
 				ss >> instr_counter;
 				break;

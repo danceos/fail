@@ -37,7 +37,7 @@ bool WeatherMonitorExperiment::run()
 	char const *statename = "bochs.state" WEATHER_SUFFIX;
 	Logger log("Weathermonitor", false);
 	BPSingleListener bp;
-	
+
 	log << "startup" << endl;
 
 /*
@@ -179,7 +179,7 @@ bool WeatherMonitorExperiment::run()
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
-		result->set_bitoffset(bit_offset);		
+		result->set_bitoffset(bit_offset);
 		log << dec << "job " << id << " instr " << injection_instr
 		    << " mem " << data_address << "+" << bit_offset << endl;
 

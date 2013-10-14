@@ -1,5 +1,5 @@
 #ifndef __JOB_CLIENT_H__
-  #define __JOB_CLIENT_H__
+#define __JOB_CLIENT_H__
 
 #include <string>
 #include <ctime>

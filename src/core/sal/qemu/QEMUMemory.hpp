@@ -1,5 +1,5 @@
 #ifndef __QEMU_MEMORY_HPP__
-  #define __QEMU_MEMORY_HPP__
+#define __QEMU_MEMORY_HPP__
 
 #include "../Memory.hpp"
 

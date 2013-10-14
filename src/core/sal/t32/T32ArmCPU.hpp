@@ -1,5 +1,5 @@
 #ifndef __T32_ARM_CPU_HPP__
-  #define __T32_ARM_CPU_HPP__
+#define __T32_ARM_CPU_HPP__
 
 #include "../arm/ArmArchitecture.hpp"
 #include "../arm/ArmCPUState.hpp"
@@ -39,7 +39,7 @@ public:
 	/**
 	 * Retrieves the current instruction pointer (IP aka program counter, PC for short)
 	 * for the current CPU \c this.
-   * @return the current instruction ptr address
+	 * @return the current instruction ptr address
 	 */
 	address_t getInstructionPointer() const;
 
@@ -63,8 +63,8 @@ public:
 	unsigned int getId() const { return m_Id; }
 private:
 	unsigned int m_Id; //!< the unique ID of this CPU
-  mutable dword m_regbuffer[64]; //!< internal buffer for reading/writing registers, wow mutable really makes sense sometimes.
-  // char* cpuname? OMAP4430APP1 ??
+	mutable dword m_regbuffer[64]; //!< internal buffer for reading/writing registers, wow mutable really makes sense sometimes.
+	// char* cpuname? OMAP4430APP1 ??
 
 };
 

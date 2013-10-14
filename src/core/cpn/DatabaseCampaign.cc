@@ -29,13 +29,13 @@ bool DatabaseCampaign::run() {
 	if (!cb_commandline_init()) return false;
 
 	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
-														 "-v/--variant \tVariant label (default: \"none\")");
+														 "-v/--variant \tVariant label (default: \"none\"; use % and _ as wildcard characters)");
 	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
-														 "-b/--benchmark \tBenchmark label (default: \"none\")\n");
+														 "-b/--benchmark \tBenchmark label (default: \"none\"; use % and _ as wildcard characters)\n");
 	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
 														 "-p/--prune-method \tWhich import method to use (default: basic)");
 
-	if(!cmd.parse()) {
+	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
 		exit(-1);
 	}
@@ -82,7 +82,7 @@ bool DatabaseCampaign::run() {
 	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
 	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
 		 it != variants.end(); ++it) {
-		if(!run_variant(*it)) {
+		if (!run_variant(*it)) {
 			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
 			return false;
 		}
@@ -147,7 +147,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
 
-	log_send << "Found " << experiment_count << " unfinished experiments in database. (" 
+	log_send << "Found " << experiment_count << " unfinished experiments in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
 
 	sent_pilots = 0;

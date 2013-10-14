@@ -1,5 +1,5 @@
 #ifndef __SIGNALGENERATOR_HPP__
-  #define __SIGNALGENERATOR_HPP__
+#define __SIGNALGENERATOR_HPP__
 
 #include <unistd.h>
 #include "efw/ExperimentFlow.hpp"
@@ -22,26 +22,26 @@ static const float MYPI = 3.14159265358979323846f;
  */
 class SignalForm {
 
-    mutable fail::Logger m_log;
+	mutable fail::Logger m_log;
 
 public:
-    /**
-     * Signalgenerator just calls the calculate method of a derived signal
-     * form.
-     */
-    virtual double calculate(void) const = 0;
+	/**
+	 * Signalgenerator just calls the calculate method of a derived signal
+	 * form.
+	 */
+	virtual double calculate(void) const = 0;
 
 protected:
-    SignalForm() : m_log("SigForm", false) {};
+	SignalForm() : m_log("SigForm", false) {};
 
-    fail::simtime_t ticksPerSecond(void) const 
-    {
-        fail::simtime_t ticksPerSec = fail::simulator.getTimerTicksPerSecond();
-        if(ticksPerSec == 0){
-            m_log << "Warning: Timer ticks per second equals 0" << std::endl;
-        }
-        return ticksPerSec;
-    }
+	fail::simtime_t ticksPerSecond(void) const
+	{
+		fail::simtime_t ticksPerSec = fail::simulator.getTimerTicksPerSecond();
+		if (ticksPerSec == 0) {
+			m_log << "Warning: Timer ticks per second equals 0" << std::endl;
+		}
+		return ticksPerSec;
+	}
 };
 
 
@@ -55,25 +55,25 @@ protected:
 class SignalGenerator : public fail::ExperimentFlow
 {
 private:
-    const fail::ElfSymbol m_symbol; //!< the target's memory symbol the plugin is listening on to generate value
-    fail::Logger m_log; //!< debug output
-    const SignalForm  *const m_signal; //!< Abstract signal form provided by the user
+	const fail::ElfSymbol m_symbol; //!< the target's memory symbol the plugin is listening on to generate value
+	fail::Logger m_log; //!< debug output
+	const SignalForm  *const m_signal; //!< Abstract signal form provided by the user
 public:
-    /**
-     * Constructor
-     *
-     * @param symbol The resulting signal value is placed in the SUT symbol
-     * @param signal The Signal form to be generated @see SignalForm
-     */
-    SignalGenerator( const fail::ElfSymbol & symbol, SignalForm *signal ) :   m_symbol(symbol), m_log("SigGen", false), m_signal(signal){}
+	/**
+	 * Constructor
+	 *
+	 * @param symbol The resulting signal value is placed in the SUT symbol
+	 * @param signal The Signal form to be generated @see SignalForm
+	 */
+	SignalGenerator( const fail::ElfSymbol & symbol, SignalForm *signal ) :   m_symbol(symbol), m_log("SigGen", false), m_signal(signal){}
 
-    bool run();
+	bool run();
 
 private:
-    /**
-     * Handle the memory event
-     */
-    uint8_t handleEvent(void);
+	/**
+	 * Handle the memory event
+	 */
+	uint8_t handleEvent(void);
 };
 
 #include <vector>
@@ -89,31 +89,31 @@ class Sine : public SignalForm
 {
 public:
 
-    //! Parameter set for a single wave
-    struct SineParams_t {
-        double freq_in_hz; //!< Freqency in Hz
-        double amplitude; //!< between 0..1
-        SineParams_t(double f, double a) : freq_in_hz(f), amplitude(a) {};
-    };
+	//! Parameter set for a single wave
+	struct SineParams_t {
+		double freq_in_hz; //!< Freqency in Hz
+		double amplitude; //!< between 0..1
+		SineParams_t(double f, double a) : freq_in_hz(f), amplitude(a) {};
+	};
 
-    //! Multiple sine waves can be superimposed (e.g., summed up)
-    typedef std::vector<SineParams_t> SineParamsList_t;
-    SineParamsList_t m_params;
+	//! Multiple sine waves can be superimposed (e.g., summed up)
+	typedef std::vector<SineParams_t> SineParamsList_t;
+	SineParamsList_t m_params;
 
-    Sine(const SineParams_t param);
-    Sine(const SineParamsList_t paramlist) : m_params(paramlist) {};
+	Sine(const SineParams_t param);
+	Sine(const SineParamsList_t paramlist) : m_params(paramlist) {};
 
-    /**
-     * Calculate sinus value of frequency freq_hertz based on the given 
-     * simulator time t (in seconds):
-     * \f$x = sin(2 pi f t)\f$
-     **/
-    double sinus(double freq_hertz, double t) const 
-    {
-        return sin((2. * MYPI * freq_hertz)  * t);
-    }
+	/**
+	 * Calculate sinus value of frequency freq_hertz based on the given
+	 * simulator time t (in seconds):
+	 * \f$x = sin(2 pi f t)\f$
+	 **/
+	double sinus(double freq_hertz, double t) const
+	{
+		return sin((2. * MYPI * freq_hertz)  * t);
+	}
 
-    double calculate(void) const;
+	double calculate(void) const;
 };
 
 #endif // __SIGNALGENERATOR_HPP__

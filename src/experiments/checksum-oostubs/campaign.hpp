@@ -1,5 +1,5 @@
 #ifndef __CHECKSUM_OOSTUBS_CAMPAIGN_HPP__
-  #define __CHECKSUM_OOSTUBS_CAMPAIGN_HPP__
+#define __CHECKSUM_OOSTUBS_CAMPAIGN_HPP__
 
 #include "cpn/Campaign.hpp"
 #include "comm/ExperimentData.hpp"

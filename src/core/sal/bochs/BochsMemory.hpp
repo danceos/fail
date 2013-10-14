@@ -1,5 +1,5 @@
 #ifndef __BOCHS_MEMORY_HPP__
-  #define __BOCHS_MEMORY_HPP__
+#define __BOCHS_MEMORY_HPP__
 
 #include "../Memory.hpp"
 

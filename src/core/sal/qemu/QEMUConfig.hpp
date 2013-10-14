@@ -5,7 +5,7 @@
  */
 
 #ifndef __QEMU_CONFIG_HPP__
-  #define __QEMU_CONFIG_HPP__
+#define __QEMU_CONFIG_HPP__
 
 // FIXME: qemu/targphys.h defines address types (but relies on a global preprocessor macro)
 

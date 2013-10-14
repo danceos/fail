@@ -1,5 +1,5 @@
 #ifndef __BOCHS_CPU_HPP__
-  #define __BOCHS_CPU_HPP__
+#define __BOCHS_CPU_HPP__
 
 #include "../x86/X86Architecture.hpp"
 #include "../x86/X86CPUState.hpp"
@@ -11,12 +11,12 @@ namespace fail {
 
 /**
  * \class BochsCPU
- * 
+ *
  * \c BochsCPU is the concrete CPU implementation for the Bochs x86 simulator. It
  * implements the CPU interfaces \c X86Architecture and \c X86CPUState.
  * \c X86Architecture refers to architectural information (e.g. register \a count)
  * while \c X86CPUState encapsulates the CPU state (e.g. register \a content).
- * 
+ *
  */
 class BochsCPU : public X86Architecture, public X86CPUState {
 private:
@@ -29,7 +29,7 @@ public:
 	BochsCPU(unsigned int id) : m_Id(id) { }
 	/**
 	 * Virtual Destructor is required.
-   */
+	 */
 	virtual ~BochsCPU() { }
 		/**
 	 * Retrieves the content of the register \c reg.

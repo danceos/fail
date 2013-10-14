@@ -1,6 +1,6 @@
 #ifndef __NANOJPEG_EXPERIMENT_HPP__
-  #define __NANOJPEG_EXPERIMENT_HPP__
-  
+#define __NANOJPEG_EXPERIMENT_HPP__
+
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 

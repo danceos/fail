@@ -1,5 +1,5 @@
 #ifndef __WATCHPOINT_BUFFER_HPP__
-  #define __WATCHPOINT_BUFFER_HPP__
+#define __WATCHPOINT_BUFFER_HPP__
 
 #include "BufferInterface.hpp"
 

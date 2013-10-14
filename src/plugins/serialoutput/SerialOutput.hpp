@@ -1,5 +1,5 @@
 #ifndef __SERIAL_OUTPUT_HPP__
-  #define __SERIAL_OUTPUT_HPP__
+#define __SERIAL_OUTPUT_HPP__
 
 #include <string>
 
@@ -8,7 +8,7 @@
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_IOPORT)
-  #warning The serialoutput plugin may (depending on its use) need ioport event. Enable these in the cmake configuration tool.
+	#warning The serialoutput plugin may (depending on its use) need ioport event. Enable these in the cmake configuration tool.
 #endif
 
 /**
@@ -18,7 +18,7 @@
  */
 class SerialOutput : public fail::ExperimentFlow
 {
-	
+
 private:
 	bool m_out; //!< Defines the direction of the listener.
 	unsigned m_port; //!< the port the listener is listening on
@@ -27,7 +27,7 @@ private:
 public:
 	/**
 	 * Constructor of SerialOutput.
-	 * 
+	 *
 	 * @param port the port the listener is listening on
 	 * @param out Defines the direction of the listener.
 	 * \arg \c true Output on the given port is captured. This is default.
@@ -37,7 +37,7 @@ public:
 	bool run();
 	/**
 	 * Resets the output variable which contains the traffic of
-	 * ioport. 
+	 * ioport.
 	 */
 	void resetOutput();
 	/**

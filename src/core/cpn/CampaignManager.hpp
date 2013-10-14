@@ -4,7 +4,7 @@
  */
 
 #ifndef __CAMPAIGN_MANAGER_HPP__
-  #define __CAMPAIGN_MANAGER_HPP__
+#define __CAMPAIGN_MANAGER_HPP__
 
 #include "sal/SALInst.hpp"
 #include "comm/ExperimentData.hpp"
@@ -16,7 +16,7 @@ namespace fail {
 /**
  * \class CampaignManager
  *
- * The CampaignManager allows a user-campaign access to all constant 
+ * The CampaignManager allows a user-campaign access to all constant
  * simulator information and forwards single experiments to the JobServer.
  */
 class CampaignManager {
@@ -30,12 +30,12 @@ public:
 	 * Executes a user campaign
 	 */
 	bool runCampaign(Campaign* c)
-	{ 
+	{
 		if (!m_jobserver) {
 			m_jobserver = new JobServer;
 		}
 		m_currentCampaign = c;
-		bool ret = c->run(); 
+		bool ret = c->run();
 		m_jobserver->done();
 		return ret;
 	}
@@ -43,7 +43,7 @@ public:
 	 * Returns a const reference for acquiring constant simulator specific information.
 	 * e.g., Registernames, to ease experiment data construction.
 	 * The campaign description is not allowed to change the simulator
-	 * state, as the actual simulation runs within another process (Minion) 
+	 * state, as the actual simulation runs within another process (Minion)
 	 * @return constant reference to the current simulator backend.
 	 */
 	SimulatorController const& getSimulator() const { return simulator; }

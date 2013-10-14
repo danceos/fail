@@ -1,5 +1,5 @@
 #ifndef __JOB_SERVER_H__
-  #define __JOB_SERVER_H__
+#define __JOB_SERVER_H__
 
 #include "Minion.hpp"
 #include "util/SynchronizedQueue.hpp"
@@ -110,7 +110,7 @@ public:
 	/**
 	 * Adds a new experiment data set to the job queue.
 	 * @param data Pointer to an expoeriment data object
-     */
+	 */
 	void addParam(ExperimentData* data);
 	/**
 	 * Retrieve an experiment result. Blocks if we currently have no results.

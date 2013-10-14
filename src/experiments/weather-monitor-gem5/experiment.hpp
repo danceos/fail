@@ -1,6 +1,6 @@
 #ifndef __WEATHERMONITOR_EXPERIMENT_HPP__
-  #define __WEATHERMONITOR_EXPERIMENT_HPP__
-  
+#define __WEATHERMONITOR_EXPERIMENT_HPP__
+
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 

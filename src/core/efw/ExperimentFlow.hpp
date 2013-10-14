@@ -1,5 +1,5 @@
 #ifndef __EXPERIMENT_FLOW_HPP__
-  #define __EXPERIMENT_FLOW_HPP__
+#define __EXPERIMENT_FLOW_HPP__
 
 #include "sal/SALInst.hpp"
 

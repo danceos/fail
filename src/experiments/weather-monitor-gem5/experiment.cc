@@ -36,7 +36,7 @@ bool WeatherMonitorExperiment::run()
 	char const *statename = "bochs.state" WEATHER_SUFFIX;
 	Logger log("Weathermonitor", false);
 	BPSingleListener bp;
-	
+
 	log << "startup" << endl;
 
 #if 1
@@ -160,11 +160,11 @@ bool WeatherMonitorExperiment::run()
 	int id = param.getWorkloadID();
 	int instr_offset = param.msg.instr_offset();
 	int mem_addr = param.msg.mem_addr();
-	// Choose the bit_offset for this gem5 build. 
+	// Choose the bit_offset for this gem5 build.
 	// To test all 8 bits, 8 campaign runs are needed.
 	int bit_offset = 0;
 
-	
+
 		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);

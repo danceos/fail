@@ -1,5 +1,5 @@
 #ifndef __REGISTER_HPP__
-  #define __REGISTER_HPP__
+#define __REGISTER_HPP__
 
 #include <vector>
 #include <cstdlib>

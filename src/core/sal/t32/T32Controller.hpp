@@ -12,8 +12,8 @@ namespace fail {
  */
 class T32Controller : public SimulatorController {
 public:
-  void startup();
-  T32Controller() : SimulatorController(new T32MemoryManager()) { };
+	void startup();
+	T32Controller() : SimulatorController(new T32MemoryManager()) { };
 	~T32Controller();
 
 	/* ********************************************************************

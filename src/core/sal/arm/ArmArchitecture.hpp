@@ -1,5 +1,5 @@
 #ifndef __ARM_ARCHITECURE_HPP__
-  #define __ARM_ARCHITECURE_HPP__
+#define __ARM_ARCHITECURE_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"

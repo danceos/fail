@@ -37,7 +37,7 @@ void ListenerManager::remove(BaseListener* li)
 		for (index_t i = 0; i < m_BufferList.size(); ) {
 			if (m_BufferList[i]->getParent() == simulator.m_Flows.getCurrent()) {
 				m_BufferList[i]->onDeletion();
-				if(m_BufferList[i]->getPerformanceBuffer() != NULL)
+				if (m_BufferList[i]->getPerformanceBuffer() != NULL)
 					m_BufferList[i]->getPerformanceBuffer()->remove(i);
 				m_remove(i);
 				// Inspect the element at m_BufferList[i] a 2nd time
@@ -117,7 +117,7 @@ void ListenerManager::remove(ExperimentFlow* flow)
 		std::set<PerfBufferBase*> perfBufLists;
 		for (bufferlist_t::iterator it = m_BufferList.begin(); it != m_BufferList.end(); it++) {
 			(*it)->onDeletion(); // invoke listener handler
-			if((*it)->getPerformanceBuffer() != NULL)
+			if ((*it)->getPerformanceBuffer() != NULL)
 				perfBufLists.insert((*it)->getPerformanceBuffer());
 			(*it)->setPerformanceBuffer(NULL);
 			(*it)->setLocation(INVALID_INDEX);
@@ -184,7 +184,7 @@ ListenerManager::iterator ListenerManager::makeActive(iterator it)
 	//  this slot stores the element which has previously been stored in the last slot):
 	// This is required because the provided iterator "it" isn't valid anymore (due
 	// to the deletion of the last element within m_remove(index_t)).
-	
+
 	iterator it_next = begin() + dist; // O(1)
 	// Note: "begin() + dist" yields end() if dist is "large enough" (as computed above)
 

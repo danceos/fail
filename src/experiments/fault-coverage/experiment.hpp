@@ -1,5 +1,5 @@
 #ifndef __FAULT_COVERAGE_EXPERIMENT_HPP__
-  #define __FAULT_COVERAGE_EXPERIMENT_HPP__
+#define __FAULT_COVERAGE_EXPERIMENT_HPP__
 
 #include <iostream>
 #include <fstream>
@@ -7,7 +7,7 @@
 #include "config/FailConfig.hpp"
 #include "efw/ExperimentFlow.hpp"
 
-#define INST_ADDR_FUNC_START  0x4ae6		
+#define INST_ADDR_FUNC_START  0x4ae6
 #define INST_ADDR_FUNC_END    0x4be6
 
 // Check if configuration dependencies are satisfied:

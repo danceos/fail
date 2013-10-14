@@ -12,19 +12,19 @@ regdata_t BochsCPU::getRegisterContent(const Register* reg) const
 
 	if (reg->getId() == RID_FLAGS) { // EFLAGS register?
 		return static_cast<regdata_t>(BX_CPU(id)->read_eflags());
-    }
+	}
 
-  #ifdef SIM_SUPPORT_64
+#ifdef SIM_SUPPORT_64
 	if (reg->getId() == RID_PC) // program counter?
 		return static_cast<regdata_t>(BX_CPU(id)->gen_reg[BX_64BIT_REG_RIP].rrx);
 	else // 64 bit general purpose registers
 		return static_cast<regdata_t>(BX_CPU(id)->gen_reg[reg->getId()].rrx);
-  #else // 32 bit mode
+#else // 32 bit mode
 	if (reg->getId() == RID_PC)
 		return static_cast<regdata_t>(BX_CPU(id)->gen_reg[BX_32BIT_REG_EIP].dword.erx);
 	else // 32 bit general purpose registers
 		return static_cast<regdata_t>(BX_CPU(id)->gen_reg[reg->getId()].dword.erx);
-  #endif // SIM_SUPPORT_64
+#endif // SIM_SUPPORT_64
 }
 
 void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
@@ -46,17 +46,17 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 	}
 
 	regdata_t* pData;
-  #ifdef SIM_SUPPORT_64
+#ifdef SIM_SUPPORT_64
 	if (reg->getId() == RID_PC) // program counter?
 		pData = &(BX_CPU(id)->gen_reg[BX_64BIT_REG_RIP].rrx);
 	else // 64 bit general purpose registers
 		pData = &(BX_CPU(id)->gen_reg[reg->getId()].rrx);
-  #else // 32 bit mode
+#else // 32 bit mode
 	if (reg->getId() == RID_PC)
 		pData = &(BX_CPU(id)->gen_reg[BX_32BIT_REG_EIP].dword.erx);
 	else // 32 bit general purpose registers
 		pData = &(BX_CPU(id)->gen_reg[reg->getId()].dword.erx);
-  #endif // SIM_SUPPORT_64
+#endif // SIM_SUPPORT_64
 	*pData = value;
 }
 

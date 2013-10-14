@@ -5,7 +5,7 @@
  */
 
 #ifndef __GEM5_CONFIG_HPP__
-  #define __GEM5_CONFIG_HPP__
+#define __GEM5_CONFIG_HPP__
 
 #include <stdint.h>
 

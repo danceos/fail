@@ -1,6 +1,6 @@
 #ifndef __RAMPAGE_EXPERIMENT_HPP__
-  #define __RAMPAGE_EXPERIMENT_HPP__
-  
+#define __RAMPAGE_EXPERIMENT_HPP__
+
 #include <string>
 #include <ctime>
 

@@ -1,5 +1,5 @@
 #ifndef __LISTENER_HPP__
-  #define __LISTENER_HPP__
+#define __LISTENER_HPP__
 
 #include <string>
 #include <cassert>
@@ -205,12 +205,12 @@ public:
 };
 
 #if defined CONFIG_EVENT_BREAKPOINTS
-  #define BP_CTOR_SCOPE public
+	#define BP_CTOR_SCOPE public
 #else
-  #define BP_CTOR_SCOPE protected
-  // This prevents an experiment from instantiating an object of BPSingleListener
-  // without having enabled the appropriate configuration flag, i.e.,
-  // CONFIG_EVENT_BREAKPOINTS = ON.
+	#define BP_CTOR_SCOPE protected
+	// This prevents an experiment from instantiating an object of BPSingleListener
+	// without having enabled the appropriate configuration flag, i.e.,
+	// CONFIG_EVENT_BREAKPOINTS = ON.
 #endif
 /**
  * \class BPSingleListener
@@ -252,9 +252,9 @@ public: // reset scope in order to allow compiling the various other Fail* sourc
 };
 
 #if defined CONFIG_EVENT_BREAKPOINTS_RANGE
-  #define BPRANGE_CTOR_SCOPE public
+	#define BPRANGE_CTOR_SCOPE public
 #else
-  #define BPRANGE_CTOR_SCOPE protected
+	#define BPRANGE_CTOR_SCOPE protected
 #endif
 /**
  * \class BPRangeListener
@@ -300,12 +300,12 @@ public:
 };
 
 #if defined CONFIG_EVENT_MEMREAD || defined CONFIG_EVENT_MEMWRITE
-  #define WP_CTOR_SCOPE public
+	#define WP_CTOR_SCOPE public
 #else
-  #define WP_CTOR_SCOPE protected
-  // Note: "private" works only in case of a "final class" (a leaf class) because when using
-  // "private", the derived classes wouldn't compile anymore (even if they are not used anyway).
-  // Clearly, MemAccessListener is *not* a leaf class.
+	#define WP_CTOR_SCOPE protected
+	// Note: "private" works only in case of a "final class" (a leaf class) because when using
+	// "private", the derived classes wouldn't compile anymore (even if they are not used anyway).
+	// Clearly, MemAccessListener is *not* a leaf class.
 #endif
 /**
  * \class MemAccessListener
@@ -413,9 +413,9 @@ public:
 };
 
 #ifdef CONFIG_EVENT_MEMREAD
-  #define WPREAD_CTOR_SCOPE public
+	#define WPREAD_CTOR_SCOPE public
 #else
-  #define WPREAD_CTOR_SCOPE protected
+	#define WPREAD_CTOR_SCOPE protected
 #endif
 /**
  * \class MemReadListener
@@ -430,9 +430,9 @@ WPREAD_CTOR_SCOPE:
 };
 
 #ifdef CONFIG_EVENT_MEMWRITE
-  #define WPWRITE_CTOR_SCOPE public
+	#define WPWRITE_CTOR_SCOPE public
 #else
-  #define WPWRITE_CTOR_SCOPE protected
+	#define WPWRITE_CTOR_SCOPE protected
 #endif
 /**
  * \class MemWriteListener
@@ -447,9 +447,9 @@ WPWRITE_CTOR_SCOPE:
 };
 
 #if defined CONFIG_EVENT_INTERRUPT || defined CONFIG_EVENT_TRAP
-  #define TROUBLE_CTOR_SCOPE public
+	#define TROUBLE_CTOR_SCOPE public
 #else
-  #define TROUBLE_CTOR_SCOPE protected
+	#define TROUBLE_CTOR_SCOPE protected
 #endif
 /**
  * \class TroubleListener
@@ -513,9 +513,9 @@ public:
 };
 
 #ifdef CONFIG_EVENT_INTERRUPT
-  #define INT_CTOR_SCOPE public
+	#define INT_CTOR_SCOPE public
 #else
-  #define INT_CTOR_SCOPE protected
+	#define INT_CTOR_SCOPE protected
 #endif
 /**
  * \class InterruptListener
@@ -540,9 +540,9 @@ public:
 };
 
 #ifdef CONFIG_EVENT_TRAP
-  #define TRAP_CTOR_SCOPE public
+	#define TRAP_CTOR_SCOPE public
 #else
-  #define TRAP_CTOR_SCOPE protected
+	#define TRAP_CTOR_SCOPE protected
 #endif
 /**
  * \class TrapListener
@@ -556,9 +556,9 @@ TRAP_CTOR_SCOPE:
 };
 
 #ifdef CONFIG_EVENT_GUESTSYS
-  #define GUESTSYS_CTOR_SCOPE public
+	#define GUESTSYS_CTOR_SCOPE public
 #else
-  #define GUESTSYS_CTOR_SCOPE protected
+	#define GUESTSYS_CTOR_SCOPE protected
 #endif
 /**
  * \class GuestListener
@@ -592,9 +592,9 @@ public:
 };
 
 #ifdef CONFIG_EVENT_IOPORT
-  #define IOPORT_CTOR_SCOPE public
+	#define IOPORT_CTOR_SCOPE public
 #else
-  #define IOPORT_CTOR_SCOPE protected
+	#define IOPORT_CTOR_SCOPE protected
 #endif
 /**
  * \class IOPortListener
@@ -661,9 +661,9 @@ public:
 };
 
 #ifdef CONFIG_EVENT_JUMP
-  #define JUMP_CTOR_SCOPE public
+	#define JUMP_CTOR_SCOPE public
 #else
-  #define JUMP_CTOR_SCOPE protected
+	#define JUMP_CTOR_SCOPE protected
 #endif
 /**
  * \class JumpListener

@@ -1,5 +1,5 @@
 #ifndef __SIMULATOR_CONTROLLER_HPP__
-  #define __SIMULATOR_CONTROLLER_HPP__
+#define __SIMULATOR_CONTROLLER_HPP__
 
 #include <iostream>
 #include <string>
@@ -83,7 +83,7 @@ public:
 	 * @param is_write \c true if memory is written, \c false if read
 	 * @param instrPtr the address of the instruction causing the memory
 	 *        access
-	 * 
+	 *
 	 * FIXME: should instrPtr be part of this interface?
 	 */
 	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len, bool is_write, address_t instrPtr);

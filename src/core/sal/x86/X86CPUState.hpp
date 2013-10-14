@@ -1,5 +1,5 @@
 #ifndef __X86_CPU_STATE_HPP__
-  #define __X86_CPU_STATE_HPP__
+#define __X86_CPU_STATE_HPP__
 
 #include "../CPU.hpp"
 #include "../CPUState.hpp"
@@ -23,7 +23,7 @@ public:
 	 * @return the current (E)FLAGS processor register content
 	 */
 	virtual regdata_t getFlagsRegister() const = 0;
-	
+
 	/**
 	 * Returns \c true if the corresponding flag is set, or \c false
 	 * otherwise.

@@ -27,7 +27,7 @@
 #define LOCAL 0
 
 #ifndef PREREQUISITES
-  #error Configure experimentInfo.hpp properly!
+	#error Configure experimentInfo.hpp properly!
 #endif
 
 // create/use multiple snapshots to speed up long experiments
@@ -113,7 +113,7 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 
 	while (true) {
 		simulator.addListenerAndResume(&g);
-		if(g.getData() == 'Q') {
+		if (g.getData() == 'Q') {
 		  log << "Guest system triggered: " << g.getData() << endl;
 		  break;
 		}
@@ -203,15 +203,15 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// do the job, 'till the end
 	BaseListener* ev = simulator.resume();
-	while(ev != &bp) {
-		if(ev == &ev_count) {
-			if(instr_counter++ == 0xFFFFFFFFU) {
+	while (ev != &bp) {
+		if (ev == &ev_count) {
+			if (instr_counter++ == 0xFFFFFFFFU) {
 				log << "ERROR: instr_counter overflowed" << endl;
 				return false;
 			}
 			simulator.addListener(&ev_count);
 		}
-		else if(ev == &ev_mem) {
+		else if (ev == &ev_mem) {
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
 
@@ -259,7 +259,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	}
 	of.close();
 	log << "trace written to " << EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark) << endl;
-	
+
 	return true;
 }
 
@@ -301,7 +301,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	                addr_data_start, addr_data_end;
 
 	BPSingleListener bp;
-	
+
 	int experiments = 0;
 #if !LOCAL
 	for (experiments = 0;
@@ -511,7 +511,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		//BPSingleListener ev_end(ANY_ADDR);
 		//ev_end.setCounter(instr_counter - instr_offset + ECOS_RECOVERYINSTR);
 		//simulator.addListener(&ev_end);
-		
+
 		// function called by ecc aspects, when an uncorrectable error is detected
 		BPSingleListener func_ecc_panic(addr_panic);
 		if (addr_panic != ADDR_INV) {
@@ -558,7 +558,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		} else {
 			result->set_error_corrected(0);
 		}
-		
+
 		// record ecos_test_result
 		if ( (ecos_test_passed == true) && (ecos_test_failed == false) ) {
 			result->set_ecos_test_result(result->PASS);

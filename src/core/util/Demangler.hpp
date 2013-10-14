@@ -5,19 +5,19 @@
 
 namespace fail {
 
-  class Demangler {
-    public:
+class Demangler {
+public:
 
-      /**
-       * Get the demangled symbol name of a mangled string.
-       * @param name The mangled symbol
-       * @return The according demangled name if found, else Demangler::DEMANGLE_FAILED
-       */
-      static std::string demangle(const std::string & name);
+	/**
+	 * Get the demangled symbol name of a mangled string.
+	 * @param name The mangled symbol
+	 * @return The according demangled name if found, else Demangler::DEMANGLE_FAILED
+	 */
+	static std::string demangle(const std::string & name);
 
-      //! Inform about failed demangling.
-      static const std::string DEMANGLE_FAILED;
-  };
+	//! Inform about failed demangling.
+	static const std::string DEMANGLE_FAILED;
+};
 
 } // end of namespace
 

@@ -1,6 +1,6 @@
 #ifndef __CHECKSUM_OOSTUBS_EXPERIMENT_HPP__
-  #define __CHECKSUM_OOSTUBS_EXPERIMENT_HPP__
-  
+#define __CHECKSUM_OOSTUBS_EXPERIMENT_HPP__
+
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
 

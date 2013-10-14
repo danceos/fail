@@ -22,7 +22,7 @@ using namespace fail;
 
 void  GenericTracing::parseOptions() {
 	CommandLine &cmd = CommandLine::Inst();
-	CommandLine::option_handle IGNORE = cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
+	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 
@@ -35,18 +35,18 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle SAVE_SYMBOL	= cmd.addOption("S", "save-symbol", Arg::Required,
 															"-S,--save-symbol \tELF symbol to save the state of the machine (default: main)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
-															"-f,--state-file \tFile/dir to save the state to (default state)");
+															"-f,--state-file \tFile/dir to save the state to (default: state)");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
-															"-t,--trace-file \tFile to save the execution trace to\n");
+															"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
 
 	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None, "--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
 															"-m,--memory-symbol \tELF symbol(s) to trace accesses (default: all mem read/writes are traced)");
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
 															"-M,--memory-region \trestrict memory region which is traced"
-															"	Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>");
+															" (Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>)");
 
-	if(!cmd.parse()) {
+	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
 		exit(-1);
 	}
@@ -60,7 +60,7 @@ void  GenericTracing::parseOptions() {
 		elf_file = cmd[ELF_FILE].first()->arg;
 	else {
 		char * elfpath = getenv("FAIL_ELF_PATH");
-		if(elfpath == NULL){
+		if (elfpath == NULL) {
 			m_log << "FAIL_ELF_PATH not set :( (alternative: --elf-file) " << std::endl;
 			exit(-1);
 		}
@@ -102,7 +102,7 @@ void  GenericTracing::parseOptions() {
 		use_memory_map = true;
 		option::Option *opt = cmd[MEM_SYMBOL].first();
 
-		while(opt != 0) {
+		while (opt != 0) {
 			const ElfSymbol &symbol = m_elf->getSymbol(opt->arg);
 			assert(symbol.isValid());
 
@@ -118,7 +118,7 @@ void  GenericTracing::parseOptions() {
 		use_memory_map = true;
 		option::Option *opt = cmd[MEM_REGION].first();
 
-		while(opt != 0) {
+		while (opt != 0) {
 			char *endptr;
 			guest_address_t begin = strtol(opt->arg, &endptr, 16);
 			guest_address_t size;
@@ -130,14 +130,14 @@ void  GenericTracing::parseOptions() {
 			char delim = *endptr;
 			if (delim == 0) {
 				size = 1;
-			} else if(delim == ':') {
+			} else if (delim == ':') {
 				char *p = endptr +1;
 				size = strtol(p, &endptr, 16) - begin;
 				if (p == endptr || *endptr != 0) {
 					m_log << "Couldn't parse " << opt->arg << std::endl;
 					exit(-1);
 				}
-			} else if(delim == '+') {
+			} else if (delim == '+') {
 				char *p = endptr +1;
 				size = strtol(p, &endptr, 10);
 				if (p == endptr || *endptr != 0) {

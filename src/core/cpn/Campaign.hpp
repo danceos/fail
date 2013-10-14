@@ -1,5 +1,5 @@
 #ifndef __CAMPAIGN_HPP__
-  #define __CAMPAIGN_HPP__
+#define __CAMPAIGN_HPP__
 
 namespace fail {
 

@@ -1266,7 +1266,7 @@ static int evaluate_mrs_msr(uint32_t opcode,
 			    uint32_t address, struct arm_instruction *instruction)
 {
 	int R = (opcode & 0x00400000) >> 22;
-  std::string PSR = (R) ? "SPSR" : "CPSR";
+	std::string PSR = (R) ? "SPSR" : "CPSR";
 
 	/* Move register to status register (MSR) */
 	if (opcode & 0x00200000) {
@@ -1922,64 +1922,64 @@ int arm_evaluate_opcode(uint32_t opcode, uint32_t address,
 }
 
 void arm_load_store_instr::evaluate() {
-  fail::Register * reg = fail::simulator.getCPU(0).getRegister(Rd);
-  value = fail::simulator.getCPU(0).getRegisterContent(reg);
-  uint32_t offs = 0;
+	fail::Register * reg = fail::simulator.getCPU(0).getRegister(Rd);
+	value = fail::simulator.getCPU(0).getRegisterContent(reg);
+	uint32_t offs = 0;
 
-  std::cout << " Value Register: r" << (int)(Rd) << " = 0x" << std::hex << value  << std::endl;
+	std::cout << " Value Register: r" << (int)(Rd) << " = 0x" << std::hex << value  << std::endl;
 
-  // Address holding register:
-  reg = fail::simulator.getCPU(0).getRegister(Rn);
-  address = fail::simulator.getCPU(0).getRegisterContent(reg);
+	// Address holding register:
+	reg = fail::simulator.getCPU(0).getRegister(Rn);
+	address = fail::simulator.getCPU(0).getRegisterContent(reg);
 
-  if(offset_mode == 0) { // immediate
-    offs = offset.offset;
-  } else  { // (scaled) register
-    reg = fail::simulator.getCPU(0).getRegister(offset.reg.Rm);
-    // get scale register
-    uint32_t rm = fail::simulator.getCPU(0).getRegisterContent(reg);
-    // get shift value
-    uint8_t shimm = offset.reg.shift_imm;
+	if (offset_mode == 0) { // immediate
+		offs = offset.offset;
+	} else  { // (scaled) register
+		reg = fail::simulator.getCPU(0).getRegister(offset.reg.Rm);
+		// get scale register
+		uint32_t rm = fail::simulator.getCPU(0).getRegisterContent(reg);
+		// get shift value
+		uint8_t shimm = offset.reg.shift_imm;
 
-    switch(offset.reg.shift) {
-    case 0: // LSL
-          offs = rm << shimm;
-          break;
-    case 1: // LSR
-          offs = rm >> shimm;
-          break;
-    case 2: // ASR
-          offs = (rm >> shimm) | (rm & (1 << 31));
-          break;
-    case 3: // ROR
-          offs = ror(rm, shimm);
-          break;
-    case 4: // RRX
-          // This might be wrong!
-          // RRX rotates right 1 bit, the carry flag is moved to 31
-          // and to original bit 0 is moved to the carry flag.
-          // Now we have a problem: The original carry flag is updated,
+		switch (offset.reg.shift) {
+		case 0: // LSL
+			offs = rm << shimm;
+			break;
+		case 1: // LSR
+			offs = rm >> shimm;
+			break;
+		case 2: // ASR
+			offs = (rm >> shimm) | (rm & (1 << 31));
+			break;
+		case 3: // ROR
+			offs = ror(rm, shimm);
+			break;
+		case 4: // RRX
+			// This might be wrong!
+			// RRX rotates right 1 bit, the carry flag is moved to 31
+			// and to original bit 0 is moved to the carry flag.
+			// Now we have a problem: The original carry flag is updated,
 
-          // The offset is either:
-          offs = rm >> 1;
-          // OR: offs = (rm >> 1) | (1 << 31); // if CF = 1
-          break;
-    default: break;
-    }
-  }
+			// The offset is either:
+			offs = rm >> 1;
+			// OR: offs = (rm >> 1) | (1 << 31); // if CF = 1
+			break;
+		default: break;
+		}
+	}
 
-  // Apply the offset to the address register
-  if(index_mode == 1) { // pre indexed
-    // the calculated address was already written back into Rn
-  } else if (index_mode == 2) { // post indexed
-    // the address got the offset after the mem access
-    address = address - offs;
-  } else { // we have to apply the offset ourselfs
-    address = address + offs;
-  }
+	// Apply the offset to the address register
+	if (index_mode == 1) { // pre indexed
+		// the calculated address was already written back into Rn
+	} else if (index_mode == 2) { // post indexed
+		// the address got the offset after the mem access
+		address = address - offs;
+	} else { // we have to apply the offset ourselfs
+		address = address + offs;
+	}
 
 
-  std::cout << " Address Register: r" << (int)(Rn) << " = 0x" << std::hex << address  << std::endl;
+	std::cout << " Address Register: r" << (int)(Rn) << " = 0x" << std::hex << address  << std::endl;
 
 }
 
@@ -2793,7 +2793,7 @@ static int evaluate_ifthen_thumb(uint16_t opcode, uint32_t address,
 				 struct arm_instruction *instruction)
 {
 	unsigned cond = (opcode >> 4) & 0x0f;
-  std::string x = "", y = "", z = "";
+	std::string x = "", y = "", z = "";
 
 	if (opcode & 0x01)
 		z = (opcode & 0x02) ? "T" : "E";
@@ -3431,7 +3431,7 @@ static int t2ev_store_single(uint32_t opcode, uint32_t address,
 	if (rn == 0xf)
 		return ERROR_COMMAND_SYNTAX_ERROR;
 
-  instruction->type = ARM_STR;
+	instruction->type = ARM_STR;
 	if (opcode & 0x0800)
 		op |= 1;
 	switch (op) {
@@ -3439,29 +3439,29 @@ static int t2ev_store_single(uint32_t opcode, uint32_t address,
 		case 0x8:
 		case 0x9:
 			size = "B";
-      instruction->type = ARM_STRB;
+			instruction->type = ARM_STRB;
 			goto imm12;
 		case 0x1:
 			size = "B";
-      instruction->type = ARM_STRB;
+			instruction->type = ARM_STRB;
 			goto imm8;
 		case 0x0:
 			size = "B";
-      instruction->type = ARM_STRB;
+			instruction->type = ARM_STRB;
 			break;
 		/* halfword */
 		case 0xa:
 		case 0xb:
 			size = "H";
-      instruction->type = ARM_STRH;
+			instruction->type = ARM_STRH;
 			goto imm12;
 		case 0x3:
 			size = "H";
-      instruction->type = ARM_STRH;
+			instruction->type = ARM_STRH;
 			goto imm8;
 		case 0x2:
 			size = "H";
-      instruction->type = ARM_STRH;
+			instruction->type = ARM_STRH;
 			break;
 		/* word */
 		case 0xc:
@@ -3479,12 +3479,12 @@ static int t2ev_store_single(uint32_t opcode, uint32_t address,
 	sprintf(cp, "STR%s.W\tr%d, [r%d, r%d, LSL #%d]",
 			size, rt, rn, (int) opcode & 0x0f,
 			(int) (opcode >> 4) & 0x03);
-  instruction->info.load_store.Rn = rn; //MH
-  instruction->info.load_store.Rd = rt; //MH
-  instruction->info.load_store.offset_mode = 1; // scaled reg
-  instruction->info.load_store.offset.reg.Rm = (int)(opcode & 0x0f);
-  instruction->info.load_store.offset.reg.shift = 0; // LSL = 0
-  instruction->info.load_store.offset.reg.shift_imm = (int)((opcode >> 4) & 0x03);
+	instruction->info.load_store.Rn = rn; //MH
+	instruction->info.load_store.Rd = rt; //MH
+	instruction->info.load_store.offset_mode = 1; // scaled reg
+	instruction->info.load_store.offset.reg.Rm = (int)(opcode & 0x0f);
+	instruction->info.load_store.offset.reg.shift = 0; // LSL = 0
+	instruction->info.load_store.offset.reg.shift_imm = (int)((opcode >> 4) & 0x03);
 
 	return ERROR_OK;
 
@@ -3493,17 +3493,17 @@ imm12:
 	sprintf(cp, "STR%s.W\tr%d, [r%d, #%u]\t; %#3.3x",
 			size, rt, rn, immed, immed);
 	instruction->info.load_store.Rn = rn; //MH
-  instruction->info.load_store.Rd = rt; //MH
-  instruction->info.load_store.offset_mode = 0; // immediate
-  instruction->info.load_store.offset.offset = immed;
+	instruction->info.load_store.Rd = rt; //MH
+	instruction->info.load_store.offset_mode = 0; // immediate
+	instruction->info.load_store.offset.offset = immed;
 return ERROR_OK;
 
 imm8:
 	immed = opcode & 0x00ff;
 	instruction->info.load_store.Rn = rn; //MH
-  instruction->info.load_store.Rd = rt; //MH
-  instruction->info.load_store.offset_mode = 0; // immediate
-  instruction->info.load_store.offset.offset = immed;
+	instruction->info.load_store.Rd = rt; //MH
+	instruction->info.load_store.offset_mode = 0; // immediate
+	instruction->info.load_store.offset.offset = immed;
 
 	switch (opcode & 0x700) {
 		case 0x600:
@@ -3518,11 +3518,11 @@ imm8:
 	if (opcode & 0x100) {
 		if (opcode & 0x400)	 { /* pre-indexed */
 			p2 = "]!";
-      instruction->info.load_store.index_mode = 1; // pre indexed
-    } else {			/* post-indexed */
+			instruction->info.load_store.index_mode = 1; // pre indexed
+		} else {			/* post-indexed */
 			p1 = "]";
 			p2 = "";
-      instruction->info.load_store.index_mode = 2; // post indexed
+			instruction->info.load_store.index_mode = 2; // post indexed
 		}
 	}
 
@@ -3684,11 +3684,11 @@ static int t2ev_ldrex_strex(uint32_t opcode, uint32_t address,
 	switch (op1op2) {
 		case 0:
 			mnemonic = "STREX";
-      instruction->type = ARM_STREX;
+			instruction->type = ARM_STREX;
 			goto strex;
 		case 1:
 			mnemonic = "LDREX";
-      instruction->type = ARM_LDREX;
+			instruction->type = ARM_LDREX;
 			goto ldrex;
 		case 2:
 		case 6:
@@ -3697,7 +3697,7 @@ static int t2ev_ldrex_strex(uint32_t opcode, uint32_t address,
 		case 12:
 		case 14:
 			mnemonic = "STRD";
-      instruction->type = ARM_LDRD;
+			instruction->type = ARM_LDRD;
 			goto immediate;
 		case 3:
 		case 7:
@@ -3706,7 +3706,7 @@ static int t2ev_ldrex_strex(uint32_t opcode, uint32_t address,
 		case 13:
 		case 15:
 			mnemonic = "LDRD";
-      instruction->type = ARM_LDRD;
+			instruction->type = ARM_LDRD;
 			if (rn == 15)
 				goto literal;
 			else
@@ -3715,11 +3715,11 @@ static int t2ev_ldrex_strex(uint32_t opcode, uint32_t address,
 			switch (op3) {
 				case 4:
 					mnemonic = "STREXB";
-          instruction->type = ARM_STREXB;
+					instruction->type = ARM_STREXB;
 					break;
 				case 5:
 					mnemonic = "STREXH";
-          instruction->type = ARM_STREXH;
+					instruction->type = ARM_STREXH;
 					break;
 				default:
 					return ERROR_COMMAND_SYNTAX_ERROR;
@@ -3737,11 +3737,11 @@ static int t2ev_ldrex_strex(uint32_t opcode, uint32_t address,
 					return ERROR_OK;
 				case 4:
 					mnemonic = "LDREXB";
-          instruction->type = ARM_LDREXB;
+					instruction->type = ARM_LDREXB;
 					break;
 				case 5:
 					mnemonic = "LDREXH";
-          instruction->type = ARM_LDREXH;
+					instruction->type = ARM_LDREXH;
 					break;
 				default:
 					return ERROR_COMMAND_SYNTAX_ERROR;
@@ -3756,10 +3756,10 @@ strex:
 	if (imm) {
 		sprintf(cp, "%s\tr%u, r%u, [r%u, #%u]\t; %#2.2x",
 				mnemonic, rd, rt, rn, imm, imm);
-  }	else {
+	}	else {
 		sprintf(cp, "%s\tr%u, r%u, [r%u]",
 				mnemonic, rd, rt, rn);
-  }
+	}
 	return ERROR_OK;
 
 ldrex:
@@ -4093,7 +4093,7 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 		sprintf(cp, "LDR\tr%d, %#8.8" PRIx32,
 				(int) (opcode >> 12) & 0xf,
 				thumb_alignpc4(address) + immed);
-    //MH TODO pc relative
+		//MH TODO pc relative
 		return ERROR_OK;
 	}
 
@@ -4103,9 +4103,9 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 				(int) (opcode >> 12) & 0xf,
 				rn, immed, immed);
 
-    instruction->info.load_store.Rn = rn;
-    instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
-    instruction->info.load_store.offset.offset = immed;
+		instruction->info.load_store.Rn = rn;
+		instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
+		instruction->info.load_store.offset.offset = immed;
 		return ERROR_OK;
 	}
 
@@ -4115,12 +4115,12 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 				rn,
 				(int) (opcode >> 0) & 0xf,
 				(int) (opcode >> 4) & 0x3);
-    instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
-    instruction->info.load_store.Rn = rn;
-    instruction->info.load_store.offset_mode = 1;
-    instruction->info.load_store.offset.reg.Rm = (int) (opcode >> 0) & 0xf;
-    instruction->info.load_store.offset.reg.shift = 0; // LSL
-    instruction->info.load_store.offset.reg.shift_imm = (int) (opcode >> 4) & 0x3;
+		instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
+		instruction->info.load_store.Rn = rn;
+		instruction->info.load_store.offset_mode = 1;
+		instruction->info.load_store.offset.reg.Rm = (int) (opcode >> 0) & 0xf;
+		instruction->info.load_store.offset.reg.shift = 0; // LSL
+		instruction->info.load_store.offset.reg.shift_imm = (int) (opcode >> 4) & 0x3;
 		return ERROR_OK;
 	}
 
@@ -4132,10 +4132,10 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 				(int) (opcode >> 12) & 0xf,
 				rn, immed, immed);
 
-    instruction->info.load_store.Rn = rn;
-    instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
-    instruction->info.load_store.offset.offset = immed;
-    return ERROR_OK;
+		instruction->info.load_store.Rn = rn;
+		instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
+		instruction->info.load_store.offset.offset = immed;
+		return ERROR_OK;
 	}
 
 	if (((opcode >> 8) & 0xf) == 0xc || (opcode & 0x0900) == 0x0900) {
@@ -4150,11 +4150,11 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 		if (opcode & 0x100) {
 			if (opcode & 0x400) {	/* pre-indexed */
 				p2 = "]!";
-        instruction->info.load_store.index_mode = 1;
-      } else {			/* post-indexed */
+				instruction->info.load_store.index_mode = 1;
+			} else {			/* post-indexed */
 				p1 = "]";
 				p2 = "";
-        instruction->info.load_store.index_mode = 2;
+				instruction->info.load_store.index_mode = 2;
 			}
 		}
 
@@ -4164,10 +4164,10 @@ static int t2ev_load_word(uint32_t opcode, uint32_t address,
 				(opcode & 0x200) ? "" : "-",
 				immed, p2, immed);
 
-    instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
-    instruction->info.load_store.Rn = rn;
-    instruction->info.load_store.offset_mode = 0;
-    instruction->info.load_store.offset.offset = immed;
+		instruction->info.load_store.Rd = (int) (opcode >> 12) & 0xf;
+		instruction->info.load_store.Rn = rn;
+		instruction->info.load_store.offset_mode = 0;
+		instruction->info.load_store.offset.offset = immed;
 		return ERROR_OK;
 	}
 
@@ -4181,7 +4181,7 @@ static int t2ev_load_byte_hints(uint32_t opcode, uint32_t address,
 	int rt = (opcode >> 12) & 0xf;
 	int op2 = (opcode >> 6) & 0x3f;
 	unsigned immed;
-  std::string p1 = "", p2 = "]";
+	std::string p1 = "", p2 = "]";
 	char *mnemonic;
 
 	switch ((opcode >> 23) & 0x3) {
@@ -4450,7 +4450,7 @@ int thumb2_opcode(uint32_t address, uint32_t opcode, struct arm_instruction *ins
 		case 0xe8000000:
 			/* 32-bit instructions */
 			instruction->instruction_size = 4;
-  		instruction->opcode = opcode;
+			instruction->opcode = opcode;
 			break;
 		default:
 			/* 16-bit:  Thumb1 + IT + CBZ/CBNZ + ... */

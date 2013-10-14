@@ -3,7 +3,7 @@
  */
 
 #ifndef __SYNCHRONIZED_QUEUE_HPP__
-  #define __SYNCHRONIZED_QUEUE_HPP__
+#define __SYNCHRONIZED_QUEUE_HPP__
 
 #include <queue>
 
@@ -32,7 +32,7 @@ public:
 #ifndef __puma
 		boost::unique_lock<boost::mutex> lock(m_mutex);
 #endif
-		return m_queue.size();			
+		return m_queue.size();
 	}
 	// Add data to the queue and notify others
 	void Enqueue(const T& data)
@@ -95,7 +95,7 @@ public:
 	 * Get data from the queue. Non blocking variant.
 	 * @param d Pointer to copy queue element to
 	 * @return false if no element in queue
-	 * 
+	 *
 	 */
 	bool Dequeue_nb(T& d)
 	{
