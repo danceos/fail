@@ -209,10 +209,6 @@ bool GenericTracing::run()
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
-    // In order to not loose the IP event at the beginning of the
-    // trace, we have to handle the IP event manually
-    tp.handleSingleIP(l_start_symbol);
-
 	////////////////////////////////////////////////////////////////
 	// STEP 2: continue to the save point, and save state
 	if (start_symbol != save_symbol) {
