@@ -16,11 +16,10 @@ bool TracingPlugin::run()
 
 	MemAccessListener ev_mem(ANY_ADDR);
 	BPSingleListener ev_step(ANY_ADDR);
-	BaseListener *ev;
+	BaseListener *ev = 0;
 
-	if (m_iponly || !m_memonly) {
-		simulator.addListener(&ev_step);
-	}
+	// ev_step is added in the first loop iteration
+
 	if (m_memonly || !m_iponly) {
 		simulator.addListener(&ev_mem);
 	}
@@ -36,16 +35,17 @@ bool TracingPlugin::run()
 	simtime_t prevtime = 0, curtime;
 	simtime_diff_t deltatime;
 
-	while (true) {
-		ev = simulator.resume();
+	bool first = true;
 
+	while (true) {
 		curtime = simulator.getTimerTicks();
 		deltatime = curtime - prevtime;
 
-		if (ev == &ev_step) {
+		if (ev == &ev_step || (first && (m_iponly || !m_memonly))) {
+			first = false;
 			simulator.addListener(&ev_step);
+			address_t ip = simulator.getCPU(0).getInstructionPointer();
 
-			address_t ip = ev_step.getTriggerInstructionPointer();
 			if (m_ipMap && !m_ipMap->isMatching(ip)) {
 				continue;
 			}
@@ -115,7 +115,7 @@ bool TracingPlugin::run()
 
 				ps->writeMessage(&e);
 			}
-		} else {
+		} else if (!first) {
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
@@ -123,6 +123,8 @@ bool TracingPlugin::run()
 		// do this only if the last delta was written
 		// (no, e.g., memory map mismatch)
 		prevtime = curtime;
+
+		ev = simulator.resume();
 	}
 
 	return true;
