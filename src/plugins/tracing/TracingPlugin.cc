@@ -58,6 +58,10 @@ bool TracingPlugin::run()
 				// only store deltas != 0
 				if (deltatime != 0) {
 					e.set_time_delta(deltatime);
+
+					// do this only if the last delta was written
+					// (no, e.g., memory map mismatch)
+					prevtime = curtime;
 				}
 				ps->writeMessage(&e);
 			}
@@ -88,6 +92,10 @@ bool TracingPlugin::run()
 				// only store deltas != 0
 				if (deltatime != 0) {
 					e.set_time_delta(deltatime);
+
+					// do this only if the last delta was written
+					// (no, e.g., memory map mismatch)
+					prevtime = curtime;
 				}
 
 				/* When we're doing a full trace, we log more data in
@@ -119,10 +127,6 @@ bool TracingPlugin::run()
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
-
-		// do this only if the last delta was written
-		// (no, e.g., memory map mismatch)
-		prevtime = curtime;
 
 		ev = simulator.resume();
 	}
