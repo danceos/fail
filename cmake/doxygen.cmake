@@ -9,6 +9,7 @@ if(DOXYGEN_FOUND)
 set(FAIL_DOC_OUTPUT  "${PROJECT_BINARY_DIR}/doc")
 execute_process(COMMAND find "${PROJECT_SOURCE_DIR}/src/core/" -type d -printf "%p "
                 OUTPUT_VARIABLE FAIL_DOC_SOURCE)
+set(FAIL_DOC_SOURCE "${FAIL_DOC_SOURCE} ${PROJECT_SOURCE_DIR}/src/plugins")
 set(FAIL_DOC_EXCLUDE_PATTERNS "*/util/pstream.h */util/optionparser/optionparser.h")
 file(MAKE_DIRECTORY ${FAIL_DOC_OUTPUT})
 # FIXME: The find command does not quote the paths to be processed by doxygen. That
