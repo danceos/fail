@@ -40,8 +40,8 @@ class TracingPlugin : public fail::ExperimentFlow
 private:
 	fail::MemoryMap *m_memMap; //!< address restriction for memory accesses
 	fail::MemoryMap *m_ipMap; //!< instruction address restriction
-	bool m_memonly; //!< log instructions only if they are memory accesses
-	bool m_iponly; //!< log instruction addresses only
+	//! trace nothing / instructions / mem accesses / both (can be bitwise ORed)
+	enum { TRACE_NONE = 0, TRACE_IP, TRACE_MEM, TRACE_BOTH } m_tracetype;
 	bool m_full_trace; //!< do a full trace (more information for the events)
 
 	std::ostream *m_protoStreamFile;
@@ -50,7 +50,7 @@ private:
 
 public:
 	TracingPlugin(bool full_trace = false)
-	 : m_memMap(0), m_ipMap(0), m_memonly(false), m_iponly(false),
+	 : m_memMap(0), m_ipMap(0), m_tracetype(TRACE_BOTH),
 	   m_full_trace(full_trace), m_protoStreamFile(0), m_os(0) { }
 	bool run();
 	/**
@@ -71,11 +71,11 @@ public:
 	 * conducted a memory access.  Defaults to false: All instructions are
 	 * logged.
 	 */
-	void setLogMemOnly(bool memonly) { m_memonly = memonly; }
+	void setLogMemOnly(bool memonly = true) { m_tracetype = memonly ? TRACE_MEM : TRACE_BOTH; }
 	/**
 	 * If invoked with iponly=true, only instruction addresses are logged.
 	 */
-	void setLogIPOnly(bool iponly) { m_iponly = iponly; }
+	void setLogIPOnly(bool iponly = true) { m_tracetype = iponly ? TRACE_IP : TRACE_BOTH; }
 	/**
 	 * If invoked with fulltrace=true, a extended (full) trace is done.
 	 */

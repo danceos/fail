@@ -20,7 +20,7 @@ bool TracingPlugin::run()
 
 	// ev_step is added in the first loop iteration
 
-	if (m_memonly || !m_iponly) {
+	if (m_tracetype | TRACE_MEM) {
 		simulator.addListener(&ev_mem);
 	}
 	if(m_protoStreamFile) {
@@ -41,7 +41,7 @@ bool TracingPlugin::run()
 		curtime = simulator.getTimerTicks();
 		deltatime = curtime - prevtime;
 
-		if (ev == &ev_step || (first && (m_iponly || !m_memonly))) {
+		if (ev == &ev_step || (first && (m_tracetype | TRACE_IP))) {
 			first = false;
 			simulator.addListener(&ev_step);
 			address_t ip = simulator.getCPU(0).getInstructionPointer();
