@@ -23,6 +23,8 @@
 #endif
 #include "openocd.h"
 
+#include <stdio.h>
+
 /* This is the main entry for developer PC hosted OpenOCD.
  *
  * OpenOCD can also be used as a library that is linked with
@@ -35,8 +37,10 @@
 int main(int argc, char *argv[])
 {
 	/* disable buffering otherwise piping to logs causes problems work */
-	setvbuf(stdout, NULL, _IONBF, 0);
-	setvbuf(stderr, NULL, _IONBF, 0);
-
-	return openocd_main(argc, argv);
+//	setvbuf(stdout, NULL, _IONBF, 0);
+//	setvbuf(stderr, NULL, _IONBF, 0);
+//
+//	return openocd_main(argc, argv);
+	printf("PANIC: This should not be happening\n");
+	return 0;
 }
