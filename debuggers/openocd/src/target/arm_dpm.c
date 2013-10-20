@@ -265,7 +265,7 @@ int arm_dpm_read_current_registers(struct arm_dpm *dpm)
 	arm_set_cpsr(arm, cpsr);
 
 	/* REVISIT we can probably avoid reading R1..R14, saving time... */
-	for (unsigned i = 1; i < 16; i++) {
+	for (unsigned i = 15; i < 16; i++) { // i = 1
 		r = arm_reg_current(arm, i);
 		if (r->valid)
 			continue;
