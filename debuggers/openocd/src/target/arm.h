@@ -178,10 +178,10 @@ struct arm {
 };
 
 /** Convert target handle to generic ARM target state handle. */
-static inline struct arm *target_to_arm(struct target *target)
+inline struct arm *target_to_arm(struct target *target)
 {
 	assert(target != NULL);
-	return target->arch_info;
+	return (struct arm*)(target->arch_info);
 }
 
 static inline bool is_arm(struct arm *arm)
