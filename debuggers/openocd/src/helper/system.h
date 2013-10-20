@@ -83,9 +83,11 @@
 #include <fcntl.h>
 #endif
 
+#ifndef __cplusplus
 #ifndef true
 #define true    1
 #define false   0
 #endif
+#endif // __cplusplus
 
 #endif	/* SYSTEM_H */

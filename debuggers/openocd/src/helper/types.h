@@ -43,15 +43,15 @@
 #ifndef __cplusplus
 
 #define false	0
-#define true		1
+#define true	1
 
-typedef int _Bool;
+//typedef int _Bool;
 #else
-typedef bool _Bool;
+typedef bool _Bool ;
 #endif	/* __cplusplus */
 #endif	/* HAVE__BOOL */
 
-#define bool _Bool
+#define bool int
 
 #endif	/* HAVE_STDBOOL_H */
 

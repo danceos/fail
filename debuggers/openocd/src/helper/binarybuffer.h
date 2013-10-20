@@ -126,10 +126,12 @@ int str_to_buf(const char *str, unsigned len,
 char *buf_to_str(const void *buf, unsigned size, unsigned radix);
 
 /* read a uint32_t from a buffer in target memory endianness */
+#ifndef __cplusplus
 static inline uint32_t fast_target_buffer_get_u32(const void *p, bool le)
 {
 	return le ? le_to_h_u32(p) : be_to_h_u32(p);
 }
+#endif
 
 static inline void bit_copy(uint8_t *dst, unsigned dst_offset, const uint8_t *src,
 	unsigned src_offset, unsigned bit_count)
