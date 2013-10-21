@@ -15,13 +15,16 @@
 	#error Save/Restore is not yet implemented for Pandaboard
 #endif
 
+#if defined(CONFIG_EVENT_IOPORT)
+	#error IoPort events not implemented for pandaboard
+#endif
+
 namespace fail {
 
 
 PandaController::PandaController()
 	: SimulatorController(new PandaMemoryManager()), m_CurrFlow(NULL)
 {
-	// ToDo: Multiple CPUs? => for (unsigned i = 0; i < BX_SMP_PROCESSORS; i++)
 	addCPU(new ConcreteCPU(0));
 }
 
@@ -51,31 +54,12 @@ void PandaController::onTimerTrigger(void* thisPtr)
 	simulator.m_LstList.triggerActiveListeners();
 }
 
-void PandaController::onIOPort(ConcreteCPU* cpu, unsigned char data, unsigned port, bool out) {
-	// Check for active IOPortListeners:
-	ListenerManager::iterator it = m_LstList.begin();
-	while (it != m_LstList.end()) {
-		BaseListener* pLi = *it;
-		IOPortListener* pIOPt = dynamic_cast<IOPortListener*>(pLi);
-		if (pIOPt != NULL && pIOPt->isMatching(port, out)) {
-			pIOPt->setData(data);
-			pIOPt->setTriggerCPU(cpu);
-			it = m_LstList.makeActive(it);
-			// "it" has already been set to the next element (by calling
-			// makeActive()):
-			continue; // -> skip iterator increment
-		}
-		it++;
-	}
-	m_LstList.triggerActiveListeners();
-}
-
 bool PandaController::save(const std::string& path)
 {
 	// ToDo (PORT): Save
 
 	/*int stat;
-	
+
 	stat = mkdir(path.c_str(), 0777);
 	if (!(stat == 0 || errno == EEXIST)) {
 		return false;
