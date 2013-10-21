@@ -8,7 +8,8 @@
 #include "util/Logger.hpp"
 #include "sal/Listener.hpp"
 
-#include "l4sys.pb.h"
+//#include "l4sys.pb.h"
+struct L4SysProtoMsg_Result;
 
 class L4SysExperimentData;
 
