@@ -98,6 +98,7 @@ static void update_timers();
 static struct watchpoint *getHaltingWatchpoint();
 static void getCurrentMemAccesses(struct halt_condition *accesses);
 static uint32_t getCurrentPC();
+static struct reg *get_reg_by_number(unsigned int num);
 
 /*
  * Main entry and main loop.
@@ -551,67 +552,50 @@ void oocdw_reboot()
 	}
 }
 
+/*
+ * Register access as in target.c: COMMAND_HANDLER(handle_reg_command)
+ */
+static struct reg *get_reg_by_number(unsigned int num)
+{
+	struct reg *reg = NULL;
+
+	struct reg_cache *cache = target_a9->reg_cache;
+	unsigned int count = 0;
+	while (cache) {
+		unsigned i;
+		for (i = 0; i < cache->num_regs; i++) {
+			if (count++ == num) {
+				reg = &cache->reg_list[i];
+				break;
+			}
+		}
+		if (reg)
+			break;
+		cache = cache->next;
+	}
+
+	return reg;
+}
+
 void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 
-	struct arm *arm = (struct arm*)(target_a9->arch_info);
-	if (rg == ARM_REGS_CORE) {
-		struct reg *reg = arm->core_cache->reg_list + reg_num;
+	struct reg *reg = get_reg_by_number(reg_num);
 
-		// Core registers
-		if (arm->read_core_reg(target_a9, reg, reg_num, arm->core_mode)) {
-			LOG << "FATAL ERROR: Could not read register " <<  reg_num << endl;
-			exit(-1);
-		}
+	if (reg->valid == 0)
+		reg->type->get(reg);
 
-		*data = *((uint32_t*)(reg->value));
-	} else {
-		// ToDo:
-		// coprocessor registers
-		/*
-		 * struct target *target, int cpnum,
-				uint32_t op1, uint32_t op2,
-				uint32_t CRn, uint32_t CRm,
-				uint32_t *value
-		 */
-		/*if (arm->mrc(...)) {
-
-		}*/
-		LOG << "FATAL ERROR: Accessing coprocessor registers not implemented yet." << endl;
-		exit(-1);
-	}
+	*data = *((uint32_t*)(reg->value));
 }
 
 void oocdw_write_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 
-	struct arm *arm = (struct arm*)(target_a9->arch_info);
-	if (rg == ARM_REGS_CORE) {
-		struct reg *reg = arm->core_cache->reg_list + reg_num;
+	struct reg *reg = get_reg_by_number(reg_num);
 
-		// Core registers
-		if (arm->write_core_reg(target_a9, reg, reg_num, arm->core_mode, data)) {
-			LOG << "FATAL ERROR: Could not write register " <<  reg_num << endl;
-			exit(-1);
-		}
-	} else {
-		// ToDo:
-		// coprocessor registers
-		/*
-		 * struct target *target, int cpnum,
-			uint32_t op1, uint32_t op2,
-			uint32_t CRn, uint32_t CRm,
-			uint32_t value
-		 */
-		/*if (arm->mcr(...)) {
-
-
-		}*/
-		LOG << "FATAL ERROR: Accessing coprocessor registers not implemented yet." << endl;
-		exit(-1);
-	}
+	reg->type->set(reg, (uint8_t*)(&data));
 }
 
 void oocdw_finish()
