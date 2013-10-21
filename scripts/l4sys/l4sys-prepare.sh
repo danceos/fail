@@ -46,6 +46,14 @@ function BuildNRun {
 # backup experiment config
 cp $CFG $BAK
 
+#echo -e "\033[35;1m[$(date)] ================== Step 0: Getting CR3 =================\033[0m"
+#cat $BAK | sed -e 's/PREPARATION_STEP.*/PREPARATION_STEP 4/' >$CFG
+#buildfail
+#cr3=`$FAIL_CMD -f bochsrc-bd 2>/dev/null | grep CR3 | sed -e 's/ //g' | cut -d\= -f 2`
+#echo \#defne L4SYS_ADDRESS_SPACE 0x$cr3
+#cat $BAK | sed -e "s/L4SYS_ADDRESS_SPACE .*/L4SYS_ADDRESS_SPACE 0x$cr3/" >$CFG
+#mv $CFG $BAK
+
 echo -e "\033[35;1m[$(date)] ================== Step 1: Generating Snapshot =================\033[0m"
 cat $BAK | sed -e 's/PREPARATION_STEP.*/PREPARATION_STEP 1/' >$CFG
 BuildNRun -f bochsrc-bd
