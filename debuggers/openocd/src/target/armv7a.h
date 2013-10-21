@@ -118,7 +118,7 @@ struct armv7a_common {
 static inline struct armv7a_common *
 target_to_armv7a(struct target *target)
 {
-	return container_of(target->arch_info, struct armv7a_common, arm);
+	return container_of((const struct arm*)(target->arch_info), struct armv7a_common, arm);
 }
 
 /* register offsets from armv7a.debug_base */
