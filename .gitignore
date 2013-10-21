@@ -1,5 +1,7 @@
 *.o
+*.lo
 *.a
+*.la
 *.d
 *.acc
 *.pb.h
@@ -10,6 +12,7 @@
 Makefile
 build
 build-*
+.deps
 
 simulators/bochs/autom4te.cache/
 simulators/bochs/bochs
@@ -35,3 +38,19 @@ simulators/gem5/.hg
 simulators/gem5/m5out/
 
 src/core/sal/gem5/SConscript
+
+debuggers/openocd/config.h
+debuggers/openocd/config.log
+debuggers/openocd/config.status
+debuggers/openocd/jimtcl/configure.gnu.bak
+debuggers/openocd/libtool
+debuggers/openocd/openocd_wrapper.hpp
+debuggers/openocd/src/.libs/
+debuggers/openocd/src/helper/bin2char
+debuggers/openocd/src/jtag/minidriver_imp.h
+debuggers/openocd/src/openocd
+debuggers/openocd/src/startup.tcl
+debuggers/openocd/src/startup_tcl.c
+debuggers/openocd/src/target/xscale_debug.h
+debuggers/openocd/stamp-h1
+
