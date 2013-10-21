@@ -15,7 +15,7 @@ BAK=experimentInfo.hpp.bak
 CFG=experimentInfo.hpp
 FAIL_CMD="fail-client -q" # -rc bochs-dbg.rc"
 FAILDIR=/home/doebel/src/fail
-DBNAME=fiasco
+DBNAME=fail
 
 if [ -n "$1" ] ; then
   if [ "$1" = "mem" ]; then

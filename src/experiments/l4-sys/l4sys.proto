@@ -44,14 +44,15 @@ message L4SysProtoMsg {
 		optional RegisterType register_offset = 3;
 
 		// instruction pointer where injection was done
-		optional uint32 injection_ip = 4;
+		optional int32 injection_ip = 4;
 		// result type, see above
 		optional ResultType resulttype = 5;
 		// result data, depending on resulttype (see source code)
-		optional uint32 resultdata = 6;
+		optional int32 resultdata = 6;
 		// generated output
 		optional string output = 7;
 		// optional textual description of what happened
 		optional string details = 8;
+		optional int32 injection_address = 9;
 	}
 }
