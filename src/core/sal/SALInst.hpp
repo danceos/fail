@@ -36,6 +36,14 @@ namespace fail {
 typedef T32Controller ConcreteSimulatorController; //!< concrete simulator (type)
 }
 
+#elif defined BUILD_PANDA
+
+#include "panda/PandaController.hpp"
+
+namespace fail {
+typedef PandaController ConcreteSimulatorController; //!< concrete simulator (type)
+}
+
 
 #else
 #error SAL Instance not defined

@@ -39,6 +39,7 @@ OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
 OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
 OPTION( BUILD_QEMU   "Build QEMU Variant?" OFF)
 OPTION( BUILD_T32    "Build Lauterbach Trace32 Variant?" OFF)
+OPTION( BUILD_PANDA  "Build Pandaboard ES + Flyswatter2 Variant?" OFF)
 
 OPTION( BUILD_X86  "Build for x86 guests?" ON)
 OPTION( BUILD_ARM  "Build for ARM guests?" OFF)
@@ -59,6 +60,8 @@ elseif(BUILD_T32)
   include_directories(debuggers/t32/include src/core)
   add_subdirectory(debuggers/t32)
   add_subdirectory(scripts/t32cmm)
+elseif(BUILD_PANDA)
+  include_directories(debuggers/openocd/src debuggers/openocd/jimtcl src/core)
 endif(BUILD_BOCHS)
 
 ## Tell the linker where to find the Fail* libraries
@@ -79,4 +82,5 @@ include(bochs)
 include(gem5)
 include(qemu)
 include(t32)
+include(panda)
 

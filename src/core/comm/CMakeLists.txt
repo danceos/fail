@@ -9,6 +9,7 @@ set(PROTOS
 	FailControlMessage.proto
 	DatabaseCampaignMessage.proto
 	TracePlugin.proto
+	HopChain.proto
 )
 
 #### PROTOBUFS ####

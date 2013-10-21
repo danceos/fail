@@ -18,6 +18,9 @@
   #else
     #error Active config currently not supported!
   #endif
+#elif defined BUILD_PANDA
+  #include "panda/PandaConfig.hpp"
+  #include "panda/PandaArmCPU.hpp"
 #else
   #error SAL Config Target not defined
 #endif

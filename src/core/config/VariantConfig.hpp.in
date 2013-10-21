@@ -5,6 +5,7 @@
 #cmakedefine BUILD_GEM5
 #cmakedefine BUILD_QEMU
 #cmakedefine BUILD_T32
+#cmakedefine BUILD_PANDA
 #cmakedefine T32_MOCK_API
 
 #cmakedefine BUILD_X86

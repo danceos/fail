@@ -14,6 +14,8 @@
   #include "qemu/QEMUConfig.hpp"
 #elif defined BUILD_T32
   #include "t32/T32Config.hpp"
+#elif defined BUILD_PANDA
+  #include "panda/PandaConfig.hpp"
 #else
   #error SAL Config Target not defined
 #endif

@@ -57,6 +57,26 @@ elseif(BUILD_T32)
 			arm/ArmDisassembler.cc
 		)
 	endif(BUILD_ARM)
+elseif(BUILD_PANDA)
+    include_directories(${PROJECT_SOURCE_DIR}/debuggers/openocd)
+	set(SRCS
+		CPU.cc
+		CPUState.cc
+		Listener.cc
+		ListenerManager.cc
+		SALConfig.cc
+		Register.cc
+		SimulatorController.cc
+		panda/PandaController.cc
+		panda/PandaArmCPU.cc
+		panda/PandaListener.cc
+	)
+	if(BUILD_ARM)
+		set(SRCS ${SRCS}
+			panda/PandaArmCPU.cc
+			arm/ArmArchitecture.cc    #why is this necessary?
+		)
+	endif(BUILD_ARM)
 endif(BUILD_BOCHS)
 
 if(BUILD_X86)
