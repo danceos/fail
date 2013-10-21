@@ -8,6 +8,8 @@
 #include "util/Logger.hpp"
 #include "sal/Listener.hpp"
 
+#include "l4sys.pb.h"
+
 class L4SysExperimentData;
 
 /**
@@ -107,12 +109,13 @@ private:
 	/**
 	 * Send back the experiment parameter set with a description of the error.
 	 */
-	void terminateWithError(std::string details, int reason);
+	void terminateWithError(std::string details, int reason, L4SysProtoMsg_Result*);
 	/**
 	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
 	 * phase 1)
 	 */
 	void startAndSaveInitState(fail::BPSingleListener* bp);
+	void CR3run(fail::BPSingleListener *bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
 	 * filtering if configured (experiment preparation, phase 2).
@@ -153,7 +156,7 @@ private:
 	/**
 	 * Perform memory bit flip at (address, bit).
 	 */
-	void doMemoryInjection(int address, int bit);
+	bool doMemoryInjection(int address, int bit);
 	
 	/**
 	 * Perform register bit flip in the specified (register, bit)

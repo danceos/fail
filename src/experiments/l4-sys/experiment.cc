@@ -22,8 +22,7 @@
 #include "util/ProtoStream.hpp"
 #include "TracePlugin.pb.h"
 #include "util/gzstream/gzstream.h"
-
-#include "l4sys.pb.h"
+#include <sal/bochs/BochsMemory.hpp>
 
 using namespace std;
 using namespace fail;
@@ -204,8 +203,15 @@ void L4SysExperiment::terminate(int reason) {
 	simulator.terminate(reason);
 }
 
-void L4SysExperiment::terminateWithError(string details, int reason) {
-	L4SysProtoMsg_Result *result = param->msg.add_result();
+void L4SysExperiment::terminateWithError(string details, int reason,
+                                         L4SysProtoMsg_Result *r = 0) {
+    L4SysProtoMsg_Result *result;
+    
+	if (r)
+		result = r;
+	else
+		result = param->msg.add_result();
+
 	result->set_resulttype(param->msg.UNKNOWN);
 	result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
 	result->set_output(sanitised(currentOutput.c_str()));
@@ -230,21 +236,37 @@ void L4SysExperiment::startAndSaveInitState(fail::BPSingleListener* bp)
 	simulator.save(L4SYS_STATE_FOLDER);
     delete bp;
 }
+
+
+void L4SysExperiment::CR3run(fail::BPSingleListener *bp)
+{
+	bp->setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
+	simulator.addListenerAndResume(bp);
+	log << "Reached entry point @ " << hex << bp->getTriggerInstructionPointer()
+		<< " == " << simulator.getCPU(0).getInstructionPointer()
+		<< endl;
+	log << "CR3 = " << hex << BX_CPU(0)->cr3 << endl;
+}
+
     
 void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 {
+    fail::MemAccessListener ML(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
+    ogzstream out("trace.pb");
+    ProtoOStream *os = new ProtoOStream(&out);
+
+	size_t count = 0, inst_accepted = 0, mem = 0, mem_valid = 0;
+	simtime_t prevtime = 0, currtime;
+	simtime_diff_t deltatime;
+
 	log << "restoring state" << endl;
 	simulator.restore(L4SYS_STATE_FOLDER);
+	currtime = simulator.getTimerTicks();
+
 	log << "EIP = " << hex
 			<< simulator.getCPU(0).getInstructionPointer()
 			<< endl;
 
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-	ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
-    RangeSetInstructionFilter filtering(L4SYS_FILTER);
-	bp->setWatchInstructionPointer(ANY_ADDR);
-
-    fail::MemAccessListener ML(ANY_ADDR, MemAccessEvent::MEM_READWRITE);
     if (!simulator.addListener(&ML)) {
         log << "did not add memory listener..." << std::endl;
         exit(1);
@@ -254,16 +276,14 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
         exit(1);
     }
 
-	size_t count = 0, inst_accepted = 0, mem = 0, mem_valid = 0;
+#if L4SYS_FILTER_INSTRUCTIONS
+	ofstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
+    RangeSetInstructionFilter filtering(L4SYS_FILTER);
+	bp->setWatchInstructionPointer(ANY_ADDR);
+
 	map<address_t, unsigned> times_called_map;
     bool injecting = false;
-    
-    ogzstream out("trace.pb");
-    ProtoOStream *os = new ProtoOStream(&out);
 
-	simtime_t prevtime = 0, currtime;
-	simtime_diff_t deltatime;
-    
 	while (bp->getTriggerInstructionPointer() != L4SYS_FUNC_EXIT) {
 		fail::BaseListener *res = simulator.resume();
         address_t curr_addr = 0;
@@ -272,10 +292,10 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
         if (res == &ML) {
             curr_addr = ML.getTriggerInstructionPointer();
             simulator.addListener(&ML);
-            ++mem;
-            if (BX_CPU(0)->cr3 != L4SYS_ADDRESS_SPACE) {
+            if ((L4SYS_ADDRESS_SPACE_TRACE != ANY_ADDR) && (BX_CPU(0)->cr3 != L4SYS_ADDRESS_SPACE_TRACE)) {
                 continue;
             }
+            ++mem;
         } else if (res == bp) {
             curr_addr = bp->getTriggerInstructionPointer();
             assert(curr_addr == simulator.getCPU(0).getInstructionPointer());
@@ -294,8 +314,15 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             injecting = false;
         }
 
+        // Only trace if:
+        // 1) we are between FILTER_ENTRY and FILTER_EXIT, and
+        // 2) we have a valid instruction according to filter rules, and
+        // 3) we are in the TRACE address space
         if (!injecting or
-            !filtering.isValidInstr(curr_addr, reinterpret_cast<char const*>(calculateInstructionAddress()))) {
+            !filtering.isValidInstr(curr_addr, reinterpret_cast<char const*>(calculateInstructionAddress()))
+                       or
+            (BX_CPU(0)->cr3 != L4SYS_ADDRESS_SPACE_TRACE)
+            ) {
             //log << "connt..." << std::endl;
             continue;
         }
@@ -358,22 +385,62 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 	    << dec << count << " instructions; " << inst_accepted << " accepted" << endl;
     log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
 #else
-	int count = 0;
-	int ul = 0, kernel = 0;
-	bp.setWatchInstructionPointer(ANY_ADDR);
-	for (; bp.getTriggerInstructionPointer() != L4SYS_FUNC_EXIT; ++count) {
-		simulator.addListenerAndResume(&bp);
-		if (bp.getTriggerInstructionPointer() < 0xC0000000) {
-			ul++;
-		} else {
-			kernel++;
-		}
+	bp->setWatchInstructionPointer(ANY_ADDR);
+	while(bp->getTriggerInstructionPointer() != L4SYS_FUNC_EXIT)
+	{
+		fail::BaseListener *res = simulator.resume();
+        address_t curr_addr = 0;
+        
+        // XXX: See the API problem below!
+        if (res == &ML) {
+            curr_addr = ML.getTriggerInstructionPointer();
+            simulator.addListener(&ML);
+            if ((L4SYS_ADDRESS_SPACE_TRACE != ANY_ADDR) && (BX_CPU(0)->cr3 != L4SYS_ADDRESS_SPACE_TRACE)) {
+                continue;
+            }
+            ++mem;
+        } else if (res == bp) {
+            curr_addr = bp->getTriggerInstructionPointer();
+            assert(curr_addr == simulator.getCPU(0).getInstructionPointer());
+            simulator.addListener(bp);
+            ++count;
+        }
+
+		if (curr_addr < 0xC0000000) // XXX filter for kernel-only experiment
+			continue;
+        
+        currtime = simulator.getTimerTicks();
+        deltatime = currtime - prevtime;
+
+        if (res == &ML) {
+#if 0
+            log << "Memory event IP " << std::hex << ML.getTriggerInstructionPointer()
+                << " @ " << ML.getTriggerAddress() << "("
+                << ML.getTriggerAccessType() << "," << ML.getTriggerWidth()
+                << ")" << std::endl;
+#endif
+            ++mem_valid;
+
+            Trace_Event te;
+            if (deltatime != 0) { te.set_time_delta(deltatime); };
+            te.set_ip(curr_addr);
+            te.set_memaddr(ML.getTriggerAddress());
+            te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
+            te.set_width(ML.getTriggerWidth());
+            os->writeMessage(&te);
+        } else if (res == bp) {
+            Trace_Event e;
+            if (deltatime != 0) { e.set_time_delta(deltatime); };
+            e.set_ip(curr_addr);
+            os->writeMessage(&e);
+        } else {
+            printf("Unknown res? %p\n", res);
+        }
+        prevtime = currtime;
 	}
-	log << "EIP = " << hex
-			<< simulator.getCPU(0).getInstructionPointer() << endl;
 	log << "test function calculation position reached after "
-			<< dec << count << " instructions; "
-			<< "ul: " << ul << ", kernel: " << kernel << endl;
+	    << dec << count << " instructions; " << count << " accepted" << endl;
+    log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
 #endif
     delete bp;
 }
@@ -495,16 +562,16 @@ void L4SysExperiment::setupFilteredBreakpoint(fail::BPSingleListener* bp, int in
 fail::BPSingleListener*
 L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
 {
-    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
+    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE_TRACE);
     log << "\033[34;1mMemory fault injection\033[0m at instruction " << std::hex << offset
         << ", ip " << ip << ", address " << dataAddress << std::endl;
 
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-    setupFilteredBreakpoint(bp, offset);
+#if L4SYS_FILTER_INSTRUCTIONS
+    setupFilteredBreakpoint(bp, offset-1);
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
 #else
     bp->setWatchInstructionPointer(ANY_ADDR);
-    bp->setCounter(instr_offset);
+    bp->setCounter(offset);
 #endif
     return bp;
 }
@@ -513,7 +580,7 @@ L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
 fail::BPSingleListener*
 L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
 {
-    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE);
+    fail::BPSingleListener *bp = new BPSingleListener(0, L4SYS_ADDRESS_SPACE_TRACE);
     
 	int reg, regOffset;
 	reg    = ((dataAddress >> 4) & 0xF) + 1; // regs start at 1
@@ -523,26 +590,36 @@ L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
 	    << " reg data (" << reg << ", " 
         << regOffset << ")" << std::endl;
 
-#ifdef L4SYS_FILTER_INSTRUCTIONS
-    setupFilteredBreakpoint(bp, offset);
+#if L4SYS_FILTER_INSTRUCTIONS
+    setupFilteredBreakpoint(bp, offset-1);
+    log << bp->getWatchInstructionPointer() << std::endl;
+    log << ip << std::endl;
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
     log << bp->getCounter() << std::endl;
 #else
+    log << "Exp offset: " << offset << std::endl;
     bp->setWatchInstructionPointer(ANY_ADDR);
-    bp->setCounter(instr_offset);
+    bp->setCounter(offset);
 #endif
     return bp;
 }
 
     
-void L4SysExperiment::doMemoryInjection(int address, int bit)
+bool L4SysExperiment::doMemoryInjection(int address, int bit)
 {
     MemoryManager& mm = simulator.getMemoryManager();
+
+    // XXX: evil, but I need to bail out if memory access is invalid
+	host_address_t addr = reinterpret_cast<BochsMemoryManager*>(&mm)->guestToHost(address);
+	if (addr == (host_address_t)ADDR_INV)
+		return false;
+
     byte_t data = mm.getByte(address);
     byte_t newdata = data ^ (1 << bit);
     mm.setByte(address, newdata);
     log << "[" << std::hex << address << "] " << (int)data
         << " -> " << (int)newdata << std::endl;
+    return true;
 }
 
 
@@ -571,14 +648,20 @@ bool L4SysExperiment::run()
 
 #if PREPARATION_STEP == 1
 	// STEP 1: run until interesting function starts, and save state
+	// -> needs L4SYS_ADDRESS_SPACE, because it runs until L4SYS_FUNC_ENTRY
     startAndSaveInitState(new BPSingleListener(0, L4SYS_ADDRESS_SPACE));
 #elif PREPARATION_STEP == 2
 	// STEP 2: determine instructions executed
-    collectInstructionTrace(new BPSingleListener(0, L4SYS_ADDRESS_SPACE));
+    collectInstructionTrace(new BPSingleListener(0, ANY_ADDR));
 
 #elif PREPARATION_STEP == 3
 	// STEP 3: determine the output of a "golden run"
+	// -> golden run needs L4SYS_ADDRESS_SPACE as it breaks on
+	//    L4SYS_FUNC_EXIT
     goldenRun(new BPSingleListener(0, L4SYS_ADDRESS_SPACE));
+
+#elif PREPARATION_STEP == 4
+    CR3run(new BPSingleListener(0));
 
 #elif PREPARATION_STEP == 0
 	// LAST STEP: The actual experiment.
@@ -626,15 +709,25 @@ bool L4SysExperiment::run()
         fail::BaseListener *go = waitIOOrOther(true);
         assert(go == bp);
 
-        log << "Hit BP. Start time " << now << ", new time " << simulator.getTimerTicks()
+        log << "Hit BP @ " << hex << bp->getTriggerInstructionPointer() << " " << bp->getWatchInstructionPointer()
+	        << " Start time " << now << ", new time " << simulator.getTimerTicks()
             << ", diff = " << simulator.getTimerTicks() - now << std::endl;
 
+#if L4SYS_FILTER_INSTRUCTIONS
         assert(bp->getTriggerInstructionPointer() == bp->getWatchInstructionPointer());
+#endif
         result->set_injection_ip(bp->getTriggerInstructionPointer());
 
         if (exp_type == param->msg.MEM) {
             result->set_bit_offset(bit);
-            doMemoryInjection(param->msg.fsppilot().data_address(), bit);
+            log << "injection addr: "
+	            << std::hex << param->msg.fsppilot().data_address()
+	            << std::endl;
+            result->set_injection_address(param->msg.fsppilot().data_address());
+            if (!doMemoryInjection(param->msg.fsppilot().data_address(), bit))
+			{
+				terminateWithError("invalid mem access", 51, result);
+			}
         } else if (exp_type == param->msg.GPRFLIP) {
             int reg = (param->msg.fsppilot().data_address() >> 4) + 1;
             result->set_register_offset(static_cast<L4SysProtoMsg_RegisterType>(reg));
@@ -649,9 +742,18 @@ bool L4SysExperiment::run()
 
         unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
         BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
-        ev_incomplete.setCounter(instr_left);
+        /*
+         * Use hard-coded value for incomplete counter. We are currently looking at short-running pieces
+         * of code. This means that in the error case, where a lot of data is still to be printed to serial
+         * line, the benchmark does not complete this within <short-time> * <1.x> cycles. Instead, we use
+         * a frame large enough to catch some more output even at the end of a run.
+         */
+        ev_incomplete.setCounter(2000000);
         simulator.addListener(&ev_incomplete);
 
+		/*
+		 * This timeout will always be at least one second - see calculateTimeout()
+		 */
         TimerListener ev_timeout(calculateTimeout(instr_left));
         simulator.addListener(&ev_timeout);
         log << "continue... (" <<  simulator.getListenerCount()

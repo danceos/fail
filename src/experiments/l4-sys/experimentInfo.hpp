@@ -5,17 +5,24 @@
 #define MAX_INSTR_BYTES 15
 
 // the bounds of the program (space, instructions and time)
-#define L4SYS_ADDRESS_SPACE		0x1fd4c000
+// client
+#define L4SYS_ADDRESS_SPACE 0x1fd4c000
+// master
+//#define L4SYS_ADDRESS_SPACE_TRACE 0x1fd4c000
+// vcpu task
+#define L4SYS_ADDRESS_SPACE_TRACE 0x1fd5a000
+//#define L4SYS_ADDRESS_SPACE_TRACE L4SYS_ADDRESS_SPACE
 
 // FUNC_{ENTRY,EXIT} specifies the range that needs to
 // be captured to log program output properly
-#define L4SYS_FUNC_ENTRY		0x01000350
-#define L4SYS_FUNC_EXIT			0x010004bd
+#define L4SYS_FUNC_ENTRY		0x60002052
+//#define L4SYS_FUNC_ENTRY		0x10000
+#define L4SYS_FUNC_EXIT			0x600020ae
 // FILTER_{ENTRY,EXIT} specifies the range that injections
 // should be carried out on (should be a subset of the above)
 // and only works with FILTER_INSTRUCTIONS turned on
-#define L4SYS_FILTER_ENTRY      0x0100042e
-#define L4SYS_FILTER_EXIT       0x01000434
+#define L4SYS_FILTER_ENTRY      0x60002067
+#define L4SYS_FILTER_EXIT       0x60002075
 
 // select instruction filtering
 // XXX: this should be always on and the code should be
@@ -24,8 +31,8 @@
 #define L4SYS_FILTER_INSTRUCTIONS 1
 
 // kernel: 2377547, userland: 79405472
-#define L4SYS_NUMINSTR 2988
-#define L4SYS_TOTINSTR 67811
+#define L4SYS_NUMINSTR 141
+#define L4SYS_TOTINSTR 154205
 #define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
@@ -38,6 +45,6 @@
 // flags
 //  0 - preparation complete
 // >0 - next step to execute
-#define PREPARATION_STEP 2
+#define PREPARATION_STEP 0
 
 #endif // __L4SYS_EXPERIMENT_INFO_HPP__
