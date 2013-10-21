@@ -541,6 +541,7 @@ void L4SysExperiment::setupFilteredBreakpoint(fail::BPSingleListener* bp, int in
         terminate(21);
     }
 
+    log << "inst offset " << dec << instOffset << " sizeof(TraceInstr) " << sizeof(TraceInstr) << endl;
     TraceInstr curr_instr;
     instr_list_file.seekg(instOffset * sizeof(TraceInstr));
     log << instr_list_file.eof() << " " << instr_list_file.bad() << " "
@@ -567,7 +568,7 @@ L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
         << ", ip " << ip << ", address " << dataAddress << std::endl;
 
 #if L4SYS_FILTER_INSTRUCTIONS
-    setupFilteredBreakpoint(bp, offset-1);
+    setupFilteredBreakpoint(bp, offset);
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
 #else
     bp->setWatchInstructionPointer(ANY_ADDR);
@@ -591,7 +592,7 @@ L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
         << regOffset << ")" << std::endl;
 
 #if L4SYS_FILTER_INSTRUCTIONS
-    setupFilteredBreakpoint(bp, offset-1);
+    setupFilteredBreakpoint(bp, offset);
     log << bp->getWatchInstructionPointer() << std::endl;
     log << ip << std::endl;
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
