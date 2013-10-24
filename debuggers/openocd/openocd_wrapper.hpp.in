@@ -2,6 +2,7 @@
 #define __OOCD_WRAPPER_H_
 
 #include <stdint.h>
+#include <cstdlib>
 
 #define OOCD_CONF_FILE_PATH "@OOCD_CONF_FILE_PATH@"
 #define OOCD_CONF_FILES_PATH "@OOCD_CONF_FILES_PATH@"
@@ -81,7 +82,7 @@ void oocdw_reboot();
  * Before returning, another coroutine-switch is called, so the 
  * experiment is able to exit in desired state.
  */
-void oocdw_finish();
+void oocdw_finish(int exCode = EXIT_SUCCESS);
 
 /*
  * Read data from pandaboard memory

@@ -46,6 +46,7 @@ using std::dec;
  * Flag for finishing main loop execution.
  */
 static bool oocdw_exection_finished = false;
+static int oocdw_exCode;
 
 /*
  * Initially set target struct pointers for use in
@@ -334,12 +335,7 @@ int main(int argc, char *argv[])
 
     LOG << "finished" << endl;
 
-    /*
-     * Return to experiment flow to properly exit execution
-     */
-    fail::simulator.resume();
-
-    return 0;
+    exit(oocdw_exCode);
 }
 
 
@@ -598,9 +594,10 @@ void oocdw_write_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t data)
 	reg->type->set(reg, (uint8_t*)(&data));
 }
 
-void oocdw_finish()
+void oocdw_finish(int exCode)
 {
 	oocdw_exection_finished = true;
+	oocdw_exCode = exCode;
 }
 
 void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,

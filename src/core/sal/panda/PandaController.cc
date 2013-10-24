@@ -89,12 +89,12 @@ void PandaController::reboot()
 
 void PandaController::terminate(int exCode)
 {
-	oocdw_finish();
+	oocdw_finish(exCode);
 	/*
 	 * Resume to let OpenOCD terminate properly
+	 * This call does not return!
 	 */
 	m_Flows.resume();
-	SimulatorController::terminate(exCode);
 }
 
 } // end-of-namespace: fail
