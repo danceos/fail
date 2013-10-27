@@ -21,6 +21,7 @@ extern "C" {
 	#include "src/target/cortex_a.h"
 	#include "src/target/arm_adi_v5.h"
 	#include "src/target/armv7a.h"
+	#include "src/target/arm_opcodes.h"
 
 	#include "jimtcl/jim.h"
 
@@ -33,6 +34,7 @@ extern "C" {
 #include "config/VariantConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/SALConfig.hpp"
+#include "sal/arm/ArmArchitecture.hpp"
 
 #include "util/Logger.hpp"
 
@@ -246,10 +248,15 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// Polling needs to be done to detect target halt state changes.
-		if (target_poll(target_a9)) {
-			LOG << "FATAL ERROR: Error polling after resume!" << endl;
-			return 1;
+		// Wait for target to halt
+		while (target_a9->state != TARGET_HALTED) {
+			// Polling needs to be done to detect target halt state changes.
+			if (target_poll(target_a9)) {
+				LOG << "FATAL ERROR: Error polling after resume!" << endl;
+				return 1;
+			}
+			// Update timers, so waiting can be aborted
+			update_timers();
 		}
 
 		// Check for halt and trigger event accordingly
@@ -257,12 +264,15 @@ int main(int argc, char *argv[])
 
 			uint32_t pc = getCurrentPC();
 
-			switch (target_a9->debug_reason) {
+			// After coroutine-switch, dbg-reason might change, so it must
+			// be stored
+			enum target_debug_reason current_dr = target_a9->debug_reason;
+			switch (current_dr) {
 			case DBG_REASON_WPTANDBKPT:
 				/* Fall through */
 			case DBG_REASON_BREAKPOINT:
 				fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
-				if (target_a9->debug_reason == DBG_REASON_BREAKPOINT) {
+				if (current_dr == DBG_REASON_BREAKPOINT) {
 					break;
 				}
 				/* Potential fall through */
@@ -447,6 +457,9 @@ void oocdw_halt_target()
 	}
 }
 
+// ToDo: read from elf-file
+#define SAFETYLOOP_BEGIN 	0x83000084
+#define SAFETYLOOP_END		0x830000a0
 
 /*
  * As "reset halt" and "reset init" fail irregularly on the pandaboard, resulting in
@@ -467,7 +480,7 @@ void oocdw_halt_target()
  */
 void oocdw_reboot()
 {
-	int retval, reboot_success = 0;
+	int retval, reboot_success = 0, fail_counter = 1;
 
 	while (!reboot_success) {
 		LOG << "Rebooting device" << endl;
@@ -493,57 +506,58 @@ void oocdw_reboot()
 		for (target = all_targets; target; target = target->next)
 			target->type->check_reset(target);
 
+		usleep(700*1000);
+
 		// Immediate halt after reset.
 		oocdw_halt_target();
 
 		uint32_t pc = buf_get_u32(arm_a9->pc->value, 0, 32);
-		if (pc < 0x8300006c || pc > 0x83000088) {
+		if (pc < SAFETYLOOP_BEGIN || pc > SAFETYLOOP_END) {
 			LOG << "NOT IN LOOP!!! PC: " << hex << pc << dec << std::endl;
+
+			// BP on entering main
+			struct halt_condition hc;
+
+			// ToDo: Non static MAIN ENTRY
+			hc.address = SAFETYLOOP_END;
+			hc.addr_len = 4;
+			hc.type = HALT_TYPE_BP;
+			oocdw_set_halt_condition(&hc);
+
+			if (target_resume(target_a9, 1, 0, 1, 1)) {
+				LOG << "FATAL ERROR: Target could not be resumed" << endl;
+				exit(-1);
+			}
+
+			long long then;
+			then = timeval_ms();
+			while (target_a9->state != TARGET_HALTED) {
+				int retval = target_poll(target_a9);
+				if (retval != ERROR_OK) {
+					LOG << "FATAL ERROR: Target polling failed" << endl;
+					exit(-1);
+				}
+				// ToDo: Adjust timeout
+				if (timeval_ms() > then + 2000) {
+					LOG << "Error: Timeout waiting for main entry" << endl;
+					reboot_success = 0;
+					if (fail_counter++ > 4) {
+						LOG << "FATAL ERROR: Rebooting not possible" << endl;
+						exit(-1);
+					}
+					oocdw_halt_target();
+					break;
+				}
+			}
+			// Remove temporary
+			oocdw_delete_halt_condition(&hc);
 		} else {
 			LOG << "Stopped in loop. PC: " << hex << pc << dec << std::endl;
 		}
 
-		// BP on entering main
-		struct halt_condition hc;
-
-		// ToDo: Non static MAIN ENTRY
-		hc.address = 0x83000088;
-		hc.addr_len = 4;
-		hc.type = HALT_TYPE_BP;
-		oocdw_set_halt_condition(&hc);
-
-		if (target_resume(target_a9, 1, 0, 1, 1)) {
-			LOG << "FATAL ERROR: Target could not be resumed" << endl;
-			exit(-1);
-		}
-
-		long long then;
-		then = timeval_ms();
-		while (target_a9->state != TARGET_HALTED) {
-			int retval = target_poll(target_a9);
-			if (retval != ERROR_OK) {
-				LOG << "FATAL ERROR: Target polling failed" << endl;
-				exit(-1);
-			}
-			// ToDo: Adjust timeout
-			if (timeval_ms() > then + 1000) {
-				LOG << "Error: Timeout waiting for main entry" << endl;
-				reboot_success = 0;
-				static int fail_counter = 1;
-				if (fail_counter++ > 4) {
-					LOG << "FATAL ERROR: Rebooting not possible" << endl;
-					exit(-1);
-				}
-				oocdw_halt_target();
-				break;
-			}
-		}
-		// Remove temporary
-		oocdw_delete_halt_condition(&hc);
-
 		if (reboot_success) {
 			// Jump over safety loop (set PC)
-			oocdw_write_reg(15, ARM_REGS_CORE, 0x8300008c);
+			oocdw_write_reg(15, ARM_REGS_CORE, SAFETYLOOP_END + 0x4);
 		}
 	}
 }
@@ -576,6 +590,26 @@ static struct reg *get_reg_by_number(unsigned int num)
 void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
+
+	if (reg_num == fail::RI_DFAR) {
+		struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+		struct arm_dpm *dpm = armv7a->arm.dpm;
+		int retval;
+		retval = dpm->prepare(dpm);
+
+		if (retval != ERROR_OK) {
+			LOG << "Unable to prepare for reading dpm register" << endl;
+		}
+
+		retval = dpm->instr_read_data_r0(dpm,
+				ARMV4_5_MRC(15, 0, 0, 6, 0, 0),
+				data);
+		if (retval != ERROR_OK) {
+			LOG << "Unable to read DFAR-Register" << endl;
+		}
+
+		dpm->finish(dpm);
+	}
 
 	struct reg *reg = get_reg_by_number(reg_num);
 
@@ -705,7 +739,7 @@ static struct watchpoint *getHaltingWatchpoint()
 {
 	struct watchpoint *watchpoint = target_a9->watchpoints;
 
-	if (watchpoint->next) {
+	if (!watchpoint || watchpoint->next) {
 		// Multiple watchpoints activated? No single answer possible
 		return NULL;
 	}
