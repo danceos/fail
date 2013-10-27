@@ -557,7 +557,7 @@ void oocdw_reboot()
 
 		if (reboot_success) {
 			// Jump over safety loop (set PC)
-			oocdw_write_reg(15, ARM_REGS_CORE, SAFETYLOOP_END + 0x4);
+			oocdw_write_reg(15, SAFETYLOOP_END + 0x4);
 		}
 	}
 }
@@ -587,11 +587,13 @@ static struct reg *get_reg_by_number(unsigned int num)
 	return reg;
 }
 
-void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data)
+void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 
-	if (reg_num == fail::RI_DFAR) {
+	switch (reg_num) {
+	case fail::RI_DFAR:
+	{
 		struct armv7a_common *armv7a = target_to_armv7a(target_a9);
 		struct arm_dpm *dpm = armv7a->arm.dpm;
 		int retval;
@@ -610,22 +612,100 @@ void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data)
 
 		dpm->finish(dpm);
 	}
+		break;
+	case fail::RI_R0:
+		/* fall through */
+	case fail::RI_R1:
+		/* fall through */
+	case fail::RI_R2:
+		/* fall through */
+	case fail::RI_R3:
+		/* fall through */
+	case fail::RI_R4:
+		/* fall through */
+	case fail::RI_R5:
+		/* fall through */
+	case fail::RI_R6:
+		/* fall through */
+	case fail::RI_R7:
+		/* fall through */
+	case fail::RI_R8:
+		/* fall through */
+	case fail::RI_R9:
+		/* fall through */
+	case fail::RI_R10:
+		/* fall through */
+	case fail::RI_R11:
+		/* fall through */
+	case fail::RI_R12:
+		/* fall through */
+	case fail::RI_R13:
+		/* fall through */
+	case fail::RI_R14:
+		/* fall through */
+	case fail::RI_R15:
+	{
+		struct reg *reg = get_reg_by_number(reg_num);
 
-	struct reg *reg = get_reg_by_number(reg_num);
+		if (reg->valid == 0) {
+			reg->type->get(reg);
+		}
 
-	if (reg->valid == 0)
-		reg->type->get(reg);
-
-	*data = *((uint32_t*)(reg->value));
+		*data = *((uint32_t*)(reg->value));
+	}
+	break;
+	default:
+		LOG << "ERROR: Register with id " << reg_num << " unknown." << endl;
+		break;
+	}
 }
 
-void oocdw_write_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t data)
+void oocdw_write_reg(uint32_t reg_num, uint32_t data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 
-	struct reg *reg = get_reg_by_number(reg_num);
+	switch (reg_num) {
+	case fail::RI_R0:
+		/* fall through */
+	case fail::RI_R1:
+		/* fall through */
+	case fail::RI_R2:
+		/* fall through */
+	case fail::RI_R3:
+		/* fall through */
+	case fail::RI_R4:
+		/* fall through */
+	case fail::RI_R5:
+		/* fall through */
+	case fail::RI_R6:
+		/* fall through */
+	case fail::RI_R7:
+		/* fall through */
+	case fail::RI_R8:
+		/* fall through */
+	case fail::RI_R9:
+		/* fall through */
+	case fail::RI_R10:
+		/* fall through */
+	case fail::RI_R11:
+		/* fall through */
+	case fail::RI_R12:
+		/* fall through */
+	case fail::RI_R13:
+		/* fall through */
+	case fail::RI_R14:
+		/* fall through */
+	case fail::RI_R15:
+	{
+		struct reg *reg = get_reg_by_number(reg_num);
 
-	reg->type->set(reg, (uint8_t*)(&data));
+		reg->type->set(reg, (uint8_t*)(&data));
+	}
+		break;
+	default:
+		LOG << "ERROR: Register with id " << reg_num << " unknown." << endl;
+		break;
+	}
 }
 
 void oocdw_finish(int exCode)

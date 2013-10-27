@@ -7,11 +7,6 @@
 #define OOCD_CONF_FILE_PATH "@OOCD_CONF_FILE_PATH@"
 #define OOCD_CONF_FILES_PATH "@OOCD_CONF_FILES_PATH@"
 
-enum arm_reg_group {
-	ARM_REGS_CORE,
-	ARM_REGS_COPROCESSOR,
-};
-
 enum halt_type {
     HALT_TYPE_BP,
     HALT_TYPE_WP_READWRITE,
@@ -33,7 +28,7 @@ struct halt_condition {
  * @param rg Definition of register group of register defined by \a reg_num
  * @param data pointer to data as return value
  */
-void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data);
+void oocdw_read_reg(uint32_t reg_num, uint32_t *data);
 
 /*
  * Write register value
@@ -42,7 +37,7 @@ void oocdw_read_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t *data);
  * @param rg Definition of register group of register defined by \a reg_num
  * @param data data to be written
  */
-void oocdw_write_reg(uint32_t reg_num, enum arm_reg_group rg, uint32_t data);
+void oocdw_write_reg(uint32_t reg_num, uint32_t data);
 
 /*
  * Set a halt condition

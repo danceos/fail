@@ -8,16 +8,14 @@ regdata_t PandaArmCPU::getRegisterContent(const Register* reg) const
 {
 	regdata_t data;
 
-	// ToDo: ID-translation
-	oocdw_read_reg(reg->getId(), ARM_REGS_CORE, &data);
+	oocdw_read_reg(reg->getId(), &data);
 	
 	return data;
 }
 
 void PandaArmCPU::setRegisterContent(const Register* reg, regdata_t value)
 {
-	// ToDo: ID-translation
-	oocdw_write_reg(reg->getId(), ARM_REGS_CORE, value);
+	oocdw_write_reg(reg->getId(), value);
 }
 
 } // end-of-namespace: fail

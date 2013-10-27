@@ -57,6 +57,8 @@ public:
 	 * @return the current link register address
 	 */
 	address_t getLinkRegister() const { return getRegisterContent(getRegister(RI_LR)); }
+
+	address_t getDfarRegister() const { return getRegisterContent(getRegister(RI_DFAR)); }
 	/**
 	 * Returns the ID of the current CPU.
 	 * @return the unique ID of \c this CPU object
