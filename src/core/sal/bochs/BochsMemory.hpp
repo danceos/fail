@@ -103,6 +103,17 @@ public:
 		else
 			return (reinterpret_cast<host_address_t>(hostAddr)); // okay
 	}
+
+	/**
+	 * Checks whether memory is mapped and available.
+	 * @param addr The guest address to check.
+	 */
+	virtual bool isMapped(guest_address_t addr) {
+		host_address_t hostaddr = guestToHost(addr);
+		if (hostaddr == (host_address_t)ADDR_INV)
+			return false;
+		return true;
+	}
 };
 
 } // end-of-namespace: fail

@@ -60,6 +60,14 @@ public:
 	 * @param src Pointer to data to be copied.
 	 */
 	virtual void setBytes(guest_address_t addr, size_t cnt, void const *src) = 0;
+	/**
+	 * Checks whether memory is mapped and available.
+	 * @param addr The guest address to check.
+	 */
+	virtual bool isMapped(guest_address_t addr) {
+		// default implementation
+		return addr < getPoolSize();
+	}
 };
 
 } // end-of-namespace: fail
