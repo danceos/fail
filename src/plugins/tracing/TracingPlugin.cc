@@ -1,7 +1,6 @@
 #include <iostream>
 #include <assert.h>
 
-#include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Register.hpp"
 #include "sal/Memory.hpp"
@@ -11,46 +10,17 @@
 using namespace std;
 using namespace fail;
 
-void TracingPlugin::handleSingleIP(const BPListener &bp) {
-	address_t ip = bp.getTriggerInstructionPointer();
-	if (m_ipMap && !m_ipMap->isMatching(ip)) {
-		return;
-	}
-
-	m_curtime = simulator.getTimerTicks();
-	simtime_diff_t deltatime = m_curtime - m_prevtime;
-
-	if (m_os)
-		*m_os << "[Tracing] IP " << hex << ip << "\n";
-
-	if (m_protoStreamFile) {
-		Trace_Event e;
-		e.set_ip(ip);
-		// only store deltas != 0
-		if (deltatime != 0) {
-			e.set_time_delta(deltatime);
-		}
-		if (!ps) {
-			ps = new ProtoOStream (m_protoStreamFile);
-		}
-
-		ps->writeMessage(&e);
-	}
-}
-
-
 bool TracingPlugin::run()
 {
 	MemoryManager& mm = simulator.getMemoryManager();
 
 	MemAccessListener ev_mem(ANY_ADDR);
 	BPSingleListener ev_step(ANY_ADDR);
-	BaseListener *ev;
+	BaseListener *ev = 0;
 
-	if (m_iponly || !m_memonly) {
-		simulator.addListener(&ev_step);
-	}
-	if (m_memonly || !m_iponly) {
+	// ev_step is added in the first loop iteration
+
+	if (m_tracetype | TRACE_MEM) {
 		simulator.addListener(&ev_mem);
 	}
 	if(m_protoStreamFile) {
@@ -62,18 +32,20 @@ bool TracingPlugin::run()
 
 	// the first event gets an absolute time stamp, all others a delta to their
 	// predecessor
+	simtime_t prevtime = 0, curtime;
 	simtime_diff_t deltatime;
 
+	bool first = true;
+
 	while (true) {
-		ev = simulator.resume();
+		curtime = simulator.getTimerTicks();
+		deltatime = curtime - prevtime;
 
-		m_curtime = simulator.getTimerTicks();
-		deltatime = m_curtime - m_prevtime;
-
-		if (ev == &ev_step) {
+		if (ev == &ev_step || (first && (m_tracetype | TRACE_IP))) {
+			first = false;
 			simulator.addListener(&ev_step);
+			address_t ip = simulator.getCPU(0).getInstructionPointer();
 
-			address_t ip = ev_step.getTriggerInstructionPointer();
 			if (m_ipMap && !m_ipMap->isMatching(ip)) {
 				continue;
 			}
@@ -86,6 +58,10 @@ bool TracingPlugin::run()
 				// only store deltas != 0
 				if (deltatime != 0) {
 					e.set_time_delta(deltatime);
+
+					// do this only if the last delta was written
+					// (no, e.g., memory map mismatch)
+					prevtime = curtime;
 				}
 				ps->writeMessage(&e);
 			}
@@ -116,6 +92,10 @@ bool TracingPlugin::run()
 				// only store deltas != 0
 				if (deltatime != 0) {
 					e.set_time_delta(deltatime);
+
+					// do this only if the last delta was written
+					// (no, e.g., memory map mismatch)
+					prevtime = curtime;
 				}
 
 				/* When we're doing a full trace, we log more data in
@@ -143,14 +123,12 @@ bool TracingPlugin::run()
 
 				ps->writeMessage(&e);
 			}
-		} else {
+		} else if (!first) {
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
 
-		// do this only if the last delta was written
-		// (no, e.g., memory map mismatch)
-		m_prevtime = m_curtime;
+		ev = simulator.resume();
 	}
 
 	return true;

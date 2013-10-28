@@ -66,6 +66,8 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 	// instruction counter within trace
 	instruction_count_t instr = 0;
+	// instruction counter new memory access events belong to
+	instruction_count_t instr_memaccess = 0;
 
 	// the currently processed event
 	Trace_Event ev;
@@ -92,6 +94,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 				LOG << "error: instruction_count_t overflow, aborting at instr=" << instr << std::endl;
 				return false;
 			}
+
 			/* Another instruction was executed, handle it in the
 			   subclass */
 			if (!handle_ip_event(curtime, instr, ev)) {
@@ -99,10 +102,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 				return false;
 			}
 
+			// all subsequent mem access events belong to this dynamic instr
+			instr_memaccess = instr;
 			instr++;
 		} else {
-			if (!handle_mem_event(curtime, instr, ev)) {
-				LOG << "error: handle_mem_event() failed at instr=" << instr << std::endl;
+			if (!handle_mem_event(curtime, instr_memaccess, ev)) {
+				LOG << "error: handle_mem_event() failed at instr=" << instr_memaccess << std::endl;
 				return false;
 			}
 		}
