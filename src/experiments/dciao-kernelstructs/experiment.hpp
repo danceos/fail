@@ -29,14 +29,8 @@ private:
 	fail::MemoryManager& m_mm;
 	fail::ElfReader m_elf;
 
-	struct correct_run {
-		time_markers_t *time_markers;
-	};
-
-	correct_run correct;
-
 	unsigned injectBitFlip(fail::address_t data_address, unsigned bitpos);
-	time_markers_t *getTimeMarkerList();
+	time_markers_t getTimeMarkerList();
 	static int time_markers_compare(const time_markers_t &, const time_markers_t &);
 
 

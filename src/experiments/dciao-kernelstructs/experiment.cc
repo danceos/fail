@@ -49,53 +49,56 @@ unsigned DCIAOKernelStructs::injectBitFlip(address_t data_address, unsigned bitp
 }
 
 
-void handleEvent(DCIAOKernelProtoMsg_Result& result, DCIAOKernelProtoMsg_Result_ResultType restype, const std::string &msg) {
+void handleEvent(DCIAOKernelProtoMsg_Result& result,
+				 DCIAOKernelProtoMsg_Result_ResultType restype, 
+				 simtime_t time_of_fail,
+				 const std::string &msg) {
 	cout << msg << endl;
+	result.set_fail_time(time_of_fail);
 	result.set_resulttype(restype);
 	result.set_details(msg);
 }
 
-std::string handleMemoryAccessEvent(fail::MemAccessListener& l_mem) {
-	   stringstream sstr;
-	   sstr << "mem access (";
-	   switch (l_mem.getTriggerAccessType()) {
-	   case MemAccessEvent::MEM_READ:
-		   sstr << "r";
-		   break;
-	   case MemAccessEvent::MEM_WRITE:
-		   sstr << "w";
-		   break;
-	   default: break;
-	   }
-	   sstr << ") @ 0x" << hex << l_mem.getTriggerAddress();
+// std::string handleMemoryAccessEvent(fail::MemAccessListener& l_mem) {
+// 	   stringstream sstr;
+// 	   sstr << "mem access (";
+// 	   switch (l_mem.getTriggerAccessType()) {
+// 	   case MemAccessEvent::MEM_READ:
+// 		   sstr << "r";
+// 		   break;
+// 	   case MemAccessEvent::MEM_WRITE:
+// 		   sstr << "w";
+// 		   break;
+// 	   default: break;
+// 	   }
+// 	   sstr << ") @ 0x" << hex << l_mem.getTriggerAddress();
 
-	   sstr << " ip @ 0x" << hex << l_mem.getTriggerInstructionPointer();
+// 	   sstr << " ip @ 0x" << hex << l_mem.getTriggerInstructionPointer();
 
-	   return sstr.str();
-}
+// 	   return sstr.str();
+// }
 
-DCIAOKernelStructs::time_markers_t *DCIAOKernelStructs::getTimeMarkerList() {
-	const ElfSymbol & sym_time_marker_index = m_elf.getSymbol("time_marker_index");
-	const ElfSymbol & sym_time_markers		= m_elf.getSymbol("time_markers");
-
-	assert(sym_time_marker_index.isValid());
-	assert(sym_time_markers.isValid());
-
-
-	unsigned int time_marker_index;
-
-	simulator.getMemoryManager().getBytes(sym_time_marker_index.getAddress(),
-										  sym_time_marker_index.getSize(),
-										  &time_marker_index);
-	if (time_marker_index > 500) {
-		time_marker_index = 500;
+DCIAOKernelStructs::time_markers_t DCIAOKernelStructs::getTimeMarkerList() {
+	std::ifstream task_activation("task_activation");
+	if (!task_activation) {
+		m_log << "could not open `task_activation'" << std::endl;
+		simulator.terminate(-1);
 	}
-	time_markers_t *time_markers = new time_markers_t(time_marker_index);
 
-	simulator.getMemoryManager().getBytes(sym_time_markers.getAddress(),
-										  time_marker_index * sizeof(time_marker),
-										  time_markers->data());
-	return time_markers;
+	DCIAOKernelStructs::time_markers_t ret;
+
+	while (task_activation) {
+		uint32_t time, at;
+		task_activation >> time >> at;
+		time_marker marker;
+		marker.time = time;
+		marker.at = at;
+		if (!task_activation)
+			break;
+		ret.push_back(marker);
+	}
+
+	return ret;
 }
 
 int DCIAOKernelStructs::time_markers_compare(const time_markers_t &a, const time_markers_t &b) {
@@ -114,6 +117,7 @@ int DCIAOKernelStructs::time_markers_compare(const time_markers_t &a, const time
 }
 
 bool DCIAOKernelStructs::run() {
+	MemoryManager& mm = simulator.getMemoryManager();
 	address_t minimal_ip = INT_MAX; // 1 Mbyte
 	address_t maximal_ip = 0;
     address_t minimal_data = 0x100000; // 1 Mbyte
@@ -138,63 +142,23 @@ bool DCIAOKernelStructs::run() {
 	//******* Boot, and store state *******//
 	m_log << "STARTING EXPERIMENT" << endl;
 
-	char * statedir = getenv("FAIL_STATEDIR");
-	if(statedir == NULL){
-		m_log << "FAIL_STATEDIR not set :(" << std::endl;
-		simulator.terminate(1);
-	}
+	/* Read time Markers from list */
+	DCIAOKernelStructs::time_markers_t correct_time_markers = getTimeMarkerList();
+	m_log << "correct run is done:" << dec << std::endl;
+	m_log << "	time_markers	   " << correct_time_markers.size()	 << std::endl;
 
-	m_log << "Booting, and saving state at main";
-	BPSingleListener bp;
+	// //******* Fault injection *******//
 
-	// STEP 1: run until interesting function starts, and save state
-	// Find starting point
-	guest_address_t entry_point;
-	if (m_elf.getSymbol("main").isValid()) {
-		entry_point = m_elf.getSymbol("main").getAddress();
-	} else if (m_elf.getSymbol("cyg_user_start").isValid()) {
-		entry_point = m_elf.getSymbol("cyg_user_start").getAddress();
-	} else {
-		m_log << "Could not find entry function. Dying." << endl;
-		simulator.terminate(1);
-	}
-
-	bp.setWatchInstructionPointer(entry_point);
-	if(simulator.addListenerAndResume(&bp) == &bp){
-		m_log << "main function entry reached, saving state" << endl;
-	} else {
-		m_log << "Couldn't reach entry function. Dying" << std::endl;
-		simulator.terminate(1);
-	}
-	simulator.save(statedir);
 	const ElfSymbol &s_time_marker_print = m_elf.getSymbol("time_marker_print");
 	assert(s_time_marker_print.isValid());
 	BPSingleListener l_time_marker_print(s_time_marker_print.getAddress());
 
-	simulator.clearListeners();
-	simulator.addListener(&l_time_marker_print);
+	const ElfSymbol &s_fail_virtual_port = m_elf.getSymbol("fail_virtual_port");
+	assert(s_fail_virtual_port.isValid());
+	MemAccessListener l_fail_virtual_port(s_fail_virtual_port.getAddress());
 
-	while (1) {
-		fail::BaseListener *l = simulator.resume();
-		simulator.addListener(l);
-		if (l == &l_time_marker_print) {
-			break;
-		} else {
-			m_log << "THIS SHOULD'T HAPPEN" << std::endl;
-			simulator.terminate(1);
-		}
 
-	}
-
-	correct.time_markers = getTimeMarkerList();
-	assert(correct.time_markers->size() > 0);
-
-	m_log << "correct run is done:" << dec << std::endl;
-	m_log << "	time_markers	   " << correct.time_markers->size()	 << std::endl;
-
-	// //******* Fault injection *******//
-	// // #warning "Building restore state variant"
-
+	BPSingleListener bp;
 	unsigned executed_jobs = 0;
 
 	while (executed_jobs < 25 || m_jc.getNumberOfUndoneJobs() > 0) {
@@ -213,14 +177,19 @@ bool DCIAOKernelStructs::run() {
 			// 8 results in one job
 			DCIAOKernelProtoMsg_Result *result = param.msg.add_result();
 			result->set_bitoffset(bit_offset);
+			result->set_invalid_memaccess_read(false);
+			result->set_invalid_memaccess_write(false);
+			result->set_invalid_jump(false);
 
 			m_log << "restoring state" << endl;
 
 			// Restore to the image, which starts at address(main)
-			simulator.restore(statedir);
+			simulator.restore("state");
 			executed_jobs ++;
 
 			m_log << "Trying to inject @ instr #" << dec << injection_instr << endl;
+
+			DCIAOKernelStructs::time_markers_t recorded_time_markers;
 
 			if (injection_instr > 0) {
 				simulator.clearListeners();
@@ -228,13 +197,11 @@ bool DCIAOKernelStructs::run() {
 				simulator.addListener(&l_time_marker_print);
 
 				bp.setWatchInstructionPointer(ANY_ADDR);
-				// for (int i = 0; i < injection_instr + 1; i++) {
-				// 	simulator.addListenerAndResume(&bp);
-				// 	m_log << "IP " << simulator.getCPU(0).getInstructionPointer() << endl;
-				// }
-				// goto check_ip;
-				bp.setCounter(injection_instr + 1);
+				bp.setCounter(injection_instr+1);
 				simulator.addListener(&bp);
+
+				// Add vport listener
+				simulator.addListener(&l_fail_virtual_port);
 
 
 				bool inject = true;
@@ -245,14 +212,29 @@ bool DCIAOKernelStructs::run() {
 					// Count kernel activations
 					if (listener == &l_time_marker_print) {
 						m_log << "experiment reached finish() before FI" << endl;
-						handleEvent(*result, result->NOINJECTION, "time_marker reached before injection_instr");
+						handleEvent(*result, result->NOINJECTION,
+									0,
+									"time_marker reached before injection_instr");
 						inject = false;
 						break;
+					} else if (listener == &l_fail_virtual_port) {
+						simulator.addListener(&l_fail_virtual_port);
+						assert(l_fail_virtual_port.getTriggerAccessType() == MemAccessEvent::MEM_WRITE);
+						unsigned int fail_virtual_port_data;
+						mm.getBytes(s_fail_virtual_port.getAddress(), 4, &fail_virtual_port_data);
+						uint32_t at = fail_virtual_port_data >> 16;
+						uint32_t time = fail_virtual_port_data & 0xffff;
+						DCIAOKernelStructs::time_marker marker;
+						assert(at != 0xffff);
+						marker.at = at;
+						marker.time = time;
+						recorded_time_markers.push_back(marker);
+						continue; // fast forward
 					} else if (listener == &bp) {
 						break;
 					} else {
 						inject = false;
-						handleEvent(*result, result->NOINJECTION, "WTF");
+						handleEvent(*result, result->NOINJECTION, 0, "WTF");
 						break;
 					}
 				}
@@ -262,14 +244,12 @@ bool DCIAOKernelStructs::run() {
 					continue;
 			}
 
-		check_ip:
-
 			// Not a working sanitiy check. Because of instruction
 			// offsets!
 			if (param.msg.fsppilot().has_injection_instr_absolute()) {
 				address_t PC = param.msg.fsppilot().injection_instr_absolute();
 				if (simulator.getCPU(0).getInstructionPointer() != PC) {
-					m_log << "Invalid Injection address EIP=0x" 
+					m_log << "Invalid Injection address EIP=0x"
 						  << std::hex << simulator.getCPU(0).getInstructionPointer()
 						  << " != injection_instr_absolute=0x" << PC << std::endl;
 					simulator.terminate(1);
@@ -279,20 +259,18 @@ bool DCIAOKernelStructs::run() {
 			/// INJECT BITFLIP:
 			result->set_original_value(injectBitFlip(data_address, bit_offset));
 
-			// // Setup exit points
-			const ElfSymbol &s_copter_mock_panic = m_elf.getSymbol("copter_mock_panic");
-			BPSingleListener l_copter_mock_panic(s_copter_mock_panic.getAddress());
-
 			TrapListener l_trap(ANY_TRAP);
-			TimerListener l_timeout(10 * 1000 * 1000); // seconds in
-													   // microseconds
+			unsigned int i_timeout = 100 * 1000;
+			TimerListener l_timeout(i_timeout); // miliseconds in
+			// microseconds
+			TimerListener l_timeout_hard(5 * 1000 * 1000); // miliseconds in
+			// microseconds
 
 			simulator.clearListeners();
 			simulator.addListener(&l_timeout);
+			simulator.addListener(&l_timeout_hard);
 			simulator.addListener(&l_trap);
 			simulator.addListener(&l_time_marker_print);
-			if (s_copter_mock_panic.isValid())
-				simulator.addListener(&l_copter_mock_panic);
 
 			// jump outside text segment
 			BPRangeListener ev_below_text(ANY_ADDR, minimal_ip - 1);
@@ -308,68 +286,126 @@ bool DCIAOKernelStructs::run() {
 			simulator.addListener(&ev_mem_low);
 			simulator.addListener(&ev_mem_high);
 
+			// add listener for virtual fail port
+			simulator.addListener(&l_fail_virtual_port);
+
 			// resume and wait for results while counting kernel
 			// activations
 			fail::BaseListener* l;
+			time_t last_activity = time(NULL);
+			unsigned int last_timer;
 			while (1) {
 				l = simulator.resume();
+				if (l == &l_fail_virtual_port) {
+					simulator.addListener(l);
+					/* Virtual Port monitoring */
+					if(!l_fail_virtual_port.getTriggerAccessType() == MemAccessEvent::MEM_WRITE) {
+						handleEvent(*result, result->TRAP,
+									simulator.getTimerTicks(),
+									"Invalid read from vport");
+						break;
+					}
+					unsigned int fail_virtual_port_data;
+					mm.getBytes(s_fail_virtual_port.getAddress(), 4, &fail_virtual_port_data);
+					uint32_t at = fail_virtual_port_data >> 16;
+					uint32_t timer = fail_virtual_port_data & 0xffff;
+					if (at == 0xffff) {
+						/* Called error hook */
+						handleEvent(*result, result->ERR_ERROR_HOOK,
+									simulator.getTimerTicks(),
+									"called error hook");
+						break;
+					} else {
+						/* Reset timeout listener */
+						if (last_timer != timer) {
+							last_activity = time(NULL);
+							m_log << "Reset timeout @" << dec << at << " #" << timer << std::endl;
+						}
+						last_timer = timer;
 
-				// Evaluate result
-				if (l == &l_time_marker_print) {
+						DCIAOKernelStructs::time_marker marker;
+						marker.at = at;
+						marker.time = timer;
+
+						// m_log << "Marker " << at << " " << time << " " << l_fail_virtual_port.getTriggerInstructionPointer() << std::endl;
+						recorded_time_markers.push_back(marker);
+						continue; // till crash
+					}
+				} else if (l == &l_time_marker_print) {
 					m_log << "experiment ran to the end" << std::endl;
-					DCIAOKernelStructs::time_markers_t * time_markers = getTimeMarkerList();
-					int pos = time_markers_compare(*time_markers, *correct.time_markers);
+					int pos = time_markers_compare(correct_time_markers, recorded_time_markers);
 					if (pos != -1) {
 						m_log << "Different activation scheme" << std::endl;
-						m_log << "	size " << std::dec << time_markers->size() << std::endl;
+						m_log << "	size " << std::dec << recorded_time_markers.size() << std::endl;
 						m_log << "	at	 " << std::dec << pos << std::endl;
 
 						stringstream sstr;
 						sstr << "diff after #" << pos;
-						handleEvent(*result, result->ERR_DIFFERENT_ACTIVATION, sstr.str());
-						/* In case of an error append the activation scheme */
-						for (unsigned i = 0; i < time_markers->size(); ++i) {
-							result->add_activation_scheme( (*time_markers)[i].time );
-							result->add_activation_scheme( (*time_markers)[i].at );
+						handleEvent(*result, result->ERR_DIFFERENT_ACTIVATION,
+									simulator.getTimerTicks(),
+									sstr.str());
+						// In case of an error append the activation scheme
+						for (unsigned i = 0; i < recorded_time_markers.size(); ++i) {
+							result->add_activation_scheme( recorded_time_markers[i].time );
+							result->add_activation_scheme( recorded_time_markers[i].at );
 
 							m_log << i << " "
-								  << (*time_markers)[i].time << " " <<  (*time_markers)[i].at <<  " "
-								  << (*correct.time_markers)[i].time << " " <<  (*correct.time_markers)[i].at
+								  << recorded_time_markers[i].time << " " <<  recorded_time_markers[i].at <<  " "
+								  << correct_time_markers[i].time << " " <<  correct_time_markers[i].at
 								  << std::endl;
 						}
 					} else {
 						stringstream sstr;
-						sstr << "calc done (markers #" << (*correct.time_markers).size() << ")";
-						handleEvent(*result, result->OK, sstr.str());
+						sstr << "calc done (markers #" << correct_time_markers.size() << ")";
+						handleEvent(*result, result->OK,
+									simulator.getTimerTicks(),
+									sstr.str());
 					}
-					delete time_markers;
 					// End of experiment
 					break;
 				}  else if (l == &l_trap) {
 					stringstream sstr;
 					sstr << "trap #" << l_trap.getTriggerNumber();
-					handleEvent(*result, result->TRAP, sstr.str());
+					handleEvent(*result, result->TRAP,
+								simulator.getTimerTicks(),
+								sstr.str());
 					break; // EOExperiment
-				} else if (l == &l_timeout){
-					handleEvent(*result, result->TIMEOUT, "timeout: 10 second");
-					break; // EOExperiment
-				} else if (l == &l_copter_mock_panic){
-					handleEvent(*result, result->ERR_ERROR_HOOK, "called error hook");
-					break; // EOExperiment
+				} else if (l == &l_timeout || l == &l_timeout_hard){
+					time_t current_time = time(NULL);
+					if ((l == &l_timeout_hard) || (current_time - last_activity) > 4) {
+						handleEvent(*result, result->TIMEOUT,
+									simulator.getTimerTicks(),
+									"timeout: 5 second");
+						break; // EOExperiment
+					} else {
+						static int delta = 0;
+						if (delta != current_time) {
+							m_log << "Wait another n = " << (current_time - last_activity) << std::endl;
+							delta = current_time;
+						}
+						// Wait another i_timeout simulator time
+						simulator.removeListener(&l_timeout);
+						simulator.addListener(&l_timeout);
+						assert(l_timeout.getTimeout() == i_timeout);
+						continue; // till crash
+					}
 				} else if (l == &ev_below_text || l == &ev_beyond_text) {
-					std::stringstream ss;
-					ss << ((l == &ev_mem_low) ? "< .text" : ">.text") << " ";
-					ss << handleMemoryAccessEvent(*(fail::MemAccessListener *)l);
-					handleEvent(*result, result->ERR_OUTSIDE_TEXT, ss.str());
-					break; // EOExperiment
+					/* Jump outside text segment. We do only note this
+					   event and */
+					result->set_invalid_jump(true);
+					continue; // till crash
 				} else if (l == &ev_mem_low || l == &ev_mem_high) {
-					std::stringstream ss;
-					ss << ((l == &ev_mem_low) ? "< .data" : ">.data") << " ";
-					ss << handleMemoryAccessEvent(*(fail::MemAccessListener *)l);
-					handleEvent(*result, result->ERR_MEMACCESS, ss.str());
-					break; // EOFExperiment
+					/* The target has done an access outside the
+					   memory segment. Note this and continue; */
+					if (((MemAccessListener *)l)->getTriggerAccessType() == MemAccessEvent::MEM_READ) {
+						result->set_invalid_memaccess_read(true);
+					} else {
+						result->set_invalid_memaccess_write(true);
+					}
+					continue; //till crash
 				} else {
-					handleEvent(*result, result->UNKNOWN, "UNKNOWN event");
+					handleEvent(*result, result->UNKNOWN, 0,
+								"UNKNOWN event");
 					break; // EOExperiment
 				}
 			}
