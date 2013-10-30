@@ -74,7 +74,6 @@ elseif(BUILD_PANDA)
 	if(BUILD_ARM)
 		set(SRCS ${SRCS}
 			panda/PandaArmCPU.cc
-			arm/ArmArchitecture.cc    #why is this necessary?
 		)
 	endif(BUILD_ARM)
 endif(BUILD_BOCHS)
