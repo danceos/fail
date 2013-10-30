@@ -38,36 +38,11 @@ aspect PandaBreakpoints
       		} else {
       			hc.type = HALT_TYPE_BP;
   			}
-      		hc.type = HALT_TYPE_BP;
       		hc.address = m_WatchInstrPtr;
       		hc.addr_len= 4; // Thumb? => 2
       		oocdw_delete_halt_condition(&hc);
 		}
 	};
-
-#if defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
-	#error Range Breakpoints not yet implemented for Pandaboard
-
-	advice "fail::BPRangeListener" : slice class
-	{
-	public:
-		bool onAddition()
-		{
- 			// Calculate address range
-  			address_t range = m_WatchEndAddr - m_WatchStartAddr; //  range / sizeof(address_t) ??!
-  			
-  			// ToDo: Setup MMU to watch address range
-		}
-
-		void onDeletion()
-		{
-  			// Calculate address range
-  			address_t range = m_WatchEndAddr - m_WatchStartAddr; //  range / sizeof(address_t) ??!
-  			
-  			// ToDo: Setup MMU to no longer watch address range
-		}
-	};
-#endif // CONFIG_EVENT_BREAKPOINTS_RANGE
 };
 
 #endif // BUILD_PANDA && CONFIG_EVENT_BREAKPOINTS
