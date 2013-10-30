@@ -77,6 +77,18 @@ static bool horizontal_step = false;
  */
 static bool single_step_requested = false;
 
+/*
+ * If a trap was detected and the simulator has no TrapListener, the execution would
+ * continue in fault state. This flag is set to false, when a trap is detected and
+ * reset to true, when a reboot is done.
+ */
+static bool trap_handled = true;
+
+/*
+ * Trap-handler routine address for BP-hook.
+ */
+#define pc_trap_handler 0x80e80010
+
 // Timer related structures
 #define P_MAX_TIMERS 32
 struct timer{
@@ -102,6 +114,8 @@ static struct watchpoint *getHaltingWatchpoint();
 static void getCurrentMemAccesses(struct halt_condition *accesses);
 static uint32_t getCurrentPC();
 static struct reg *get_reg_by_number(unsigned int num);
+static void read_dpm_register(uint32_t reg_num, uint32_t *data);
+static bool is_mmu_permission_trap(uint32_t dfsr);
 
 /*
  * Main entry and main loop.
@@ -235,6 +249,11 @@ int main(int argc, char *argv[])
 			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
 		}
 
+		// Shortcut loop exit for tracing
+		if (oocdw_exection_finished) {
+			break;
+		}
+
 		/*
 		 * In the following loop stage it is assumed, that the target is
 		 * running, so execution needs to be resumed, if the target is
@@ -271,6 +290,39 @@ int main(int argc, char *argv[])
 			case DBG_REASON_WPTANDBKPT:
 				/* Fall through */
 			case DBG_REASON_BREAKPOINT:
+				if (pc == pc_trap_handler) {
+
+					trap_handled = false;
+
+					uint32_t dfar, dfsr;
+					oocdw_read_reg(fail::RI_DFAR, &dfar);
+					oocdw_read_reg(fail::RI_DFSR, &dfsr);
+
+					// ToDo: alignment trap: 00001
+
+					if (is_mmu_permission_trap(dfsr)) {
+						bool is_write = dfsr & (1 << 11);
+						uint32_t lr_abt;
+						oocdw_read_reg(fail::RI_LR_ABT, &lr_abt);
+						// LR offset is -8
+						LOG << "MMU permission trap: dfar: " << hex << dfar << " Write: " << is_write << " PC: " << lr_abt -8 << endl;
+						fail::simulator.onMemoryAccess(NULL, dfar, 1, is_write, lr_abt - 8);
+						// FixMe: If memory boundary is not 4k-aligned, we might not have an
+						// unauthorized memory access, here.
+						// In this case we have to reprogram the mmu permissions for that page,
+						// single-step over instruction and restore permissions, afterwards
+						// (Could become time consuming, if many memory accesses are on such
+						// a page)
+					} else {
+						fail::simulator.onTrap(NULL, fail::ANY_TRAP);
+					}
+
+					if (!trap_handled) {
+						LOG << "FATAL ERROR: Trap not handled by SimulatorController. Terminating." << endl;
+						exit(-1);
+					}
+					break;
+				}
 				fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
 				if (current_dr == DBG_REASON_BREAKPOINT) {
 					break;
@@ -309,10 +361,11 @@ int main(int argc, char *argv[])
 				break;
 			case DBG_REASON_SINGLESTEP:
 				LOG << "FATAL ERROR: Single-step is handled in previous loop phase" << endl;
-				return 1;
+				exit (-1);
 				break;
 			default:
-				LOG << "FATAL ERROR: Target halted in unexpected cpu state!" << endl;
+				LOG << "FATAL ERROR: Target halted in unexpected cpu state " << current_dr <<  endl;
+				exit (-1);
 				break;
 			}
 
@@ -348,16 +401,68 @@ int main(int argc, char *argv[])
     exit(oocdw_exCode);
 }
 
+static uint32_t cc_overflow = 0;
 
+uint64_t oocdw_read_cycle_counter()
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to prepare for reading dpm register" << endl;
+	}
+
+	uint32_t data, flags;
+
+	// PMCCNTR
+	retval = dpm->instr_read_data_r0(dpm,
+			ARMV4_5_MRC(15, 0, 0, 9, 13, 0),
+			&data);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to read PMCCNTR-Register" << endl;
+	}
+
+	// PMOVSR
+	retval = dpm->instr_read_data_r0(dpm,
+			ARMV4_5_MRC(15, 0, 0, 9, 12, 3),
+			&flags);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to read PMOVSR-Register" << endl;
+	}
+
+	if (flags & (1 << 31)) {
+		cc_overflow++;
+
+		flags ^= (1 << 31);
+
+		retval = dpm->instr_write_data_r0(dpm,
+				ARMV4_5_MCR(15, 0, 0, 9, 12, 3),
+				flags);
+
+		if (retval != ERROR_OK) {
+			LOG << "Unable to read PMOVSR-Register" << endl;
+		}
+	}
+
+	dpm->finish(dpm);
+
+	return (uint64_t)data + ((uint64_t)cc_overflow << 32);
+}
 
 void oocdw_set_halt_condition(struct halt_condition *hc)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 	assert((hc != NULL) && "No halt condition defined");
 
+	// ToDo: Does this work for multiple halt conditions?
 	horizontal_step = false;
 
 	if (hc->type == HALT_TYPE_BP) {
+		LOG << "Adding BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
 		if (breakpoint_add(target_a9, hc->address,
 					hc->addr_len, BKPT_HARD)) {
 			LOG << "FATAL ERROR: Breakpoint could not be set" << endl;
@@ -371,6 +476,9 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		single_step_requested = true;
 	} else {
+		LOG << "Adding WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
+				((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
+
 		enum watchpoint_rw rw = WPT_ACCESS;
 		if (hc->type == HALT_TYPE_WP_READ) {
 			rw = WPT_READ;
@@ -419,6 +527,7 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 
 	// Remove halt condition from pandaboard
 	if (hc->type == HALT_TYPE_BP) {
+		LOG << "Removing BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
 		breakpoint_remove(target_a9, hc->address);
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		// Do nothing. Single-stepping event hits one time and
@@ -427,14 +536,16 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 			(hc->type == HALT_TYPE_WP_READ) ||
 			(hc->type == HALT_TYPE_WP_WRITE)) {
 		watchpoint_remove(target_a9, hc->address);
+		LOG << "Removing WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
+			((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
 	}
 }
 
-void oocdw_halt_target()
+bool oocdw_halt_target()
 {
 	if (target_halt(target_a9)) {
 		LOG << "FATAL ERROR: Target could not be halted" << endl;
-		exit(-1);
+		return false;
 	}
 
 	/*
@@ -443,23 +554,24 @@ void oocdw_halt_target()
 	long long then = timeval_ms();
 	if (target_poll(target_a9)) {
 		LOG << "FATAL ERROR: Target polling failed" << endl;
-		exit(-1);
+		return false;
 	}
 	while (target_a9->state != TARGET_HALTED) {
 		if (target_poll(target_a9)) {
 			LOG << "FATAL ERROR: Target polling failed" << endl;
-			exit(-1);
+			return false;
 		}
 		if (timeval_ms() > then + 1000) {
 			LOG << "FATAL ERROR: Timeout waiting for target halt" << endl;
-			exit(-1);
+			return false;
 		}
 	}
+	return true;
 }
 
 // ToDo: read from elf-file
-#define SAFETYLOOP_BEGIN 	0x83000084
-#define SAFETYLOOP_END		0x830000a0
+#define SAFETYLOOP_BEGIN 	0x8300008c
+#define SAFETYLOOP_END		0x830000a8
 
 /*
  * As "reset halt" and "reset init" fail irregularly on the pandaboard, resulting in
@@ -480,16 +592,31 @@ void oocdw_halt_target()
  */
 void oocdw_reboot()
 {
-	int retval, reboot_success = 0, fail_counter = 1;
+	int retval, fail_counter = 1;
+	bool reboot_success = false;
 
 	while (!reboot_success) {
 		LOG << "Rebooting device" << endl;
-		reboot_success = 1;
+		reboot_success = true;
 
         // If target is not halted, reset will result in freeze
         if (target_a9->state != TARGET_HALTED) {
-            oocdw_halt_target();
+            if (!oocdw_halt_target()) {
+            	reboot_success = false;
+            	if (fail_counter++ > 4) {
+					LOG << "FATAL ERROR: Rebooting not possible" << endl;
+					exit(-1);
+				}
+            	usleep(100*1000);
+            	continue;
+            }
         }
+
+        /*
+         * Clear all halt conditions
+         */
+        breakpoint_clear_target(target_a9);
+        watchpoint_clear_target(target_a9);
 
 		/*
 		 * The actual reset command executed by OpenOCD jimtcl-engine
@@ -506,11 +633,20 @@ void oocdw_reboot()
 		for (target = all_targets; target; target = target->next)
 			target->type->check_reset(target);
 
-		usleep(700*1000);
+		usleep(750*1000);
 
 		// Immediate halt after reset.
-		oocdw_halt_target();
+		if (!oocdw_halt_target()) {
+			reboot_success = false;
+			if (fail_counter++ > 4) {
+				LOG << "FATAL ERROR: Rebooting not possible" << endl;
+				exit(-1);
+			}
+			usleep(100*1000);
+			continue;
+		}
 
+		// Check if halted in safety loop
 		uint32_t pc = buf_get_u32(arm_a9->pc->value, 0, 32);
 		if (pc < SAFETYLOOP_BEGIN || pc > SAFETYLOOP_END) {
 			LOG << "NOT IN LOOP!!! PC: " << hex << pc << dec << std::endl;
@@ -540,7 +676,7 @@ void oocdw_reboot()
 				// ToDo: Adjust timeout
 				if (timeval_ms() > then + 2000) {
 					LOG << "Error: Timeout waiting for main entry" << endl;
-					reboot_success = 0;
+					reboot_success = false;
 					if (fail_counter++ > 4) {
 						LOG << "FATAL ERROR: Rebooting not possible" << endl;
 						exit(-1);
@@ -559,7 +695,38 @@ void oocdw_reboot()
 			// Jump over safety loop (set PC)
 			oocdw_write_reg(15, SAFETYLOOP_END + 0x4);
 		}
+
+		// Initially set BP as trap hook
+		struct halt_condition hc;
+		hc.type = HALT_TYPE_BP;
+		hc.address = pc_trap_handler;
+		hc.addr_len = 4;
+		oocdw_set_halt_condition(&hc);
+
+		if (!trap_handled) {
+			trap_handled = true;
+		}
 	}
+}
+
+static bool is_mmu_permission_trap(uint32_t dfsr) {
+	// ARM ARM B4.1.52
+	// Short-/Long-descriptor translation table format
+	uint32_t lpae = dfsr & (1 << 9);
+	if (lpae) {
+		uint32_t status = dfsr & 0b111111;
+		// 0b0011xx, level does not matter
+		if ((status & 0b111100) == 0b001100) {
+			return true;
+		}
+	} else {
+		uint32_t status = ((dfsr & (1 << 10)) >> 5) | (dfsr & 0b1111);
+		// 0b011x1
+		if ((status & 0b11101) == 0b01101) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /*
@@ -587,32 +754,50 @@ static struct reg *get_reg_by_number(unsigned int num)
 	return reg;
 }
 
+static void read_dpm_register(uint32_t reg_num, uint32_t *data)
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to prepare for reading dpm register" << endl;
+	}
+
+	if (reg_num == fail::RI_DFAR) {
+		// MRC p15, 0, <Rt>, c6, c0, 0
+		retval = dpm->instr_read_data_r0(dpm,
+				ARMV4_5_MRC(15, 0, 0, 6, 0, 0),
+				data);
+	} else if (reg_num == fail::RI_DFSR) {
+		// MRC p15, 0, <Rt>, c5, c0, 0
+		retval = dpm->instr_read_data_r0(dpm,
+				ARMV4_5_MRC(15, 0, 0, 5, 0, 0),
+				data);
+	} else {
+		LOG << "FATAL ERROR: Reading dpm register with id " << reg_num << " is not supported." << endl;
+		exit (-1);
+	}
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to read DFAR-Register" << endl;
+	}
+
+	dpm->finish(dpm);
+}
+
 void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 
 	switch (reg_num) {
 	case fail::RI_DFAR:
-	{
-		struct armv7a_common *armv7a = target_to_armv7a(target_a9);
-		struct arm_dpm *dpm = armv7a->arm.dpm;
-		int retval;
-		retval = dpm->prepare(dpm);
-
-		if (retval != ERROR_OK) {
-			LOG << "Unable to prepare for reading dpm register" << endl;
-		}
-
-		retval = dpm->instr_read_data_r0(dpm,
-				ARMV4_5_MRC(15, 0, 0, 6, 0, 0),
-				data);
-		if (retval != ERROR_OK) {
-			LOG << "Unable to read DFAR-Register" << endl;
-		}
-
-		dpm->finish(dpm);
-	}
+		/* fall through */
+	case fail::RI_DFSR:
+		read_dpm_register(reg_num, data);
 		break;
+
 	case fail::RI_R0:
 		/* fall through */
 	case fail::RI_R1:
@@ -653,7 +838,18 @@ void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 
 		*data = *((uint32_t*)(reg->value));
 	}
-	break;
+		break;
+	case fail::RI_LR_ABT:
+	{
+		struct reg *reg = get_reg_by_number(28);
+
+		if (reg->valid == 0) {
+			reg->type->get(reg);
+		}
+
+		*data = *((uint32_t*)(reg->value));
+	}
+		break;
 	default:
 		LOG << "ERROR: Register with id " << reg_num << " unknown." << endl;
 		break;

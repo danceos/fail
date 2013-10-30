@@ -9,8 +9,6 @@
 
 #include "../SimulatorController.hpp"
 
-struct command_context;
-
 namespace fail {
 
 class ExperimentFlow;
@@ -66,14 +64,9 @@ public:
 	 */
 	//void fireInterrupt(unsigned irq);
 
-	virtual simtime_t getTimerTicks() {
-		// ToDo (PORT)
-		return 0;
-	}
-	virtual simtime_t getTimerTicksPerSecond() {
-		// ToDo (PORT)
-		return 0;
-	}
+	virtual simtime_t getTimerTicks();
+
+	virtual simtime_t getTimerTicksPerSecond();
 
 	// Overloading super method to terminate OpenOCD properly
 	void terminate(int exCode = EXIT_SUCCESS);

@@ -5,6 +5,7 @@
 #include "../SALInst.hpp"
 #include "../Listener.hpp"
 
+
 #include "openocd_wrapper.hpp"
 
 #if defined(CONFIG_FIRE_INTERRUPTS)
@@ -20,7 +21,6 @@
 #endif
 
 namespace fail {
-
 
 PandaController::PandaController()
 	: SimulatorController(new PandaMemoryManager()), m_CurrFlow(NULL)
@@ -95,6 +95,16 @@ void PandaController::terminate(int exCode)
 	 * This call does not return!
 	 */
 	m_Flows.resume();
+}
+
+simtime_t PandaController::getTimerTicks()
+{
+	return oocdw_read_cycle_counter();
+}
+
+simtime_t PandaController::getTimerTicksPerSecond()
+{
+	return 1200*1000*1000;
 }
 
 } // end-of-namespace: fail

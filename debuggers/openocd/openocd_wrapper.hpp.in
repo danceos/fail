@@ -22,6 +22,13 @@ struct halt_condition {
 };
 
 /*
+ * Read value of cycle counter (performance monitor)
+ *
+ * @returns Value of current cycle counter
+ */
+uint64_t oocdw_read_cycle_counter();
+
+/*
  * Read register value
  * Reads the value of the register defined by \a regnum.
  * @param reg_num the target register as defined in the ArmArchitecture
@@ -58,7 +65,7 @@ void oocdw_delete_halt_condition(struct halt_condition *hc);
 /*
  * Immediate target halt without sepcific target instruction
  */
-void oocdw_halt_target();
+bool oocdw_halt_target();
 
 /*
  * Target reboot
