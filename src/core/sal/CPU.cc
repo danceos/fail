@@ -7,9 +7,10 @@ void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 {
 	// We may be called multiple times with the same register, if it needs to
 	// reside in multiple subsets.
-	if (std::find(m_Registers.begin(), m_Registers.end(), reg) == m_Registers.end()) {
-		m_Registers.push_back(reg);
+	if ((m_Registers.size()) < reg->getId()+1) {
+		m_Registers.resize(reg->getId()+1);
 	}
+	m_Registers[reg->getId()] = reg;
 
 	UniformRegisterSet* urs = getRegisterSetOfType(type);
 	if (!urs) {
@@ -21,7 +22,7 @@ void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 
 Register* CPUArchitecture::getRegister(size_t i) const
 {
-	assert(i < m_Registers.size() && "FATAL ERROR: Invalid index provided!");
+	assert(i < m_Registers.size() && m_Registers[i] != NULL && "FATAL ERROR: Invalid index provided!");
 	assert(m_Registers[i]->getId() == i && "FATAL ERROR: Register index mismatch");
 	return m_Registers[i];
 }
