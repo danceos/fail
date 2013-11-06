@@ -48,7 +48,7 @@ public:
 	 * @returns \c true if the instruction lies within the predefined range,
 	 *          \c false otherwise
 	 */
-	bool isValidInstr(address_t ip, char const *instr) const
+	bool isValidInstr(address_t ip, char const *instr = 0) const
 	{ return (beginAddress <= ip && ip <= endAddress); }
 private:
 	address_t beginAddress; //<! the beginning of the address range
@@ -69,11 +69,11 @@ public:
 	RangeSetInstructionFilter(char const *filename);
 	~RangeSetInstructionFilter() {}
 
-	bool isValidInstr(address_t ip, char const *instr) const
+	bool isValidInstr(address_t ip, char const *instr = 0) const
 	{
 		std::vector<RangeInstructionFilter>::const_iterator it;
 		for (it = _filters.begin(); it != _filters.end(); ++it) {
-			if (it->isValidInstr(ip, instr))
+			if (it->isValidInstr(ip))
 				return true;
 		}
 		return false;
