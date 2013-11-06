@@ -54,5 +54,7 @@ message L4SysProtoMsg {
 		// optional textual description of what happened
 		optional string details = 8;
 		optional int32 injection_address = 9;
+		optional int32 deviate_steps = 10;
+		optional int32 deviate_eip   = 11;
 	}
 }

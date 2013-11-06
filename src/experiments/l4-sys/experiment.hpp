@@ -137,6 +137,8 @@ private:
 	 */
 	void getJobParameters();
 
+	fail::BaseListener* afterInjection(L4SysProtoMsg_Result* res);
+
 	/**
 	 * Read the golden run output into the target string.
 	 */

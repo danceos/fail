@@ -240,6 +240,7 @@ void L4SysExperiment::startAndSaveInitState(fail::BPSingleListener* bp)
 
 void L4SysExperiment::CR3run(fail::BPSingleListener *bp)
 {
+	log << "CR3Run: Watching for instruction " << hex << L4SYS_FUNC_ENTRY << endl;
 	bp->setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
 	simulator.addListenerAndResume(bp);
 	log << "Reached entry point @ " << hex << bp->getTriggerInstructionPointer()
@@ -248,6 +249,71 @@ void L4SysExperiment::CR3run(fail::BPSingleListener *bp)
 	log << "CR3 = " << hex << BX_CPU(0)->cr3 << endl;
 }
 
+
+BaseListener* L4SysExperiment::afterInjection(L4SysProtoMsg_Result* res)
+{
+	BaseListener *bl = 0;
+
+	simtime_t t_inject = simulator.getTimerTicks();
+	simtime_t t_bailout;
+
+    ifstream instr_list_file(L4SYS_INSTRUCTION_LIST, ios::binary);
+	instr_list_file.seekg((1 + res->instr_offset()) * sizeof(TraceInstr));
+
+    RangeSetInstructionFilter filtering(L4SYS_FILTER);
+
+	for (;;) {
+		// Step over _all_ instructions in the trace AS
+		BPSingleListener stepListener(ANY_ADDR, L4SYS_ADDRESS_SPACE_TRACE);
+
+		TraceInstr curr_instr;
+		instr_list_file.read(reinterpret_cast<char*>(&curr_instr),
+		                     sizeof(TraceInstr));
+
+		t_bailout = simulator.getTimerTicks();
+
+		// step until next traced instruction
+		simulator.addListener(&stepListener);
+		bl = waitIOOrOther(false);
+		
+		// bail out if we hit a listener other than the single step
+		// one -> in this case the experiment is over prematurely
+		if (bl != &stepListener) {
+			// Note, the difference in this case is the diff between the
+			// last correct instruction and the starting point -> this is
+			// useful for TIMEOUT events where the actual time now would be
+			// the complete TIMEOUT whereas we are interested in the time
+			// until execution deviates from the original trace
+			res->set_deviate_steps(t_bailout - t_inject);
+			res->set_deviate_eip(-1);
+			log << "bailing out of single-stepping mode" << endl;
+			break;
+		}
+
+		address_t eip = stepListener.getTriggerInstructionPointer();
+
+		if (!filtering.isValidInstr(eip))
+			continue;
+
+		if (eip != curr_instr.trigger_addr) {
+			// In the case where we see an actual instruction stream deviation, we
+			// want the real diff between NOW and the injection start point
+			t_bailout = simulator.getTimerTicks();
+			log << "got " << hex << eip << " expected "
+				<< curr_instr.trigger_addr << endl;
+
+			log << "mismatch found after " << (t_bailout - t_inject) << " instructions." << endl;
+			res->set_deviate_steps(t_bailout - t_inject);
+			res->set_deviate_eip(eip);
+			
+			return waitIOOrOther(false);
+		}
+	}
+    
+	log << "left single-stepping mode after " << (t_bailout - t_inject)
+		<< " instructions." << endl;
+	return bl;
+}
     
 void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 {
@@ -741,6 +807,14 @@ bool L4SysExperiment::run()
         BPSingleListener ev_done(L4SYS_FUNC_EXIT, L4SYS_ADDRESS_SPACE);
         simulator.addListener(&ev_done);
 
+		// Well-known bailout point -- if we hit L4SYS_BREAK_BLINK, which
+		// is the entry of Vga::blink_cursor(), we know that we are in some
+		// kind of error handler
+		BPSingleListener ev_blink(L4SYS_BREAK_BLINK);
+		simulator.addListener(&ev_blink);
+		BPSingleListener ev_longjmp(L4SYS_BREAK_LONGJMP);
+		simulator.addListener(&ev_longjmp);
+
         unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
         BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
         /*
@@ -761,8 +835,14 @@ bool L4SysExperiment::run()
             << " breakpoints, timeout @ " << ev_timeout.getTimeout()
             << std::endl;
 
+        log << "TOListener " << (void*)&ev_timeout << " incompListener "
+	        << (void*)&ev_incomplete << endl;
+        BaseListener *ev = afterInjection(result);
+        log << "afterInj: res.devstep = " << result->deviate_steps() << endl;
+#if 0
         //do not discard output recorded so far
         BaseListener *ev = waitIOOrOther(false);
+#endif
 
         /* copying a string object that contains control sequences
          * unfortunately does not work with the library I am using,
@@ -778,7 +858,9 @@ bool L4SysExperiment::run()
                 result->set_resulttype(param->msg.WRONG);
                 result->set_output(sanitised(currentOutput.c_str()));
             }
-        } else if (ev == &ev_incomplete) {
+        } else if ((ev == &ev_incomplete) || 
+                   (ev == &ev_blink)      ||
+                   (ev == &ev_longjmp)) {
             log << "Result INCOMPLETE" << endl;
             result->set_resulttype(param->msg.INCOMPLETE);
             result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
