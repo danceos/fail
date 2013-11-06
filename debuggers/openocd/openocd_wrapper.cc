@@ -30,11 +30,14 @@ extern "C" {
 
 #include <cassert>
 #include <ostream>
+#include <vector>
 #include <sys/time.h>
 #include "config/VariantConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/arm/ArmArchitecture.hpp"
+
+#include "sal/arm/ArmMemoryInstruction.hpp"
 
 #include "util/Logger.hpp"
 
@@ -78,18 +81,59 @@ static bool horizontal_step = false;
 static bool single_step_requested = false;
 
 /*
- * If a trap was detected and the simulator has no TrapListener, the execution would
- * continue in fault state. This flag is set to false, when a trap is detected and
- * reset to true, when a reboot is done.
+ * Variables for monitoring BP/WP resources
+ * Reset at reboot
  */
-static bool trap_handled = true;
+static uint8_t free_watchpoints = 4;
+static uint8_t free_breakpoints = 6;
 
 /*
- * Trap-handler routine address for BP-hook.
+ * Analyzer for memory accesses on basis of elf file
  */
-#define pc_trap_handler 0x80e80010
+static fail::ArmMemoryInstructionAnalyzer inst_analyzer;
 
-// Timer related structures
+/*
+ * Elf reader for reading symbols in startup-code
+ */
+static fail::ElfReader elf_reader;
+
+static uint32_t sym_GenericTrapHandler, sym_MmuFaultBreakpointHook,
+				sym_SafetyLoopBegin, sym_SafetyLoopEnd,
+				sym_addr_PageTableFirstLevel, sym_addr_PageTableSecondLevel;
+
+/*
+ * MMU related structures
+ */
+
+enum descriptor_e {
+	DESCRIPTOR_SECTION,
+	DESCRIPTOR_PAGE,
+};
+
+struct mmu_first_lvl_descr {
+	enum descriptor_e type;
+	bool mapped;
+	bool *second_lvl_mapped;
+};
+
+static bool mmu_recovery_needed = false;
+static uint32_t mmu_recovery_address;
+static struct halt_condition mmu_recovery_bp;
+
+static struct mmu_first_lvl_descr mmu_conf [4096];
+
+struct mem_range {
+	uint32_t address;
+	uint32_t width;
+};
+
+static std::vector<struct mem_range> mmu_watch_add_waiting_list;
+static std::vector<struct mem_range> mmu_watch_del_waiting_list;
+static std::vector<struct mem_range> mmu_watch;
+
+/*
+ *  Timer related structures
+ */
 #define P_MAX_TIMERS 32
 struct timer{
     bool inUse;      			// Timer slot is in-use (currently registered).
@@ -100,22 +144,37 @@ struct timer{
 								//   timer fires.
     void *this_ptr;            	// The this-> pointer for C++ callbacks
                             	//   has to be stored as well.
+    bool freezed;
 #define PMaxTimerIDLen 32
     char id[PMaxTimerIDLen]; 	// String ID of timer.
 };
 
-struct timer timers[P_MAX_TIMERS];
+static struct timer timers[P_MAX_TIMERS];
 
 fail::Logger LOG("OpenOCD", false);
 
 /** FORWARD DECLARATIONS **/
 static void update_timers();
+static void freeze_timers();
+static void unfreeze_timers();
 static struct watchpoint *getHaltingWatchpoint();
 static void getCurrentMemAccesses(struct halt_condition *accesses);
 static uint32_t getCurrentPC();
 static struct reg *get_reg_by_number(unsigned int num);
 static void read_dpm_register(uint32_t reg_num, uint32_t *data);
-static bool is_mmu_permission_trap(uint32_t dfsr);
+static void init_symbols();
+
+static void invalidate_tlb();
+static void update_mmu_watch();
+static bool update_mmu_watch_add();
+static bool update_mmu_watch_remove();
+static void get_range_diff(std::vector<struct mem_range> &before, std::vector<struct mem_range> &after, std::vector<struct mem_range> &diff);
+static void unmap_page_section(uint32_t address);
+static std::vector<struct mem_range>::iterator find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec);
+static void execute_buffered_writes(std::vector<std::pair<uint32_t, uint32_t> > &buf) ;
+static void merge_mem_ranges (std::vector<struct mem_range> &in_out);
+static bool compareByAddress(const struct mem_range &a, const struct mem_range &b);
+static void force_page_alignment_mem_range (std::vector<struct mem_range> &in, std::vector<struct mem_range> &out);
 
 /*
  * Main entry and main loop.
@@ -206,6 +265,8 @@ int main(int argc, char *argv[])
 		timers[i].inUse = false;
 	}
 
+	init_symbols();
+
 	/* === INITIALIZATION COMPLETE => MAIN LOOP === */
 
 	/*
@@ -246,7 +307,9 @@ int main(int argc, char *argv[])
 			 */
 			single_step_requested = false;
 
+			freeze_timers();
 			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
+			unfreeze_timers();
 		}
 
 		// Shortcut loop exit for tracing
@@ -258,7 +321,15 @@ int main(int argc, char *argv[])
 		 * In the following loop stage it is assumed, that the target is
 		 * running, so execution needs to be resumed, if the target is
 		 * halted.
+		 * Before we resume, any potential MMU modifications must be
+		 * programmed into the device
+		 * As this programming should be done offline, we need to freeze the
+		 * timers for the configuration period.
 		 */
+		freeze_timers();
+		update_mmu_watch();
+		unfreeze_timers();
+
 		if (target_a9->state == TARGET_HALTED) {
 			LOG << "Resume" << endl;
 			if (target_resume(target_a9, 1, 0, 1, 1)) {
@@ -280,7 +351,7 @@ int main(int argc, char *argv[])
 
 		// Check for halt and trigger event accordingly
 		if (target_a9->state == TARGET_HALTED) {
-
+			// ToDo: Outsource
 			uint32_t pc = getCurrentPC();
 
 			// After coroutine-switch, dbg-reason might change, so it must
@@ -288,46 +359,74 @@ int main(int argc, char *argv[])
 			enum target_debug_reason current_dr = target_a9->debug_reason;
 			switch (current_dr) {
 			case DBG_REASON_WPTANDBKPT:
-				/* Fall through */
+				/* Fall through for handling of BP and WP*/
 			case DBG_REASON_BREAKPOINT:
-				if (pc == pc_trap_handler) {
-
-					trap_handled = false;
-
-					uint32_t dfar, dfsr;
-					oocdw_read_reg(fail::RI_DFAR, &dfar);
-					oocdw_read_reg(fail::RI_DFSR, &dfsr);
-
-					// ToDo: alignment trap: 00001
-
-					if (is_mmu_permission_trap(dfsr)) {
-						bool is_write = dfsr & (1 << 11);
-						uint32_t lr_abt;
-						oocdw_read_reg(fail::RI_LR_ABT, &lr_abt);
-						// LR offset is -8
-						LOG << "MMU permission trap: dfar: " << hex << dfar << " Write: " << is_write << " PC: " << lr_abt -8 << endl;
-						fail::simulator.onMemoryAccess(NULL, dfar, 1, is_write, lr_abt - 8);
-						// FixMe: If memory boundary is not 4k-aligned, we might not have an
-						// unauthorized memory access, here.
-						// In this case we have to reprogram the mmu permissions for that page,
-						// single-step over instruction and restore permissions, afterwards
-						// (Could become time consuming, if many memory accesses are on such
-						// a page)
-					} else {
-						fail::simulator.onTrap(NULL, fail::ANY_TRAP);
-					}
-
-					if (!trap_handled) {
-						LOG << "FATAL ERROR: Trap not handled by SimulatorController. Terminating." << endl;
+				if (mmu_recovery_needed) {
+					// Check for correct pc
+					if (pc != mmu_recovery_bp.address) {
+						LOG << "FATAL ERROR: Something went wrong while handling mmu event" << endl;
 						exit(-1);
 					}
-					break;
+
+					// Reset mapping at mmu_recovery_address
+					// write into memory at mmu_recovery_address to map page/section
+					unmap_page_section(mmu_recovery_address);
+
+					invalidate_tlb();
+
+					// remove this BP
+					oocdw_delete_halt_condition(&mmu_recovery_bp);
+
+					mmu_recovery_needed = false;
+				} else if (pc == sym_MmuFaultBreakpointHook) {
+					uint32_t lr_abt;
+					oocdw_read_reg(fail::RI_LR_ABT, &lr_abt);
+
+					// ToDo: GP register read faster? DFAR also available in reg 3
+					uint32_t dfar;
+					oocdw_read_reg(fail::RI_DFAR, &dfar);
+
+					// ToDo: Get potential additional memory accesses and access width (InstructionAnalyzer)
+					fail::MemoryInstruction mi;
+					if (!inst_analyzer.eval((fail::address_t)pc, mi)) {
+						LOG << "FATAL ERROR: Memory accessing instruction could not be analyzed" << endl;
+						exit(-1);
+					}
+
+					/*
+					 *  set BP on the instruction, which caused the abort, singlestep and recover previous mmu state
+					 *  ToDO: This might be inefficient, because often the event trigger will cause a system reset
+					 *  and so this handling is done for nothing, but we must not do anything after triggering a event.
+					 */
+					mmu_recovery_bp.address = lr_abt - 8;
+					mmu_recovery_bp.addr_len = 4;
+					mmu_recovery_bp.type = HALT_TYPE_BP;
+
+					// ToDO: If all BPs used, delete and memorize any of these
+					// as we will for sure first halt in the recovery_bp, we can
+					// then readd it
+					oocdw_set_halt_condition(&mmu_recovery_bp);
+
+					mmu_recovery_needed = true;
+
+					freeze_timers();
+					fail::simulator.onMemoryAccess(NULL, dfar, mi.getWidth(), mi.isWriteAccess(), lr_abt - 8);
+					unfreeze_timers();
+				} else if (pc == sym_GenericTrapHandler) {
+					freeze_timers();
+					fail::simulator.onTrap(NULL, fail::ANY_TRAP);
+					unfreeze_timers();
+					// ToDo: Check for handling by experiment (reboot) and throw error otherwise
+				} else {
+					freeze_timers();
+					fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
+					unfreeze_timers();
 				}
-				fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
+
 				if (current_dr == DBG_REASON_BREAKPOINT) {
 					break;
 				}
-				/* Potential fall through */
+				/* Potential fall through (Breakpoint and Watchpoint)*/
 			case DBG_REASON_WATCHPOINT:
 			{
 				// ToDo: Replace with calls of every current memory access
@@ -355,8 +454,9 @@ int main(int argc, char *argv[])
 						return 1;
 						break;
 				}
-
+				freeze_timers();
 				fail::simulator.onMemoryAccess(NULL, wp->address, wp->length, iswrite, pc);
+				unfreeze_timers();
 			}
 				break;
 			case DBG_REASON_SINGLESTEP:
@@ -375,7 +475,7 @@ int main(int argc, char *argv[])
 			if (target_a9->state == TARGET_HALTED && horizontal_step) {
 				if (target_step(target_a9, 1, 0, 1)) {
 					LOG << "FATAL ERROR: Single-step could not be executed!" << endl;
-					return 1;
+					exit (-1);
 				}
 				// Reset horizontal hop flag
 				horizontal_step = false;
@@ -401,57 +501,12 @@ int main(int argc, char *argv[])
     exit(oocdw_exCode);
 }
 
-static uint32_t cc_overflow = 0;
-
-uint64_t oocdw_read_cycle_counter()
+void oocdw_finish(int exCode)
 {
-	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
-	struct arm_dpm *dpm = armv7a->arm.dpm;
-	int retval;
-	retval = dpm->prepare(dpm);
-
-	if (retval != ERROR_OK) {
-		LOG << "Unable to prepare for reading dpm register" << endl;
-	}
-
-	uint32_t data, flags;
-
-	// PMCCNTR
-	retval = dpm->instr_read_data_r0(dpm,
-			ARMV4_5_MRC(15, 0, 0, 9, 13, 0),
-			&data);
-
-	if (retval != ERROR_OK) {
-		LOG << "Unable to read PMCCNTR-Register" << endl;
-	}
-
-	// PMOVSR
-	retval = dpm->instr_read_data_r0(dpm,
-			ARMV4_5_MRC(15, 0, 0, 9, 12, 3),
-			&flags);
-
-	if (retval != ERROR_OK) {
-		LOG << "Unable to read PMOVSR-Register" << endl;
-	}
-
-	if (flags & (1 << 31)) {
-		cc_overflow++;
-
-		flags ^= (1 << 31);
-
-		retval = dpm->instr_write_data_r0(dpm,
-				ARMV4_5_MCR(15, 0, 0, 9, 12, 3),
-				flags);
-
-		if (retval != ERROR_OK) {
-			LOG << "Unable to read PMOVSR-Register" << endl;
-		}
-	}
-
-	dpm->finish(dpm);
-
-	return (uint64_t)data + ((uint64_t)cc_overflow << 32);
+	oocdw_exection_finished = true;
+	oocdw_exCode = exCode;
 }
+
 
 void oocdw_set_halt_condition(struct halt_condition *hc)
 {
@@ -463,11 +518,16 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 
 	if (hc->type == HALT_TYPE_BP) {
 		LOG << "Adding BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
+		if (!free_breakpoints) {
+			LOG << "FATAL ERROR: No free breakpoints left" << endl;
+			exit(-1);
+		}
 		if (breakpoint_add(target_a9, hc->address,
 					hc->addr_len, BKPT_HARD)) {
 			LOG << "FATAL ERROR: Breakpoint could not be set" << endl;
 			exit(-1);
 		}
+		free_breakpoints--;
 
 		// Compare current pc with set breakpoint (potential horizontal hop)
 		if (hc->address == getCurrentPC()) {
@@ -476,6 +536,17 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		single_step_requested = true;
 	} else {
+		if ((hc->addr_len > 4) || !free_watchpoints) {
+			// Use MMU for watching
+			LOG << "Setting up MMU to watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
+
+			struct mem_range mr;
+			mr.address = hc->address;
+			mr.width = hc->addr_len;
+
+			mmu_watch_add_waiting_list.push_back(mr);
+			return;
+		}
 		LOG << "Adding WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
 				((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
 
@@ -496,6 +567,7 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 			LOG << "FATAL ERROR: Watchpoint could not be set" << endl;
 			exit(-1);
 		}
+		free_watchpoints--;
 
 		// Compare current memory access events with set watchpoint
 		// (potential horizontal hop)
@@ -529,15 +601,29 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 	if (hc->type == HALT_TYPE_BP) {
 		LOG << "Removing BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
 		breakpoint_remove(target_a9, hc->address);
+		free_breakpoints++;
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		// Do nothing. Single-stepping event hits one time and
 		// extinguishes itself automatically
 	} else if ((hc->type == HALT_TYPE_WP_READWRITE) ||
 			(hc->type == HALT_TYPE_WP_READ) ||
 			(hc->type == HALT_TYPE_WP_WRITE)) {
+		// Watched by mmu?
+		struct mem_range mr;
+		mr.address = hc->address;
+		mr.width = hc->addr_len;
+		std::vector<struct mem_range>::iterator search;
+		search = find_mem_range_in_vector(mr, mmu_watch);
+		if (search != mmu_watch.end()) {
+			LOG << "Setting up MMU to NO LONGER watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
+			mmu_watch_del_waiting_list.push_back(mr);
+			return;
+		}
+
 		watchpoint_remove(target_a9, hc->address);
-		LOG << "Removing WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
-			((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
+		free_watchpoints++;
+		LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len << ":" <<
+			((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W") << dec<< endl;
 	}
 }
 
@@ -595,6 +681,11 @@ void oocdw_reboot()
 	int retval, fail_counter = 1;
 	bool reboot_success = false;
 
+	for (int i=0; i<P_MAX_TIMERS; i++) {
+		timers[i].freezed = false;
+		timers[i].active = false;
+	}
+
 	while (!reboot_success) {
 		LOG << "Rebooting device" << endl;
 		reboot_success = true;
@@ -617,6 +708,26 @@ void oocdw_reboot()
          */
         breakpoint_clear_target(target_a9);
         watchpoint_clear_target(target_a9);
+
+        /*
+         * Reset state structures
+         */
+        free_watchpoints = 4;
+        free_breakpoints = 6;
+        mmu_recovery_needed = false;
+        mmu_watch.clear();
+        mmu_watch_add_waiting_list.clear();
+        mmu_watch_del_waiting_list.clear();
+
+
+        // Standard configuration: Sections only, all mapped
+        for (int i = 0; i < 4096; i++) {
+        	if (mmu_conf[i].type == DESCRIPTOR_PAGE) {
+        		delete[] mmu_conf[i].second_lvl_mapped;
+        		mmu_conf[i].type = DESCRIPTOR_SECTION;
+        	}
+        	mmu_conf[i].mapped = true;
+        }
 
 		/*
 		 * The actual reset command executed by OpenOCD jimtcl-engine
@@ -647,15 +758,16 @@ void oocdw_reboot()
 		}
 
 		// Check if halted in safety loop
-		uint32_t pc = buf_get_u32(arm_a9->pc->value, 0, 32);
-		if (pc < SAFETYLOOP_BEGIN || pc > SAFETYLOOP_END) {
+		uint32_t pc = getCurrentPC();
+
+		if (pc < sym_SafetyLoopBegin || pc >= sym_SafetyLoopEnd) {
 			LOG << "NOT IN LOOP!!! PC: " << hex << pc << dec << std::endl;
 
 			// BP on entering main
 			struct halt_condition hc;
 
 			// ToDo: Non static MAIN ENTRY
-			hc.address = SAFETYLOOP_END;
+			hc.address = sym_SafetyLoopEnd - 4;
 			hc.addr_len = 4;
 			hc.type = HALT_TYPE_BP;
 			oocdw_set_halt_condition(&hc);
@@ -692,41 +804,27 @@ void oocdw_reboot()
 		}
 
 		if (reboot_success) {
-			// Jump over safety loop (set PC)
-			oocdw_write_reg(15, SAFETYLOOP_END + 0x4);
+			/*
+			 * Jump over safety loop (set PC)
+			 * This can be done, because we know that the following code does
+			 * not use any register values, which could be set in the loop
+			 */
+			oocdw_write_reg(15, sym_SafetyLoopEnd);
 		}
 
-		// Initially set BP as trap hook
+		// Initially set BP for generic traps
 		struct halt_condition hc;
 		hc.type = HALT_TYPE_BP;
-		hc.address = pc_trap_handler;
+		hc.address = sym_GenericTrapHandler;
 		hc.addr_len = 4;
 		oocdw_set_halt_condition(&hc);
 
-		if (!trap_handled) {
-			trap_handled = true;
-		}
+		// Initially set BP for mmu abort handler
+		hc.type = HALT_TYPE_BP;
+		hc.address = sym_MmuFaultBreakpointHook;
+		hc.addr_len = 4;
+		oocdw_set_halt_condition(&hc);
 	}
-}
-
-static bool is_mmu_permission_trap(uint32_t dfsr) {
-	// ARM ARM B4.1.52
-	// Short-/Long-descriptor translation table format
-	uint32_t lpae = dfsr & (1 << 9);
-	if (lpae) {
-		uint32_t status = dfsr & 0b111111;
-		// 0b0011xx, level does not matter
-		if ((status & 0b111100) == 0b001100) {
-			return true;
-		}
-	} else {
-		uint32_t status = ((dfsr & (1 << 10)) >> 5) | (dfsr & 0b1111);
-		// 0b011x1
-		if ((status & 0b11101) == 0b01101) {
-			return true;
-		}
-	}
-	return false;
 }
 
 /*
@@ -746,8 +844,9 @@ static struct reg *get_reg_by_number(unsigned int num)
 				break;
 			}
 		}
-		if (reg)
+		if (reg) {
 			break;
+		}
 		cache = cache->next;
 	}
 
@@ -904,11 +1003,6 @@ void oocdw_write_reg(uint32_t reg_num, uint32_t data)
 	}
 }
 
-void oocdw_finish(int exCode)
-{
-	oocdw_exection_finished = true;
-	oocdw_exCode = exCode;
-}
 
 void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
 					uint32_t chunk_num, uint8_t *data)
@@ -975,9 +1069,11 @@ static void update_timers()
 {
 	for (int i=0; i<P_MAX_TIMERS; i++ ) {
 		if (timers[i].inUse && timers[i].active) {
-			struct timeval t_now;
+			struct timeval t_now, t_diff;
 			gettimeofday(&t_now, NULL);
-			uint64_t useconds_delta = (t_now.tv_sec - timers[i].time_begin.tv_sec) * 1000000 + t_now.tv_usec - timers[i].time_begin.tv_usec;
+			timersub(&t_now, &timers[i].time_begin, &t_diff);
+
+			uint64_t useconds_delta = t_diff.tv_sec * 1000000 + t_diff.tv_usec;
 
 			if (timers[i].timeToFire <= useconds_delta) {
 				// Halt target to get defined halted state at experiment end
@@ -1002,14 +1098,30 @@ static uint32_t getCurrentPC()
  */
 static void getCurrentMemAccesses(struct halt_condition *accesses)
 {
-	// ToDo: Get all 1-byte memory access events of current
+	// ToDo: Get all memory access events of current
 	//		 instruction. For now return empty array.
-	accesses[0].address = 0;
+
+	uint32_t pc = getCurrentPC();
+
+	int i = 0;
+
+	fail::MemoryInstruction mi;
+
+	// TODO: Loop for multiple accesses?
+	if (inst_analyzer.eval(pc, mi)) {
+		accesses[i].address = mi.getAddress();
+		accesses[i].addr_len = mi.getWidth();
+		accesses[i].type = mi.isWriteAccess() ? HALT_TYPE_WP_WRITE : HALT_TYPE_WP_READ;
+		i++;
+	}
+
+	accesses[i].address = 0;
 }
 
 /*
  * If only one watchpoint is active, this checkpoint gets returned by
  * this function
+ * Will be eliminated by disassembling and evaluating instruction
  */
 static struct watchpoint *getHaltingWatchpoint()
 {
@@ -1020,4 +1132,582 @@ static struct watchpoint *getHaltingWatchpoint()
 		return NULL;
 	}
 	return watchpoint;
+}
+static uint32_t cc_overflow = 0;
+
+uint64_t oocdw_read_cycle_counter()
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to prepare for reading dpm register" << endl;
+	}
+
+	uint32_t data, flags;
+
+	// PMCCNTR
+	retval = dpm->instr_read_data_r0(dpm,
+			ARMV4_5_MRC(15, 0, 0, 9, 13, 0),
+			&data);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to read PMCCNTR-Register" << endl;
+	}
+
+	// PMOVSR
+	retval = dpm->instr_read_data_r0(dpm,
+			ARMV4_5_MRC(15, 0, 0, 9, 12, 3),
+			&flags);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to read PMOVSR-Register" << endl;
+	}
+
+	if (flags & (1 << 31)) {
+		cc_overflow++;
+
+		flags ^= (1 << 31);
+
+		retval = dpm->instr_write_data_r0(dpm,
+				ARMV4_5_MCR(15, 0, 0, 9, 12, 3),
+				flags);
+
+		if (retval != ERROR_OK) {
+			LOG << "Unable to read PMOVSR-Register" << endl;
+		}
+	}
+
+	dpm->finish(dpm);
+
+	return (uint64_t)data + ((uint64_t)cc_overflow << 32);
+}
+
+static void init_symbols()
+{
+	sym_GenericTrapHandler = elf_reader.getSymbol("GenericTrapHandler").getAddress();
+	sym_MmuFaultBreakpointHook = elf_reader.getSymbol("MmuFaultBreakpointHook").getAddress();
+	sym_SafetyLoopBegin = elf_reader.getSymbol("SafetyloopBegin").getAddress();
+	sym_SafetyLoopEnd = elf_reader.getSymbol("SafetyloopEnd").getAddress();
+	sym_addr_PageTableFirstLevel = elf_reader.getSymbol("A9TTB").getAddress();
+	sym_addr_PageTableSecondLevel = elf_reader.getSymbol("A9TTB_L2").getAddress();
+	LOG << hex << "SYMBOLS READ: " << endl <<
+			"GenericTrapHandler     " << sym_GenericTrapHandler << endl <<
+			"MmuFaultBreakpointHook " << sym_MmuFaultBreakpointHook << endl <<
+			"SafetyLoopBegin        " << sym_SafetyLoopBegin << endl <<
+			"SafetyLoopEnd          " << sym_SafetyLoopEnd << endl <<
+			"A9TTB                  " << sym_addr_PageTableFirstLevel << endl <<
+			"A9TTB_L2               " << sym_addr_PageTableSecondLevel << dec << endl;
+	if (!sym_GenericTrapHandler || !sym_MmuFaultBreakpointHook || !sym_SafetyLoopBegin || !sym_SafetyLoopEnd
+			|| !sym_addr_PageTableFirstLevel || !sym_addr_PageTableSecondLevel) {
+		LOG << "FATAL ERROR: Not all relevant symbols were found" << endl;
+		exit(-1);
+	}
+}
+
+static void invalidate_tlb()
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "FATAL ERROR: Unable to prepare for reading dpm register" << endl;
+		exit (-1);
+	}
+
+	retval = dpm->instr_write_data_r0(dpm,
+		ARMV4_5_MCR(15, 0, 0, 8, 7, 0),
+		0);
+
+	if (retval != ERROR_OK) {
+		LOG << "FATAL ERROR: Unable to invalidate TLB" << endl;
+		exit (-1);
+	}
+
+	dpm->finish(dpm);
+}
+
+struct mmu_page_section {
+	enum descriptor_e type;
+	uint32_t index;
+};
+
+static void divide_into_pages_and_sections(const struct mem_range &in, std::vector<struct mmu_page_section> &out)
+{
+	struct mmu_page_section ps;
+
+	uint32_t address = in.address;
+	uint32_t width = in.width;
+
+	// add pre-section pages
+	while ((width > 0) && ((address % 0x100000) != 0)) {
+		// LOG << "PAGE: " << hex << address << endl;
+		ps.index = ((address >> 20) * 256) + ((address >> 12) & 0xFF);
+		ps.type = DESCRIPTOR_PAGE;
+		out.push_back(ps);
+
+		address += 0x1000;
+		width -= 0x1000;
+	}
+
+	// add sections
+	while (width >= 0x100000) {
+		// LOG << "SECTION: " << hex << address << endl;
+		ps.index = address >> 20;
+		ps.type = DESCRIPTOR_SECTION;
+		out.push_back(ps);
+
+		address += 0x100000;
+		width -= 0x100000;
+	}
+
+	// add post-section pages
+	while (width > 0) {
+		// LOG << "PAGE: " << hex << address << endl;
+		ps.index = ((address >> 20) * 256) + ((address >> 12) & 0xFF);
+		ps.type = DESCRIPTOR_PAGE;
+		out.push_back(ps);
+
+		address += 0x1000;
+		width -= 0x1000;
+	}
+}
+
+static void force_page_alignment_mem_range (std::vector<struct mem_range> &in, std::vector<struct mem_range> &out)
+{
+	std::vector<struct mem_range>::iterator it;
+	for (it = in.begin(); it != in.end(); it++) {
+		struct mem_range tmp;
+
+		if ((it->address % 0x1000) != 0) {
+			tmp.address = it->address - (it->address % 0x1000);
+			tmp.width = it->width + (it->address % 0x1000);
+		} else {
+			tmp.address = it->address;
+			tmp.width = it->width;
+		}
+
+		if ((tmp.width % 0x1000) != 0) {
+			tmp.width += 0x1000 - (tmp.width % 0x1000);
+		}
+
+		out.push_back(tmp);
+	}
+}
+
+static bool compareByAddress(const struct mem_range &a, const struct mem_range &b)
+{
+    return a.address < b.address;
+}
+
+static void merge_mem_ranges (std::vector<struct mem_range> &in_out)
+{
+	// sort ascending by address
+	std::sort(in_out.begin(), in_out.end(), compareByAddress);
+
+	std::vector<struct mem_range>::iterator it, next_it;
+	it = in_out.begin();
+	next_it = it; next_it++;
+	while(it != in_out.end() && next_it != in_out.end()) {
+		if ((it->address + it->width) >= next_it->address) {
+			uint32_t additive_width = (next_it->address - it->address) + next_it->width;
+			if (additive_width > it->width) {
+				it->width = additive_width;
+			}
+			in_out.erase(next_it);
+			next_it = it; next_it++;
+		} else {
+			it++; next_it++;
+		}
+	}
+}
+
+/*
+ * ToDo: Sort buffer first? (will be problematic with order of writes)
+ * ToDo: Bigger buffer size?
+ * ToDo: Use this for all writes?
+ */
+static void execute_buffered_writes(std::vector<std::pair<uint32_t, uint32_t> > &buf) {
+	std::vector<std::pair<uint32_t, uint32_t> >::iterator it_buf = buf.begin(), it_next;
+
+	it_next = it_buf; it_next++;
+	if (it_buf != buf.end()) {
+		uint32_t start_address = it_buf->first;
+		uint32_t data [256];
+		int data_idx = 0;
+		for (; it_buf != buf.end(); it_buf++) {
+			data[data_idx++] = it_buf->second;
+			if (it_next == buf.end() || (it_buf->first + 4) != it_next->first || data_idx == 256) {
+				LOG << "Writing " << data_idx << " buffered items to address " << hex << start_address << dec << endl;
+				oocdw_write_to_memory(start_address, 4, data_idx, (unsigned char*)(data), true);
+				if (it_next == buf.end()) {
+					break;
+				}
+				data_idx = 0;
+				start_address = it_next->first;
+			}
+			it_next++;
+		}
+	}
+}
+
+static bool update_mmu_watch_add()
+{
+	bool invalidate = false;
+
+	std::vector<struct mem_range>::iterator it;
+	for (it = mmu_watch_add_waiting_list.begin(); it != mmu_watch_add_waiting_list.end(); it++) {
+		// already watched?
+		std::vector<struct mem_range>::iterator search;
+		search = find_mem_range_in_vector(*it, mmu_watch);
+		if (search != mmu_watch.end()) {
+			LOG << hex << "FATAL ERROR: Memory Range already watched. Address: "
+					<< it->address << ", width: " << it->width << dec << endl;
+			exit(-1);
+		}
+
+		// memorise exact range to watch
+		mmu_watch.push_back(*it);
+	}
+	mmu_watch_add_waiting_list.clear();
+
+	std::vector<struct mem_range> mmu_watch_aligned;
+	force_page_alignment_mem_range(mmu_watch, mmu_watch_aligned);
+
+	// Merge existing and new configuration and merge direct neighbours
+	merge_mem_ranges(mmu_watch_aligned);
+
+	std::vector<std::pair<uint32_t, uint32_t> >buffer_for_chunked_write;
+
+	// We don't calculate a diff of previous and new configuration, because the
+	// descriptor structures will tell us, if a targeted part was already unmapped
+	// In this case we just do nothing
+
+	for (it = mmu_watch_aligned.begin(); it != mmu_watch_aligned.end(); it++) {
+		std::vector<struct mmu_page_section> candidates;
+		divide_into_pages_and_sections(*it, candidates);
+
+		std::vector<struct mmu_page_section>::iterator cand_it;
+		for (cand_it = candidates.begin(); cand_it != candidates.end(); cand_it++) {
+			struct mmu_first_lvl_descr *first_lvl;
+			if (cand_it->type == DESCRIPTOR_PAGE) {
+				first_lvl = &mmu_conf[cand_it->index/256];
+				if (first_lvl->type == DESCRIPTOR_SECTION) {
+					if (!first_lvl->mapped) {
+						continue;
+					}
+					// Set 1st lvl descriptor to link to 2nd-lvl table
+					uint32_t pageTableAddress =sym_addr_PageTableSecondLevel + ((cand_it->index - (cand_it->index % 256)) * 4);
+					uint32_t descr_content = pageTableAddress | 0x1e9;
+					uint32_t target_address = sym_addr_PageTableFirstLevel + ((cand_it->index / 256) * 4);
+					LOG << "Writing to " << hex << target_address << dec << endl;
+					oocdw_write_to_memory(target_address , 4, 1, (unsigned char*)(&descr_content), true);
+					invalidate = true;
+					first_lvl->second_lvl_mapped = new bool[256];
+
+					for (int i = 0; i < 256; i++) {
+						first_lvl->second_lvl_mapped[i] = true;
+						descr_content = (((cand_it->index - (cand_it->index % 256)) + i) << 12) | 0x32;
+						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
+								pageTableAddress + (i  * 4),
+								descr_content));
+					}
+					first_lvl->type = DESCRIPTOR_PAGE;
+				}
+
+				// as the type of the first_lvl descriptor should have changed, this if-condition
+				// will also be executed, if the previous one was and if the section was not
+				// already unmapped
+				if (first_lvl->type == DESCRIPTOR_PAGE) {
+					if (first_lvl->second_lvl_mapped[cand_it->index % 256]) {
+						uint32_t descr_content = (cand_it->index << 12) | 0x30;
+						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
+							sym_addr_PageTableSecondLevel + (cand_it->index  * 4),
+							descr_content));
+						first_lvl->second_lvl_mapped[cand_it->index % 256] = false;
+						invalidate = true;
+					}
+				}
+			} else if (cand_it->type == DESCRIPTOR_SECTION) {
+
+				first_lvl = &mmu_conf[cand_it->index];
+				if (first_lvl->type == DESCRIPTOR_PAGE) {
+					// Bring up to Section descriptor
+					first_lvl->type = DESCRIPTOR_SECTION;
+					// This information is not entirely valid, but it will be used
+					// by the next if-clause to unmap the whole section.
+					// Whatever configuration was made on page-lvl won't be used any more
+					first_lvl->mapped = true;
+					delete[] first_lvl->second_lvl_mapped;
+					// all the rest is handled in the next if condition
+				}
+
+				if (first_lvl->type == DESCRIPTOR_SECTION) {
+					if (first_lvl->mapped) {
+						uint32_t descr_content = (cand_it->index << 20) | 0xc00;
+						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
+						LOG << "Writing to " << hex << descr_addr << dec << endl;
+						oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
+						LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;
+						first_lvl->mapped = false;
+						invalidate = true;
+					}
+				}
+			}
+		}
+	}
+
+	execute_buffered_writes(buffer_for_chunked_write);
+
+	return invalidate;
+}
+
+static void get_range_diff(std::vector<struct mem_range> &before, std::vector<struct mem_range> &after, std::vector<struct mem_range> &diff)
+{
+	// sort both before and after vector ascending by address
+	std::sort(before.begin(), before.end(), compareByAddress);
+	std::sort(after.begin(), after.end(), compareByAddress);
+
+	/*
+	 * There are now 5 possible cases for every entry in <before>:
+	 *
+	 * 			1)			2)			3)			4)			5)
+	 * Before:	|------|	|------|	|------|	|------|	|------|
+	 * After:				|------|	|----|	  	  |----|	  |--|
+	 */
+
+	std::vector<struct mem_range>::iterator it_before;
+	std::vector<struct mem_range>::iterator it_after = after.begin();
+	for (it_before = before.begin(); it_before != before.end(); it_before++) {
+
+		// case 1
+		if (it_after == after.end() || (it_after->address > (it_before->address + it_before->width))) {
+			diff.push_back(*it_before);
+		} else if (it_after->address == it_before->address) {
+			if (it_after->width == it_before->width) {			// case 2
+				continue;
+			} else if (it_after->width < it_before->width) {	// case 3
+				struct mem_range tmp;
+				tmp.address = it_after->address + it_after->width;
+				tmp.width = it_before->width - it_after->width;
+				diff.push_back(tmp);
+			} else {
+				LOG << "FATAL ERROR: Unexpected result in mmu diff calculation" << endl;
+				exit(-1);
+			}
+		} else if (it_after->address > it_before->address) {
+			uint32_t address_diff = it_after->address - it_before->address;
+			if ((it_after->width + address_diff) == it_before->width) {		// case 4
+				struct mem_range tmp;
+				tmp.address = it_before->address;
+				tmp.width = address_diff;
+				diff.push_back(tmp);
+			} else if ((it_after->width + address_diff) < it_before->width) {	// case 5
+				struct mem_range tmp_a, tmp_b;
+				tmp_a.address = it_before->address;
+				tmp_a.width = address_diff;
+				tmp_b.address = it_after->address + it_after->width;
+				tmp_b.width = it_before->width - address_diff - it_after->width;
+				diff.push_back(tmp_a);
+				diff.push_back(tmp_b);
+			} else {
+				LOG << "FATAL ERROR: Unexpected result in mmu diff calculation" << endl;
+				exit(-1);
+			}
+		} else {
+			LOG << "FATAL ERROR: Unexpected result in mmu diff calculation" << endl;
+			exit(-1);
+		}
+	}
+}
+
+static bool update_mmu_watch_remove()
+{
+	bool invalidate = false;
+
+	std::vector<struct mem_range> mmu_watch_aligned_before;
+	force_page_alignment_mem_range(mmu_watch, mmu_watch_aligned_before);
+
+	std::vector<struct mem_range>::iterator it;
+	for (it = mmu_watch_del_waiting_list.begin(); it != mmu_watch_del_waiting_list.end(); it++) {
+		// Remove from mmu_watch
+		std::vector<struct mem_range>::iterator search;
+		search = find_mem_range_in_vector(*it, mmu_watch);
+		if (search == mmu_watch.end()) {
+			LOG << hex << "FATAL ERROR: MMU could not be configured to no longer watch address: "
+					<< it->address << ", width: " << it->width << dec << endl;
+			exit(-1);
+		}
+		mmu_watch.erase(search);
+	}
+	mmu_watch_del_waiting_list.clear();
+
+	std::vector<struct mem_range> mmu_watch_aligned_after;
+	force_page_alignment_mem_range(mmu_watch, mmu_watch_aligned_after);
+
+	std::vector<struct mem_range> mmu_watch_aligned_diff;
+	get_range_diff(mmu_watch_aligned_before, mmu_watch_aligned_after, mmu_watch_aligned_diff);
+
+	std::vector<std::pair<uint32_t, uint32_t> >buffer_for_chunked_write;
+
+	// Remove difference from mmu conf
+	for (it = mmu_watch_aligned_diff.begin(); it != mmu_watch_aligned_diff.end(); it++) {
+		std::vector<struct mmu_page_section> candidates;
+		divide_into_pages_and_sections(*it, candidates);
+
+		std::vector<struct mmu_page_section>::iterator cand_it;
+		for (cand_it = candidates.begin(); cand_it != candidates.end(); cand_it++) {
+			struct mmu_first_lvl_descr *first_lvl;
+			if (cand_it->type == DESCRIPTOR_PAGE) {
+				first_lvl = &mmu_conf[cand_it->index/256];
+				if (first_lvl->type == DESCRIPTOR_SECTION) {
+					if (first_lvl->mapped) {
+						// ToDo: Throw error? This is unexpected!
+						continue;
+					}
+					// Set 1st lvl descriptor to link to 2nd-lvl table
+					uint32_t pageTableAddress = sym_addr_PageTableSecondLevel + ((cand_it->index - (cand_it->index % 256)) * 4);
+					uint32_t descr_content = pageTableAddress | 0x1e9;
+					uint32_t target_address = sym_addr_PageTableFirstLevel + ((cand_it->index / 256) * 4);
+					LOG << "Writing to " << hex <<  target_address << dec << endl;
+					oocdw_write_to_memory(target_address, 4, 1, (unsigned char*)(&descr_content), true);
+					invalidate = true;
+
+					first_lvl->second_lvl_mapped = new bool[256];
+
+					// prepare chunk
+					for (int i = 0; i < 256; i++) {
+						first_lvl->second_lvl_mapped[i] = false;
+						descr_content = (((cand_it->index - (cand_it->index % 256)) + i) << 12) | 0x30;
+						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
+							pageTableAddress + (i  * 4),
+							descr_content));
+					}
+					first_lvl->type = DESCRIPTOR_PAGE;
+				}
+
+				if (first_lvl->type == DESCRIPTOR_PAGE) {
+					if (!first_lvl->second_lvl_mapped[cand_it->index % 256]) {
+						uint32_t descr_content = (cand_it->index << 12) | 0x32;
+						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
+								sym_addr_PageTableSecondLevel + (cand_it->index  * 4),
+								descr_content));
+						first_lvl->second_lvl_mapped[cand_it->index % 256] = true;
+					}
+				}
+			} else if (cand_it->type == DESCRIPTOR_SECTION) {
+
+				first_lvl = &mmu_conf[cand_it->index];
+				if (first_lvl->type == DESCRIPTOR_PAGE) {
+					// Bring up to Section descriptor
+					first_lvl->type = DESCRIPTOR_SECTION;
+					// This information is not entirely valid, but it will be used
+					// by the next if-clause to map the whole section.
+					// Whatever configuration was made on page-lvl won't be used any more
+					first_lvl->mapped = false;
+					delete[] first_lvl->second_lvl_mapped;
+					// all the rest is handled in the next if condition
+				}
+
+				if (first_lvl->type == DESCRIPTOR_SECTION) {
+					if (!first_lvl->mapped) {
+						uint32_t descr_content = (cand_it->index << 20) | 0xc02;
+						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
+						LOG << "Write to " << hex << descr_addr << dec << endl;
+						oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
+						LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;
+						first_lvl->mapped = true;
+					}
+				}
+			}
+		}
+	}
+
+	// execute buffered writes
+	execute_buffered_writes(buffer_for_chunked_write);
+	exit(0);
+
+	return invalidate;
+}
+
+static void update_mmu_watch()
+{
+	LOG << "UPDATE MMU" << endl;
+
+	bool invalidate = false;
+
+	/*
+	 * ADDITION
+	 */
+	if (mmu_watch_add_waiting_list.size() > 0) {
+		invalidate = update_mmu_watch_add();
+	}
+
+	/*
+	 * REMOVAL
+	 */
+	if (mmu_watch_del_waiting_list.size() > 0) {
+		if (update_mmu_watch_remove()) {
+			invalidate = true;
+		}
+	}
+
+	if (invalidate) {
+		invalidate_tlb();
+	}
+}
+
+static void unmap_page_section(uint32_t address)
+{
+	uint32_t data;
+	oocdw_read_from_memory(address, 4, 1, (unsigned char*)(&(data)));
+
+	// clear 2 lsb
+	data &= 0xfffffffc;
+
+	oocdw_write_to_memory(address, 4, 1, (unsigned char*)(&(data)), true);
+}
+static std::vector<struct mem_range>::iterator find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec)
+{
+	std::vector<struct mem_range>::iterator search;
+	for (search = vec.begin(); search != vec.end(); search++) {
+		if ((elem.address == search->address) && (elem.width == search->width)) {
+			break;
+		}
+	}
+	return search;
+}
+
+static struct timeval freeze_begin;
+
+static void freeze_timers()
+{
+	LOG << "FREEZE TIMERS" << endl;
+	gettimeofday(&freeze_begin, NULL);
+	for (int i = 0; i < P_MAX_TIMERS; i++) {
+		if (timers[i].inUse) {
+			timers[i].freezed = true;
+		}
+	}
+}
+
+static void unfreeze_timers()
+{
+	LOG << "UNFREEZE TIMERS" << endl;
+	struct timeval freeze_end, freeze_delta;
+	gettimeofday(&freeze_end, NULL);
+	timersub(&freeze_end, &freeze_begin, &freeze_delta);
+
+	for (int i = 0; i < P_MAX_TIMERS; i++) {
+		if (timers[i].inUse && timers[i].freezed) {
+			struct timeval tmp = timers[i].time_begin;
+			timeradd(&tmp, &freeze_delta, &timers[i].time_begin);
+
+			timers[i].freezed = false;
+		}
+	}
 }
