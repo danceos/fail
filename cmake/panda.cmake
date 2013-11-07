@@ -28,7 +28,18 @@ if(BUILD_PANDA)
   #include_directories(${PROJECT_SOURCE_DIR}/src/core ${CMAKE_BINARY_DIR}/src/core)
   # an executable needs at least one source file, so we hand over an empty .cc file to make cmake happy.
  
-  add_executable(fail-client  ${openocd_src_dir}/openocd_wrapper.cc)
+  set(srces ${openocd_src_dir}/openocd_wrapper.cc)
+  
+  set (srces ${srces}  
+      ${openocd_src_dir}/opcode_parser/arm-addressmode.c 
+      ${openocd_src_dir}/opcode_parser/arm-condition.c 
+      ${openocd_src_dir}/opcode_parser/arm-opcode-coprocessor.c
+      ${openocd_src_dir}/opcode_parser/arm-opcode-data.c
+      ${openocd_src_dir}/opcode_parser/arm-opcode-ldmstm-branch.c
+      ${openocd_src_dir}/opcode_parser/arm-opcode-ldrstr.c
+      ${openocd_src_dir}/opcode_parser/arm-opcode.c)
+ 
+  add_executable(fail-client  ${srces})
   target_link_libraries(fail-client ${openocd_src_dir}/src/.libs/libopenocd.a ${openocd_src_dir}/jimtcl/libjim.a fail ${openocd_library_dependencies})
   add_dependencies(fail-client libfailopenocd_external)
   

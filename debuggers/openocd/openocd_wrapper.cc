@@ -26,6 +26,8 @@ extern "C" {
 	#include "jimtcl/jim.h"
 
 	extern struct command_context *setup_command_handler(Jim_Interp *interp);
+
+	#include "opcode_parser/arm-opcode.h"
 }
 
 #include <cassert>
@@ -36,8 +38,7 @@ extern "C" {
 #include "sal/SALInst.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/arm/ArmArchitecture.hpp"
-
-#include "sal/arm/ArmMemoryInstruction.hpp"
+#include "util/ElfReader.hpp"
 
 #include "util/Logger.hpp"
 
@@ -80,17 +81,14 @@ static bool horizontal_step = false;
  */
 static bool single_step_requested = false;
 
+static bool single_step_watch_memory = false;
+
 /*
  * Variables for monitoring BP/WP resources
  * Reset at reboot
  */
 static uint8_t free_watchpoints = 4;
 static uint8_t free_breakpoints = 6;
-
-/*
- * Analyzer for memory accesses on basis of elf file
- */
-static fail::ArmMemoryInstructionAnalyzer inst_analyzer;
 
 /*
  * Elf reader for reading symbols in startup-code
@@ -158,7 +156,7 @@ static void update_timers();
 static void freeze_timers();
 static void unfreeze_timers();
 static struct watchpoint *getHaltingWatchpoint();
-static void getCurrentMemAccesses(struct halt_condition *accesses);
+static bool getCurrentMemAccess(struct halt_condition *accesses);
 static uint32_t getCurrentPC();
 static struct reg *get_reg_by_number(unsigned int num);
 static void read_dpm_register(uint32_t reg_num, uint32_t *data);
@@ -307,6 +305,22 @@ int main(int argc, char *argv[])
 			 */
 			single_step_requested = false;
 
+			/*
+			 * Get current memory access(es)
+			 */
+			if (single_step_watch_memory) {
+				struct halt_condition mem_access;
+				if (getCurrentMemAccess(&mem_access)) {
+					freeze_timers();
+					fail::simulator.onMemoryAccess(NULL,
+							mem_access.address,
+							mem_access.addr_len,
+							mem_access.type == HALT_TYPE_WP_WRITE,
+							pc);
+					unfreeze_timers();
+				}
+			}
+
 			freeze_timers();
 			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
 			unfreeze_timers();
@@ -386,12 +400,35 @@ int main(int argc, char *argv[])
 					uint32_t dfar;
 					oocdw_read_reg(fail::RI_DFAR, &dfar);
 
-					// ToDo: Get potential additional memory accesses and access width (InstructionAnalyzer)
-					fail::MemoryInstruction mi;
-					if (!inst_analyzer.eval((fail::address_t)pc, mi)) {
-						LOG << "FATAL ERROR: Memory accessing instruction could not be analyzed" << endl;
-						exit(-1);
+					/*
+					 * Analyze instruction to get access width. Also the base-address may differ from this in multiple
+					 * data access instructions with decrement option.
+					 * As some Register values have changed in the handler, we first must find the original values.
+					 * This is easy for a static abort handler (pushed to stack), but must be adjusted, if handler
+					 * is adjusted
+					 */
+
+					uint32_t opcode;
+					oocdw_read_from_memory(lr_abt - 8, 4, 1, (uint8_t*)(&opcode));
+
+					uint32_t sp_abt;
+					oocdw_read_reg(fail::RI_SP_ABT, &sp_abt);
+
+					arm_regs_t regs;
+
+					oocdw_read_from_memory(sp_abt, 4, 4, (uint8_t*)(&regs.r[2]));
+
+					for (int i = 0; i < 16; i++) {
+						if (i >=2 && i <=5) {
+							continue;
+						}
+						oocdw_read_reg(i, &(regs.r[i]));
 					}
+					oocdw_read_reg(fail::RI_CPSR, &regs.cpsr);
+					oocdw_read_reg(fail::RI_SPSR_ABT, &regs.spsr);
+
+					arm_instruction_t op;
+					decode_instruction(opcode, &regs, &op);
 
 					/*
 					 *  set BP on the instruction, which caused the abort, singlestep and recover previous mmu state
@@ -409,9 +446,12 @@ int main(int argc, char *argv[])
 
 					mmu_recovery_needed = true;
 
-					freeze_timers();
-					fail::simulator.onMemoryAccess(NULL, dfar, mi.getWidth(), mi.isWriteAccess(), lr_abt - 8);
-					unfreeze_timers();
+					if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
+						fail::simulator.onMemoryAccess(NULL, op.mem_addr, op.mem_size, op.flags & OP_FLAG_WRITE, lr_abt - 8);
+					} else {
+						LOG << "FATAL ERROR: Disassembling instruction in mmu handler failed" << endl;
+						exit(-1);
+					}
 				} else if (pc == sym_GenericTrapHandler) {
 					freeze_timers();
 					fail::simulator.onTrap(NULL, fail::ANY_TRAP);
@@ -535,7 +575,9 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		single_step_requested = true;
-	} else {
+	} else if ((hc->type == HALT_TYPE_WP_READ) ||
+				(hc->type == HALT_TYPE_WP_WRITE) ||
+				(hc->type == HALT_TYPE_WP_READWRITE)) {
 		if ((hc->addr_len > 4) || !free_watchpoints) {
 			// Use MMU for watching
 			LOG << "Setting up MMU to watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
@@ -547,6 +589,12 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 			mmu_watch_add_waiting_list.push_back(mr);
 			return;
 		}
+
+		if (hc->address == fail::ANY_ADDR) {
+			single_step_watch_memory = true;
+			return;
+		}
+
 		LOG << "Adding WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
 				((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
 
@@ -569,26 +617,21 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 		free_watchpoints--;
 
-		// Compare current memory access events with set watchpoint
+		// Compare current memory access event with set watchpoint
 		// (potential horizontal hop)
-		struct halt_condition mem_accesses [4];
-		getCurrentMemAccesses(mem_accesses);
-		int i = 0;
-		while (mem_accesses[i].address) {
-			// Look for overlapping similar memory access
-			if (mem_accesses[i].type == hc->type) {
-				if (mem_accesses[i].address < hc->address) {
-					if (mem_accesses[i].address + mem_accesses[i].addr_len >= hc->address) {
-						horizontal_step = true;
-					}
-				} else {
-					if (hc->address + hc->addr_len >= mem_accesses[i].address) {
-						horizontal_step = true;
-					}
+		struct halt_condition mem_access;
+		if (getCurrentMemAccess(&mem_access)) {
+			if (mem_access.type == hc->type) {
+				if ((mem_access.address < hc->address) && (mem_access.address + mem_access.addr_len >= hc->address)) {
+					horizontal_step = true;
+				} else if ((mem_access.address >= hc->address) && (hc->address + hc->addr_len >= mem_access.address)) {
+					horizontal_step = true;
 				}
 			}
-			i++;
 		}
+	} else {
+		LOG << "FATAL ERROR: Could not determine halt condition type" << endl;
+		exit(-1);
 	}
 }
 
@@ -617,6 +660,11 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 		if (search != mmu_watch.end()) {
 			LOG << "Setting up MMU to NO LONGER watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
 			mmu_watch_del_waiting_list.push_back(mr);
+			return;
+		}
+
+		if (hc->address == fail::ANY_ADDR) {
+			single_step_watch_memory = false;
 			return;
 		}
 
@@ -886,6 +934,18 @@ static void read_dpm_register(uint32_t reg_num, uint32_t *data)
 	dpm->finish(dpm);
 }
 
+static inline void read_processor_register(uint32_t reg_num, uint32_t *data)
+{
+	struct reg *reg;
+	reg = get_reg_by_number(reg_num);
+
+	if (reg->valid == 0) {
+		reg->type->get(reg);
+	}
+
+	*data = *((uint32_t*)(reg->value));
+}
+
 void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
@@ -928,26 +988,79 @@ void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 	case fail::RI_R14:
 		/* fall through */
 	case fail::RI_R15:
-	{
-		struct reg *reg = get_reg_by_number(reg_num);
-
-		if (reg->valid == 0) {
-			reg->type->get(reg);
-		}
-
-		*data = *((uint32_t*)(reg->value));
-	}
+		read_processor_register(reg_num, data);
+		break;
+	case fail::RI_R8_FIQ:
+		read_processor_register(16, data);
+		break;
+	case fail::RI_R9_FIQ:
+		read_processor_register(17, data);
+		break;
+	case fail::RI_R10_FIQ:
+		read_processor_register(18, data);
+		break;
+	case fail::RI_R11_FIQ:
+		read_processor_register(19, data);
+		break;
+	case fail::RI_R12_FIQ:
+		read_processor_register(20, data);
+		break;
+	case fail::RI_SP_FIQ:
+		read_processor_register(21, data);
+		break;
+	case fail::RI_LR_FIQ:
+		read_processor_register(22, data);
+		break;
+	case fail::RI_SP_IRQ:
+		read_processor_register(23, data);
+		break;
+	case fail::RI_LR_IRQ:
+		read_processor_register(24, data);
+		break;
+	case fail::RI_SP_SVC:
+		read_processor_register(25, data);
+		break;
+	case fail::RI_LR_SVC:
+		read_processor_register(26, data);
+		break;
+	case fail::RI_SP_ABT:
+		read_processor_register(27, data);
 		break;
 	case fail::RI_LR_ABT:
-	{
-		struct reg *reg = get_reg_by_number(28);
-
-		if (reg->valid == 0) {
-			reg->type->get(reg);
-		}
-
-		*data = *((uint32_t*)(reg->value));
-	}
+		read_processor_register(28, data);
+		break;
+	case fail::RI_SP_UND:
+		read_processor_register(29, data);
+		break;
+	case fail::RI_LR_UND:
+		read_processor_register(30, data);
+		break;
+	case fail::RI_CPSR:
+		read_processor_register(31, data);
+		break;
+	case fail::RI_SPSR_FIQ:
+		read_processor_register(32, data);
+		break;
+	case fail::RI_SPSR_IRQ:
+		read_processor_register(33, data);
+		break;
+	case fail::RI_SPSR_SVC:
+		read_processor_register(34, data);
+		break;
+	case fail::RI_SPSR_ABT:
+		read_processor_register(35, data);
+		break;
+	case fail::RI_SPSR_UND:
+		read_processor_register(36, data);
+		break;
+	case fail::RI_SP_MON:
+		read_processor_register(37, data);
+		break;
+	case fail::RI_LR_MON:
+		read_processor_register(38, data);
+		break;
+	case fail::RI_SPSR_MON:
+		read_processor_register(39, data);
 		break;
 	default:
 		LOG << "ERROR: Register with id " << reg_num << " unknown." << endl;
@@ -1096,26 +1209,33 @@ static uint32_t getCurrentPC()
  * TODO implement analysis of current instruction in combination
  * with register contents
  */
-static void getCurrentMemAccesses(struct halt_condition *accesses)
+static bool getCurrentMemAccess(struct halt_condition *access)
 {
 	// ToDo: Get all memory access events of current
 	//		 instruction. For now return empty array.
 
 	uint32_t pc = getCurrentPC();
 
-	int i = 0;
+	uint32_t opcode;
+	oocdw_read_from_memory(pc, 4 , 1, (uint8_t*)(&opcode));
 
-	fail::MemoryInstruction mi;
+	arm_regs_t regs;
 
-	// TODO: Loop for multiple accesses?
-	if (inst_analyzer.eval(pc, mi)) {
-		accesses[i].address = mi.getAddress();
-		accesses[i].addr_len = mi.getWidth();
-		accesses[i].type = mi.isWriteAccess() ? HALT_TYPE_WP_WRITE : HALT_TYPE_WP_READ;
-		i++;
+	for (int i = 0; i < 16; i++) {
+		oocdw_read_reg(i, &(regs.r[i]));
 	}
+	oocdw_read_reg(fail::RI_CPSR, &regs.cpsr);
 
-	accesses[i].address = 0;
+	arm_instruction_t op;
+	decode_instruction(opcode, &regs, &op);
+
+	if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
+		access->address = op.mem_addr;
+		access->addr_len = op.mem_size;
+		access->type = (op.flags & OP_FLAG_READ) ? HALT_TYPE_WP_READ : HALT_TYPE_WP_WRITE;
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -1686,7 +1806,7 @@ static struct timeval freeze_begin;
 
 static void freeze_timers()
 {
-	LOG << "FREEZE TIMERS" << endl;
+	// LOG << "FREEZE TIMERS" << endl;
 	gettimeofday(&freeze_begin, NULL);
 	for (int i = 0; i < P_MAX_TIMERS; i++) {
 		if (timers[i].inUse) {
@@ -1697,7 +1817,7 @@ static void freeze_timers()
 
 static void unfreeze_timers()
 {
-	LOG << "UNFREEZE TIMERS" << endl;
+	// LOG << "UNFREEZE TIMERS" << endl;
 	struct timeval freeze_end, freeze_delta;
 	gettimeofday(&freeze_end, NULL);
 	timersub(&freeze_end, &freeze_begin, &freeze_delta);
