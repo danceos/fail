@@ -24,30 +24,31 @@ using std::cout;
 
 static Logger LOG("import-trace", true);
 
-ProtoIStream openProtoStream(std::string input_file) {
-	std::ifstream *gz_test_ptr = new std::ifstream(input_file.c_str()), &gz_test = *gz_test_ptr;
-	if (!gz_test) {
+std::istream& openStream(const char *input_file,
+	std::ifstream& normal_stream, igzstream& gz_stream) {
+	normal_stream.open(input_file);
+	if (!normal_stream) {
 		LOG << "couldn't open " << input_file << endl;
 		exit(-1);
 	}
 	unsigned char b1, b2;
-	gz_test >> b1 >> b2;
+	normal_stream >> b1 >> b2;
 
 	if (b1 == 0x1f && b2 == 0x8b) {
-		igzstream *tracef = new igzstream(input_file.c_str());
-		if (!tracef) {
+		normal_stream.close();
+		gz_stream.open(input_file);
+		if (!gz_stream) {
 			LOG << "couldn't open " << input_file << endl;
 			exit(-1);
 		}
 		LOG << "opened file " << input_file << " in GZip mode" << endl;
-		delete gz_test_ptr;
-		ProtoIStream ps(tracef);
-		return ps;
+		return gz_stream;
 	}
 
+	normal_stream.seekg(0);
+
 	LOG << "opened file " << input_file << " in normal mode" << endl;
-	ProtoIStream ps(gz_test_ptr);
-	return ps;
+	return normal_stream;
 }
 
 int main(int argc, char *argv[]) {
@@ -174,7 +175,9 @@ int main(int argc, char *argv[]) {
 		trace_file = "trace.pb";
 	}
 
-	ProtoIStream ps = openProtoStream(trace_file);
+	std::ifstream normal_stream;
+	igzstream gz_stream;
+	ProtoIStream ps(&openStream(trace_file.c_str(), normal_stream, gz_stream));
 	Database *db = Database::cmdline_connect();
 
 	if (cmd[VARIANT]) {
