@@ -156,7 +156,8 @@ static void update_timers();
 static void freeze_timers();
 static void unfreeze_timers();
 static struct watchpoint *getHaltingWatchpoint();
-static bool getCurrentMemAccess(struct halt_condition *accesses);
+static bool getCurrentMemAccess(struct halt_condition *access);
+static bool getMemAccess(uint32_t opcode, struct halt_condition *access);
 static uint32_t getCurrentPC();
 static struct reg *get_reg_by_number(unsigned int num);
 static void read_dpm_register(uint32_t reg_num, uint32_t *data);
@@ -285,10 +286,18 @@ int main(int argc, char *argv[])
 		 * For having functional timers anyways, we need to update
 		 * in every loop iteration
 		 */
+		uint32_t trace_count = 1;
 		while (single_step_requested) {
-			if (target_step(target_a9, 1, 0, 1)) {
-				LOG << "FATAL ERROR: Single-step could not be executed" << endl;
-				return 1;
+			int repeat = 5;
+			int retval;
+			while ((retval = target_step(target_a9, 1, 0, 1)) && (repeat--)) {
+				LOG << "ERROR: Single-step could not be executed at instruction " <<
+						trace_count << ":" << hex << getCurrentPC() << dec << ". ERRORCODE: "<< retval << ". Retrying..." << endl;
+				usleep(1000*300);
+			}
+			if (!repeat) {
+				LOG << "FATAL ERROR: Single-step could not be executed. Terminating..." << endl;
+				exit(-1);
 			}
 			/*
 			 * Because this is a micro main-loop, we need to update
@@ -324,6 +333,7 @@ int main(int argc, char *argv[])
 			freeze_timers();
 			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
 			unfreeze_timers();
+			trace_count++;
 		}
 
 		// Shortcut loop exit for tracing
@@ -348,7 +358,7 @@ int main(int argc, char *argv[])
 			LOG << "Resume" << endl;
 			if (target_resume(target_a9, 1, 0, 1, 1)) {
 				LOG << "FATAL ERROR: Target could not be resumed!" << endl;
-				return 1;
+				exit(-1);
 			}
 		}
 
@@ -357,7 +367,7 @@ int main(int argc, char *argv[])
 			// Polling needs to be done to detect target halt state changes.
 			if (target_poll(target_a9)) {
 				LOG << "FATAL ERROR: Error polling after resume!" << endl;
-				return 1;
+				exit(-1);
 			}
 			// Update timers, so waiting can be aborted
 			update_timers();
@@ -408,6 +418,8 @@ int main(int argc, char *argv[])
 					 * is adjusted
 					 */
 
+					// ToDo: As this is going to be executed very often, it should be done in the target system
+
 					uint32_t opcode;
 					oocdw_read_from_memory(lr_abt - 8, 4, 1, (uint8_t*)(&opcode));
 
@@ -424,10 +436,31 @@ int main(int argc, char *argv[])
 						}
 						oocdw_read_reg(i, &(regs.r[i]));
 					}
-					oocdw_read_reg(fail::RI_CPSR, &regs.cpsr);
-					oocdw_read_reg(fail::RI_SPSR_ABT, &regs.spsr);
+
+					// ABT SPSR is usr cpsr
+					oocdw_read_reg(fail::RI_SPSR_ABT, &regs.cpsr);
+
+					// if abort triggert in non-user-mode, spsr is approproate spsr
+					switch ((regs.cpsr & 0b11111)) {
+					case 0b10001:	// FIQ
+						oocdw_read_reg(fail::RI_SPSR_FIQ, &regs.spsr);
+						break;
+					case 0b10010:	// IRQ
+						oocdw_read_reg(fail::RI_SPSR_IRQ, &regs.spsr);
+						break;
+					case 0b10011:	// SVC
+						oocdw_read_reg(fail::RI_SPSR_SVC, &regs.spsr);
+						break;
+					case 0b10110:	// MON
+						oocdw_read_reg(fail::RI_SPSR_MON, &regs.spsr);
+						break;
+					case 0b11011:	// UNDEFINED
+						oocdw_read_reg(fail::RI_SPSR_UND, &regs.spsr);
+						break;
+					}
 
 					arm_instruction_t op;
+
 					decode_instruction(opcode, &regs, &op);
 
 					/*
@@ -474,7 +507,7 @@ int main(int argc, char *argv[])
 				if (!wp) {
 					// ToDo: Determine address by interpreting instruction and register contents
 					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
-					return 1;
+					exit(-1);
 				}
 
 				int iswrite;
@@ -491,7 +524,7 @@ int main(int argc, char *argv[])
 						break;
 					default:
 						LOG << "FATAL ERROR: Can't determine memory-access type of halt cause" << endl;
-						return 1;
+						exit(-1);
 						break;
 				}
 				freeze_timers();
@@ -702,10 +735,6 @@ bool oocdw_halt_target()
 	}
 	return true;
 }
-
-// ToDo: read from elf-file
-#define SAFETYLOOP_BEGIN 	0x8300008c
-#define SAFETYLOOP_END		0x830000a8
 
 /*
  * As "reset halt" and "reset init" fail irregularly on the pandaboard, resulting in
@@ -1203,6 +1232,45 @@ static uint32_t getCurrentPC()
 	return buf_get_u32(arm_a9->pc->value, 0, 32);
 }
 
+static bool getMemAccess(uint32_t opcode, struct halt_condition *access) {
+	arm_regs_t regs;
+
+	oocdw_read_reg(fail::RI_CPSR, &regs.cpsr);
+
+	arm_instruction_t op;
+	int retval = decode_instruction(opcode, &regs, &op);
+	if (retval == 2) { // Instruction won't be executed
+		return false;
+	}
+	if (retval) {
+		LOG << "ERROR: Opcode " << hex << opcode << " at instruction " << getCurrentPC() << dec << " could not be decoded" << endl;
+		exit(-1);
+	}
+
+	if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
+		// ToDo: regs_r potentially contains also registers, which are not used for address-calculation
+		for (int i = 0; i < 16; i++) {
+			if ((1 << i) & op.regs_r) {
+				oocdw_read_reg(i, &(regs.r[i]));
+			}
+			if ((i >= 10) && ((1 << i) & op.regs_r_fiq)) {
+				oocdw_read_reg(i - 10 + fail::RI_R10_FIQ, &(regs.r[i]));
+			}
+		}
+
+		if (decode_instruction(opcode, &regs, &op)) {
+			LOG << "ERROR: Opcode " << hex << opcode << dec << " could not be decoded" << endl;
+			exit(-1);
+		}
+
+		access->address = op.mem_addr;
+		access->addr_len = op.mem_size;
+		access->type = (op.flags & OP_FLAG_READ) ? HALT_TYPE_WP_READ : HALT_TYPE_WP_WRITE;
+		return true;
+	}
+	return false;
+}
+
 /*
  * Returns all memory access events of current instruction in
  * 0-terminated (0 in address field) array of max length.
@@ -1219,23 +1287,7 @@ static bool getCurrentMemAccess(struct halt_condition *access)
 	uint32_t opcode;
 	oocdw_read_from_memory(pc, 4 , 1, (uint8_t*)(&opcode));
 
-	arm_regs_t regs;
-
-	for (int i = 0; i < 16; i++) {
-		oocdw_read_reg(i, &(regs.r[i]));
-	}
-	oocdw_read_reg(fail::RI_CPSR, &regs.cpsr);
-
-	arm_instruction_t op;
-	decode_instruction(opcode, &regs, &op);
-
-	if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
-		access->address = op.mem_addr;
-		access->addr_len = op.mem_size;
-		access->type = (op.flags & OP_FLAG_READ) ? HALT_TYPE_WP_READ : HALT_TYPE_WP_WRITE;
-		return true;
-	}
-	return false;
+	return getMemAccess(opcode, access);
 }
 
 /*
@@ -1319,7 +1371,7 @@ static void init_symbols()
 			"SafetyLoopBegin        " << sym_SafetyLoopBegin << endl <<
 			"SafetyLoopEnd          " << sym_SafetyLoopEnd << endl <<
 			"A9TTB                  " << sym_addr_PageTableFirstLevel << endl <<
-			"A9TTB_L2               " << sym_addr_PageTableSecondLevel << dec << endl;
+			"A9TTB_L2               " << sym_addr_PageTableSecondLevel << endl << dec;
 	if (!sym_GenericTrapHandler || !sym_MmuFaultBreakpointHook || !sym_SafetyLoopBegin || !sym_SafetyLoopEnd
 			|| !sym_addr_PageTableFirstLevel || !sym_addr_PageTableSecondLevel) {
 		LOG << "FATAL ERROR: Not all relevant symbols were found" << endl;
