@@ -31,10 +31,10 @@ public:
      * @param outputfile The path to the file to write the output to
      */
     RealtimeLogger( const fail::ElfSymbol & symbol, const std::string& outputfile ) :  m_symbol(symbol), m_outputfile(outputfile) , m_log("RTLogger", false) {
-      m_ostream.open(m_outputfile.c_str() );
-      if(!m_ostream.is_open()){
-        m_log << "Could not open " << m_outputfile.c_str() << " for writing." << std::endl;
-      }
+        m_ostream.open(m_outputfile.c_str() );
+        if(!m_ostream.is_open()){
+            m_log << "Could not open " << m_outputfile.c_str() << " for writing." << std::endl;
+        }
     }
 
     bool run();
