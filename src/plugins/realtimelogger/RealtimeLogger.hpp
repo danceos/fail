@@ -16,7 +16,6 @@
  */
 class RealtimeLogger : public fail::ExperimentFlow
 {
-
 private:
     const fail::ElfSymbol m_symbol; //!< the target's memory symbol the plugin is listening on
     std::string m_outputfile; //!< the output filename
