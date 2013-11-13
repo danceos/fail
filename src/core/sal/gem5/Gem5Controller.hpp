@@ -22,16 +22,21 @@ namespace fail {
 class Gem5Controller : public SimulatorController {
 private:
 	System* m_System; //!< the gem5 system object
+	ExperimentFlow* m_CurrFlow; //!< Stores the current flow for save/restore-operations
 #if defined(CONFIG_EVENT_BREAKPOINTS) ||\
     defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
 	std::string m_Mnemonic; //!< mnemonic of the instr. (only with BPs)
 #endif
+	bool restore_request;
+	std::string restore_path;
 public:
 	void startup();
 	~Gem5Controller();
 
 	bool save(const std::string &path);
 	void restore(const std::string &path);
+	void onRestore();
+	bool isRestoreRequest();
 	void reboot();
 #if defined(CONFIG_EVENT_BREAKPOINTS) ||\
     defined(CONFIG_EVENT_BREAKPOINTS_RANGE)

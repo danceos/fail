@@ -289,21 +289,21 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t * data,
             }
             dcache_access = true;
 
-			// FAIL*
-			#ifdef CONFIG_EVENT_TRAP
-			if(pkt.isError()) {
-				fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-				fail::simulator.onTrap(cpu, 0);
-			}
-			#endif
+            // FAIL*
+            #ifdef CONFIG_EVENT_TRAP
+            if(pkt.isError()) {
+                fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                fail::simulator.onTrap(cpu, 0);
+            }
+            #endif
 
             assert(!pkt.isError());
 
-			// FAIL*
-			#ifdef CONFIG_EVENT_MEMREAD
-			fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-			fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), false, instAddr());
-			#endif
+            // FAIL*
+            #ifdef CONFIG_EVENT_MEMREAD
+            fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+            fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), false, instAddr());
+            #endif
 
             if (req->isLLSC()) {
                 TheISA::handleLockedRead(thread, req);
@@ -404,22 +404,22 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size,
                         dcache_latency += dcachePort.sendAtomic(&pkt);
                 }
                 dcache_access = true;
-				
-				// FAIL*
-				#ifdef CONFIG_EVENT_TRAP
-				if(pkt.isError()) {
-					fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-					fail::simulator.onTrap(cpu, 0);
-				}
-				#endif
+
+                // FAIL*
+                #ifdef CONFIG_EVENT_TRAP
+                if(pkt.isError()) {
+                    fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                    fail::simulator.onTrap(cpu, 0);
+                }
+                #endif
 
                 assert(!pkt.isError());
 
-				// FAIL*
-				#ifdef CONFIG_EVENT_MEMWRITE
-				fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-				fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), true, instAddr());
-				#endif
+                // FAIL*
+                #ifdef CONFIG_EVENT_MEMWRITE
+                fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), true, instAddr());
+                #endif
 
                 if (req->isSwap()) {
                     assert(res);
@@ -486,6 +486,18 @@ AtomicSimpleCPU::tick()
         bool needToFetch = !isRomMicroPC(pcState.microPC()) &&
                            !curMacroStaticInst;
         if (needToFetch) {
+            //DanceOS
+            #if defined(CONFIG_EVENT_BREAKPOINTS) || defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
+                fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                fail::simulator.setMnemonic("This feature is not implemented for gem5.");
+                fail::simulator.onBreakpoint(cpu, instAddr(), -1);
+            #endif
+
+            //DanceOS
+            if(fail::simulator.isRestoreRequest()) {
+                fail::simulator.onRestore();
+            }
+
             setupFetchRequest(&ifetch_req);
             fault = thread->itb->translateAtomic(&ifetch_req, tc,
                                                  BaseTLB::Execute);
@@ -513,22 +525,22 @@ AtomicSimpleCPU::tick()
                     else
                         icache_latency = icachePort.sendAtomic(&ifetch_pkt);
 
-					// FAIL*
-					#ifdef CONFIG_EVENT_TRAP
+                    // FAIL*
+                    #ifdef CONFIG_EVENT_TRAP
                     if(ifetch_pkt.isError())
-					{
-						fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-						fail::simulator.onTrap(cpu, 0);
-					}
-					#endif
-					
-					assert(!ifetch_pkt.isError());
+                    {
+                        fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                        fail::simulator.onTrap(cpu, 0);
+                    }
+                    #endif
 
-					// FAIL*
-					#ifdef CONFIG_EVENT_MEMREAD
-					fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-					fail::simulator.onMemoryAccess(cpu, ifetch_pkt.getAddr(), ifetch_pkt.getSize(), false, instAddr());
-					#endif
+                    assert(!ifetch_pkt.isError());
+
+                    // FAIL*
+                    #ifdef CONFIG_EVENT_MEMREAD
+                    fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
+                    fail::simulator.onMemoryAccess(cpu, ifetch_pkt.getAddr(), ifetch_pkt.getSize(), false, instAddr());
+                    #endif
 
                     // ifetch_req is initialized to read the instruction directly
                     // into the CPU object's inst field.

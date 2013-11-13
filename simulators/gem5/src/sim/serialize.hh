@@ -170,6 +170,7 @@ class Serializable
     static int ckptPrevCount;
     static void serializeAll(const std::string &cpt_dir);
     static void unserializeGlobals(Checkpoint *cp);
+    static void loadStateAll(Checkpoint *cp); //DanceOS
 };
 
 //

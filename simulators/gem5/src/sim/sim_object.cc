@@ -130,6 +130,21 @@ SimObject::serializeAll(ostream &os)
    }
 }
 
+//DanceOS
+// static function: loadState all SimObjects.
+//
+void
+SimObject::loadStateAll(Checkpoint *cp)
+{
+    SimObjectList::iterator ri = simObjectList.begin();
+    SimObjectList::iterator rend = simObjectList.end();
+
+    for (; ri != rend; ++ri) {
+        SimObject *obj = *ri;
+        obj->loadState(cp);
+    }
+}
+
 
 #ifdef DEBUG
 //
