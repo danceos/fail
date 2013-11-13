@@ -139,6 +139,7 @@ class SimObject : public EventManager, public Serializable
 
     // static: call nameOut() & serialize() on all SimObjects
     static void serializeAll(std::ostream &);
+    static void loadStateAll(Checkpoint *cp); //DanceOS
 
     // Methods to drain objects in order to take checkpoints
     // Or switch from timing -> atomic memory model

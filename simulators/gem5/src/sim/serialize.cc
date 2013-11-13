@@ -512,6 +512,13 @@ Serializable::unserializeGlobals(Checkpoint *cp)
   globals.unserialize(cp, globals.name());
 }
 
+//DanceOS
+void
+Serializable::loadStateAll(Checkpoint *cp)
+{
+    SimObject::loadStateAll(cp);
+}
+
 void
 debug_serialize(const string &cpt_dir)
 {
