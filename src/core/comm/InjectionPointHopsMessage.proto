@@ -1,0 +1,23 @@
+message InjectionPointMessage {
+	// Costs of the hop chain on the PandaBoard
+	// ToDo: Could be eliminated, but it is nice for evaluation
+	optional uint32 costs = 3;
+	
+	// If checkpoint must be used for this hop chain, id is set properly
+	optional uint32 checkpoint_id = 1;
+	
+	// Repeated groups can't be defined as notempty, so a manual
+	// non-empty check is required at usage 
+	
+	// As we assume hops to always watch addresses of length 1, we
+	// don't encode the length in here
+	repeated group Hops = 2 {
+		required uint64 address = 1;
+		enum AccessType {
+			EXECUTE = 1;
+			READ = 2;
+			WRITE = 3;
+		}
+		required AccessType accesstype = 2;
+	}
+}

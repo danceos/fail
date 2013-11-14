@@ -43,7 +43,17 @@ if(BUILD_PANDA)
   target_link_libraries(fail-client ${openocd_src_dir}/src/.libs/libopenocd.a ${openocd_src_dir}/jimtcl/libjim.a fail ${openocd_library_dependencies})
   add_dependencies(fail-client libfailopenocd_external)
   
-   #copy the conf-files to build directory
+  # ensure, elf path is set for enabling openocd to read elf symbols
+  if(EXISTS $ENV{FAIL_ELF_PATH})
+      SET(PANDA_ELF_PATH $ENV{FAIL_ELF_PATH})
+      message(STATUS "[Fail*] PandaBoard ELF under test: ${PANDA_ELF_PATH}")
+  else()
+      message(FATAL_ERROR "Please set the FAIL_ELF_PATH enviroment variable to the binary under test.")
+  endif()
+      
+  
+   # copy the conf-files to build directory
+   # TODO: copy to install path on install!?
   file(COPY ${openocd_src_dir}/tcl/ DESTINATION oocd_conf/ PATTERN openocd EXCLUDE)
   get_filename_component(OOCD_CONF_FILES_PATH ${CMAKE_BINARY_DIR}/oocd_conf/ REALPATH)
 

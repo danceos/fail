@@ -4,7 +4,7 @@
 #include "util/Logger.hpp"
 #include "util/Database.hpp"
 #include "comm/ExperimentData.hpp"
-
+#include "InjectionPoint.hpp"
 
 #ifndef __puma
 #include <boost/thread.hpp>
@@ -135,6 +135,11 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	log_send << "Found " << experiment_count << " unfinished experiments in database. (" 
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
 
+	// abstraction of injection point
+	// must not be initialized in loop, because hop chain calculator would loose state after loop pass
+	// and so for every hop chain it would have to begin calculating at trace instruction zero
+	ConcreteInjectionPoint ip;
+
 	sent_pilots = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = atoi(row[0]);
@@ -147,9 +152,13 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		pilot.set_pilot_id(pilot_id);
 		pilot.set_fspmethod_id(fspmethod_id);
 		pilot.set_variant_id(variant.id);
+		// ToDo: Remove this, if all experiments work with abstract API (InjectionPoint)
 		pilot.set_injection_instr(injection_instr);
 		pilot.set_variant(variant.variant);
 		pilot.set_benchmark(variant.benchmark);
+
+		ip.parseFromInjectionInstr(injection_instr);
+		ip.addToCampaignMessage(pilot);
 
 		if (row[4]) {
 			unsigned injection_instr_absolute = atoi(row[4]);
