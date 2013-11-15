@@ -112,14 +112,12 @@ void DatabaseCampaign::collect_result_thread() {
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather all unfinished jobs */
 	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address, p.data_width ";
+	std::string sql_select = "SELECT p.id, p.fspmethod_id, p.variant_id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width ";
 	std::stringstream ss;
-	ss << " FROM fspgroup g"
-	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
-	   << " WHERE p.known_outcome = 0 "
-	   << "	   AND g.fspmethod_id = "  << fspmethod_id
-	   << "	   AND g.variant_id = "	<< variant.id
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id)"
+	ss << " FROM fsppilot p "
+	   << " WHERE p.fspmethod_id = "  << fspmethod_id
+	   << "	   AND p.variant_id = "	<< variant.id
+	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = p.id)"
 	   << " < " << expected_number_of_results(variant.variant, variant.benchmark)
 	   << "    ORDER BY p.injection_instr";
 	std::string sql_body = ss.str();
