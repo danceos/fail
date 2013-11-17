@@ -2,12 +2,16 @@
   #define __LRA_SIMPLE_PANDA_EXPERIMENT_HPP__
   
 #include "efw/ExperimentFlow.hpp"
-#include "efw/JobClient.hpp"
+#include "cpn/InjectionPoint.hpp"
 
-class LRASimplePandaExperiment : public fail::ExperimentFlow {
+using namespace fail;
+
+class LRASimplePandaExperiment : public ExperimentFlow {
 public:
-	LRASimplePandaExperiment() { }
+	LRASimplePandaExperiment() : ExperimentFlow() {}
 	bool run();
+	void navigateToInjectionPoint(ConcreteInjectionPoint &ip);
+	// void navigateToInjectionPoint(ConcreteInjectionPoint &ip, std::ostream &log);
 };
 
 #endif // __LRA_SIMPLE_PANDA_EXPERIMENT_HPP__
