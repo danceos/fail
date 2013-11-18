@@ -38,6 +38,10 @@ bool TracingPlugin::run()
 	bool first = true;
 
 	while (true) {
+		if (!first) {
+			ev = simulator.resume();
+		}
+
 		curtime = simulator.getTimerTicks();
 		deltatime = curtime - prevtime;
 
@@ -127,8 +131,6 @@ bool TracingPlugin::run()
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
-
-		ev = simulator.resume();
 	}
 
 	return true;
