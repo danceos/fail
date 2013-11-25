@@ -510,23 +510,23 @@ int main(int argc, char *argv[])
 			case DBG_REASON_WATCHPOINT:
 			{
 				// ToDo: Replace with calls of every current memory access
-				struct watchpoint *wp = getHaltingWatchpoint();
-				if (!wp) {
-					// ToDo: Determine address by interpreting instruction and register contents
+				struct halt_condition halt;
+				if (!getCurrentMemAccess(&halt)) {
 					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
 					exit(-1);
 				}
 
 				int iswrite;
-				switch (wp->rw) {
-					case WPT_READ:
+				switch (halt.type) {
+					case HALT_TYPE_WP_READ:
 						iswrite = 0;
 						break;
-					case WPT_WRITE:
+					case HALT_TYPE_WP_WRITE:
 						iswrite = 1;
 						break;
-					case WPT_ACCESS:
+					case HALT_TYPE_WP_READWRITE:
 						// ToDo: Can't tell if read or write
+						LOG << "We should not get a READWRITE halt!!!" << endl;
 						iswrite = 1;
 						break;
 					default:
@@ -535,7 +535,7 @@ int main(int argc, char *argv[])
 						break;
 				}
 				freeze_timers();
-				fail::simulator.onMemoryAccess(NULL, wp->address, wp->length, iswrite, pc);
+				fail::simulator.onMemoryAccess(NULL, halt.address, 1, iswrite, pc);
 				unfreeze_timers();
 			}
 				break;
