@@ -88,7 +88,7 @@ public:
 	 */
 	void setByte(guest_address_t addr, byte_t data)
 	{
-		oocdw_write_to_memory(addr, 1, 1, &data, false);
+		oocdw_write_to_memory(addr, 1, 1, &data, true);
 	}
 
 	/**
@@ -101,11 +101,18 @@ public:
 	 */
 	void setBytes(guest_address_t addr, size_t cnt, void const *src)
 	{
-		// ToDo (PORT): This works, but may be slower than writing a whole block
 		uint8_t const *s = static_cast<uint8_t const *>(src);
 
-		// ToDo: Check Endianess?
-		oocdw_write_to_memory(addr, 1, cnt, s, false);
+		// Write in 4-Byte chunks
+
+		// ToDo: Correct byte ordering?
+		if (cnt >= 4) {
+			oocdw_write_to_memory(addr, 4, cnt / 4, s, true);
+		}
+
+		if ((cnt % 4) != 0) {
+			oocdw_write_to_memory(addr + (cnt/4) * 4, 1, cnt % 4, s, true);
+		}
 	}
 };
 
