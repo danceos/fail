@@ -717,10 +717,19 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 	}
 }
 
-bool oocdw_halt_target()
+bool oocdw_halt_target(struct target *target)
 {
-	if (target_halt(target_a9)) {
-		LOG << "FATAL ERROR: Target could not be halted" << endl;
+	if (target_poll(target)) {
+		LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
+		return false;
+	}
+
+	if (target->state == TARGET_RESET) {
+		LOG << "FATAL ERROR: Target " << target->cmd_name << " could not be halted, because in reset mode" << endl;
+	}
+
+	if (target_halt(target)) {
+		LOG << "FATAL ERROR: Could could not halt target " << target->cmd_name << endl;
 		return false;
 	}
 
@@ -728,17 +737,17 @@ bool oocdw_halt_target()
 	 * Wait for target to actually stop.
 	 */
 	long long then = timeval_ms();
-	if (target_poll(target_a9)) {
-		LOG << "FATAL ERROR: Target polling failed" << endl;
+	if (target_poll(target)) {
+		LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
 		return false;
 	}
-	while (target_a9->state != TARGET_HALTED) {
-		if (target_poll(target_a9)) {
-			LOG << "FATAL ERROR: Target polling failed" << endl;
+	while (target->state != TARGET_HALTED) {
+		if (target_poll(target)) {
+			LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
 			return false;
 		}
 		if (timeval_ms() > then + 1000) {
-			LOG << "FATAL ERROR: Timeout waiting for target halt" << endl;
+			LOG << "FATAL ERROR: Timeout waiting for halt of target " << target->cmd_name << endl;
 			return false;
 		}
 	}
@@ -778,7 +787,7 @@ void oocdw_reboot()
 
         // If target is not halted, reset will result in freeze
         if (target_a9->state != TARGET_HALTED) {
-            if (!oocdw_halt_target()) {
+            if (!oocdw_halt_target(target_a9)) {
             	reboot_success = false;
             	if (fail_counter++ > 4) {
 					LOG << "FATAL ERROR: Rebooting not possible" << endl;
@@ -833,7 +842,7 @@ void oocdw_reboot()
 		usleep(750*1000);
 
 		// Immediate halt after reset.
-		if (!oocdw_halt_target()) {
+		if (!oocdw_halt_target(target_a9)) {
 			reboot_success = false;
 			if (fail_counter++ > 4) {
 				LOG << "FATAL ERROR: Rebooting not possible" << endl;
@@ -879,7 +888,7 @@ void oocdw_reboot()
 						LOG << "FATAL ERROR: Rebooting not possible" << endl;
 						exit(-1);
 					}
-					oocdw_halt_target();
+					oocdw_halt_target(target_a9);
 					break;
 				}
 			}
@@ -1228,7 +1237,7 @@ static void update_timers()
 
 			if (timers[i].timeToFire <= useconds_delta) {
 				// Halt target to get defined halted state at experiment end
-				oocdw_halt_target();
+				oocdw_halt_target(target_a9);
 				// Fire
 				timers[i].funct(timers[i].this_ptr);
 			}

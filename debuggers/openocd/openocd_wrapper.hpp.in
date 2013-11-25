@@ -65,7 +65,7 @@ void oocdw_delete_halt_condition(struct halt_condition *hc);
 /*
  * Immediate target halt without sepcific target instruction
  */
-bool oocdw_halt_target();
+bool oocdw_halt_target(struct target *target);
 
 /*
  * Target reboot
