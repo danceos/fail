@@ -905,6 +905,16 @@ void oocdw_reboot()
 			 * not use any register values, which could be set in the loop
 			 */
 			oocdw_write_reg(15, sym_SafetyLoopEnd);
+
+			/*
+			 * as we want to use the Cortex-M3 for access to ram, it should
+			 * always be halted, so halt it after reset.
+			 */
+			if (target_m3->state != TARGET_HALTED) {
+				if (!oocdw_halt_target(target_m3)) {
+					exit(-1);
+				}
+			}
 		}
 
 		// Initially set BP for generic traps
