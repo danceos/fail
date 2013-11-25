@@ -162,6 +162,8 @@ static uint32_t getCurrentPC();
 static struct reg *get_reg_by_number(unsigned int num);
 static void read_dpm_register(uint32_t reg_num, uint32_t *data);
 static void init_symbols();
+void freeze_cycle_counter();
+void unfreeze_cycle_counter();
 
 static void invalidate_tlb();
 static void update_mmu_watch();
@@ -290,11 +292,13 @@ int main(int argc, char *argv[])
 		while (single_step_requested) {
 			int repeat = 5;
 			int retval;
+			unfreeze_cycle_counter();
 			while ((retval = target_step(target_a9, 1, 0, 1)) && (repeat--)) {
 				LOG << "ERROR: Single-step could not be executed at instruction " <<
-						trace_count << ":" << hex << getCurrentPC() << dec << ". ERRORCODE: "<< retval << ". Retrying..." << endl;
+						trace_count << ":" << hex << getCurrentPC() << dec << " at t=" << oocdw_read_cycle_counter() << ". ERRORCODE: "<< retval << ". Retrying..." << endl;
 				usleep(1000*300);
 			}
+			freeze_cycle_counter();
 			if (!repeat) {
 				LOG << "FATAL ERROR: Single-step could not be executed. Terminating..." << endl;
 				exit(-1);
@@ -356,6 +360,7 @@ int main(int argc, char *argv[])
 
 		if (target_a9->state == TARGET_HALTED) {
 			LOG << "Resume" << endl;
+			unfreeze_cycle_counter();
 			if (target_resume(target_a9, 1, 0, 1, 1)) {
 				LOG << "FATAL ERROR: Target could not be resumed!" << endl;
 				exit(-1);
@@ -375,6 +380,8 @@ int main(int argc, char *argv[])
 
 		// Check for halt and trigger event accordingly
 		if (target_a9->state == TARGET_HALTED) {
+			freeze_cycle_counter();
+
 			// ToDo: Outsource
 			uint32_t pc = getCurrentPC();
 
@@ -546,10 +553,12 @@ int main(int argc, char *argv[])
 			 * Execute single-step if horizontal hop was detected
 			 */
 			if (target_a9->state == TARGET_HALTED && horizontal_step) {
+				unfreeze_cycle_counter();
 				if (target_step(target_a9, 1, 0, 1)) {
 					LOG << "FATAL ERROR: Single-step could not be executed!" << endl;
 					exit (-1);
 				}
+				freeze_cycle_counter();
 				// Reset horizontal hop flag
 				horizontal_step = false;
 			}
@@ -1306,6 +1315,57 @@ static struct watchpoint *getHaltingWatchpoint()
 	return watchpoint;
 }
 static uint32_t cc_overflow = 0;
+
+void freeze_cycle_counter()
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to prepare for reading dpm register" << endl;
+	}
+
+	uint32_t data = 1;	// Counter 0, else shift left by counter-number
+
+	/* Write to PMCNTENCLR */
+	retval = dpm->instr_read_data_r0(dpm,
+		ARMV4_5_MRC(15, 0, 0, 9, 12, 2),
+		&data);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to write PMCNTENCLR-Register" << endl;
+	}
+
+	dpm->finish(dpm);
+}
+
+void unfreeze_cycle_counter()
+{
+	struct armv7a_common *armv7a = target_to_armv7a(target_a9);
+	struct arm_dpm *dpm = armv7a->arm.dpm;
+	int retval;
+	retval = dpm->prepare(dpm);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to prepare for reading dpm register" << endl;
+	}
+
+	uint32_t data = 1;	// Counter 0, else shift left by counter-number
+
+	/* Write to PMCNTENSET */
+	retval = dpm->instr_read_data_r0(dpm,
+		ARMV4_5_MRC(15, 0, 0, 9, 12, 1),
+		&data);
+
+	if (retval != ERROR_OK) {
+		LOG << "Unable to write PMCNTENCLR-Register" << endl;
+	}
+
+	dpm->finish(dpm);
+}
+
 
 uint64_t oocdw_read_cycle_counter()
 {
