@@ -49,15 +49,12 @@ public:
 	byte_t getByte(guest_address_t addr)
 	{
 			// ToDo: Address translation
-			/* host_address_t haddr = guestToHost(addr);
-			assert(haddr != (host_address_t)ADDR_INV && "FATAL ERROR: Invalid guest address provided!");
-			return static_cast<byte_t>(*reinterpret_cast<Bit8u*>(haddr));*/
 
-			uint8_t buf [1];
+			uint8_t buf;
 
-			oocdw_read_from_memory(addr, 1, 1, buf);
+			oocdw_read_from_memory(addr, 1, 1, &buf);
 
-			return buf[0];
+			return buf;
 		}
 
 	/**
@@ -71,13 +68,20 @@ public:
 	void getBytes(guest_address_t addr, size_t cnt, void *dest)
 	{
 		// ToDo: Address translation
-		/* host_address_t haddr = guestToHost(addr);
-		assert(haddr != (host_address_t)ADDR_INV && "FATAL ERROR: Invalid guest address provided!");
-		return static_cast<byte_t>(*reinterpret_cast<Bit8u*>(haddr));*/
 
 		uint8_t *d = static_cast<uint8_t *>(dest);
 
-		oocdw_read_from_memory(addr, 1, cnt, d);
+		// Write in 4-Byte chunks
+
+		// ToDo: Correct byte ordering?
+
+		if (cnt >= 4) {
+			oocdw_read_from_memory(addr, 4, cnt / 4, d);
+		}
+
+		if ((cnt % 4) != 0) {
+			oocdw_read_from_memory(addr + (cnt/4) * 4, 1, cnt % 4, d);
+		}
 	}
 
 	/**
@@ -88,6 +92,8 @@ public:
 	 */
 	void setByte(guest_address_t addr, byte_t data)
 	{
+		// ToDo: Address translation
+
 		oocdw_write_to_memory(addr, 1, 1, &data, true);
 	}
 
@@ -101,6 +107,8 @@ public:
 	 */
 	void setBytes(guest_address_t addr, size_t cnt, void const *src)
 	{
+		// ToDo: Address translation
+
 		uint8_t const *s = static_cast<uint8_t const *>(src);
 
 		// Write in 4-Byte chunks
