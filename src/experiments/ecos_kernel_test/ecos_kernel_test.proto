@@ -8,13 +8,13 @@ message EcosKernelTestProtoMsg {
 	required string benchmark = 2;
 
 	// pilot ID (database)
-	required int32 pilot_id = 3;
+	required uint32 pilot_id = 3;
 	// FI at #instructions from experiment start
-	required int32 instr2_offset = 4;
+	required uint32 instr2_offset = 4;
 	// the exact IP value at this point in time (from golden run)
-	optional int32 instr2_address = 5; // for sanity checks
+	optional uint32 instr2_address = 5; // for sanity checks
 	// address of the byte to inject bit-flips
-	required int32 mem_addr = 6;
+	required uint32 mem_addr = 6;
 
 	// ----------------------------------------------------
 
@@ -22,7 +22,7 @@ message EcosKernelTestProtoMsg {
 
 	// IP where we did the injection: for debugging purposes, must be identical
 	// to instr_address
-	optional int32 injection_ip = 7;
+	optional uint32 injection_ip = 7;
 
 	enum FaultModel {
 		SINGLEBITFLIP = 1;
@@ -32,7 +32,7 @@ message EcosKernelTestProtoMsg {
 
 	repeated group Result = 8 {
 		// single experiment bit offset
-		required int32 bit_offset = 1;
+		required uint32 bit_offset = 1;
 
 		// result type:
 		// FINISHED = planned number of instructions were executed

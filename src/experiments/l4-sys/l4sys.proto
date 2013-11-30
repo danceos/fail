@@ -38,23 +38,23 @@ message L4SysProtoMsg {
 
 	repeated group Result = 3 {
 		// parameters
-		required int32 instr_offset = 1;
-		required int32 bit_offset = 2 [(sql_primary_key) = true];
+		required uint32 instr_offset = 1;
+		required uint32 bit_offset = 2 [(sql_primary_key) = true];
 
 		optional RegisterType register_offset = 3;
 
 		// instruction pointer where injection was done
-		optional int32 injection_ip = 4;
+		optional uint32 injection_ip = 4;
 		// result type, see above
 		optional ResultType resulttype = 5;
 		// result data, depending on resulttype (see source code)
-		optional int32 resultdata = 6;
+		optional uint32 resultdata = 6;
 		// generated output
 		optional string output = 7;
 		// optional textual description of what happened
 		optional string details = 8;
-		optional int32 injection_address = 9;
-		optional int32 deviate_steps = 10;
-		optional int32 deviate_eip   = 11;
+		optional uint32 injection_address = 9;
+		optional uint32 deviate_steps = 10;
+		optional uint32 deviate_eip   = 11;
 	}
 }

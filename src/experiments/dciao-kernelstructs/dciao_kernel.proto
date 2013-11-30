@@ -19,7 +19,7 @@ message DCIAOKernelProtoMsg {
             NOINJECTION = 10;
         }
 
-        required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        required uint32 bitoffset      = 1 [(sql_primary_key) = true];
         required ResultType resulttype = 2;
         optional uint32 original_value = 3;
 

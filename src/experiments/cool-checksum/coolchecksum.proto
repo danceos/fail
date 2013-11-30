@@ -1,8 +1,8 @@
 message CoolChecksumProtoMsg {
 	// parameters
-	required int32 instr_offset = 1;
-	optional int32 instr_address = 8; // for sanity checks
-	required int32 bit_offset = 2;
+	required uint32 instr_offset = 1;
+	optional uint32 instr_address = 8; // for sanity checks
+	required uint32 bit_offset = 2;
 
 	// results
 	// make these optional to reduce overhead for server->client communication

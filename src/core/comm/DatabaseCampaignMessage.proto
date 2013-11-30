@@ -5,13 +5,13 @@ extend google.protobuf.FieldOptions {
 }
 
 message DatabaseCampaignMessage {
-    required int32 pilot_id                 = 1 [(sql_primary_key) = true];
-    required int32 variant_id               = 2 [(sql_ignore) = true];
-    required int32 fspmethod_id             = 3 [(sql_ignore) = true];
-    required int32 injection_instr          = 4 [(sql_ignore) = true];
-    optional int32 injection_instr_absolute = 5 [(sql_ignore) = true];
-    required int32 data_address             = 6 [(sql_ignore) = true];
-    required int32 data_width               = 7 [(sql_ignore) = true];
-    required string variant                 = 8 [(sql_ignore) = true];
-    required string benchmark               = 9 [(sql_ignore) = true];
+    required uint32 pilot_id                 = 1 [(sql_primary_key) = true];
+    required uint32 variant_id               = 2 [(sql_ignore) = true];
+    required uint32 fspmethod_id             = 3 [(sql_ignore) = true];
+    required uint32 injection_instr          = 4 [(sql_ignore) = true];
+    optional uint32 injection_instr_absolute = 5 [(sql_ignore) = true];
+    required uint32 data_address             = 6 [(sql_ignore) = true];
+    required uint32 data_width               = 7 [(sql_ignore) = true];
+    required string variant                  = 8 [(sql_ignore) = true];
+    required string benchmark                = 9 [(sql_ignore) = true];
 }

@@ -9,7 +9,7 @@ message WeathermonitorProtoMsg {
 	// Output: experiment results
 	repeated group Result = 6 {
 		// single experiment bit offset
-		required int32 bitoffset = 1 [(sql_primary_key) = true];
+		required uint32 bitoffset = 1 [(sql_primary_key) = true];
 
 		// result type:
 		// FINISHED = planned number of instructions were executed

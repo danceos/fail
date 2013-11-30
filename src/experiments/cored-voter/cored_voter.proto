@@ -22,7 +22,7 @@ message CoredVoterProtoMsg {
             NOINJECTION = 10;
         }
 
-        required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        required uint32 bitoffset       = 1 [(sql_primary_key) = true];
         required ResultType resulttype = 2;
         required uint32 experiment_number = 3;
 
