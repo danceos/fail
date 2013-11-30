@@ -5,7 +5,12 @@ message InjectionPointMessage {
 	
 	// If checkpoint must be used for this hop chain, id is set properly
 	optional uint32 checkpoint_id = 1;
-	
+
+    // If we need to knwo the target dynamic instruction offset,
+    // here it is
+    optional uint32 target_trace_position = 4; 
+
+
 	// Repeated groups can't be defined as notempty, so a manual
 	// non-empty check is required at usage 
 	

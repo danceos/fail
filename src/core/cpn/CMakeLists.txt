@@ -16,7 +16,7 @@ add_library(fail-cpn ${SRCS})
 # if hop-chains need to be calculated by the server, we 
 # the smarthopping module
 if(CONFIG_INJECTIONPOINT_HOPS)
-    add_dependencies(fail-cpn fail-smarthopping)
+    add_dependencies(fail-cpn fail-smarthops)
 endif(CONFIG_INJECTIONPOINT_HOPS)
 
 add_dependencies(fail-cpn fail-comm)

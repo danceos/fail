@@ -28,8 +28,13 @@ typedef std::pair<address_t, mem_access_type_e> trace_event_tuple_t;
 class TraceReader {
     public:
 
-		TraceReader() : m_current_position(1), ps(0), normal_stream(0),
-	        		gz_stream(0), ev_avail(false), m_log("TraceReader", false) {}
+		TraceReader() : m_current_position(1),
+						ps(0),
+						normal_stream(0),
+						gz_stream(0),
+						m_max_num_inst(0),
+						ev_avail(false),
+						m_log("TraceReader", false) {}
 
 		~TraceReader();
 
@@ -37,12 +42,13 @@ class TraceReader {
         bool getNextTraceEvents(trace_pos_t& trace_pos,
         					std::vector<trace_event_tuple_t >& trace_events);
 
-        void openTraceFile(const char *filename);
+        bool openTraceFile(const char *filename, unsigned int num_inst = 0);
     private:
         unsigned int m_current_position;
         ProtoIStream* ps;
         std::ifstream *normal_stream;
         igzstream *gz_stream;
+        unsigned int m_max_num_inst;
         Trace_Event ev;
         bool ev_avail;
 

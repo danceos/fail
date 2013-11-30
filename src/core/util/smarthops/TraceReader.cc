@@ -41,16 +41,25 @@ std::istream& openStream(const char *input_file,
 	return normal_stream;
 }
 
-void TraceReader::openTraceFile(const char *filename)
+bool TraceReader::openTraceFile(const char *filename, unsigned int num_inst)
 {
 	normal_stream = new std::ifstream();
 	gz_stream = new igzstream();
 	ps = new fail::ProtoIStream(&openStream(filename, *normal_stream, *gz_stream, m_log));
+
+	m_max_num_inst = num_inst;
+
+	return true;
 }
 
 bool TraceReader::getNextTraceEvents(trace_pos_t& trace_pos,
 							std::vector<trace_event_tuple_t >& trace_events)
 {
+	// Stop after fixed number of instructions, if given as command line argument
+	if ((m_max_num_inst > 0) && (m_current_position > m_max_num_inst)) {
+		return false;
+	}
+
 	trace_pos = m_current_position;
 
 	// Delivered trace_events vector does not have to be
