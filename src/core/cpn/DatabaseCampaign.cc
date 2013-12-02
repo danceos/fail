@@ -144,7 +144,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = atoi(row[0]);
 		unsigned injection_instr = atoi(row[3]);
-		unsigned data_address    = atoi(row[5]);
+		unsigned data_address    = strtoul(row[5], NULL, 10);
 		unsigned data_width      = atoi(row[6]);
 
 
@@ -161,7 +161,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		ip.addToCampaignMessage(pilot);
 
 		if (row[4]) {
-			unsigned injection_instr_absolute = atoi(row[4]);
+			unsigned injection_instr_absolute = strtoul(row[4], NULL, 10);
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
