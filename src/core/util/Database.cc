@@ -229,6 +229,9 @@ void Database::cmdline_setup() {
 								  "-h/--hostname \tMYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
 								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)\n");
+
+	// should be called before any threads are spawned
+	mysql_library_init(0, NULL, NULL);
 }
 
 Database * Database::cmdline_connect() {

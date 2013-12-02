@@ -355,8 +355,10 @@ int DatabaseProtobufAdapter::TypeBridge_message::gatherTypes(StringJoiner &inser
 void DatabaseProtobufAdapter::create_table(const Descriptor *toplevel_desc) {
 	assert (toplevel_desc != 0);
 
-	std::stringstream create_table_stmt, insert_stmt;
+	std::stringstream create_table_stmt;
 	StringJoiner insert_join, primary_join, question_marks;
+
+	insert_stmt.str("");
 
 	result_table_name = "result_" + toplevel_desc->name();
 
@@ -376,14 +378,6 @@ void DatabaseProtobufAdapter::create_table(const Descriptor *toplevel_desc) {
 
 	// Create the Table
 	db->query(create_table_stmt.str().c_str());
-
-
-	// Prepare the insert statement
-	stmt = mysql_stmt_init(db->getHandle());
-	if (mysql_stmt_prepare(stmt, insert_stmt.str().c_str(), insert_stmt.str().length())) {
-		LOG << "query '" << insert_stmt.str() << "' failed: " << mysql_error(db->getHandle()) << std::endl;
-		exit(-1);
-	}
 }
 
 
@@ -413,6 +407,17 @@ int DatabaseProtobufAdapter::field_size_at_pos(const Message *msg, std::vector<i
 
 bool DatabaseProtobufAdapter::insert_row(const google::protobuf::Message *msg) {
 	assert (msg->GetDescriptor() != 0 && msg->GetReflection() != 0);
+
+	if (!stmt) {
+		// Prepare the insert statement
+		// We didn't do that right in create_table() because we need to use the
+		// right DB connection for that (which may not have existed yet then).
+		stmt = mysql_stmt_init(db_insert->getHandle());
+		if (mysql_stmt_prepare(stmt, insert_stmt.str().c_str(), insert_stmt.str().length())) {
+			LOG << "query '" << insert_stmt.str() << "' failed: " << mysql_error(db_insert->getHandle()) << std::endl;
+			exit(-1);
+		}
+	}
 
 	MYSQL_BIND *bind = new MYSQL_BIND[top_level_msg.field_count];
 

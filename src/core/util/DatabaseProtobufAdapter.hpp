@@ -13,8 +13,9 @@
 namespace fail {
 
 class DatabaseProtobufAdapter {
-	Database *db;
+	Database *db, *db_insert;
 	MYSQL_STMT *stmt;
+	std::stringstream insert_stmt;
 
 	void error_create_table();
 
@@ -192,8 +193,20 @@ class DatabaseProtobufAdapter {
 
 
 public:
-	DatabaseProtobufAdapter() : db(0), top_level_msg(0, 0, 0) {}
-	void set_database_handle(Database *db) { this->db = db; }
+	DatabaseProtobufAdapter() : db(0), db_insert(0), stmt(0), top_level_msg(0, 0, 0) {}
+	void set_database_handle(Database *db)
+	{
+		this->db = db;
+		if (!db_insert) {
+			db_insert = db;
+		}
+	}
+	/**
+	 * Set a different database handle to be used in insert_row().  Necessary
+	 * if INSERTs are done in a separate thread, while the handle set with
+	 * set_database_handle() is still in use concurrently.
+	 */
+	void set_insert_database_handle(Database *db) { db_insert = db; }
 	void create_table(const google::protobuf::Descriptor *);
 	bool insert_row(const google::protobuf::Message *msg);
 	std::string result_table() { return result_table_name; }
