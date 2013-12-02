@@ -63,6 +63,9 @@ class InjectionPointHops : public InjectionPointBase {
 private:
 	SmartHops *m_sa;	// !< Hop calculator which generates the hop chain
 	uint32_t m_curr_inst;	// !< Instruction for which currently a hop chain is available
+	bool m_initialized;
+
+	void init();
 public:
 	InjectionPointHops();
 	virtual ~InjectionPointHops();

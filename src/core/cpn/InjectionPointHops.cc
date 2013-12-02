@@ -3,8 +3,19 @@
 
 namespace fail {
 
-InjectionPointHops::InjectionPointHops() : InjectionPointBase(), m_sa(new SmartHops()), m_curr_inst(0)  {
+InjectionPointHops::InjectionPointHops() : InjectionPointBase(), m_sa(NULL), m_curr_inst(0), m_initialized(false)  {
+}
 
+
+InjectionPointHops::~InjectionPointHops() {
+	if (m_initialized)
+		delete m_sa;
+}
+
+void InjectionPointHops::init()
+{
+	m_sa = new SmartHops();
+	m_curr_inst = 0;
 	char * elfpath = getenv("FAIL_TRACE_PATH");
 	if(elfpath == NULL){
 		m_log << "FAIL_TRACE_PATH not set :(" << std::endl;
@@ -12,13 +23,15 @@ InjectionPointHops::InjectionPointHops() : InjectionPointBase(), m_sa(new SmartH
 	}else{
 		m_sa->init((const char*)elfpath);
 	}
-}
 
-InjectionPointHops::~InjectionPointHops() {
-	delete m_sa;
+	m_initialized = true;
 }
 
 void InjectionPointHops::parseFromInjectionInstr(unsigned inj_instr) {
+	if (!m_initialized) {
+		init();
+	}
+
 	// Already calculated result needed?
 	if (m_curr_inst == inj_instr) {
 		return;
