@@ -112,16 +112,17 @@ void DatabaseCampaign::collect_result_thread() {
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather all unfinished jobs */
 	int experiment_count;
-	std::string sql_select = "SELECT pilot_id, g.fspmethod_id, g.variant_id, p.injection_instr, p.injection_instr_absolute, g.data_address, p.data_width ";
+	std::string sql_select = "SELECT p.id, p.fspmethod_id, p.variant_id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
 	std::stringstream ss;
-	ss << " FROM fspgroup g"
-	   << " INNER JOIN fsppilot p ON p.id = g.pilot_id "
-	   << " WHERE p.known_outcome = 0 "
-	   << "	   AND g.fspmethod_id = "  << fspmethod_id
-	   << "	   AND g.variant_id = "	<< variant.id
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = g.pilot_id)"
+	ss << " FROM trace t, fsppilot p"
+	   << " WHERE p.fspmethod_id = "  << fspmethod_id
+	   << "	   AND p.variant_id = "	<< variant.id
+	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = p.id)"
 	   << " < " << expected_number_of_results(variant.variant, variant.benchmark)
-	   << "    ORDER BY p.injection_instr";
+	   << "    AND p.variant_id = t.variant_id"
+	   << "    AND p.instr2 = t.instr2"
+	   << "    AND p.data_address = t.data_address"
+	   << "    ORDER BY t.instr1";
 	std::string sql_body = ss.str();
 
 	/* Get the number of unfinished experiments */
@@ -146,6 +147,8 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned injection_instr = atoi(row[3]);
 		unsigned data_address    = strtoul(row[5], NULL, 10);
 		unsigned data_width      = atoi(row[6]);
+		unsigned instr1          = strtoul(row[7], NULL, 10);
+		unsigned instr2          = strtoul(row[8], NULL, 10);
 
 
 		DatabaseCampaignMessage pilot;
@@ -157,7 +160,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		pilot.set_variant(variant.variant);
 		pilot.set_benchmark(variant.benchmark);
 
-		ip.parseFromInjectionInstr(injection_instr);
+		ip.parseFromInjectionInstr(instr1, instr2);
 		ip.addToCampaignMessage(pilot);
 
 		if (row[4]) {

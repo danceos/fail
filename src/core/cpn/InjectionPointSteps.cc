@@ -2,9 +2,9 @@
 
 namespace fail {
 
-void InjectionPointSteps::parseFromInjectionInstr(unsigned inj_instr) {
+void InjectionPointSteps::parseFromInjectionInstr(unsigned instr1, unsigned instr2) {
 	// compute hops
-	m_ip.set_injection_instr(inj_instr);
+	m_ip.set_injection_instr(instr2);
 }
 
 } /* namespace fail */

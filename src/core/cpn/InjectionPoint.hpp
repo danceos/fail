@@ -5,6 +5,8 @@
 #include "util/Logger.hpp"
 #include "config/FailConfig.hpp"
 
+#include <vector>
+
 namespace fail {
 
 /**
@@ -26,7 +28,7 @@ public:
 	 * Used by server.
 	 * @param inj_instr trace instruction offset to be parsed
 	 */
-	virtual void parseFromInjectionInstr(unsigned inj_instr) = 0;
+	virtual void parseFromInjectionInstr(unsigned instr1, unsigned instr2) = 0;
 
 	/**
 	 * Parses (extracts) generic representation from a DatabaseCampaignMessage.
@@ -62,19 +64,28 @@ class SmartHops;
 class InjectionPointHops : public InjectionPointBase {
 private:
 	SmartHops *m_sa;	// !< Hop calculator which generates the hop chain
-	uint32_t m_curr_inst;	// !< Instruction for which currently a hop chain is available
+
+	// Boundaries must be signed to ensure, they can be initialized as outside of beginning
+	// of the trace (instr is -1).
+	long m_curr_instr1;		// !< Lower end of instructions for which currently a hop chain is available
+	long m_curr_instr2;		// !< Upper end of instructions for which currently a hop chain is available
+
 	bool m_initialized;
+	std::vector<InjectionPointMessage> m_results;
 
 	void init();
 public:
-	InjectionPointHops();
+	InjectionPointHops() : InjectionPointBase(), m_sa(NULL), m_curr_instr1(-1),
+							m_curr_instr2(-1), m_initialized(false) {}
+
 	virtual ~InjectionPointHops();
 	
 	/**
 	 * Parses a hop chain from a injection instruction (trace offset).
-	 * @param inj_instr trace instruction offset to be parsed
+	 * @param instr1 trace instruction offset of beginning of equivalence class
+	 * @param instr2 trace instruction offset of ending of equivalence class
 	 */
-	virtual void parseFromInjectionInstr(unsigned inj_instr);
+	virtual void parseFromInjectionInstr(unsigned instr1, unsigned instr2);
 };
 
 typedef InjectionPointHops ConcreteInjectionPoint;
@@ -94,9 +105,10 @@ public:
 	/**
 	 * Parses a trace offset from a injection instruction (trace offset),
 	 * so it effectively just stores the value in the protobuf message.
-	 * @param inj_instr trace instruction offset to be parsed
+	 * @param instr1 trace instruction offset of beginning of equivalence class
+	 * @param instr2 trace instruction offset of ending of equivalence class
 	 */
-	virtual void parseFromInjectionInstr(unsigned inj_instr);
+	virtual void parseFromInjectionInstr(unsigned instr1, unsigned instr2);
 };
 
 typedef InjectionPointSteps ConcreteInjectionPoint;
