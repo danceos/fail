@@ -142,7 +142,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Get the number of unfinished experiments */
 	MYSQL_RES *count = db->query(("SELECT COUNT(*) " + sql_body).c_str(), true);
 	MYSQL_ROW row = mysql_fetch_row(count);
-	experiment_count = atoi(row[0]);
+	experiment_count = strtoul(row[0], NULL, 10);
 
 
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
@@ -152,10 +152,10 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	sent_pilots = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
-		unsigned pilot_id        = atoi(row[0]);
-		unsigned injection_instr = atoi(row[3]);
-		unsigned data_address    = atoi(row[5]);
-		unsigned data_width      = atoi(row[6]);
+		unsigned pilot_id        = strtoul(row[0], NULL, 10);
+		unsigned injection_instr = strtoul(row[3], NULL, 10);
+		unsigned data_address    = strtoul(row[5], NULL, 10);
+		unsigned data_width      = strtoul(row[6], NULL, 10);
 
 
 		DatabaseCampaignMessage pilot;
@@ -167,7 +167,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		pilot.set_benchmark(variant.benchmark);
 
 		if (row[4]) {
-			unsigned injection_instr_absolute = atoi(row[4]);
+			unsigned injection_instr_absolute = strtoul(row[4], NULL, 10);
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
