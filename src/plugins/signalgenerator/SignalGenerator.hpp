@@ -22,22 +22,23 @@ static const float MYPI = 3.14159265358979323846f;
  */
 class SignalForm {
 
-  mutable fail::Logger m_log;
+    mutable fail::Logger m_log;
 
-  public:
+public:
     /**
      * Signalgenerator just calls the calculate method of a derived signal
      * form.
      */
     virtual double calculate(void) const = 0;
 
-  protected:
+protected:
     SignalForm() : m_log("SigForm", false) {};
 
-    fail::simtime_t ticksPerSecond(void) const  {
+    fail::simtime_t ticksPerSecond(void) const 
+    {
         fail::simtime_t ticksPerSec = fail::simulator.getTimerTicksPerSecond();
         if(ticksPerSec == 0){
-          m_log << "Warning: Timer ticks per second equals 0" << std::endl;
+            m_log << "Warning: Timer ticks per second equals 0" << std::endl;
         }
         return ticksPerSec;
     }
@@ -84,14 +85,15 @@ private:
  * Generating superimposed sine waves,
  * according to the SineParams_t parameters.
  */
-class Sine : public SignalForm {
-  public:
+class Sine : public SignalForm
+{
+public:
 
     //! Parameter set for a single wave
     struct SineParams_t {
-      double freq_in_hz; //!< Freqency in Hz
-      double amplitude; //!< between 0..1
-      SineParams_t(double f, double a) : freq_in_hz(f), amplitude(a) {};
+        double freq_in_hz; //!< Freqency in Hz
+        double amplitude; //!< between 0..1
+        SineParams_t(double f, double a) : freq_in_hz(f), amplitude(a) {};
     };
 
     //! Multiple sine waves can be superimposed (e.g., summed up)
@@ -106,8 +108,9 @@ class Sine : public SignalForm {
      * simulator time t (in seconds):
      * \f$x = sin(2 pi f t)\f$
      **/
-    double sinus(double freq_hertz, double t) const {
-       return sin((2. * MYPI * freq_hertz)  * t);
+    double sinus(double freq_hertz, double t) const 
+    {
+        return sin((2. * MYPI * freq_hertz)  * t);
     }
 
     double calculate(void) const;

@@ -37,15 +37,17 @@ uint8_t SignalGenerator::handleEvent(void)
 
 
 
-Sine::Sine(const SineParams_t param) {
+Sine::Sine(const SineParams_t param)
+{
     m_params.push_back(param);
 }
 
-double Sine::calculate() const {
+double Sine::calculate() const
+{
     simtime_t tps = ticksPerSecond();
     if(tps == 0){
-      // Simulator speed not valid.
-      return 0;
+        // Simulator speed not valid.
+        return 0;
     }
 
     // Get simulation time in seconds.
@@ -56,7 +58,7 @@ double Sine::calculate() const {
     for(Sine::SineParamsList_t::const_iterator it = m_params.begin(); 
                 it != m_params.end(); it++)
     {
-      val += it->amplitude * sinus(it->freq_in_hz, sec);
+        val += it->amplitude * sinus(it->freq_in_hz, sec);
     }
     return val;
 }
