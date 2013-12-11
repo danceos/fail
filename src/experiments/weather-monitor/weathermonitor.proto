@@ -1,25 +1,15 @@
+import "DatabaseCampaignMessage.proto";
+
 message WeathermonitorProtoMsg {
+	required DatabaseCampaignMessage fsppilot = 1;
+
 	// Input: experiment parameters
 	// (client executes 8 experiments, one for each bit at mem_addr)
-
-	// FI at #instructions from experiment start
-	required int32 instr_offset = 1;
-	// the exact IP value at this point in time (from golden run)
-	optional int32 instr_address = 2; // for sanity checks
-	// address of the byte to inject bit-flips
-	required int32 mem_addr = 3;
-
 	// ----------------------------------------------------
-
 	// Output: experiment results
-
-	// IP where we did the injection: for debugging purposes, must be identical
-	// to instr_address
-	optional int32 injection_ip = 4;
-
-	repeated group Result = 5 {
+	repeated group Result = 6 {
 		// single experiment bit offset
-		required int32 bit_offset = 1;
+		required int32 bitoffset = 1 [(sql_primary_key) = true];
 
 		// result type:
 		// FINISHED = planned number of instructions were executed

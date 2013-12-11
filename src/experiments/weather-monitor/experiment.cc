@@ -40,14 +40,24 @@ bool WeatherMonitorExperiment::run()
 	
 	log << "startup" << endl;
 
-#if 1
+/*
+ * this does not work as the guestsys doesn't output anything
+ * albeit that, it's no longer needed in this experiment
+ */
+
+#if 0
 	// STEP 0: record memory map with vptr addresses
+	ofstream mmap;
+	mmap.open ("memory.map");
 	GuestListener g;
 	while (true) {
 		simulator.addListenerAndResume(&g);
-		cout << g.getData() << flush;
+		mmap << g.getData() << flush;
 	}
-#elif 0
+	mmap.close();
+#endif
+
+#if 1
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(WEATHER_FUNC_MAIN);
 	simulator.addListenerAndResume(&bp);
@@ -154,22 +164,24 @@ bool WeatherMonitorExperiment::run()
 	}
 #else
 	// XXX debug
-	param.msg.set_instr_offset(1000);
-	//param.msg.set_instr_address(12345);
-	param.msg.set_mem_addr(0x00103bdc);
+	param.msg.fsppilot().set_injection_instr(1000);
+	param.msg.fsppilot().set_data_address(0x00103bdc);
 #endif
 
+
 	int id = param.getWorkloadID();
-	int instr_offset = param.msg.instr_offset();
-	int mem_addr = param.msg.mem_addr();
+	unsigned  injection_instr = param.msg.fsppilot().injection_instr();
+	address_t data_address = param.msg.fsppilot().data_address();
+
+	//old data. now it resides in the DatabaseCampaignMessage
 
 	// for each job we're actually doing *8* experiments (one for each bit)
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
-		result->set_bit_offset(bit_offset);
-		log << dec << "job " << id << " instr " << instr_offset
-		    << " mem " << mem_addr << "+" << bit_offset << endl;
+		result->set_bitoffset(bit_offset);		
+		log << dec << "job " << id << " instr " << injection_instr
+		    << " mem " << data_address << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
 		simulator.restore(statename);
@@ -179,7 +191,7 @@ bool WeatherMonitorExperiment::run()
 		stringstream fname;
 		fname << "job." << ::getpid();
 		ofstream job(fname.str().c_str());
-		job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
+		job << "job " << id << " instr " << injection_instr << " (" << param.msg.fsppilot().injection_instr_absolute() << ") mem " << param.msg.fsppilot().data_address() << "+" << bit_offset << endl;
 		job.close();
 */
 
@@ -196,10 +208,10 @@ bool WeatherMonitorExperiment::run()
 		int count_loop_iter_before = 0;
 
 		// no need to wait if offset is 0
-		if (instr_offset > 0) {
+		if (injection_instr > 0) {
 			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(ANY_ADDR);
-			bp.setCounter(instr_offset);
+			bp.setCounter(injection_instr);
 			simulator.addListener(&bp);
 
 			// count loop iterations until FI
@@ -211,21 +223,20 @@ bool WeatherMonitorExperiment::run()
 
 		// --- fault injection ---
 		MemoryManager& mm = simulator.getMemoryManager();
-		byte_t data = mm.getByte(mem_addr);
+		byte_t data = mm.getByte(data_address);
 		byte_t newdata = data ^ (1 << bit_offset);
-		mm.setByte(mem_addr, newdata);
+		mm.setByte(data_address, newdata);
 		// note at what IP we did it
 		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
-		param.msg.set_injection_ip(injection_ip);
 		result->set_iter_before_fi(count_loop_iter_before);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
-		if (param.msg.has_instr_address() &&
-			injection_ip != param.msg.instr_address()) {
+		if (param.msg.fsppilot().has_injection_instr_absolute() &&
+			injection_ip != param.msg.fsppilot().injection_instr_absolute()) {
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip
-			   << " != " << param.msg.instr_address();
+			   << " != " << param.msg.fsppilot().injection_instr_absolute();
 			log << ss.str() << endl;
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
