@@ -44,6 +44,8 @@ void InjectionPointHops::parseFromInjectionInstr(unsigned instr1, unsigned instr
 	for (; it != m_results.end(); it++) {
 		if (!it->has_target_trace_position()) {
 			m_log << "FATAL ERROR: Target trace offset must be delivered in order to calculate minimum costs" << std::endl;
+			m_log << m_results.size() << std::endl;
+			exit(0);
 		}
 		if (it->target_trace_position() < instr1) {
 			delete_iterator = it;
@@ -57,11 +59,11 @@ void InjectionPointHops::parseFromInjectionInstr(unsigned instr1, unsigned instr
 	}
 
 	// Calculate next needed results
-	while (instr2 > m_curr_instr2) {
+	while ((long)instr2 > m_curr_instr2) {
 		// if instr1 is bigger than nex instr2, we can skip instructions
 		// And current instr1 will be newly defined
 		unsigned new_curr_instr2;
-		if (instr1 > m_curr_instr2) {
+		if ((long)instr1 > m_curr_instr2) {
 			m_curr_instr1 = instr1;
 			new_curr_instr2 = instr1;
 		} else {
@@ -87,13 +89,22 @@ void InjectionPointHops::parseFromInjectionInstr(unsigned instr1, unsigned instr
 	search = m_results.begin() + (instr1 - m_curr_instr1);
 	search_end = m_results.begin() + (instr2 - m_curr_instr1);
 
-	for(;search != search_end; search++) {
-		if (search->costs() < min_costs) {
-			min_cost_msg = &(*search);
-			min_costs = search->costs();
+	// Single-instruction eqivalence class
+	if (search == search_end) {
+		m_ip = *search;
+	} else {
+		for(;search != search_end; search++) {
+			if (!search->has_costs()) {
+				m_log << "FATAL ERROR: Costs must be delivered in order to calculate minimum costs" << std::endl;
+				exit(-1);
+			}
+			if (search->costs() < min_costs) {
+				min_cost_msg = &(*search);
+				min_costs = search->costs();
+			}
 		}
+		m_ip = *min_cost_msg;
 	}
-	m_ip = *min_cost_msg;
 }
 
 } /* namespace fail */
