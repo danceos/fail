@@ -24,6 +24,11 @@ void SmartHops::convertToIPM(std::vector<result_tuple > &result, unsigned costs,
 		it_hop++;
 	}
 
+	if (result.size() > 0 && result.back().first.second != ACCESS_CHECKPOINT) {
+		ipm.set_target_trace_position(result.back().second);
+	} else {
+		ipm.set_target_trace_position(0);
+	}
 	ipm.set_costs(costs);
 
 	for(;it_hop != result.end();
@@ -57,7 +62,15 @@ void SmartHops::convertToIPM(std::vector<result_tuple > &result, unsigned costs,
 
 bool SmartHops::calculateFollowingHop(InjectionPointMessage &ip, unsigned instruction_offset) {
 
+	if (instruction_offset == 0) {
+		m_result.clear();
+		m_costs = 0;
+		convertToIPM(m_result, m_costs, ip);
+		return true;
+	}
+
 	while (m_trace_pos < instruction_offset) {
+		//m_log << "Calculating " << instruction_offset << std::endl;
 		if (!m_trace_reader.getNextTraceEvents(m_trace_pos, m_trace_events)) {
 			return false;
 		}
