@@ -323,6 +323,10 @@ int main(int argc, char *argv[])
 			 */
 			single_step_requested = false;
 
+			freeze_timers();
+			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
+			unfreeze_timers();
+
 			/*
 			 * Get current memory access(es)
 			 */
@@ -339,9 +343,6 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			freeze_timers();
-			fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
-			unfreeze_timers();
 			trace_count++;
 		}
 
