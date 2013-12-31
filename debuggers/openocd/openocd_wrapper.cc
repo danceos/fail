@@ -1734,9 +1734,10 @@ static bool update_mmu_watch_add()
 					if (first_lvl->mapped) {
 						uint32_t descr_content = (cand_it->index << 20) | 0xc00;
 						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
-						LOG << "Writing to " << hex << descr_addr << dec << endl;
-						oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
-						LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;
+						//LOG << "Writing to " << hex << descr_addr << dec << endl;
+						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(descr_addr,descr_content));
+						// oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
+						//LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;
 						first_lvl->mapped = false;
 						invalidate = true;
 					}
