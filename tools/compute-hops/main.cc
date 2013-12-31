@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 //		if (strcmp(argv[9],"max")==0) {
 //			g_rollback_thresh = (g_cp_thresh - g_cost_cp - 5)/2;
 //		}
-		g_cost_cp = strtoul(cmd[CP_ROLLBACK_THRESH].first()->arg, NULL, 0);
+		g_rollback_thresh = strtoul(cmd[CP_ROLLBACK_THRESH].first()->arg, NULL, 0);
 	}
 
 	if (cmd[USE_CHECKPOINTS] && !(cmd[CHECKPOINT_OUTPUT_FILE].count() > 0)) {
