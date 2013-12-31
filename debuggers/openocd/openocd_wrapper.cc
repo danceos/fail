@@ -64,16 +64,6 @@ static struct target 			*target_m3;
 static struct command_context 	*cmd_ctx;
 
 /*
- * State variable for propagation of a coming horizontal hop.
- * For correct execution of a horizontal hop, an additional
- * single-step needs to be executed before resuming target
- * execution.
- * Variable is set while setting new halt_conditions on basis of
- * current instruction and its memory access(es).
- */
-static bool horizontal_step = false;
-
-/*
  * As the normal loop execution is
  * resume - wait for halt - trigger events and set next halt condition(s),
  * single-stepping is different. It is accomplished by setting this state
@@ -365,6 +355,55 @@ int main(int argc, char *argv[])
 		unfreeze_timers();
 
 		if (target_a9->state == TARGET_HALTED) {
+			/*
+			 * Execute single-step if horizontal hop was detected
+			 */
+
+			bool horizontal_step = false;
+
+			// Compare current memory access event with set watchpoint
+			struct halt_condition mem_access;
+			if (getCurrentMemAccess(&mem_access)) {
+
+				struct watchpoint *watchpoint = target_a9->watchpoints;
+
+				// WPT_READ = 0, WPT_WRITE = 1, WPT_ACCESS = 2
+				while (watchpoint) {
+					if (((mem_access.type == HALT_TYPE_WP_READ) && (watchpoint->rw == WPT_READ)) ||
+							((mem_access.type == HALT_TYPE_WP_WRITE) && (watchpoint->rw == WPT_WRITE)) ||
+							((mem_access.type == HALT_TYPE_WP_READWRITE) && (watchpoint->rw == WPT_ACCESS)) ) {
+						if (((mem_access.address < watchpoint->address) && (mem_access.address + mem_access.addr_len >= watchpoint->address)) ||
+								((mem_access.address >= watchpoint->address) && (watchpoint->address + watchpoint->length >= mem_access.address))) {
+							horizontal_step = true;
+						}
+					}
+					watchpoint = watchpoint->next;
+				}
+			}
+
+			// Compare current pc with set breakpoint (potential horizontal hop)
+			uint32_t pc = getCurrentPC();
+			struct breakpoint *breakpoint = target_a9->breakpoints;
+
+			while (breakpoint) {
+				if (((pc <= breakpoint->address) && ((pc + 4) >= breakpoint->address)) ||
+						((breakpoint->address <= pc) && ((breakpoint->address + 4) >= pc))) {
+					horizontal_step = true;
+				}
+				breakpoint = breakpoint->next;
+			}
+
+			if (horizontal_step) {
+				LOG << "horizontal -> singlestep" << endl;
+				unfreeze_cycle_counter();
+				if (target_step(target_a9, 1, 0, 1)) {
+					LOG << "FATAL ERROR: Single-step could not be executed!" << endl;
+					exit (-1);
+				}
+				freeze_cycle_counter();
+			}
+
+
 			LOG << "Resume" << endl;
 			unfreeze_cycle_counter();
 			if (target_resume(target_a9, 1, 0, 1, 1)) {
@@ -406,6 +445,13 @@ int main(int argc, char *argv[])
 						exit(-1);
 					}
 
+					// Step, so mem access can be done
+					unfreeze_cycle_counter();
+					if (target_step(target_a9, 1, 0, 1)) {
+						LOG << "FATAL ERROR: Single-step could not be executed!" << endl;
+						exit (-1);
+					}
+					freeze_cycle_counter();
 					// Reset mapping at mmu_recovery_address
 					// write into memory at mmu_recovery_address to map page/section
 					unmap_page_section(mmu_recovery_address);
@@ -488,6 +534,8 @@ int main(int argc, char *argv[])
 					mmu_recovery_bp.addr_len = 4;
 					mmu_recovery_bp.type = HALT_TYPE_BP;
 
+					oocdw_read_reg(4,&mmu_recovery_address);
+
 					// ToDO: If all BPs used, delete and memorize any of these
 					// as we will for sure first halt in the recovery_bp, we can
 					// then readd it
@@ -503,6 +551,7 @@ int main(int argc, char *argv[])
 						 */
 						fail::simulator.onTrap(NULL, fail::ANY_TRAP);
 					}
+
 				} else if (pc == sym_GenericTrapHandler) {
 					freeze_timers();
 					fail::simulator.onTrap(NULL, fail::ANY_TRAP);
@@ -570,19 +619,7 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			/*
-			 * Execute single-step if horizontal hop was detected
-			 */
-			if (target_a9->state == TARGET_HALTED && horizontal_step) {
-				unfreeze_cycle_counter();
-				if (target_step(target_a9, 1, 0, 1)) {
-					LOG << "FATAL ERROR: Single-step could not be executed!" << endl;
-					exit (-1);
-				}
-				freeze_cycle_counter();
-				// Reset horizontal hop flag
-				horizontal_step = false;
-			}
+
 		}
 
 		// Update timers. Granularity will be coarse, because this is done after polling the device
@@ -616,8 +653,6 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 	assert((hc != NULL) && "No halt condition defined");
 
-	// ToDo: Does this work for multiple halt conditions?
-	horizontal_step = false;
 
 	if (hc->type == HALT_TYPE_BP) {
 		LOG << "Adding BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
@@ -632,10 +667,6 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 		free_breakpoints--;
 
-		// Compare current pc with set breakpoint (potential horizontal hop)
-		if (hc->address == getCurrentPC()) {
-			horizontal_step = true;
-		}
 	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
 		single_step_requested = true;
 	} else if ((hc->type == HALT_TYPE_WP_READ) ||
@@ -680,18 +711,7 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 		free_watchpoints--;
 
-		// Compare current memory access event with set watchpoint
-		// (potential horizontal hop)
-		struct halt_condition mem_access;
-		if (getCurrentMemAccess(&mem_access)) {
-			if (mem_access.type == hc->type) {
-				if ((mem_access.address < hc->address) && (mem_access.address + mem_access.addr_len >= hc->address)) {
-					horizontal_step = true;
-				} else if ((mem_access.address >= hc->address) && (hc->address + hc->addr_len >= mem_access.address)) {
-					horizontal_step = true;
-				}
-			}
-		}
+
 	} else {
 		LOG << "FATAL ERROR: Could not determine halt condition type" << endl;
 		exit(-1);
