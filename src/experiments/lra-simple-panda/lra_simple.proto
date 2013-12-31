@@ -7,19 +7,24 @@ message LraSimpleProtoMsg {
         enum ResultType {
             OK = 1;
             
-            ERR_WRONG_RESULT   = 4;
+            ERR_WRONG_RESULT   = 2;
             
-            ERR_TRAP = 5;
-            ERR_TIMEOUT = 6;
+            ERR_TRAP = 3;
+            ERR_TIMEOUT = 4;
             
-            ERR_OUTSIDE_TEXT = 7;
-            
-            ERR_OUTSIDE_DATA = 8;
+            ERR_OUTSIDE_TEXT = 5;
         }
 
-        required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        //required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        
+        required uint32 experiment_number = 1 [(sql_primary_key) = true]; 
         required ResultType resulttype = 2;
-        required uint32 experiment_number = 3;
-        required uint32 loop_iteration = 4;
+        
+        
+        // Times for evaluation
+        required float time_init = 3;
+        required float time_nav = 4;
+        required float time_inject = 5;
+        required float time_aftermath = 6;
     }
 }

@@ -1,5 +1,5 @@
-#ifndef __DCIAOCAMPAIGN_HPP__
-#define __DCIAOCAMPAIGN_HPP__
+#ifndef __LRA_CAMPAIGN_HPP__
+#define __LRA_CAMPAIGN_HPP__
 
 #include "cpn/DatabaseCampaign.hpp"
 #include "comm/ExperimentData.hpp"
@@ -18,6 +18,9 @@ class LraSimpleCampaign : public fail::DatabaseCampaign {
 	{ return google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("LraSimpleProtoMsg"); }
 
 	virtual void cb_send_pilot(DatabaseCampaignMessage pilot);
+	virtual int expected_number_of_results(std::string variant, std::string benchmark) {
+		return 1;
+	}
 };
 
-#endif // __KESOREFCAMPAIGN_HPP__
+#endif // __LRA_CAMPAIGN_HPP__
