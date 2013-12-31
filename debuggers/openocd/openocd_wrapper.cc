@@ -155,7 +155,7 @@ fail::Logger LOG("OpenOCD", false);
 static void update_timers();
 static void freeze_timers();
 static void unfreeze_timers();
-static struct watchpoint *getHaltingWatchpoint();
+static bool getHaltingWatchpoint(struct halt_condition *hc);
 static bool getCurrentMemAccess(struct halt_condition *access);
 static bool getMemAccess(uint32_t opcode, struct halt_condition *access);
 static uint32_t getCurrentPC();
@@ -514,7 +514,11 @@ int main(int argc, char *argv[])
 			{
 				// ToDo: Replace with calls of every current memory access
 				struct halt_condition halt;
-				if (!getCurrentMemAccess(&halt)) {
+//				if (!getCurrentMemAccess(&halt)) {
+//					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
+//					exit(-1);
+//				}
+				if(!getHaltingWatchpoint(&halt)) {
 					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
 					exit(-1);
 				}
@@ -1332,16 +1336,36 @@ static bool getCurrentMemAccess(struct halt_condition *access)
  * this function
  * Will be eliminated by disassembling and evaluating instruction
  */
-static struct watchpoint *getHaltingWatchpoint()
+static bool getHaltingWatchpoint(struct halt_condition *hc)
 {
 	struct watchpoint *watchpoint = target_a9->watchpoints;
 
 	if (!watchpoint || watchpoint->next) {
 		// Multiple watchpoints activated? No single answer possible
-		return NULL;
+		return false;
 	}
-	return watchpoint;
+
+	hc->address = watchpoint->address;
+	hc->addr_len = watchpoint->length;
+	switch (watchpoint->rw) {
+	case WPT_READ:
+		hc->type = HALT_TYPE_WP_READ;
+		break;
+	case WPT_WRITE:
+		hc->type = HALT_TYPE_WP_WRITE;
+		break;
+	case WPT_ACCESS:
+		hc->type = HALT_TYPE_WP_READWRITE;
+		break;
+	default:
+		LOG << "FATAL ERROR: Something went seriously wrong, here" << endl;
+		break;
+	}
+
+	return true;
 }
+
+
 static uint32_t cc_overflow = 0;
 
 void freeze_cycle_counter()
