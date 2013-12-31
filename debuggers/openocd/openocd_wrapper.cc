@@ -292,6 +292,11 @@ int main(int argc, char *argv[])
 		while (single_step_requested) {
 			int repeat = 5;
 			int retval;
+
+			freeze_timers();
+			update_mmu_watch();
+			unfreeze_timers();
+
 			unfreeze_cycle_counter();
 			while ((retval = target_step(target_a9, 1, 0, 1)) && (repeat--)) {
 				LOG << "ERROR: Single-step could not be executed at instruction " <<
@@ -436,6 +441,7 @@ int main(int argc, char *argv[])
 
 					arm_regs_t regs;
 
+					// Read registers from abort stack, as they are now modified
 					oocdw_read_from_memory(sp_abt, 4, 4, (uint8_t*)(&regs.r[2]));
 
 					for (int i = 0; i < 16; i++) {
@@ -491,8 +497,10 @@ int main(int argc, char *argv[])
 					if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
 						fail::simulator.onMemoryAccess(NULL, op.mem_addr, op.mem_size, op.flags & OP_FLAG_WRITE, lr_abt - 8);
 					} else {
-						LOG << "FATAL ERROR: Disassembling instruction in mmu handler failed" << endl;
-						exit(-1);
+						/* As some memory accesses can't be decoded, because we are executing data, this is going
+						 * to be handled as a trap.
+						 */
+						fail::simulator.onTrap(NULL, fail::ANY_TRAP);
 					}
 				} else if (pc == sym_GenericTrapHandler) {
 					freeze_timers();
@@ -542,13 +550,18 @@ int main(int argc, char *argv[])
 						break;
 				}
 				freeze_timers();
-				fail::simulator.onMemoryAccess(NULL, halt.address, 1, iswrite, pc);
+				LOG << "WATCHPOINT EVENT ADDR: " << hex << halt.address << dec << " LENGTH: " << halt.addr_len  <<
+						" TYPE: " << (iswrite?'W':'R') << endl;
+				fail::simulator.onMemoryAccess(NULL, halt.address,  halt.addr_len, iswrite, pc);
 				unfreeze_timers();
 			}
 				break;
 			case DBG_REASON_SINGLESTEP:
 				LOG << "FATAL ERROR: Single-step is handled in previous loop phase" << endl;
 				exit (-1);
+				break;
+			case DBG_REASON_DBGRQ:
+				// Do nothing
 				break;
 			default:
 				LOG << "FATAL ERROR: Target halted in unexpected cpu state " << current_dr <<  endl;
@@ -717,10 +730,21 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 			return;
 		}
 
-		watchpoint_remove(target_a9, hc->address);
-		free_watchpoints++;
-		LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len << ":" <<
-			((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W") << dec<< endl;
+		// Check if wp is set on hardware
+		//struct watchpoint *watchpoint = target_a9->watchpoints;
+
+//		while (watchpoint) {
+//			// Multiple watchpoints activated? No single answer possible
+//			if (hc->address == watchpoint->address) {
+				watchpoint_remove(target_a9, hc->address);
+				free_watchpoints++;
+				LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len << ":" <<
+					((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W") << dec<< endl;
+//			}
+//			watchpoint = watchpoint->next;
+//		}
+//		LOG << "FATAL ERROR: Can't remove WP, because it is not set on target" << endl;
+//		exit(-1);
 	}
 }
 
@@ -1204,7 +1228,12 @@ void oocdw_write_to_memory(uint32_t address, uint32_t chunk_size,
 		write_target = target_m3;
 	}
 
-	if (target_write_memory(write_target, address, chunk_size, chunk_num, data)) {
+	if (chunk_size > 4) {
+		LOG << "FATAL ERROR: WRITING CHUNKS BIGGER THAN 4 BYTE NOT ALLOWED" << endl;
+		exit(-1);
+	}
+
+	if (target_write_phys_memory(write_target, address, chunk_size, chunk_num, data )) {
 		LOG << "FATAL ERROR: Writing to memory failed." << endl;
 		exit(-1);
 	}
