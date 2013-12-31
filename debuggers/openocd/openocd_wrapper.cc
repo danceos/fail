@@ -442,6 +442,7 @@ int main(int argc, char *argv[])
 							continue;
 						}
 						oocdw_read_reg(i, &(regs.r[i]));
+						regs.r[15] += 8;
 					}
 
 					// ABT SPSR is usr cpsr
@@ -1280,6 +1281,9 @@ static bool getMemAccess(uint32_t opcode, struct halt_condition *access) {
 		for (int i = 0; i < 16; i++) {
 			if ((1 << i) & op.regs_r) {
 				oocdw_read_reg(i, &(regs.r[i]));
+				if (i == 15) {
+					regs.r[15] += 8;
+				}
 			}
 			if ((i >= 10) && ((1 << i) & op.regs_r_fiq)) {
 				oocdw_read_reg(i - 10 + fail::RI_R10_FIQ, &(regs.r[i]));
