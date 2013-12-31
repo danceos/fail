@@ -395,7 +395,8 @@ int main(int argc, char *argv[])
 				if (mmu_recovery_needed) {
 					// Check for correct pc
 					if (pc != mmu_recovery_bp.address) {
-						LOG << "FATAL ERROR: Something went wrong while handling mmu event" << endl;
+						LOG << "FATAL ERROR: Something went wrong while handling mmu event" <<
+								hex << pc << " " << mmu_recovery_bp.address << endl;
 						exit(-1);
 					}
 
@@ -500,6 +501,7 @@ int main(int argc, char *argv[])
 					// ToDo: Check for handling by experiment (reboot) and throw error otherwise
 				} else {
 					freeze_timers();
+					LOG << "BP-EVENT " << hex << pc << dec << endl;
 					fail::simulator.onBreakpoint(NULL, pc, fail::ANY_ADDR);
 					unfreeze_timers();
 				}
@@ -1179,7 +1181,8 @@ void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
 					uint32_t chunk_num, uint8_t *data)
 {
 	if (target_read_memory(target_a9, address, chunk_size, chunk_num, data)) {
-		LOG << "FATAL ERROR: Reading from memory failed." << endl;
+		LOG << "FATAL ERROR: Reading from memory failed. Addr: "  << hex << address
+				<< dec << " chunk-size: " << chunk_size << " chunk_num: " << chunk_num << endl;
 		exit(-1);
 	}
 }
@@ -1247,6 +1250,8 @@ static void update_timers()
 			uint64_t useconds_delta = t_diff.tv_sec * 1000000 + t_diff.tv_usec;
 
 			if (timers[i].timeToFire <= useconds_delta) {
+				LOG << "TIMER EVENT " << useconds_delta << " > " <<timers[i].timeToFire << endl;
+
 				// Halt target to get defined halted state at experiment end
 				oocdw_halt_target(target_a9);
 				// Fire
@@ -1891,7 +1896,7 @@ static bool update_mmu_watch_remove()
 
 static void update_mmu_watch()
 {
-	LOG << "UPDATE MMU" << endl;
+	//LOG << "UPDATE MMU" << endl;
 
 	bool invalidate = false;
 
@@ -1941,7 +1946,6 @@ static struct timeval freeze_begin;
 
 static void freeze_timers()
 {
-	// LOG << "FREEZE TIMERS" << endl;
 	gettimeofday(&freeze_begin, NULL);
 	for (int i = 0; i < P_MAX_TIMERS; i++) {
 		if (timers[i].inUse) {
@@ -1952,7 +1956,6 @@ static void freeze_timers()
 
 static void unfreeze_timers()
 {
-	// LOG << "UNFREEZE TIMERS" << endl;
 	struct timeval freeze_end, freeze_delta;
 	gettimeofday(&freeze_end, NULL);
 	timersub(&freeze_end, &freeze_begin, &freeze_delta);
