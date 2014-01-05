@@ -91,6 +91,36 @@ static uint32_t sym_GenericTrapHandler, sym_MmuFaultBreakpointHook,
 
 /*
  * MMU related structures
+ *
+ * Representation of current MMU configuration as follows:
+ *
+ *  - In every configuration, we know the location of all descriptors in
+ *    pandaboard memory, because memory for all possible descriptors is
+ *    initially allocated.
+ *
+ *  - 1st lvl page table in mmu_conf (4096 entries) initially configured as
+ *    linear mapping solely with section descriptors.
+ *
+ *  - If a descriptor gets unmapped, the bool value mapped is set to false.
+ *
+ *  - If a descriptor is transformed to page-descriptor, 256 2nd lvl descriptors
+ *    are created (dynamic memory), which are described as a bool array (mapped).
+ *    In this case, the mapped attribute is of no more function.
+ *
+ *  - In case we had a hit, the pandaboard will map the according descriptor, so
+ *    the memory access can be executed after the experiment handled the
+ *    MemoryAccess event.
+ *    Afterwards, to be able to recognize subsequent memory accesses, covered by
+ *    the the specific descriptor, we have to unmap it again. This is signaled
+ *    by mmu_recovery_needed and the according memory address of the descriptor
+ *    is stored in mmu_recovery_address.
+ *    Also to be able to recognize the special breakpoint for MMU recovery, we
+ *    store its description here separately in mmu_recovery_bp.
+ *
+ *  - Change requests for the MMU configuration are added to the vectors
+ *    mmu_watch_add_waiting_list and mmu_watch_del_waiting_list.
+ *
+ *  - The currently watched memory ranges are stored in mmu_watch.
  */
 
 enum descriptor_e {
@@ -142,30 +172,76 @@ static struct timer timers[P_MAX_TIMERS];
 fail::Logger LOG("OpenOCD", false);
 
 /** FORWARD DECLARATIONS **/
+
+// As timers are implemented in this wrapper, they must be updated frequently
+// and they must be frozen on target system stop and unfrozen on target system
+// continuing
 static void update_timers();
 static void freeze_timers();
 static void unfreeze_timers();
+
+// Openocd does not tell us, which watchpoint hit, so we must recognize this
+// We have the alternatives to do it with
 static bool getHaltingWatchpoint(struct halt_condition *hc);
 static bool getCurrentMemAccess(struct halt_condition *access);
+
+// If we halt on any instruction, this function decodes it and tells us, if
+// it executes a memory access and as the case may be its form
 static bool getMemAccess(uint32_t opcode, struct halt_condition *access);
+
+// Get pc of current halt
 static uint32_t getCurrentPC();
+
+// mapping of reg-number to openocd representation of register
 static struct reg *get_reg_by_number(unsigned int num);
+
+// read special registers
 static void read_dpm_register(uint32_t reg_num, uint32_t *data);
+
+// Readout symbols from ELF binary
 static void init_symbols();
+
+// The cycle counter of the pandaboard may be frozen and unfrozen, but its
+// accuracy will stay low because dbg-operations will increment it
 void freeze_cycle_counter();
 void unfreeze_cycle_counter();
 
+// On change of MMU configuration we invalidate the whole TLB
 static void invalidate_tlb();
+
+// Update the MMU watch according to the change requests in
+// mmu_watch_add_waiting_list and mmu_watch_del_waiting_list.
+// For each list we have an own function which will tell, if an invalidation
+// of the TLB is necessary (return value)
 static void update_mmu_watch();
 static bool update_mmu_watch_add();
 static bool update_mmu_watch_remove();
-static void get_range_diff(std::vector<struct mem_range> &before, std::vector<struct mem_range> &after, std::vector<struct mem_range> &diff);
+
+// As we only want to configure changes in the configuration, this function
+// compares the diff of the current configuration and of the configuration
+// afterwards
+static void get_range_diff(std::vector<struct mem_range> &before,
+		std::vector<struct mem_range> &after, std::vector<struct mem_range> &diff);
+
+// Generic unmap for a 1st or 2nd lvl-descriptor with given address
 static void unmap_page_section(uint32_t address);
-static std::vector<struct mem_range>::iterator find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec);
-static void execute_buffered_writes(std::vector<std::pair<uint32_t, uint32_t> > &buf) ;
+
+// This function searches a given memory range in the mmu_watch vector
+static std::vector<struct mem_range>::iterator
+find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec);
+
+// Aggregation of MMU configuration writes
+static void execute_buffered_writes(std::vector<std::pair<uint32_t, uint32_t> > &buf);
+
+// Merging of memory ranges of current MMU watch configuration
 static void merge_mem_ranges (std::vector<struct mem_range> &in_out);
+
+// Custom search predicate for ascending addresses in memory ranges
 static bool compareByAddress(const struct mem_range &a, const struct mem_range &b);
-static void force_page_alignment_mem_range (std::vector<struct mem_range> &in, std::vector<struct mem_range> &out);
+
+// Align memory ranges to 4k-boundaries
+static void force_page_alignment_mem_range (std::vector<struct mem_range> &in,
+											std::vector<struct mem_range> &out);
 
 /*
  * Main entry and main loop.
@@ -186,6 +262,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	/* === INITIALIZATION === */
+	// This is partly a copy of openocd_main (openocd.c) for startup
 
 	// Redirect output to logfile
 	FILE *file = fopen("oocd.log", "w");
@@ -203,14 +280,8 @@ int main(int argc, char *argv[])
 	command_context_mode(cmd_ctx, COMMAND_CONFIG);
 	command_set_output_handler(cmd_ctx, configuration_output_handler, NULL);
 
-	/* Start the executable meat that can evolve into thread in future. */
-	//ret = openocd_thread(argc, argv, cmd_ctx);
-
 	if (parse_cmdline_args(cmd_ctx, argc, argv) != ERROR_OK)
 		return EXIT_FAILURE;
-
-	/*if (server_preinit() != ERROR_OK)
-	  return EXIT_FAILURE;*/
 
 	// set path to configuration file
 	add_script_search_dir(OOCD_CONF_FILES_PATH);
@@ -221,11 +292,6 @@ int main(int argc, char *argv[])
 		LOG << "Error in openocd configuration!\nFor more detailed information refer to oocd.log" << endl;
 		return EXIT_FAILURE;
 	}
-
-	// Servers (gdb/telnet) are not being activated
-	/*  ret = server_init(cmd_ctx);
-		if (ERROR_OK != ret)
-		return EXIT_FAILURE;*/
 
 	ret = command_run_line(cmd_ctx, (char*)"init");
 	if (ret != ERROR_OK) {
@@ -247,16 +313,20 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	// Needed to read current pc
 	arm_a9 = target_to_arm(target_a9);
+
+	// Disable jtag polling
 	jtag_poll_set_enabled (false);
 
-	LOG << "OpenOCD 0.7.0 for Fail* and Pandaboard initialized" << endl;
-
+	// Init timers
 	for (int i=0; i<P_MAX_TIMERS; i++) {
 		timers[i].inUse = false;
 	}
 
 	init_symbols();
+
+	LOG << "OpenOCD 0.7.0 for Fail* and Pandaboard initialized" << endl;
 
 	/* === INITIALIZATION COMPLETE => MAIN LOOP === */
 
@@ -289,13 +359,16 @@ int main(int argc, char *argv[])
 
 			unfreeze_cycle_counter();
 			while ((retval = target_step(target_a9, 1, 0, 1)) && (repeat--)) {
-				LOG << "ERROR: Single-step could not be executed at instruction " <<
-						trace_count << ":" << hex << getCurrentPC() << dec << " at t=" << oocdw_read_cycle_counter() << ". ERRORCODE: "<< retval << ". Retrying..." << endl;
+				LOG << "ERROR: Single-step could not be executed at instruction "
+						<< trace_count << ":" << hex << getCurrentPC() << dec
+						<< " at t=" << oocdw_read_cycle_counter()
+						<< ". ERRORCODE: "<< retval << ". Retrying..." << endl;
 				usleep(1000*300);
 			}
 			freeze_cycle_counter();
 			if (!repeat) {
-				LOG << "FATAL ERROR: Single-step could not be executed. Terminating..." << endl;
+				LOG << "FATAL ERROR: Single-step could not be executed. "
+						"Terminating..." << endl;
 				exit(-1);
 			}
 			/*
@@ -369,11 +442,17 @@ int main(int argc, char *argv[])
 
 				// WPT_READ = 0, WPT_WRITE = 1, WPT_ACCESS = 2
 				while (watchpoint) {
-					if (((mem_access.type == HALT_TYPE_WP_READ) && (watchpoint->rw == WPT_READ)) ||
-							((mem_access.type == HALT_TYPE_WP_WRITE) && (watchpoint->rw == WPT_WRITE)) ||
-							((mem_access.type == HALT_TYPE_WP_READWRITE) && (watchpoint->rw == WPT_ACCESS)) ) {
-						if (((mem_access.address < watchpoint->address) && (mem_access.address + mem_access.addr_len >= watchpoint->address)) ||
-								((mem_access.address >= watchpoint->address) && (watchpoint->address + watchpoint->length >= mem_access.address))) {
+					if (((mem_access.type == HALT_TYPE_WP_READ)
+						&& (watchpoint->rw == WPT_READ))
+						|| ((mem_access.type == HALT_TYPE_WP_WRITE)
+						&& (watchpoint->rw == WPT_WRITE))
+						||	((mem_access.type == HALT_TYPE_WP_READWRITE)
+						&& (watchpoint->rw == WPT_ACCESS)) ) {
+
+						if (((mem_access.address < watchpoint->address)
+								&& (mem_access.address + mem_access.addr_len >= watchpoint->address))
+								|| ((mem_access.address >= watchpoint->address)
+								&& (watchpoint->address + watchpoint->length >= mem_access.address))) {
 							horizontal_step = true;
 						}
 					}
@@ -427,7 +506,6 @@ int main(int argc, char *argv[])
 		if (target_a9->state == TARGET_HALTED) {
 			freeze_cycle_counter();
 
-			// ToDo: Outsource
 			uint32_t pc = getCurrentPC();
 
 			// After coroutine-switch, dbg-reason might change, so it must
@@ -471,14 +549,17 @@ int main(int argc, char *argv[])
 					oocdw_read_reg(fail::RI_DFAR, &dfar);
 
 					/*
-					 * Analyze instruction to get access width. Also the base-address may differ from this in multiple
+					 * Analyze instruction to get access width. Also the
+					 * base-address may differ from this in multiple
 					 * data access instructions with decrement option.
-					 * As some Register values have changed in the handler, we first must find the original values.
-					 * This is easy for a static abort handler (pushed to stack), but must be adjusted, if handler
-					 * is adjusted
+					 * As some Register values have changed in the handler, we
+					 * first must find the original values.
+					 * This is easy for a static abort handler (pushed to stack),
+					 * but must be adjusted, if handler is adjusted
 					 */
 
-					// ToDo: As this is going to be executed very often, it should be done in the target system
+					// ToDo: As this is going to be executed very often, it
+					// should be done on the target system
 
 					uint32_t opcode;
 					oocdw_read_from_memory(lr_abt - 8, 4, 1, (uint8_t*)(&opcode));
@@ -526,9 +607,14 @@ int main(int argc, char *argv[])
 					decode_instruction(opcode, &regs, &op);
 
 					/*
-					 *  set BP on the instruction, which caused the abort, singlestep and recover previous mmu state
-					 *  ToDO: This might be inefficient, because often the event trigger will cause a system reset
-					 *  and so this handling is done for nothing, but we must not do anything after triggering a event.
+					 * Set BP on the instruction, which caused the abort,
+					 * singlestep and recover previous mmu state
+					 */
+					/*
+					 * ToDO: This might be inefficient, because often the event
+					 * trigger will cause a system reset and so this handling
+					 * is done for nothing, but we must not do anything after
+					 * triggering a event.
 					 */
 					mmu_recovery_bp.address = lr_abt - 8;
 					mmu_recovery_bp.addr_len = 4;
@@ -538,16 +624,17 @@ int main(int argc, char *argv[])
 
 					// ToDO: If all BPs used, delete and memorize any of these
 					// as we will for sure first halt in the recovery_bp, we can
-					// then readd it
+					// then recover it
 					oocdw_set_halt_condition(&mmu_recovery_bp);
 
 					mmu_recovery_needed = true;
 
 					if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
-						fail::simulator.onMemoryAccess(NULL, op.mem_addr, op.mem_size, op.flags & OP_FLAG_WRITE, lr_abt - 8);
+						fail::simulator.onMemoryAccess(NULL, op.mem_addr,
+								op.mem_size, op.flags & OP_FLAG_WRITE, lr_abt - 8);
 					} else {
-						/* As some memory accesses can't be decoded, because we are executing data, this is going
-						 * to be handled as a trap.
+						/* As some memory accesses can't be decoded, because we
+						 * are executing data, this is going to be handled as a trap.
 						 */
 						fail::simulator.onTrap(NULL, fail::ANY_TRAP);
 					}
@@ -556,7 +643,6 @@ int main(int argc, char *argv[])
 					freeze_timers();
 					fail::simulator.onTrap(NULL, fail::ANY_TRAP);
 					unfreeze_timers();
-					// ToDo: Check for handling by experiment (reboot) and throw error otherwise
 				} else {
 					freeze_timers();
 					LOG << "BP-EVENT " << hex << pc << dec << endl;
@@ -570,17 +656,35 @@ int main(int argc, char *argv[])
 				/* Potential fall through (Breakpoint and Watchpoint)*/
 			case DBG_REASON_WATCHPOINT:
 			{
-				// ToDo: Replace with calls of every current memory access
 				struct halt_condition halt;
-//				if (!getCurrentMemAccess(&halt)) {
-//					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
-//					exit(-1);
-//				}
+
+				/*
+				 * Which watchpoint hit?
+				 *
+				 * Alternatives:
+				 *  - Decode and analyze current instruction (getCurrentMemAccess)
+				 *    => Did not always work correctly
+				 *       This problem might be resolved by the off by 8-byte
+				 *       commit (Change-Id: I1cfcb84af2abae7971869d2ce29d602648e2f020)
+				 *
+				 *  - Find Watchpoint in watchpoint list of openocd (getHaltingWatchpoint)
+				 *    => This does not work, if there is a number of watchpoints
+				 *       unequal to 1 (So we might better switch back to
+				 *       decode & analyze, if this now works)
+				 */
+#if 0
+				if (!getCurrentMemAccess(&halt)) {
+					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
+					exit(-1);
+				}
+#else
 				if(!getHaltingWatchpoint(&halt)) {
 					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
 					exit(-1);
 				}
+#endif
 
+				// Get meta information and fire MemoryAccess event
 				int iswrite;
 				switch (halt.type) {
 					case HALT_TYPE_WP_READ:
@@ -590,8 +694,8 @@ int main(int argc, char *argv[])
 						iswrite = 1;
 						break;
 					case HALT_TYPE_WP_READWRITE:
-						// ToDo: Can't tell if read or write
-						LOG << "We should not get a READWRITE halt!!!" << endl;
+						LOG << "We should not get a READWRITE as trigger of"
+								"a watchpoint!" << endl;
 						iswrite = 1;
 						break;
 					default:
@@ -599,10 +703,12 @@ int main(int argc, char *argv[])
 						exit(-1);
 						break;
 				}
+
 				freeze_timers();
-				LOG << "WATCHPOINT EVENT ADDR: " << hex << halt.address << dec << " LENGTH: " << halt.addr_len  <<
-						" TYPE: " << (iswrite?'W':'R') << endl;
-				fail::simulator.onMemoryAccess(NULL, halt.address,  halt.addr_len, iswrite, pc);
+				LOG << "WATCHPOINT EVENT ADDR: " << hex << halt.address << dec
+						<< " LENGTH: " << halt.addr_len  <<	" TYPE: "
+						<< (iswrite?'W':'R') << endl;
+				fail::simulator.onMemoryAccess(NULL, halt.address, halt.addr_len, iswrite, pc);
 				unfreeze_timers();
 			}
 				break;
@@ -614,15 +720,14 @@ int main(int argc, char *argv[])
 				// Do nothing
 				break;
 			default:
-				LOG << "FATAL ERROR: Target halted in unexpected cpu state " << current_dr <<  endl;
+				LOG << "FATAL ERROR: Target halted in unexpected cpu state "
+					<< current_dr <<  endl;
 				exit (-1);
 				break;
 			}
-
-
 		}
-
-		// Update timers. Granularity will be coarse, because this is done after polling the device
+		// Update timers. Granularity will be coarse, because this is done after
+		// polling the device
 		update_timers();
 	}
 
@@ -647,14 +752,13 @@ void oocdw_finish(int exCode)
 	oocdw_exCode = exCode;
 }
 
-
 void oocdw_set_halt_condition(struct halt_condition *hc)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
 	assert((hc != NULL) && "No halt condition defined");
 
 
-	if (hc->type == HALT_TYPE_BP) {
+	if (hc->type == HALT_TYPE_BP) {							/*  BREAKPOINT */
 		LOG << "Adding BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
 		if (!free_breakpoints) {
 			LOG << "FATAL ERROR: No free breakpoints left" << endl;
@@ -667,14 +771,18 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 		free_breakpoints--;
 
-	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
+	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/*  SINGLE STEP */
+		// Just set flag, so single step will be executed in according
+		// main loop stage
 		single_step_requested = true;
 	} else if ((hc->type == HALT_TYPE_WP_READ) ||
 				(hc->type == HALT_TYPE_WP_WRITE) ||
-				(hc->type == HALT_TYPE_WP_READWRITE)) {
+				(hc->type == HALT_TYPE_WP_READWRITE)) {		/*  WATCHPOINT */
+
+		// Use MMU for watching ?
 		if ((hc->addr_len > 4) || !free_watchpoints) {
-			// Use MMU for watching
-			LOG << "Setting up MMU to watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
+			LOG << "Setting up MMU to watch memory range " << hex << hc->address
+					<< ":" << hc->addr_len << dec << endl;
 
 			struct mem_range mr;
 			mr.address = hc->address;
@@ -684,13 +792,17 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 			return;
 		}
 
+		// Special case for tracing: Watch ANY_ADDR => Decode memory accesses
+		// while tracing
 		if (hc->address == fail::ANY_ADDR) {
 			single_step_watch_memory = true;
 			return;
 		}
 
-		LOG << "Adding WP " << hex << hc->address << dec << ":" << hc->addr_len << ":" <<
-				((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W")<< endl;
+		// Use hardware watchpoint
+		LOG << "Adding WP " << hex << hc->address << dec << ":" << hc->addr_len
+				<< ":" << ((hc->type == HALT_TYPE_WP_READ)? "R" :
+				(hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W") << endl;
 
 		enum watchpoint_rw rw = WPT_ACCESS;
 		if (hc->type == HALT_TYPE_WP_READ) {
@@ -710,8 +822,6 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 			exit(-1);
 		}
 		free_watchpoints--;
-
-
 	} else {
 		LOG << "FATAL ERROR: Could not determine halt condition type" << endl;
 		exit(-1);
@@ -724,64 +834,70 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 	assert((hc != NULL) && "No halt condition defined");
 
 	// Remove halt condition from pandaboard
-	if (hc->type == HALT_TYPE_BP) {
-		LOG << "Removing BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
+	if (hc->type == HALT_TYPE_BP) {							/*  BREAKPOINT */
+		LOG << "Removing BP " << hex << hc->address << dec << ":"
+				<< hc->addr_len << endl;
 		breakpoint_remove(target_a9, hc->address);
 		free_breakpoints++;
-	} else if (hc->type == HALT_TYPE_SINGLESTEP) {
+	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/*  SINGLE STEP */
 		// Do nothing. Single-stepping event hits one time and
 		// extinguishes itself automatically
 	} else if ((hc->type == HALT_TYPE_WP_READWRITE) ||
 			(hc->type == HALT_TYPE_WP_READ) ||
-			(hc->type == HALT_TYPE_WP_WRITE)) {
-		// Watched by mmu?
+			(hc->type == HALT_TYPE_WP_WRITE)) {				/*  WATCHPOINT */
+
 		struct mem_range mr;
 		mr.address = hc->address;
 		mr.width = hc->addr_len;
+
+		// Watched by MMU?
 		std::vector<struct mem_range>::iterator search;
 		search = find_mem_range_in_vector(mr, mmu_watch);
-		if (search != mmu_watch.end()) {
-			LOG << "Setting up MMU to NO LONGER watch memory range " << hex << hc->address << ":" << hc->addr_len << dec << endl;
+
+		if (search != mmu_watch.end()) { // YES => Remove
+			LOG << "Setting up MMU to NO LONGER watch memory range " << hex
+					<< hc->address << ":" << hc->addr_len << dec << endl;
 			mmu_watch_del_waiting_list.push_back(mr);
 			return;
+		} else { // NO => ERROR
+			LOG << "FATAL ERROR: Memory range " << hex << hc->address << ":"
+					<< hc->addr_len << dec << " not watched by MMU, so can't be"
+					" removed."<< endl;
+			exit(-1);
 		}
 
+		// Special case for tracing: Watch ANY_ADDR => Decode memory accesses
+		// while tracing
 		if (hc->address == fail::ANY_ADDR) {
 			single_step_watch_memory = false;
 			return;
 		}
 
-		// Check if wp is set on hardware
-		//struct watchpoint *watchpoint = target_a9->watchpoints;
-
-//		while (watchpoint) {
-//			// Multiple watchpoints activated? No single answer possible
-//			if (hc->address == watchpoint->address) {
-				watchpoint_remove(target_a9, hc->address);
-				free_watchpoints++;
-				LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len << ":" <<
-					((hc->type == HALT_TYPE_WP_READ)? "R" : (hc->type == HALT_TYPE_WP_WRITE)? "W" : "R/W") << dec<< endl;
-//			}
-//			watchpoint = watchpoint->next;
-//		}
-//		LOG << "FATAL ERROR: Can't remove WP, because it is not set on target" << endl;
-//		exit(-1);
+		// Remove hardware watchpoint
+		watchpoint_remove(target_a9, hc->address);
+		free_watchpoints++;
+		LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len
+				<< ":" << ((hc->type == HALT_TYPE_WP_READ) ? "R" :
+				(hc->type == HALT_TYPE_WP_WRITE) ? "W" : "R/W") << dec << endl;
 	}
 }
 
 bool oocdw_halt_target(struct target *target)
 {
 	if (target_poll(target)) {
-		LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
+		LOG << "FATAL ERROR: Target polling failed for target "
+				<< target->cmd_name << endl;
 		return false;
 	}
 
 	if (target->state == TARGET_RESET) {
-		LOG << "FATAL ERROR: Target " << target->cmd_name << " could not be halted, because in reset mode" << endl;
+		LOG << "FATAL ERROR: Target " << target->cmd_name << " could not be "
+				"halted, because in reset mode" << endl;
 	}
 
 	if (target_halt(target)) {
-		LOG << "FATAL ERROR: Could could not halt target " << target->cmd_name << endl;
+		LOG << "FATAL ERROR: Could could not halt target " << target->cmd_name
+				<< endl;
 		return false;
 	}
 
@@ -790,16 +906,19 @@ bool oocdw_halt_target(struct target *target)
 	 */
 	long long then = timeval_ms();
 	if (target_poll(target)) {
-		LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
+		LOG << "FATAL ERROR: Target polling failed for target "
+				<< target->cmd_name << endl;
 		return false;
 	}
 	while (target->state != TARGET_HALTED) {
 		if (target_poll(target)) {
-			LOG << "FATAL ERROR: Target polling failed for target " << target->cmd_name << endl;
+			LOG << "FATAL ERROR: Target polling failed for target "
+					<< target->cmd_name << endl;
 			return false;
 		}
 		if (timeval_ms() > then + 1000) {
-			LOG << "FATAL ERROR: Timeout waiting for halt of target " << target->cmd_name << endl;
+			LOG << "FATAL ERROR: Timeout waiting for halt of target "
+					<< target->cmd_name << endl;
 			return false;
 		}
 	}
@@ -913,7 +1032,6 @@ void oocdw_reboot()
 			// BP on entering main
 			struct halt_condition hc;
 
-			// ToDo: Non static MAIN ENTRY
 			hc.address = sym_SafetyLoopEnd - 4;
 			hc.addr_len = 4;
 			hc.type = HALT_TYPE_BP;
@@ -932,7 +1050,6 @@ void oocdw_reboot()
 					LOG << "FATAL ERROR: Target polling failed" << endl;
 					exit(-1);
 				}
-				// ToDo: Adjust timeout
 				if (timeval_ms() > then + 2000) {
 					LOG << "Error: Timeout waiting for main entry" << endl;
 					reboot_success = false;
@@ -1032,7 +1149,8 @@ static void read_dpm_register(uint32_t reg_num, uint32_t *data)
 				ARMV4_5_MRC(15, 0, 0, 5, 0, 0),
 				data);
 	} else {
-		LOG << "FATAL ERROR: Reading dpm register with id " << reg_num << " is not supported." << endl;
+		LOG << "FATAL ERROR: Reading dpm register with id " << reg_num
+				<< " is not supported." << endl;
 		exit (-1);
 	}
 
@@ -1177,6 +1295,8 @@ void oocdw_read_reg(uint32_t reg_num, uint32_t *data)
 	}
 }
 
+// ToDo: Writing registers above R15 not yet needed, so writing was not
+// implemented
 void oocdw_write_reg(uint32_t reg_num, uint32_t data)
 {
 	assert((target_a9->state == TARGET_HALTED) && "Target not halted");
@@ -1220,7 +1340,8 @@ void oocdw_write_reg(uint32_t reg_num, uint32_t data)
 	}
 		break;
 	default:
-		LOG << "ERROR: Register with id " << reg_num << " unknown." << endl;
+		LOG << "ERROR: Register with id " << reg_num << " unknown for writing."
+			<< endl;
 		break;
 	}
 }
@@ -1230,8 +1351,9 @@ void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
 					uint32_t chunk_num, uint8_t *data)
 {
 	if (target_read_memory(target_a9, address, chunk_size, chunk_num, data)) {
-		LOG << "FATAL ERROR: Reading from memory failed. Addr: "  << hex << address
-				<< dec << " chunk-size: " << chunk_size << " chunk_num: " << chunk_num << endl;
+		LOG << "FATAL ERROR: Reading from memory failed. Addr: "  << hex
+				<< address << dec << " chunk-size: " << chunk_size
+				<< " chunk_num: " << chunk_num << endl;
 		exit(-1);
 	}
 }
@@ -1250,11 +1372,12 @@ void oocdw_write_to_memory(uint32_t address, uint32_t chunk_size,
 	}
 
 	if (chunk_size > 4) {
-		LOG << "FATAL ERROR: WRITING CHUNKS BIGGER THAN 4 BYTE NOT ALLOWED" << endl;
+		LOG << "FATAL ERROR: WRITING CHUNKS BIGGER THAN 4 BYTE NOT ALLOWED"
+				<< endl;
 		exit(-1);
 	}
 
-	if (target_write_phys_memory(write_target, address, chunk_size, chunk_num, data )) {
+	if (target_write_phys_memory(write_target, address, chunk_size, chunk_num, data)) {
 		LOG << "FATAL ERROR: Writing to memory failed." << endl;
 		exit(-1);
 	}
@@ -1331,12 +1454,12 @@ static bool getMemAccess(uint32_t opcode, struct halt_condition *access) {
 		return false;
 	}
 	if (retval) {
-		LOG << "ERROR: Opcode " << hex << opcode << " at instruction " << getCurrentPC() << dec << " could not be decoded" << endl;
+		LOG << "ERROR: Opcode " << hex << opcode << " at instruction "
+				<< getCurrentPC() << dec << " could not be decoded" << endl;
 		exit(-1);
 	}
 
 	if (op.flags & (OP_FLAG_READ | OP_FLAG_WRITE)) {
-		// ToDo: regs_r potentially contains also registers, which are not used for address-calculation
 		for (int i = 0; i < 16; i++) {
 			if ((1 << i) & op.regs_r) {
 				oocdw_read_reg(i, &(regs.r[i]));
@@ -1350,7 +1473,8 @@ static bool getMemAccess(uint32_t opcode, struct halt_condition *access) {
 		}
 
 		if (decode_instruction(opcode, &regs, &op)) {
-			LOG << "ERROR: Opcode " << hex << opcode << dec << " could not be decoded" << endl;
+			LOG << "ERROR: Opcode " << hex << opcode << dec
+					<< " could not be decoded" << endl;
 			exit(-1);
 		}
 
@@ -1365,14 +1489,9 @@ static bool getMemAccess(uint32_t opcode, struct halt_condition *access) {
 /*
  * Returns all memory access events of current instruction in
  * 0-terminated (0 in address field) array of max length.
- * TODO implement analysis of current instruction in combination
- * with register contents
  */
 static bool getCurrentMemAccess(struct halt_condition *access)
 {
-	// ToDo: Get all memory access events of current
-	//		 instruction. For now return empty array.
-
 	uint32_t pc = getCurrentPC();
 
 	uint32_t opcode;
@@ -1534,8 +1653,12 @@ static void init_symbols()
 			"SafetyLoopEnd          " << sym_SafetyLoopEnd << endl <<
 			"A9TTB                  " << sym_addr_PageTableFirstLevel << endl <<
 			"A9TTB_L2               " << sym_addr_PageTableSecondLevel << endl << dec;
-	if (!sym_GenericTrapHandler || !sym_MmuFaultBreakpointHook || !sym_SafetyLoopBegin || !sym_SafetyLoopEnd
-			|| !sym_addr_PageTableFirstLevel || !sym_addr_PageTableSecondLevel) {
+	if (!sym_GenericTrapHandler
+			|| !sym_MmuFaultBreakpointHook
+			|| !sym_SafetyLoopBegin
+			|| !sym_SafetyLoopEnd
+			|| !sym_addr_PageTableFirstLevel
+			|| !sym_addr_PageTableSecondLevel) {
 		LOG << "FATAL ERROR: Not all relevant symbols were found" << endl;
 		exit(-1);
 	}
@@ -1570,7 +1693,8 @@ struct mmu_page_section {
 	uint32_t index;
 };
 
-static void divide_into_pages_and_sections(const struct mem_range &in, std::vector<struct mmu_page_section> &out)
+static void divide_into_pages_and_sections(const struct mem_range &in,
+											std::vector<struct mmu_page_section> &out)
 {
 	struct mmu_page_section ps;
 
@@ -1579,7 +1703,6 @@ static void divide_into_pages_and_sections(const struct mem_range &in, std::vect
 
 	// add pre-section pages
 	while ((width > 0) && ((address % 0x100000) != 0)) {
-		// LOG << "PAGE: " << hex << address << endl;
 		ps.index = ((address >> 20) * 256) + ((address >> 12) & 0xFF);
 		ps.type = DESCRIPTOR_PAGE;
 		out.push_back(ps);
@@ -1590,7 +1713,6 @@ static void divide_into_pages_and_sections(const struct mem_range &in, std::vect
 
 	// add sections
 	while (width >= 0x100000) {
-		// LOG << "SECTION: " << hex << address << endl;
 		ps.index = address >> 20;
 		ps.type = DESCRIPTOR_SECTION;
 		out.push_back(ps);
@@ -1601,7 +1723,6 @@ static void divide_into_pages_and_sections(const struct mem_range &in, std::vect
 
 	// add post-section pages
 	while (width > 0) {
-		// LOG << "PAGE: " << hex << address << endl;
 		ps.index = ((address >> 20) * 256) + ((address >> 12) & 0xFF);
 		ps.type = DESCRIPTOR_PAGE;
 		out.push_back(ps);
@@ -1611,7 +1732,8 @@ static void divide_into_pages_and_sections(const struct mem_range &in, std::vect
 	}
 }
 
-static void force_page_alignment_mem_range (std::vector<struct mem_range> &in, std::vector<struct mem_range> &out)
+static void force_page_alignment_mem_range (std::vector<struct mem_range> &in,
+											std::vector<struct mem_range> &out)
 {
 	std::vector<struct mem_range>::iterator it;
 	for (it = in.begin(); it != in.end(); it++) {
@@ -1661,9 +1783,7 @@ static void merge_mem_ranges (std::vector<struct mem_range> &in_out)
 }
 
 /*
- * ToDo: Sort buffer first? (will be problematic with order of writes)
- * ToDo: Bigger buffer size?
- * ToDo: Use this for all writes?
+ * Aggregate writes for faster MMU configuration
  */
 static void execute_buffered_writes(std::vector<std::pair<uint32_t, uint32_t> > &buf) {
 	std::vector<std::pair<uint32_t, uint32_t> >::iterator it_buf = buf.begin(), it_next;
@@ -1735,11 +1855,16 @@ static bool update_mmu_watch_add()
 						continue;
 					}
 					// Set 1st lvl descriptor to link to 2nd-lvl table
-					uint32_t pageTableAddress =sym_addr_PageTableSecondLevel + ((cand_it->index - (cand_it->index % 256)) * 4);
+					uint32_t pageTableAddress = sym_addr_PageTableSecondLevel
+							+ ((cand_it->index - (cand_it->index % 256)) * 4);
 					uint32_t descr_content = pageTableAddress | 0x1e9;
-					uint32_t target_address = sym_addr_PageTableFirstLevel + ((cand_it->index / 256) * 4);
+
+					uint32_t target_address = sym_addr_PageTableFirstLevel
+							+ ((cand_it->index / 256) * 4);
 					LOG << "Writing to " << hex << target_address << dec << endl;
-					oocdw_write_to_memory(target_address , 4, 1, (unsigned char*)(&descr_content), true);
+					oocdw_write_to_memory(target_address , 4, 1,
+							(unsigned char*)(&descr_content), true);
+
 					invalidate = true;
 					first_lvl->second_lvl_mapped = new bool[256];
 
@@ -1784,10 +1909,10 @@ static bool update_mmu_watch_add()
 					if (first_lvl->mapped) {
 						uint32_t descr_content = (cand_it->index << 20) | 0xc00;
 						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
-						//LOG << "Writing to " << hex << descr_addr << dec << endl;
-						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(descr_addr,descr_content));
-						// oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
-						//LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;
+
+						buffer_for_chunked_write.push_back(
+							std::pair<uint32_t, uint32_t>(descr_addr,descr_content));
+
 						first_lvl->mapped = false;
 						invalidate = true;
 					}
@@ -1801,7 +1926,9 @@ static bool update_mmu_watch_add()
 	return invalidate;
 }
 
-static void get_range_diff(std::vector<struct mem_range> &before, std::vector<struct mem_range> &after, std::vector<struct mem_range> &diff)
+static void get_range_diff(	std::vector<struct mem_range> &before,
+							std::vector<struct mem_range> &after,
+							std::vector<struct mem_range> &diff)
 {
 	// sort both before and after vector ascending by address
 	std::sort(before.begin(), before.end(), compareByAddress);
@@ -2006,7 +2133,9 @@ static void unmap_page_section(uint32_t address)
 
 	oocdw_write_to_memory(address, 4, 1, (unsigned char*)(&(data)), true);
 }
-static std::vector<struct mem_range>::iterator find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec)
+
+static std::vector<struct mem_range>::iterator
+find_mem_range_in_vector(struct mem_range &elem, std::vector<struct mem_range> &vec)
 {
 	std::vector<struct mem_range>::iterator search;
 	for (search = vec.begin(); search != vec.end(); search++) {
@@ -2021,6 +2150,8 @@ static struct timeval freeze_begin;
 
 static void freeze_timers()
 {
+	// Set freeze begin time and active timers to be freezed, so
+	// on unfreeze the bygone time can be subtracted from them
 	gettimeofday(&freeze_begin, NULL);
 	for (int i = 0; i < P_MAX_TIMERS; i++) {
 		if (timers[i].inUse) {
@@ -2031,6 +2162,7 @@ static void freeze_timers()
 
 static void unfreeze_timers()
 {
+	// Calculate time frozen and subtract from frozen timers
 	struct timeval freeze_end, freeze_delta;
 	gettimeofday(&freeze_end, NULL);
 	timersub(&freeze_end, &freeze_begin, &freeze_delta);
