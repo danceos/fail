@@ -9,5 +9,5 @@ if(NOT CONFIG_INJECTIONPOINT_HOPS)
 endif()
 
 add_executable(compute-hops main.cc ${SRCS})
-target_link_libraries(compute-hops ${PROTOBUF_LIBRARY} fail-util fail-comm)
+target_link_libraries(compute-hops ${PROTOBUF_LIBRARY} fail-util fail-comm procps)
 install(TARGETS compute-hops RUNTIME DESTINATION bin)

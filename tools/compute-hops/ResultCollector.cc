@@ -17,7 +17,7 @@
 
 #include "comm/InjectionPointHopsMessage.pb.h"
 
-// #include <proc/readproc.h>
+#include <proc/readproc.h>
 
 using std::hex;
 using std::dec;
@@ -153,9 +153,9 @@ ResultCollector::stopTimer()
 void
 ResultCollector::setMaxMemUsage()
 {
-//	struct proc_t usage;
-//	look_up_our_self(&usage);
-//	m_mem_usage = usage.vsize;
+	struct proc_t usage;
+	look_up_our_self(&usage);
+	m_mem_usage = usage.vsize;
 }
 
 void
