@@ -38,6 +38,15 @@ Required for the gem5 simulator backend:
  - python-dev
  - optional: libgoogle-perftools-dev
 
+ Required for the pandaboard (openocd) backend:
+**********************************************************************
+ - libftdi-dev
+ - libjim-dev
+
+ Required for the compute-hops tool
+**********************************************************************
+ - libprocps0-dev
+
 For distribution/parallelization:
 **********************************************************************
  - rsync

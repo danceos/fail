@@ -239,3 +239,39 @@ Steps to run an experiment with gem5:
         ./disks/boot.arm              # the ARM bootloader (FIXME: dito)
  4. Run gem5 in  $FAIL_DIR/simulators/gem5/  with:
       $ M5_PATH=$SYSTEM build/ARM/gem5.debug configs/example/fs.py --bare-metal --kernel kernelname
+
+=========================================================================================
+Steps to run an experiment with the pandaboard/openocd backend:
+=========================================================================================
+ 1. Prepare sd card for pandaboard usage. For example by installing a sd-image
+    of the ubuntu for pandaboard.
+ 2. In u-boot set the option bootdelay to 0 to enable the pandaboard to directly
+    boot the installed kernel without any delay. (In the first partition add the
+    file "preEnv.txt" and edit its content to "bootdelay=0")
+ 3. Use "lra-panda-dijkstra" from the "experiment_targets" directory of the project
+    svn as a template for your application development.
+    This gives you the needed fault handlers and startup code for bare metal
+    execution of code. It also delivers a minimum functionality for serial output.
+    Further reading in lra-panda-dijkstra/README.
+ 4. Copy the generated files to the prepared sd card.
+ 5. Connect flyswatter2 to the host computer and to the pandaboard.
+ 6. As information from the executable (elf format) and from the trace file are
+    needed, these two must be specified with the envirenment variables
+    FAIL_TRACE_PATH and FAIL_ELF_PATH.
+ 7. Execute the experiment/campaign as usual. If errors occure, "oocd.log" might
+    give you a hint for problem solution.
+
+=========================================================================================
+Example experiments and code snippets
+=========================================================================================
+
+Experiment "lra-simple-panda":
+**********************************************************************
+A campaign experiment to use with the lra-panda-dijkstra experiment-target.
+- The CMake option CONFIG_INJECTIONPOINT_HOPS should be enabled for fast trace
+  navigation.
+- The campaign uses the DatabaseCampaign module.
+- It will create a result table for the possible experiment outcomes
+  'OK','ERR_WRONG_RESULT','ERR_TRAP','ERR_TIMEOUT' and 'ERR_OUTSIDE_TEXT'.
+  'ERR_OUTSIDE_TEXT' describes any memory accesses which went outside the
+  application memory.
