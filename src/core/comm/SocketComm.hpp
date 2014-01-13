@@ -15,8 +15,6 @@
 #include <fstream>
 #include <google/protobuf/message.h>
 
-#define USE_SIZE_PREFIX
-
 namespace fail {
 
 class SocketComm {

@@ -15,7 +15,6 @@ void SocketComm::init()
 
 bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 {
-#ifdef USE_SIZE_PREFIX
     int size = htonl(msg.ByteSize());
     std::string buf;
     if (safe_write(sockfd, &size, sizeof(size)) == -1
@@ -23,19 +22,11 @@ bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 	 || safe_write(sockfd, buf.c_str(), buf.size()) == -1) {
         return false;
     }
-#else
-    char c = 0;
-    if (!msg.SerializeToFileDescriptor(sockfd)
-	 || safe_write(sockfd, &c, 1) == -1) {
-        return false;
-    }
-#endif
     return true;
 }
   
 bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
 {
-#ifdef USE_SIZE_PREFIX
     int size;
     if (safe_read(sockfd, &size, sizeof(size)) == -1) {
         return false;
@@ -49,9 +40,6 @@ bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
     std::string st(buf, size);
     delete [] buf;
     return msg.ParseFromString(st);
-#else
-    return msg.ParseFromFileDescriptor(sockfd);
-#endif
 }
 
 ssize_t SocketComm::safe_write(int fd, const void *buf, size_t count)
