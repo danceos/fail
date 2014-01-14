@@ -114,6 +114,15 @@ void DatabaseCampaign::collect_result_thread() {
 		delete res;
 	}
 
+	log_recv << "Results complete, updating DB statistics ..." << std::endl;
+	std::stringstream ss;
+	ss << "ANALYZE TABLE " << db_connect.result_table();
+	if (!db_recv->query(ss.str().c_str())) {
+		log_recv << "failed!" << std::endl;
+	} else {
+		log_recv << "done." << std::endl;
+	}
+
 	delete db_recv;
 }
 
