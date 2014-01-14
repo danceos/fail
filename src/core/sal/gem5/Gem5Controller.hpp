@@ -38,6 +38,8 @@ public:
 	void onRestore();
 	bool isRestoreRequest();
 	void reboot();
+	virtual simtime_t getTimerTicks();
+	virtual simtime_t getTimerTicksPerSecond();
 #if defined(CONFIG_EVENT_BREAKPOINTS) ||\
     defined(CONFIG_EVENT_BREAKPOINTS_RANGE)
     void setMnemonic(const std::string& mn) { m_Mnemonic = mn; }

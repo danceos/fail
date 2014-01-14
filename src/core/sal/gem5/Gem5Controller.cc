@@ -3,6 +3,7 @@
 #include "../Listener.hpp"
 #include "base/trace.hh"
 #include "sim/root.hh"
+#include "sim/core.hh"
 
 #include <fstream>
 
@@ -109,6 +110,16 @@ bool Gem5Controller::isRestoreRequest()
 void Gem5Controller::reboot()
 {
 
+}
+
+simtime_t Gem5Controller::getTimerTicks()
+{
+	return curTick();
+}
+
+simtime_t Gem5Controller::getTimerTicksPerSecond()
+{
+	return SimClock::Frequency;
 }
 
 } // end-of-namespace: fail
