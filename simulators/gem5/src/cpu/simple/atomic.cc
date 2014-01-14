@@ -536,12 +536,6 @@ AtomicSimpleCPU::tick()
 
                     assert(!ifetch_pkt.isError());
 
-                    // FAIL*
-                    #ifdef CONFIG_EVENT_MEMREAD
-                    fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-                    fail::simulator.onMemoryAccess(cpu, ifetch_pkt.getAddr(), ifetch_pkt.getSize(), false, instAddr());
-                    #endif
-
                     // ifetch_req is initialized to read the instruction directly
                     // into the CPU object's inst field.
                 //}
