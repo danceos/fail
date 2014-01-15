@@ -389,6 +389,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// reaching finish() could happen before OR after FI
 		BPSingleListener func_finish(addr_finish);
 		simulator.addListener(&func_finish);
+		bool reached_finish = false;
 
 		// reaching cyg_test_output() could happen before OR after FI
 		// eCos' test output function, which will show if the test PASSed or FAILed
@@ -412,6 +413,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 					handle_func_test_output(ecos_test_failed, ecos_test_passed);
 				} else if (ev == &func_finish) {
 					log << "experiment reached finish() before FI" << endl;
+					reached_finish = true;
+					break;
 				} else {
 					break;
 				}
@@ -526,7 +529,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 #endif
 
 		// wait until experiment-terminating event occurs
-		while (true) {
+		while (!reached_finish) {
 			ev = simulator.resume();
 			if (ev == &func_test_output) {
 				// re-add this listener
