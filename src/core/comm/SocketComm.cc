@@ -27,19 +27,40 @@ bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
   
 bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
 {
-    int size;
-    if (safe_read(sockfd, &size, sizeof(size)) == -1) {
-        return false;
-    }
-    size = ntohl(size);
-    char *buf = new char[size];
-    if (safe_read(sockfd, buf, size) == -1) {
+    char *buf;
+    int bufsiz;
+    if ((buf = getBuf(sockfd, &bufsiz))) {
+        std::string st(buf, bufsiz);
         delete [] buf;
-        return false;
+        return msg.ParseFromString(st);
     }
-    std::string st(buf, size);
-    delete [] buf;
-    return msg.ParseFromString(st);
+    return false;
+}
+
+bool SocketComm::dropMsg(int sockfd)
+{
+    char *buf;
+    int bufsiz;
+    if ((buf = getBuf(sockfd, &bufsiz))) {
+        delete [] buf;
+        return true;
+    }
+    return false;
+}
+
+char * SocketComm::getBuf(int sockfd, int *size)
+{
+    char *buf;
+    if (safe_read(sockfd, size, sizeof(int)) == -1) {
+        return 0;
+    }
+    *size = ntohl(*size);
+    buf = new char[*size];
+    if (safe_read(sockfd, buf, *size) == -1) {
+        delete [] buf;
+        return 0;
+    }
+    return buf;
 }
 
 ssize_t SocketComm::safe_write(int fd, const void *buf, size_t count)

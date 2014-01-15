@@ -38,7 +38,15 @@ public:
 	 */
 	static bool rcvMsg(int sockfd, google::protobuf::Message& msg);
 
+	/**
+	 * Receive Protobuf-generated message and just drop it
+	 * @param sockfd open socket descriptor to read from
+	 * \return false if message reception failed
+	 */
+	static bool dropMsg(int sockfd);
+
 private:
+	static char * getBuf(int sockfd, int *size);
 	static ssize_t safe_write(int fd, const void *buf, size_t count);
 	static ssize_t safe_read(int fd, void *buf, size_t count);
 };
