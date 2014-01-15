@@ -357,7 +357,7 @@ void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ct
 			cout << "[Server] Received another result for workload id ["
 				 << ctrlmsg.workloadid(i) << "] -- ignored." << endl;
 
-			// TODO: Any need for error-handling here?
+			SocketComm::dropMsg(minion.getSocketDescriptor());
 		}
 	}
 

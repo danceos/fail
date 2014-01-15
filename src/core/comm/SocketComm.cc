@@ -15,7 +15,6 @@ void SocketComm::init()
 
 bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 {
-#ifdef USE_SIZE_PREFIX
     int size = htonl(msg.ByteSize());
     std::string buf;
     if (safe_write(sockfd, &size, sizeof(size)) == -1
@@ -23,35 +22,45 @@ bool SocketComm::sendMsg(int sockfd, google::protobuf::Message& msg)
 	 || safe_write(sockfd, buf.c_str(), buf.size()) == -1) {
         return false;
     }
-#else
-    char c = 0;
-    if (!msg.SerializeToFileDescriptor(sockfd)
-	 || safe_write(sockfd, &c, 1) == -1) {
-        return false;
-    }
-#endif
     return true;
 }
   
 bool SocketComm::rcvMsg(int sockfd, google::protobuf::Message& msg)
 {
-#ifdef USE_SIZE_PREFIX
-    int size;
-    if (safe_read(sockfd, &size, sizeof(size)) == -1) {
-        return false;
-    }
-    size = ntohl(size);
-    char *buf = new char[size];
-    if (safe_read(sockfd, buf, size) == -1) {
+    char *buf;
+    int bufsiz;
+    if ((buf = getBuf(sockfd, &bufsiz))) {
+        std::string st(buf, bufsiz);
         delete [] buf;
-        return false;
+        return msg.ParseFromString(st);
     }
-    std::string st(buf, size);
-    delete [] buf;
-    return msg.ParseFromString(st);
-#else
-    return msg.ParseFromFileDescriptor(sockfd);
-#endif
+    return false;
+}
+
+bool SocketComm::dropMsg(int sockfd)
+{
+    char *buf;
+    int bufsiz;
+    if ((buf = getBuf(sockfd, &bufsiz))) {
+        delete [] buf;
+        return true;
+    }
+    return false;
+}
+
+char * SocketComm::getBuf(int sockfd, int *size)
+{
+    char *buf;
+    if (safe_read(sockfd, size, sizeof(int)) == -1) {
+        return 0;
+    }
+    *size = ntohl(*size);
+    buf = new char[*size];
+    if (safe_read(sockfd, buf, *size) == -1) {
+        delete [] buf;
+        return 0;
+    }
+    return buf;
 }
 
 ssize_t SocketComm::safe_write(int fd, const void *buf, size_t count)
