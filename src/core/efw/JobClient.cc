@@ -22,6 +22,7 @@ JobClient::JobClient(const std::string& server, int port)
 	m_job_total = 0;
 	m_job_runtime_total = 0;
 	m_job_throughput = 1; // client gets only one job at the first request
+	m_connect_failed = false;
 }
 
 JobClient::~JobClient()
@@ -32,6 +33,11 @@ JobClient::~JobClient()
 
 bool JobClient::connectToServer()
 {
+	// don't retry server connects to speedup shutdown at campaign end
+	if (m_connect_failed) {
+		return false;
+	}
+
 	int retries = CLIENT_RETRY_COUNT;
 	while (true) {
 		// Connect to server
@@ -69,6 +75,7 @@ bool JobClient::connectToServer()
 			cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT << " times); "
 			     << "I'll give it up!" << endl;
 			     // TODO: Log-level?
+			m_connect_failed = true;
 			return false; // finally: unable to connect, give it up :-(
 		}
 		break; // connected! :-)
@@ -81,6 +88,11 @@ bool JobClient::connectToServer()
 
 bool JobClient::getParam(ExperimentData& exp)
 {
+	// die immediately if a previous connect already failed
+	if (m_connect_failed) {
+		return false;
+	}
+
 	while (1) { // Here we try to acquire a parameter set
 		switch (tryToGetExperimentData(exp)) {
 			// Jobserver will sent workload, params are set in \c exp
@@ -190,10 +202,10 @@ bool JobClient::sendResult(ExperimentData& result)
 			m_job_runtime.reset();
 			m_job_runtime.startTimer();
 			m_job_total += m_results.size();
-			sendResultsToServer();
+			// tell caller whether we failed phoning home
+			return sendResultsToServer();
 		}
 
-		//If there are more jobs for the experiment store result
 		return true;
 	} else {
 		//Stop time measurement and calculate new throughput
@@ -221,6 +233,14 @@ bool JobClient::sendResultsToServer()
 {
 	if (m_results.size() != 0) {
 		if (!connectToServer()) {
+			// clear results, although we didn't get them to safety; otherwise,
+			// subsequent calls to sendResult() may and the destructor will
+			// retry sending them, resulting in a large shutdown time
+			while (m_results.size()) {
+				delete &m_results.front()->getMessage();
+				delete m_results.front();
+				m_results.pop_front();
+			}
 			return false;
 		}
 

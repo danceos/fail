@@ -37,6 +37,8 @@ private:
 	std::deque<ExperimentData*> m_parameters;
 	std::deque<ExperimentData*> m_results;
 
+	bool m_connect_failed;
+
 	bool connectToServer();
 	bool sendResultsToServer();
 	FailControlMessage_Command tryToGetExperimentData(ExperimentData& exp);
