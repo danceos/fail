@@ -31,5 +31,5 @@ target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
-target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} fail fail-cpn fail-util -lmysqlclient ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})   
+target_link_libraries(${EXPERIMENT_NAME}-server fail-${EXPERIMENT_NAME} fail fail-cpn fail-util -lmysqlclient_r ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY})   
 install(TARGETS ${EXPERIMENT_NAME}-server RUNTIME DESTINATION bin)

@@ -34,7 +34,7 @@ else(MYSQL_CONFIG)
         /usr/local/mysql/include/mysql
         /usr/include
         /usr/include/mysql
-    #find_library(mysqlclient ...
+    #find_library(mysqlclient_r ...
     #    PATHS
     #    ${MYSQL_ADD_LIBRARY_PATH}
     #    /usr/lib/mysql
