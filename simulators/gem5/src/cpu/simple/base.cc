@@ -332,10 +332,10 @@ BaseSimpleCPU::checkForInterrupts()
         Fault interrupt = interrupts->getInterrupt(tc);
 
         if (interrupt != NoFault) {
-			// FAIL*
-			#ifdef CONFIG_EVENT_INTERRUPT
-			fail::simulator.onInterrupt(dynamic_cast<ArmFault*>(interrupt.get())->offset(), false);
-			#endif
+            // DanceOS
+            #ifdef CONFIG_EVENT_INTERRUPT
+            fail::simulator.onInterrupt(dynamic_cast<ArmFault*>(interrupt.get())->offset(), false);
+            #endif
             fetchOffset = 0;
             interrupts->updateIntrInfo(tc);
             interrupt->invoke(tc);

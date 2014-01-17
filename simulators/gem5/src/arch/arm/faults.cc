@@ -49,6 +49,9 @@
 #include "debug/Faults.hh"
 #include "sim/full_system.hh"
 
+#include "sal/SALInst.hpp"
+#include "config/FailConfig.hpp"
+
 namespace ArmISA
 {
 
@@ -95,9 +98,25 @@ ArmFault::getVector(ThreadContext *tc)
 
 }
 
-void 
+void
 ArmFault::invoke(ThreadContext *tc, StaticInstPtr inst)
 {
+    // DanceOS
+    #ifdef CONFIG_EVENT_TRAP
+    // GEM5 throws a reset trap during initialization.
+    // This happens before the startup function is called.
+    // This leads to problems because the startup function fills the m_CPUs list.
+    // m_CPUs is needed for the TrapListener.
+    // Therefore, we only react on traps after initialization.
+    // e.g. look at gem5/src/arch/arm/faults.cc -> ArmFault::invoke function.
+    if (fail::simulator.isInitialized()) {
+        fail::ConcreteCPU* cpu = &fail::simulator.getCPU(tc->cpuId());
+        // Instead of a number to a trap the offset is returned for GEM5.
+        // see: http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0211h/Babfeega.html
+        fail::simulator.onTrap(cpu, offset());
+    }
+    #endif
+
     // ARM ARM B1.6.3
     FaultBase::invoke(tc);
     if (!FullSystem)

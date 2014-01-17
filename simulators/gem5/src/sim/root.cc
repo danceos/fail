@@ -129,11 +129,11 @@ Root::loadState(Checkpoint *cp)
 }
 
 
-// FAIL*
+// DanceOS
 void
 Root::startup()
 {
-	fail::simulator.startup();
+    fail::simulator.startup();
 }
 
 void

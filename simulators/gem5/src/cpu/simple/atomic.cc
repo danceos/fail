@@ -289,17 +289,9 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t * data,
             }
             dcache_access = true;
 
-            // FAIL*
-            #ifdef CONFIG_EVENT_TRAP
-            if(pkt.isError()) {
-                fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-                fail::simulator.onTrap(cpu, 0);
-            }
-            #endif
-
             assert(!pkt.isError());
 
-            // FAIL*
+            // DanceOS
             #ifdef CONFIG_EVENT_MEMREAD
             fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
             fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), false, instAddr());
@@ -405,17 +397,9 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size,
                 }
                 dcache_access = true;
 
-                // FAIL*
-                #ifdef CONFIG_EVENT_TRAP
-                if(pkt.isError()) {
-                    fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-                    fail::simulator.onTrap(cpu, 0);
-                }
-                #endif
-
                 assert(!pkt.isError());
 
-                // FAIL*
+                // DanceOS
                 #ifdef CONFIG_EVENT_MEMWRITE
                 fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
                 fail::simulator.onMemoryAccess(cpu, pkt.getAddr(), pkt.getSize(), true, instAddr());
@@ -524,15 +508,6 @@ AtomicSimpleCPU::tick()
                         system->getPhysMem().access(&ifetch_pkt);
                     else
                         icache_latency = icachePort.sendAtomic(&ifetch_pkt);
-
-                    // FAIL*
-                    #ifdef CONFIG_EVENT_TRAP
-                    if(ifetch_pkt.isError())
-                    {
-                        fail::ConcreteCPU* cpu = &fail::simulator.getCPU(cpuId());
-                        fail::simulator.onTrap(cpu, 0);
-                    }
-                    #endif
 
                     assert(!ifetch_pkt.isError());
 

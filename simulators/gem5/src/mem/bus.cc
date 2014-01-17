@@ -294,11 +294,6 @@ BaseBus::findPort(Addr addr)
 
     // we should use the range for the default port and it did not
     // match, or the default port is not set
-	// FAIL*
-	#ifdef CONFIG_EVENT_TRAP
-	fail::ConcreteCPU* cpu = &fail::simulator.getCPU(0);
-	fail::simulator.onTrap(cpu, 0);
-	#endif
     fatal("Unable to find destination for addr %#llx on bus %s\n", addr,
           name());
 }

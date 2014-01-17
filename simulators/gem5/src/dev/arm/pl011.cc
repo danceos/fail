@@ -185,13 +185,8 @@ Pl011::write(PacketPtr pkt)
     switch (daddr) {
         case UART_DR:
           if ((data & 0xFF) == 0x04 && endOnEOT) {
-			// FAIL*
-			#ifdef CONFIG_EVENT_TRAP
-				fail::ConcreteCPU* cpu = &fail::simulator.getCPU(0);
-				fail::simulator.onTrap(cpu, 0);
-			#endif
             exitSimLoop("UART received EOT", 0);
-		  }
+        }
 
         term->out(data & 0xFF);
 
