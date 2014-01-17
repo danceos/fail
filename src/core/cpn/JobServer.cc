@@ -161,11 +161,15 @@ void JobServer::run()
 	boost::thread* th;
 	while (!m_finish){
 		// Accept connection
-		int cs = accept(s, (struct sockaddr*)&clientaddr, &clen);
-		if (cs == -1) {
-			perror("accept");
-			// TODO: Log-level?
-			return;
+		int cs = SocketComm::timedAccept(s, (struct sockaddr*)&clientaddr, &clen, 100);
+		if (cs < 0) {
+			if (errno != EWOULDBLOCK) {
+				perror("poll/accept");
+				// TODO: Log-level?
+				return;
+			} else {
+				continue;
+			}
 		}
 		// Spawn a thread for further communication,
 		// and add this thread to a list threads
