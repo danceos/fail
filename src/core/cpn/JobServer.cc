@@ -34,10 +34,6 @@ void JobServer::addParam(ExperimentData* exp)
 volatile unsigned JobServer::m_DoneCount = 0;
 #endif
 
-#ifndef __puma
-boost::mutex CommThread::m_CommMutex;
-#endif
-
 ExperimentData *JobServer::getDone()
 {
 #ifndef __puma
@@ -52,7 +48,7 @@ ExperimentData *JobServer::getDone()
 void JobServer::setNoMoreExperiments()
 {
 #ifndef __puma
-	boost::unique_lock<boost::mutex> lock(CommThread::m_CommMutex);
+	boost::unique_lock<boost::mutex> lock(m_CommMutex);
 #endif
 	// currently not really necessary, as we only non-blockingly dequeue:
 	m_undoneJobs.setIsFinished();
@@ -294,7 +290,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	// Prevent receiveExperimentResults from modifying (or indirectly, via
 	// getDone and the campaign, deleting) jobs in the m_runningJobs queue.
 	// (See details in receiveExperimentResults)
-	boost::unique_lock<boost::mutex> lock(m_CommMutex);
+	boost::unique_lock<boost::mutex> lock(m_js.m_CommMutex);
 #endif
 	if ((temp_exp = m_js.m_runningJobs.pickone()) != NULL) { // 2nd priority
 		// (This picks one running job.)
@@ -347,7 +343,7 @@ void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ct
 	//    by the campaign at any time.
 	// Additionally, receiving a result overwrites the job's contents.  This
 	// already may cause breakage in sendPendingExperimentData (a).
-	boost::unique_lock<boost::mutex> lock(m_CommMutex);
+	boost::unique_lock<boost::mutex> lock(m_js.m_CommMutex);
 #endif
 	for (i = 0; i < ctrlmsg.workloadid_size(); i++) {
 		if (m_js.m_runningJobs.remove(ctrlmsg.workloadid(i), exp)) { // ExperimentData* found
