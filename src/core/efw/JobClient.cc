@@ -19,6 +19,8 @@ JobClient::JobClient(const std::string& server, int port)
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
 	m_server_runid = 0; // server accepts this for virgin clients
+	m_job_total = 0;
+	m_job_runtime_total = 0;
 	m_job_throughput = 1; // client gets only one job at the first request
 }
 
