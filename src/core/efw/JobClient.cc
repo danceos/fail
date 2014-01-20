@@ -21,7 +21,7 @@ JobClient::JobClient(const std::string& server, int port)
 	m_server_runid = 0; // server accepts this for virgin clients
 	m_job_total = 0;
 	m_job_runtime_total = 0;
-	m_job_throughput = 1; // client gets only one job at the first request
+	m_job_throughput = CLIENT_JOB_INITIAL; // will be corrected after measurement
 	m_connect_failed = false;
 }
 
