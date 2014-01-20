@@ -92,6 +92,8 @@ bool DatabaseCampaign::run() {
 	log_send << "wait for the clients to complete" << std::endl;
 	campaignmanager.noMoreParameters();
 
+	delete db;
+
 #ifndef __puma
 	collect_thread.join();
 #endif
@@ -101,12 +103,27 @@ bool DatabaseCampaign::run() {
 void DatabaseCampaign::collect_result_thread() {
 	log_recv << "Started result receive thread" << std::endl;
 
+	// create an own DB connection, because we cannot use one concurrently
+	Database *db_recv = Database::cmdline_connect();
+	db_connect.set_insert_database_handle(db_recv);
+
 	ExperimentData *res;
 
 	while ((res = static_cast<ExperimentData *>(campaignmanager.getDone()))) {
 		db_connect.insert_row(&res->getMessage());
 		delete res;
 	}
+
+	log_recv << "Results complete, updating DB statistics ..." << std::endl;
+	std::stringstream ss;
+	ss << "ANALYZE TABLE " << db_connect.result_table();
+	if (!db_recv->query(ss.str().c_str())) {
+		log_recv << "failed!" << std::endl;
+	} else {
+		log_recv << "done." << std::endl;
+	}
+
+	delete db_recv;
 }
 
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
