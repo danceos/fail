@@ -149,10 +149,16 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
 
 				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
-					// Failed to receive message?  Retry.
-					close(m_sockfd);
+					// looks like we won't receive more jobs now, cleanup
+					delete &temp_exp->getMessage();
 					delete temp_exp;
-					return FailControlMessage::COME_AGAIN;
+					// did a previous loop iteration succeed?
+					if (m_parameters.size() > 0) {
+						break;
+					} else {
+						// nothing to do now, retry later
+						return FailControlMessage::COME_AGAIN;
+					}
 				}
 
 				temp_exp->setWorkloadID(ctrlmsg.workloadid(i)); //Store workload id of experiment data
@@ -262,10 +268,16 @@ bool JobClient::sendResultsToServer()
 		cout << "]";
 
 		// TODO: Log-level?
-		SocketComm::sendMsg(m_sockfd, ctrlmsg);
+		if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
+			close(m_sockfd);
+			return false;
+		}
 
 		for (i = 0; i < ctrlmsg.job_size() ; i++) {
-			SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage());
+			if (!SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage())) {
+				close(m_sockfd);
+				return false;
+			}
 			delete &m_results.front()->getMessage();
 			delete m_results.front();
 			m_results.pop_front();
