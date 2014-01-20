@@ -6,10 +6,14 @@ using namespace std;
 namespace fail {
 
 JobClient::JobClient(const std::string& server, int port)
+	: m_server(server), m_server_port(port),
+	m_server_runid(0), // server accepts this for virgin clients
+	m_job_runtime_total(0),
+	m_job_throughput(CLIENT_JOB_INITIAL), // will be corrected after measurement
+	m_job_total(0),
+	m_connect_failed(false)
 {
 	SocketComm::init();
-	m_server_port = port;
-	m_server = server;
 	m_server_ent = gethostbyname(m_server.c_str());
   cout << "JobServer: " << m_server.c_str() << endl;
 	if(m_server_ent == NULL) {
@@ -18,11 +22,6 @@ JobClient::JobClient(const std::string& server, int port)
 		exit(1);
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
-	m_server_runid = 0; // server accepts this for virgin clients
-	m_job_total = 0;
-	m_job_runtime_total = 0;
-	m_job_throughput = CLIENT_JOB_INITIAL; // will be corrected after measurement
-	m_connect_failed = false;
 }
 
 JobClient::~JobClient()
