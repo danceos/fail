@@ -34,14 +34,15 @@ class MemoryManager;
  */
 class SimulatorController {
 protected:
+	bool m_isInitialized;
 	ListenerManager m_LstList; //!< storage where listeners are being buffered
 	CoroutineManager m_Flows; //!< managed experiment flows
 	MemoryManager *m_Mem; //!< access to memory pool
 	std::vector<ConcreteCPU*> m_CPUs; //!< list of CPUs in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
 public:
-	SimulatorController() : m_Mem(NULL) { }
-	SimulatorController(MemoryManager* mem) : m_Mem(mem) { }
+	SimulatorController() : m_isInitialized(false), m_Mem(NULL) { }
+	SimulatorController(MemoryManager* mem) : m_isInitialized(false), m_Mem(mem) { }
 	virtual ~SimulatorController() { }
 	/**
 	 * @brief Initialization function each implementation needs to call on
@@ -251,6 +252,11 @@ public:
 	 * @see SimulatorController::getTimerTicks()
 	 */
 	virtual simtime_t getTimerTicksPerSecond() { return 0; }
+	/**
+	 * Returns whether FAIL* has already been initialized.
+	 * @return A Boolean, indicating whether FAIL* has been initialized.
+	*/
+	bool isInitialized() { return m_isInitialized; }
 };
 
 } // end-of-namespace: fail

@@ -50,6 +50,9 @@ void SimulatorController::startup()
 	std::cout << "[SimulatorController] Initializing..." << std::endl;
 	// TODO: Log-Level?
 
+	// Set Fail* as initialized
+	m_isInitialized = true;
+
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
 }
