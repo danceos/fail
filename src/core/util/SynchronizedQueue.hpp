@@ -18,14 +18,15 @@ class SynchronizedQueue { // Adapted from: http://www.quantnet.com/cplusplus-mul
 private:
 	std::queue<T> m_queue; //!< Use STL queue to store data
 	unsigned capacity;
+	bool finished;
 #ifndef __puma
 	boost::mutex m_mutex; //!< The mutex to synchronise on
 	boost::condition_variable m_cond; //!< The condition to wait for
 	boost::condition_variable m_cond_capacity; //!< Another condition to wait for
 #endif
 public:
-	SynchronizedQueue() : capacity(0) {}
-	SynchronizedQueue(unsigned capacity) : capacity(capacity) {}
+	SynchronizedQueue() : capacity(0), finished(false) {}
+	SynchronizedQueue(unsigned capacity) : capacity(capacity), finished(false) {}
 	int Size()
 	{
 #ifndef __puma
@@ -69,6 +70,10 @@ public:
 		// again after the wait
 #ifndef __puma
 		while (m_queue.size() == 0) {
+			if (finished) {
+				// default-constructed T, 0 for integral types
+				return T();
+			}
 			m_cond.wait(lock);
 		}
 #endif
@@ -116,6 +121,17 @@ public:
 			return false;
 		}
 	} // Lock is automatically released here
+
+	void setIsFinished(bool value = true)
+	{
+#ifndef __puma
+		boost::unique_lock<boost::mutex> lock(m_mutex);
+#endif
+		finished = value;
+#ifndef __puma
+		m_cond.notify_all();
+#endif
+	}
 };
 
 } // end-of-namespace: fail

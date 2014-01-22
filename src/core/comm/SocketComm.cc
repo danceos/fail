@@ -1,6 +1,7 @@
 #include <string>
 #include <errno.h>
 #include <signal.h>
+#include <poll.h>
 
 #include "SocketComm.hpp"
 
@@ -61,6 +62,17 @@ char * SocketComm::getBuf(int sockfd, int *size)
         return 0;
     }
     return buf;
+}
+
+int SocketComm::timedAccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int timeout)
+{
+	struct pollfd pfd = {sockfd, POLLIN, 0};
+	int ret = poll(&pfd, 1, timeout);
+	if (ret > 0) {
+		return accept(sockfd, addr, addrlen);
+	}
+	errno = EWOULDBLOCK;
+	return -1;
 }
 
 ssize_t SocketComm::safe_write(int fd, const void *buf, size_t count)

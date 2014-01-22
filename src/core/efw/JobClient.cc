@@ -6,10 +6,14 @@ using namespace std;
 namespace fail {
 
 JobClient::JobClient(const std::string& server, int port)
+	: m_server(server), m_server_port(port),
+	m_server_runid(0), // server accepts this for virgin clients
+	m_job_runtime_total(0),
+	m_job_throughput(CLIENT_JOB_INITIAL), // will be corrected after measurement
+	m_job_total(0),
+	m_connect_failed(false)
 {
 	SocketComm::init();
-	m_server_port = port;
-	m_server = server;
 	m_server_ent = gethostbyname(m_server.c_str());
   cout << "JobServer: " << m_server.c_str() << endl;
 	if(m_server_ent == NULL) {
@@ -18,8 +22,6 @@ JobClient::JobClient(const std::string& server, int port)
 		exit(1);
 	}
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
-	m_server_runid = 0; // server accepts this for virgin clients
-	m_job_throughput = 1; // client gets only one job at the first request
 }
 
 JobClient::~JobClient()
@@ -30,6 +32,11 @@ JobClient::~JobClient()
 
 bool JobClient::connectToServer()
 {
+	// don't retry server connects to speedup shutdown at campaign end
+	if (m_connect_failed) {
+		return false;
+	}
+
 	int retries = CLIENT_RETRY_COUNT;
 	while (true) {
 		// Connect to server
@@ -67,6 +74,7 @@ bool JobClient::connectToServer()
 			cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT << " times); "
 			     << "I'll give it up!" << endl;
 			     // TODO: Log-level?
+			m_connect_failed = true;
 			return false; // finally: unable to connect, give it up :-(
 		}
 		break; // connected! :-)
@@ -79,6 +87,11 @@ bool JobClient::connectToServer()
 
 bool JobClient::getParam(ExperimentData& exp)
 {
+	// die immediately if a previous connect already failed
+	if (m_connect_failed) {
+		return false;
+	}
+
 	while (1) { // Here we try to acquire a parameter set
 		switch (tryToGetExperimentData(exp)) {
 			// Jobserver will sent workload, params are set in \c exp
@@ -135,10 +148,16 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
 
 				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
-					// Failed to receive message?  Retry.
-					close(m_sockfd);
+					// looks like we won't receive more jobs now, cleanup
+					delete &temp_exp->getMessage();
 					delete temp_exp;
-					return FailControlMessage::COME_AGAIN;
+					// did a previous loop iteration succeed?
+					if (m_parameters.size() > 0) {
+						break;
+					} else {
+						// nothing to do now, retry later
+						return FailControlMessage::COME_AGAIN;
+					}
 				}
 
 				temp_exp->setWorkloadID(ctrlmsg.workloadid(i)); //Store workload id of experiment data
@@ -188,10 +207,10 @@ bool JobClient::sendResult(ExperimentData& result)
 			m_job_runtime.reset();
 			m_job_runtime.startTimer();
 			m_job_total += m_results.size();
-			sendResultsToServer();
+			// tell caller whether we failed phoning home
+			return sendResultsToServer();
 		}
 
-		//If there are more jobs for the experiment store result
 		return true;
 	} else {
 		//Stop time measurement and calculate new throughput
@@ -219,6 +238,14 @@ bool JobClient::sendResultsToServer()
 {
 	if (m_results.size() != 0) {
 		if (!connectToServer()) {
+			// clear results, although we didn't get them to safety; otherwise,
+			// subsequent calls to sendResult() may and the destructor will
+			// retry sending them, resulting in a large shutdown time
+			while (m_results.size()) {
+				delete &m_results.front()->getMessage();
+				delete m_results.front();
+				m_results.pop_front();
+			}
 			return false;
 		}
 
@@ -240,10 +267,16 @@ bool JobClient::sendResultsToServer()
 		cout << "]";
 
 		// TODO: Log-level?
-		SocketComm::sendMsg(m_sockfd, ctrlmsg);
+		if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
+			close(m_sockfd);
+			return false;
+		}
 
 		for (i = 0; i < ctrlmsg.job_size() ; i++) {
-			SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage());
+			if (!SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage())) {
+				close(m_sockfd);
+				return false;
+			}
 			delete &m_results.front()->getMessage();
 			delete m_results.front();
 			m_results.pop_front();

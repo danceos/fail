@@ -34,26 +34,31 @@ void JobServer::addParam(ExperimentData* exp)
 volatile unsigned JobServer::m_DoneCount = 0;
 #endif
 
-#ifndef __puma
-boost::mutex CommThread::m_CommMutex;
-#endif
-
 ExperimentData *JobServer::getDone()
 {
 #ifndef __puma
-	if (m_undoneJobs.Size() == 0
-	 && noMoreExperiments()
-	 && m_runningJobs.Size() == 0
-	 && m_doneJobs.Size() == 0
-	 && m_inOutCounter.getValue() == 0) {
-		return 0;
+	ExperimentData *exp = m_doneJobs.Dequeue();
+	if (exp) {
+		m_inOutCounter.decrement();
 	}
-
-	ExperimentData *exp = NULL;
-	exp = m_doneJobs.Dequeue();
-	m_inOutCounter.decrement();
 	return exp;
 #endif
+}
+
+void JobServer::setNoMoreExperiments()
+{
+#ifndef __puma
+	boost::unique_lock<boost::mutex> lock(m_CommMutex);
+#endif
+	// currently not really necessary, as we only non-blockingly dequeue:
+	m_undoneJobs.setIsFinished();
+
+	m_noMoreExps = true;
+	if (m_undoneJobs.Size() == 0 &&
+	    noMoreExperiments() &&
+	    m_runningJobs.Size() == 0) {
+		m_doneJobs.setIsFinished();
+	}
 }
 
 #ifdef SERVER_PERFORMANCE_MEASURE
@@ -156,11 +161,15 @@ void JobServer::run()
 	boost::thread* th;
 	while (!m_finish){
 		// Accept connection
-		int cs = accept(s, (struct sockaddr*)&clientaddr, &clen);
-		if (cs == -1) {
-			perror("accept");
-			// TODO: Log-level?
-			return;
+		int cs = SocketComm::timedAccept(s, (struct sockaddr*)&clientaddr, &clen, 100);
+		if (cs < 0) {
+			if (errno != EWOULDBLOCK) {
+				perror("poll/accept");
+				// TODO: Log-level?
+				return;
+			} else {
+				continue;
+			}
 		}
 		// Spawn a thread for further communication,
 		// and add this thread to a list threads
@@ -257,10 +266,6 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		} else {
 			break;
 		}
-
-		if (!m_js.m_runningJobs.insert(workloadID, temp_exp)) {
-			cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
-		}
 	}
 	if (exp.size() != 0) {
 		ctrlmsg.set_job_size(exp.size());
@@ -271,8 +276,22 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 		if (SocketComm::sendMsg(minion.getSocketDescriptor(), ctrlmsg)) {
 			for (i = 0; i < ctrlmsg.job_size(); i++) {
 				if (SocketComm::sendMsg(minion.getSocketDescriptor(), exp.front()->getMessage())) {
+
+					// delay insertion into m_runningJobs until here, as
+					// getMessage() won't work anymore if this job is re-sent,
+					// received, and deleted in the meantime
+					if (!m_js.m_runningJobs.insert(exp.front()->getWorkloadID(), exp.front())) {
+						cout << "!![Server]could not insert workload id: [" << workloadID << "] double entry?" << endl;
+					}
+
 					exp.pop_front();
 				} else {
+					// add remaining jobs back to the queue
+					cout << "!![Server] failed to send scheduled " << exp.size() << " jobs" << endl;
+					while (exp.size()) {
+						m_js.m_undoneJobs.Enqueue(exp.front());
+						exp.pop_front();
+					}
 					break;
 				}
 
@@ -285,7 +304,7 @@ void CommThread::sendPendingExperimentData(Minion& minion)
 	// Prevent receiveExperimentResults from modifying (or indirectly, via
 	// getDone and the campaign, deleting) jobs in the m_runningJobs queue.
 	// (See details in receiveExperimentResults)
-	boost::unique_lock<boost::mutex> lock(m_CommMutex);
+	boost::unique_lock<boost::mutex> lock(m_js.m_CommMutex);
 #endif
 	if ((temp_exp = m_js.m_runningJobs.pickone()) != NULL) { // 2nd priority
 		// (This picks one running job.)
@@ -338,7 +357,7 @@ void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ct
 	//    by the campaign at any time.
 	// Additionally, receiving a result overwrites the job's contents.  This
 	// already may cause breakage in sendPendingExperimentData (a).
-	boost::unique_lock<boost::mutex> lock(m_CommMutex);
+	boost::unique_lock<boost::mutex> lock(m_js.m_CommMutex);
 #endif
 	for (i = 0; i < ctrlmsg.workloadid_size(); i++) {
 		if (m_js.m_runningJobs.remove(ctrlmsg.workloadid(i), exp)) { // ExperimentData* found
@@ -361,6 +380,12 @@ void CommThread::receiveExperimentResults(Minion& minion, FailControlMessage& ct
 		}
 	}
 
+	// all results complete?
+	if (m_js.m_undoneJobs.Size() == 0 &&
+	    m_js.noMoreExperiments() &&
+	    m_js.m_runningJobs.Size() == 0) {
+		m_js.m_doneJobs.setIsFinished();
+	}
 }
 
 } // end-of-namespace: fail

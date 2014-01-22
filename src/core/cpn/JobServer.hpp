@@ -66,6 +66,9 @@ private:
 	SynchronizedQueue<ExperimentData*> m_undoneJobs;
 	//! List of finished experiment results.
 	SynchronizedQueue<ExperimentData*> m_doneJobs;
+#ifndef __puma
+	boost::mutex m_CommMutex; //! to synchronise the communication
+#endif // __puma
 	friend class CommThread; //!< CommThread is allowed access the job queues.
 	/**
 	 * The actual startup of the Jobserver.
@@ -93,10 +96,13 @@ public:
 	}
 	~JobServer()
 	{
+		done();
 #ifndef __puma
 		// Cleanup of m_serverThread, etc.
+		m_serverThread->join();
 		delete m_serverThread;
 #ifdef SERVER_PERFORMANCE_MEASURE
+		m_measureThread->join();
 		delete m_measureThread;
 #endif
 #endif // __puma
@@ -118,7 +124,7 @@ public:
 	 * sets.  We need this, as we allow concurrent parameter generation and
 	 * distribution.
 	 */
-	void setNoMoreExperiments() { m_noMoreExps = true; }
+	void setNoMoreExperiments();
 	/**
 	 * Checks whether there are no more experiment parameter sets.
 	 * @return \c true if no more parameter sets available, \c false otherwise
@@ -162,9 +168,6 @@ private:
 	 */
 	void receiveExperimentResults(Minion& minion, FailControlMessage& ctrlmsg);
 public:
-#ifndef __puma
-	static boost::mutex m_CommMutex; //! to synchronise the communication
-#endif // __puma
 	CommThread(int sockfd, JobServer& p)
 		: m_sock(sockfd), m_job_size(1), m_js(p) { }
 	/**

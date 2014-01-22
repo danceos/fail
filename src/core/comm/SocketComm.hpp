@@ -45,6 +45,16 @@ public:
 	 */
 	static bool dropMsg(int sockfd);
 
+	/**
+	 * An accept() wrapper that times out (using poll(2))
+	 * @param sockfd listening socket descriptor to accept connections from
+	 * @param addr same as accept()'s
+	 * @param addrlen same as accept()'s
+	 * @param timeout timeout in milliseconds (see poll(2))
+	 * \return < 0 on failure, > 0 for a new socket connection
+	 */
+	static int timedAccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int timeout);
+
 private:
 	static char * getBuf(int sockfd, int *size);
 	static ssize_t safe_write(int fd, const void *buf, size_t count);
