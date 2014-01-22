@@ -35,6 +35,7 @@ bool BasicPruner::prune_all() {
 			  "  data_address, width, " << m_method_id << " "
 			  "FROM trace "
 			  "WHERE variant_id = " << row[0] << " AND accesstype = 'W' "
+			  "ORDER BY instr2 ASC "
 			  "LIMIT 1";
 		if (!db->query(ss.str().c_str())) return false;
 		ss.str("");
