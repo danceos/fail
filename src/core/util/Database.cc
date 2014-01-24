@@ -218,6 +218,19 @@ int Database::get_fspmethod_id(const std::string &method)
 	return id;
 }
 
+std::string Database::escape_string(const std::string unescaped_string) {
+
+	char *temp = new char[(unescaped_string.size() * 2) + 1];
+
+	mysql_real_escape_string(handle, temp, unescaped_string.c_str(), unescaped_string.size());
+
+	std::string result = temp;
+
+	delete temp;
+
+	return result;
+}
+
 static CommandLine::option_handle DATABASE, HOSTNAME, USERNAME;
 
 void Database::cmdline_setup() {

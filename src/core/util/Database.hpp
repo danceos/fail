@@ -100,6 +100,11 @@ namespace fail {
 		my_ulonglong insert_id();
 
 		/**
+		 * Escapes illegal characters in a string.
+		 */
+		std::string escape_string(const std::string unescaped_string);
+
+		/**
 		 * Interface to the util/CommandLine.hpp interface. In you
 		 * application you first call cmdline_setup(), which adds
 		 * different command line options. The cmdline_connect()
