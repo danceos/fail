@@ -9,6 +9,7 @@
 #define __WALLCLOCKTIMER_HPP__
 
 #include <string>
+#include <ostream>
 #include <stdlib.h>
 #include <sys/time.h>
 
