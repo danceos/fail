@@ -33,7 +33,8 @@ target_link_libraries(import-trace
   ${MYSQL_LIBRARIES}
   fail-util 
   fail-comm
-  fail-sal)
+  fail-sal
+)
 
 if (BUILD_LLVM_DISASSEMBLER)
   target_link_libraries(import-trace fail-llvmdisassembler fail-sal ${LLVM_LIBS} ${LLVM_LDFLAGS} ${Boost_LIBRARIES})

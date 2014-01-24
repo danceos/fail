@@ -1,5 +1,6 @@
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include "util/Logger.hpp"
 #include "ElfImporter.hpp"
 #include "util/pstream.h"
@@ -25,11 +26,18 @@ bool ElfImporter::cb_commandline_init() {
 
 	OBJDUMP = cmd.addOption("", "objdump", Arg::Required,
 							"--objdump \tObjdump: location of objdump binary, otherwise LLVM Disassembler is used");
+	SOURCECODE = cmd.addOption("", "sources", Arg::None,
+							"--sources \timport all source files into the database");
+	DEBUGINFO = cmd.addOption("", "debug", Arg::None,
+							"--debug \timport some debug informations into the database");
 	return true;
 }
 
 bool ElfImporter::create_database() {
+	CommandLine &cmd = CommandLine::Inst();
 	std::stringstream create_statement;
+
+	create_statement.str("");
 	create_statement << "CREATE TABLE IF NOT EXISTS objdump ("
 		"	variant_id int(11) NOT NULL,"
 		"	instr_address int(11) NOT NULL,"
@@ -38,7 +46,50 @@ bool ElfImporter::create_database() {
 		"	comment VARCHAR(128),"
 		"	PRIMARY KEY (variant_id,instr_address)"
 		") engine=MyISAM ";
-	return db->query(create_statement.str().c_str());
+	if (!db->query(create_statement.str().c_str())) {
+		return false;
+	}
+
+	if (cmd[SOURCECODE]) {
+		create_statement.str("");
+		create_statement << "CREATE TABLE IF NOT EXISTS dbg_filename ("
+			"	file_id int(11) NOT NULL AUTO_INCREMENT,"
+			"	variant_id int(11) NOT NULL,"
+			"	path VARCHAR(1024),"
+			"	PRIMARY KEY (file_id)"
+			") engine=MyISAM ";
+		if (!db->query(create_statement.str().c_str())) {
+			return false;
+		}
+
+		create_statement.str("");
+		create_statement << "CREATE TABLE IF NOT EXISTS dbg_source ("
+			"	variant_id int(11) NOT NULL,"
+			"	linenumber int(11) NOT NULL,"
+			"	file_id int(11) NOT NULL,"
+			"	line VARCHAR(1024),"
+			"	PRIMARY KEY (variant_id, linenumber, file_id)"
+			") engine=MyISAM ";
+		if (!db->query(create_statement.str().c_str())) {
+			return false;
+		}
+	}
+
+	if (cmd[DEBUGINFO]) {
+		create_statement.str("");
+		create_statement << "CREATE TABLE IF NOT EXISTS dbg_mapping ("
+			"	variant_id int(11) NOT NULL,"
+			"	instr_absolute int(11) NOT NULL,"
+			"	linenumber int(11) NOT NULL,"
+			"	file_id int(11) NOT NULL,"
+			"	PRIMARY KEY (variant_id, instr_absolute ,linenumber)"
+			") engine=MyISAM ";
+		if (!db->query(create_statement.str().c_str())) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 bool ElfImporter::copy_to_database(ProtoIStream &ps) {
@@ -54,12 +105,33 @@ bool ElfImporter::copy_to_database(ProtoIStream &ps) {
 	}
 
 	if (cmd[OBJDUMP]) { // using objdump
-		return import_with_objdump(std::string(cmd[OBJDUMP].first()->arg));
+		if(!import_with_objdump(std::string(cmd[OBJDUMP].first()->arg))) {
+			return false;
+		}
 	} else {
 		LOG << "importing an objdump with internal llvm dissassembler is not yet implemented" << std::endl;
-		return false;
 	}
 
+	if (cmd[SOURCECODE]) { // import sources
+		std::list<std::string> sourceFiles;
+
+		if (!import_source_files(m_elf->getFilename(),sourceFiles)) {
+			cerr << "unable to read dwarf2 debug info" << endl;
+			return false;
+		}
+
+		for (std::list<std::string>::iterator it = sourceFiles.begin(); it != sourceFiles.end(); ++it) {
+			if(!import_source_code(*it)) {
+				return false;
+			}
+		}
+	}
+
+	if (cmd[DEBUGINFO]) { // import debug informations
+		if(!import_mapping(m_elf->getFilename())) {
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -196,14 +268,161 @@ bool ElfImporter::import_instruction(fail::address_t addr, char *opcode, int opc
 	return true;
 }
 
+bool ElfImporter::import_source_code(std::string fileName) {
 
+	LOG << "Importing Sourcefile: " << fileName << endl;
+
+	ifstream in(fileName.c_str());
+	if (!in.is_open()) {
+		LOG << "Sourcefile not found: " << fileName << endl;
+	} else {
+		unsigned lineNo=0;
+		while (!in.eof()) {
+			++lineNo;
+
+			// Read and strip the current line
+			string currentLine;
+			getline(in,currentLine);
+			if ((!currentLine.length())&&(in.eof())) break;
+			while (true) {
+				unsigned l=currentLine.length();
+				if (!l) break;
+				char c=currentLine[l-1];
+				if ((c!='\n')&&(c!='\r')&&(c!=' ')&&(c!='\t')) break;
+				currentLine=currentLine.substr(0,l-1);
+			}
+
+			//Sonderzeichen
+			currentLine = db->escape_string(currentLine);
+
+			std::stringstream ss;
+			ss << "SELECT file_id FROM dbg_filename WHERE path = " << "\"" << fileName.c_str() << "\"";
+
+			MYSQL_RES *res = db->query(ss.str().c_str(), true);
+			MYSQL_ROW row;
+			row = mysql_fetch_row(res);
+
+			// INSERT group entry
+			std::stringstream sql;
+
+			sql << "(" << m_variant_id << "," << lineNo << ",";
+			if (row != NULL) {
+				sql << row[0];
+			} else {
+				sql << -1;
+			}
+			sql << "," << "\"" << currentLine << "\"" << ")";
+
+			if (!db->insert_multiple("INSERT INTO dbg_source (variant_id, linenumber, file_id, line) VALUES ", sql.str().c_str())){
+				LOG << "Can not import sourcelines!" << endl;;
+			}
+		}
+		db->insert_multiple();
+	}
+	return true;
+}
+
+bool ElfImporter::import_source_files(const std::string& fileName,std::list<std::string>& lines) {
+
+	//std::list<addrToLine> lines;
+	if (!dwReader.read_source_files(fileName, lines)) {
+		return false;
+	}
+	for (std::list<std::string>::iterator it = lines.begin(); it != lines.end(); ++it) {
+		// INSERT group entry
+		std::stringstream sql;
+		sql << "(" << m_variant_id << "," << "\"" << (*it).c_str() << "\"" << ")";
+
+		if(!db->insert_multiple("INSERT INTO dbg_filename (variant_id, path) VALUES ", sql.str().c_str())){
+			LOG << "Can not import filename!"<< endl;
+		}
+	}
+	return true;
+}
+
+bool ElfImporter::import_mapping(std::string fileName) {
+
+	std::list<addrToLine> mapping;
+	if (!dwReader.read_mapping(fileName, mapping)) {
+		return false;
+	}
+
+	while (!mapping.empty())
+	{
+		struct addrToLine temp_addrToLine;
+		temp_addrToLine = mapping.front();
+
+		std::stringstream ss;
+		ss << "SELECT file_id FROM dbg_filename WHERE path = " << "\"" << temp_addrToLine.lineSource << "\"";
+
+		MYSQL_RES *res = db->query(ss.str().c_str(), true);
+		MYSQL_ROW row;
+		row = mysql_fetch_row(res);
+
+		// INSERT group entry
+		std::stringstream sql;
+		sql << "(" << m_variant_id << "," << temp_addrToLine.absoluteAddr << "," << temp_addrToLine.lineNumber << ",";
+		if(row != NULL) {
+			sql << row[0] << ")";
+		} else {
+			sql << -1 << ")";
+		}
+
+		//ToDo: Skip duplicated entrys with ON DUPLICATE KEY UPDATE
+		if(!db->insert_multiple("INSERT IGNORE INTO dbg_mapping (variant_id, instr_absolute, linenumber, file_id) VALUES ", sql.str().c_str())){
+			LOG << "Can not import line number information!" << endl;;
+		}
+
+		mapping.pop_front();
+	}
+
+	return true;
+}
 
 bool ElfImporter::clear_database() {
+	CommandLine &cmd = CommandLine::Inst();
 	std::stringstream ss;
+	bool ret = true;
+
+	ss.str("");
 	ss << "DELETE FROM objdump WHERE variant_id = " << m_variant_id;
 
-	bool ret = db->query(ss.str().c_str()) == 0 ? false : true;
+	if (ret) {
+		ret = db->query(ss.str().c_str()) == 0 ? false : true;
+	}
 	LOG << "deleted " << db->affected_rows() << " rows from objdump table" << std::endl;
+
+
+	//ToDo: Reset auto increment value to 1
+	if (cmd[SOURCECODE]) {
+		ss.str("");
+		ss << "DELETE FROM dbg_source WHERE variant_id = " << m_variant_id;
+
+		if (ret) {
+			ret = db->query(ss.str().c_str()) == 0 ? false : true;
+		}
+		LOG << "deleted " << db->affected_rows() << " rows from dbg_source table" << std::endl;
+
+		ss.str("");
+		ss << "DELETE FROM dbg_filename WHERE variant_id = " << m_variant_id;
+
+		if (ret) {
+			ret = db->query(ss.str().c_str()) == 0 ? false : true;
+		}
+		LOG << "deleted " << db->affected_rows() << " rows from dbg_source table" << std::endl;
+	}
+
+	//ToDo: Reset auto increment value to 1
+	if (cmd[DEBUGINFO]) {
+		ss.str("");
+		ss << "DELETE FROM dbg_mapping WHERE variant_id = " << m_variant_id;
+
+		if (ret) {
+			ret = db->query(ss.str().c_str()) == 0 ? false : true;
+		}
+		LOG << "deleted " << db->affected_rows() << " rows from source table" << std::endl;
+	}
+
 	return ret;
 }
 

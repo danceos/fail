@@ -8,6 +8,8 @@ Required for Fail*:
  - libprotobuf-dev
  - libpcl1-dev
  - libboost-thread-dev
+ - libdwarf
+ - libelf
  - protobuf-compiler
  - cmake 2.8.2 (2.8.11 preferred)
  - cmake-curses-gui

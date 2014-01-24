@@ -11,6 +11,8 @@ set(SRCS
  Demangler.cc
  Disassembler.hpp
  Disassembler.cc
+ DwarfReader.cc
+ DwarfReader.hpp
  elfinfo/elfinfo.cc
  elfinfo/elfinfo.h
  gzstream/gzstream.C
@@ -65,7 +67,7 @@ mark_as_advanced(FAIL_OBJDUMP)
 
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
-target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} ${ZLIB_LIBRARIES})
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} ${ZLIB_LIBRARIES} dwarf elf)
 
 option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 preferred, for 3.1 and 3.2 read doc/how-to-build.txt)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
