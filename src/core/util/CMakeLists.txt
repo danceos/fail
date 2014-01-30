@@ -37,8 +37,8 @@ find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# required by Synchronized*.cc:
-find_package(Boost 1.42 COMPONENTS thread regex system REQUIRED)
+# required by Synchronized*.cc, MemoryMap.* (needs icl, which came with 1.46):
+find_package(Boost 1.46 COMPONENTS thread regex system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
