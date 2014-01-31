@@ -76,7 +76,6 @@ info: action=ignore
 debug: action=ignore
 pass: action=ignore
 debugger_log: -
-com1: enabled=1, mode=file, dev=serial.out
 parport1: enabled=0
 vga_update_interval: 300000
 keyboard_serial_delay: 250
