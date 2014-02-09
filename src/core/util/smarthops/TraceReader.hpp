@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 
+#include "sal/SALConfig.hpp"
+
 #include "../ProtoStream.hpp"
 #include "comm/TracePlugin.pb.h"
 
@@ -21,7 +23,6 @@ typedef enum {
 	ACCESS_CHECKPOINT,
 } mem_access_type_e;
 
-typedef uint32_t address_t;
 typedef uint32_t trace_pos_t;
 typedef std::pair<address_t, mem_access_type_e> trace_event_tuple_t;
 
