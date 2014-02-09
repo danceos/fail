@@ -37,9 +37,12 @@ bool MemoryMap::writeToFile(char const * const filename)
 		return false;
 	}
 
-	for (iterator it = begin(); it != end(); ++it) {
-		file << *it << "\t1\n";
+#ifndef __puma
+	for (address_set::iterator it = as.begin();
+		it != as.end(); ++it) {
+		file << it->lower() << " " << (it->upper() - it->lower() + 1) << "\n";
 	}
+#endif
 
 	return true;
 }

@@ -37,8 +37,8 @@ find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# required by Synchronized*.cc:
-find_package(Boost 1.42 COMPONENTS thread regex system REQUIRED)
+# required by Synchronized*.cc, MemoryMap.* (needs icl, which came with 1.46):
+find_package(Boost 1.46 COMPONENTS thread regex system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -74,3 +74,7 @@ if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)
 
+### Tests
+add_executable(memorymap-test testing/memorymap-test.cc)
+target_link_libraries(memorymap-test fail-util)
+add_test(NAME memorymap-test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/testing COMMAND memorymap-test)
