@@ -12,7 +12,6 @@
 #include "WatchpointManagerSlice.ah"    // slice class "WatchpointManagerSlice"
 #include "WatchpointControllerSlice.ah" // slice class "WatchpointControllerSlice"
 #include "../ListenerManager.hpp"
-#include "../Listener.hpp"
 #include "WatchpointBuffer.hpp"
 #include "../SALInst.hpp"
 

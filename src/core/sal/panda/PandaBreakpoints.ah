@@ -6,7 +6,6 @@
 
 #if defined(BUILD_PANDA) && defined(CONFIG_EVENT_BREAKPOINTS)
 
-#include "../SALInst.hpp"
 #include "../../../debuggers/openocd/openocd_wrapper.hpp"
 
 aspect PandaBreakpoints
