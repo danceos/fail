@@ -11,7 +11,6 @@
 class GenericTracing : public fail::ExperimentFlow {
 	std::string start_symbol;
 	std::string stop_symbol;
-	std::string save_symbol;
 
 	std::string state_file;
 	std::string trace_file;

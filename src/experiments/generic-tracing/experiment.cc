@@ -31,8 +31,10 @@ void  GenericTracing::parseOptions() {
 		"-s,--start-symbol \tELF symbol to start tracing (default: main)");
 	CommandLine::option_handle STOP_SYMBOL	= cmd.addOption("e", "end-symbol", Arg::Required,
 		"-e,--end-symbol \tELF symbol to end tracing");
+	// only there for backwards compatibility; remove at some point
 	CommandLine::option_handle SAVE_SYMBOL	= cmd.addOption("S", "save-symbol", Arg::Required,
-		"-S,--save-symbol \tELF symbol to save the state of the machine (default: main)\n");
+		"-S,--save-symbol \tELF symbol to save the state of the machine "
+		"(exists for backward compatibility, must be identical to --start-symbol if used)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
 		"-f,--state-file \tFile/dir to save the state to (default: state)");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
@@ -82,10 +84,14 @@ void  GenericTracing::parseOptions() {
 		exit(EXIT_FAILURE);
 	}
 
+	// only there for backwards compatibility; remove at some point
 	if (cmd[SAVE_SYMBOL]) {
-		save_symbol = std::string(cmd[SAVE_SYMBOL].first()->arg);
-	} else {
-		save_symbol = "main";
+		if (std::string(cmd[SAVE_SYMBOL].first()->arg) != start_symbol) {
+			m_log << "Save symbol (-S,--save-symbol) must be identical to start symbol (-s,--start-symbol)!" << std::endl;
+			exit(EXIT_FAILURE);
+		} else {
+			m_log << "(Using -S,--save-symbol is deprecated)" << std::endl;
+		}
 	}
 
 	if (cmd[STATE_FILE]) {
@@ -168,10 +174,8 @@ void  GenericTracing::parseOptions() {
 
 	assert(m_elf->getSymbol(start_symbol).isValid());
 	assert(m_elf->getSymbol(stop_symbol).isValid());
-	assert(m_elf->getSymbol(save_symbol).isValid());
 
-	m_log << "start symbol: " << start_symbol << " 0x" << std::hex << m_elf->getSymbol(start_symbol).getAddress() << std::endl;
-	m_log << "save symbol: "  << save_symbol  << " 0x" << std::hex << m_elf->getSymbol(save_symbol).getAddress() << std::endl;
+	m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << m_elf->getSymbol(start_symbol).getAddress() << std::endl;
 	m_log << "stop symbol: "  << stop_symbol  << " 0x" << std::hex << m_elf->getSymbol(stop_symbol).getAddress() << std::endl;
 
 	m_log << "state file: "	  << state_file		  << std::endl;
@@ -184,13 +188,16 @@ bool GenericTracing::run()
 	parseOptions();
 
 	BPSingleListener l_start_symbol(m_elf->getSymbol(start_symbol).getAddress());
-	BPSingleListener l_save_symbol (m_elf->getSymbol(save_symbol).getAddress());
 	BPSingleListener l_stop_symbol (m_elf->getSymbol(stop_symbol).getAddress());
 
 	////////////////////////////////////////////////////////////////
-	// STEP 1: run until interesting function starts, start the tracing
+	// STEP 1: run until interesting function starts, save, and start tracing
 	simulator.addListenerAndResume(&l_start_symbol);
-	m_log << start_symbol << " reached, start tracing" << std::endl;
+
+	m_log << start_symbol << " reached, save ..." << std::endl;
+	simulator.save(state_file);
+
+	m_log << "... and start tracing" << std::endl;
 
 	// restrict memory access logging to injection target
 	TracingPlugin tp;
@@ -212,20 +219,12 @@ bool GenericTracing::run()
 	simulator.addFlow(&tp);
 
 	////////////////////////////////////////////////////////////////
-	// STEP 2: continue to the save point, and save state
-	if (start_symbol != save_symbol) {
-		simulator.addListenerAndResume(&l_save_symbol);
-	}
-	m_log << start_symbol << " reached, save state" << std::endl;
-	simulator.save(state_file);
-
-	////////////////////////////////////////////////////////////////
-	// Step 3: Continue to the stop point
+	// Step 2: Continue to the stop point
 	simulator.addListener(&l_stop_symbol);
 	simulator.resume();
 
 	////////////////////////////////////////////////////////////////
-	// Step 4: tear down the tracing
+	// Step 3: tear down the tracing
 
 	simulator.removeFlow(&tp);
 	// serialize trace to file
