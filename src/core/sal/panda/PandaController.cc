@@ -12,7 +12,7 @@
 	#error Firing interrupts not implemented for Pandaboard
 #endif
 
-#if defined(CONFIG_SR_REBOOT) || defined(CONFIG_SR_RESTORE) || defined(CONFIG_SR_SAVE)
+#if defined(CONFIG_SR_RESTORE) || defined(CONFIG_SR_SAVE)
 	#error Save/Restore is not yet implemented for Pandaboard
 #endif
 
