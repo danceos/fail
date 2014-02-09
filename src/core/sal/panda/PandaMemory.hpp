@@ -1,5 +1,5 @@
 #ifndef __PANDA_MEMORY_HPP__
-  #define __PANDA_MEMORY_HPP__
+#define __PANDA_MEMORY_HPP__
 
 #include "../Memory.hpp"
 
@@ -19,7 +19,7 @@ public:
 	 * Constructs a new MemoryManager object and initializes
 	 * it's attributes appropriately.
 	 */
-	PandaMemoryManager() : MemoryManager() {  }
+	PandaMemoryManager() : MemoryManager() { }
 	/**
 	 * Retrieves the size of the available simulated memory.
 	 * @return the size of the memory pool in bytes

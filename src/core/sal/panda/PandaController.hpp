@@ -1,5 +1,5 @@
 #ifndef __PANDA_CONTROLLER_HPP__
-  #define __PANDA_CONTROLLER_HPP__
+#define __PANDA_CONTROLLER_HPP__
 
 #include <string>
 #include <cassert>

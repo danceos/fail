@@ -74,7 +74,7 @@ ResultCollector::addResult(std::vector<result_tuple >& res, unsigned int costs)
 		if (ps) {
 			InjectionPointMessage hc;
 			hc.set_costs(costs);
-            hc.set_target_trace_position(res.back().second);
+			hc.set_target_trace_position(res.back().second);
 			// If checkpoint at beginning of hop-chain, add its id to InjectionPointMessage
 			std::vector<result_tuple >::iterator it_hop = res.begin();
 			if (it_hop != res.end() && it_hop->first.second == ACCESS_CHECKPOINT) {
@@ -82,7 +82,7 @@ ResultCollector::addResult(std::vector<result_tuple >& res, unsigned int costs)
 				it_hop++;
 			}
 
-			for(;it_hop != res.end();
+			for (; it_hop != res.end();
 				it_hop++) {
 				InjectionPointMessage_Hops *hop = hc.add_hops();
 				hop->set_address(it_hop->first.first);
@@ -111,7 +111,7 @@ ResultCollector::addResult(std::vector<result_tuple >& res, unsigned int costs)
 			}
 			ps->writeMessage(&hc);
 		} else {
-			for(std::vector<result_tuple >::iterator it_hop = res.begin();
+			for (std::vector<result_tuple >::iterator it_hop = res.begin();
 					it_hop != res.end();
 					it_hop++) {
 				address_t add = it_hop->first.first;

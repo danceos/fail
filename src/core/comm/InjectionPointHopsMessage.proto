@@ -2,18 +2,18 @@ message InjectionPointMessage {
 	// Costs of the hop chain on the PandaBoard
 	// ToDo: Could be eliminated, but it is nice for evaluation
 	optional uint32 costs = 3;
-	
+
 	// If checkpoint must be used for this hop chain, id is set properly
 	optional uint32 checkpoint_id = 1;
 
-    // If we need to knwo the target dynamic instruction offset,
-    // here it is
-    optional uint32 target_trace_position = 4; 
+	// If we need to know the target dynamic instruction offset,
+	// here it is
+	optional uint32 target_trace_position = 4;
 
 
-	// Repeated groups can't be defined as notempty, so a manual
-	// non-empty check is required at usage 
-	
+	// Repeated groups can't be defined as non-empty, so a manual
+	// non-empty check is required at usage
+
 	// As we assume hops to always watch addresses of length 1, we
 	// don't encode the length in here
 	repeated group Hops = 2 {

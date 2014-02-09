@@ -14,7 +14,7 @@ public:
 };
 
 class LraSimpleCampaign : public fail::DatabaseCampaign {
-	virtual const google::protobuf::Descriptor * cb_result_message() 
+	virtual const google::protobuf::Descriptor * cb_result_message()
 	{ return google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("LraSimpleProtoMsg"); }
 
 	virtual void cb_send_pilot(DatabaseCampaignMessage pilot);

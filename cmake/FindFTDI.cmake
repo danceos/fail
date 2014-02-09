@@ -1,7 +1,7 @@
 # Find FTDI library
 # Defines:
 #  FTDI_FOUND
-#  FTDI_INCLUDE_DIR 
+#  FTDI_INCLUDE_DIR
 #  FTDI_LIBRARY
 #
 
@@ -13,7 +13,7 @@ FIND_LIBRARY(FTDI_LIBRARY NAMES ftdi
 	ENV LD_LIBRARY_PATH
 )
 
-# handle the QUIETLY and REQUIRED arguments and set FTDI_FOUND to TRUE if 
+# handle the QUIETLY and REQUIRED arguments and set FTDI_FOUND to TRUE if
 # all listed variables are TRUE
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(FTDI DEFAULT_MSG FTDI_LIBRARY FTDI_INCLUDE_DIR)

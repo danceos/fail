@@ -1,5 +1,5 @@
 #ifndef __PANDA_LISTENER_HPP__
-  #define __PANDA_LISTENER_HPP__
+#define __PANDA_LISTENER_HPP__
 
 namespace fail {
 

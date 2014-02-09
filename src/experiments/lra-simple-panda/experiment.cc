@@ -54,7 +54,6 @@ int32_t correct_result[100] = {
 		 0, 0, 0, 0
 };
 
-
 // ToDo: Move this functionality to SimulatorController
 bool LRASimplePandaExperiment::navigateToInjectionPoint(ConcreteInjectionPoint &ip) {
 	Logger log_nav("navigator", false);
@@ -66,10 +65,9 @@ bool LRASimplePandaExperiment::navigateToInjectionPoint(ConcreteInjectionPoint &
 	if (ipm.has_checkpoint_id()) {
 		// ToDo: Load CP state!
 
-		log_nav << "FATAL ERROR: CPs not yet implemented!"  << endl;
+		log_nav << "FATAL ERROR: CPs not yet implemented!" << endl;
 		simulator.terminate(1);
 	}
-
 
 	log_nav << "Navigating to next instruction at navigational costs of " << ipm.costs() << endl;
 	log_nav << "Length of hop-chain: " << ipm.hops_size() << endl;
@@ -110,7 +108,6 @@ bool LRASimplePandaExperiment::navigateToInjectionPoint(ConcreteInjectionPoint &
 			log_nav << "FATAL ERROR: Unexpected event while navigating!" << endl;
 			simulator.terminate(1);
 		}
-
 	}
 #else
 	// Step nav
@@ -195,7 +192,7 @@ bool LRASimplePandaExperiment::run()
 	while (true) {
 		logger << "asking jobserver for parameters. Undone: "<<jobClient->getNumberOfUndoneJobs() << endl;
 		LraSimpleExperimentData param;
-		if(!jobClient->getParam(param)){
+		if (!jobClient->getParam(param)) {
 			logger << "Dying." << endl; // We were told to die.
 			simulator.terminate(1);
 		}
@@ -203,17 +200,17 @@ bool LRASimplePandaExperiment::run()
 		logger << "New param" << param.msg.DebugString() << endl;
 
 		// Get input data from	Jobserver
-		unsigned  injection_instr = param.msg.fsppilot().injection_instr();
+		unsigned injection_instr = param.msg.fsppilot().injection_instr();
 		address_t data_address = param.msg.fsppilot().data_address();
 		// unsigned data_width = param.msg.fsppilot().data_width();
 		ConcreteInjectionPoint ip;
 		ip.parseFromCampaignMessage(param.msg.fsppilot());
 
-        for (unsigned experiment_id = 0; experiment_id < LRASP_NUM_EXP_PER_PILOT; ++experiment_id) {
-        	LraSimpleProtoMsg_Result *result = param.msg.add_result();
+		for (unsigned experiment_id = 0; experiment_id < LRASP_NUM_EXP_PER_PILOT; ++experiment_id) {
+			LraSimpleProtoMsg_Result *result = param.msg.add_result();
 			executed_jobs ++;
 
-        	WallclockTimer timer;
+			WallclockTimer timer;
 			timer.startTimer();
 
 			/********************
@@ -254,7 +251,6 @@ bool LRASimplePandaExperiment::run()
 
 			// Alternatively for single-bit-flips:
 			// data ^= 1 << experiment_id;
-
 
 			logger << "Injection bitflips at address " << hex << data_address << dec << endl;
 
@@ -321,7 +317,7 @@ bool LRASimplePandaExperiment::run()
 			BaseListener* ev = simulator.resume();
 
 			if (ev == &ev_timeout) {
-				logger <<  "Timeout!" << endl;
+				logger << "Timeout!" << endl;
 				result->set_resulttype(result->ERR_TIMEOUT);
 			} else if (ev == &ev_trap) {
 				logger << "Trap!" << endl;
@@ -332,7 +328,7 @@ bool LRASimplePandaExperiment::run()
 					ev == &ev_unauth_mem_acc_4) {
 
 				result->set_resulttype(result->ERR_OUTSIDE_TEXT);
-				logger << hex << "Unauthorized memory access (" << ((((MemAccessListener*)ev)->getTriggerAccessType() == fail::MemAccessEvent::MEM_READ) ? "R" : "W")  <<
+				logger << hex << "Unauthorized memory access (" << ((((MemAccessListener*)ev)->getTriggerAccessType() == fail::MemAccessEvent::MEM_READ) ? "R" : "W") <<
 						") at instruction " << ((MemAccessListener*)ev)->getTriggerInstructionPointer() << " access address: " <<
 						((MemAccessListener*)ev)->getTriggerAddress() << dec << endl;
 			} else if (ev == &ev_func_end) {
@@ -357,12 +353,12 @@ bool LRASimplePandaExperiment::run()
 
 			result->set_experiment_number(executed_jobs);
 
-            simulator.clearListeners();
-        }
+			simulator.clearListeners();
+		}
 
-        jobClient->sendResult(param);
-        logger << param.debugString();
-    }
+		jobClient->sendResult(param);
+		logger << param.debugString();
+	}
 
 	logger << "jobClient.getNumberOfUndoneJobs() = " << jobClient->getNumberOfUndoneJobs() << "executed_jobs = " << executed_jobs << endl;
 

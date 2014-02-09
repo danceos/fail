@@ -27,9 +27,9 @@ if(BUILD_CONVERT_TRACE)
 endif(BUILD_CONVERT_TRACE)
 
 if(BUILD_COMPUTE_HOPS)
-      add_subdirectory(compute-hops)
+	add_subdirectory(compute-hops)
 endif(BUILD_COMPUTE_HOPS)
 
 if(BUILD_DUMP_HOPS)
-      add_subdirectory(dump-hops)
+	add_subdirectory(dump-hops)
 endif(BUILD_DUMP_HOPS)

@@ -45,7 +45,7 @@ public:
 		m_checkpoint_count(1),
 		m_it_mean_costs(0),
 		m_max_costs(0),
-		ps(0){}
+		ps(0) {}
 
 	void
 	addResult(std::vector<result_tuple >& res, unsigned int costs);
@@ -87,5 +87,3 @@ private:
 };
 
 #endif /* STATISTICSCOLLECTOR_HPP_ */
-
-

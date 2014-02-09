@@ -71,7 +71,7 @@ bool SmartAlgorithm::calculateAllHops(TraceReader& trace)
 			continue;
 		}
 
-		// Deltion of unnecessary hops
+		// Deletion of unnecessary hops
 
 		/*
 		 *   |----------------|

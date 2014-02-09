@@ -1,5 +1,5 @@
 #ifndef __PANDA_TIMER_AH__
-  #define __PANDA_TIMER_AH__
+#define __PANDA_TIMER_AH__
 
 #include "config/VariantConfig.hpp"
 #include "config/FailConfig.hpp"
@@ -10,40 +10,42 @@
 #include "PandaListener.hpp"
 
 aspect PandaTimer {
-	advice "fail::TimerListener" : slice class {
-	public:
-		bool onAddition()
-		{
-			// Register the timer listener in the Bochs simulator:
-			timer_id_t id = m_registerTimer(this);
-			if (id == -1) {
-				setId(INVALID_TIMER);
-				return false; // unable to register the timer (error in Bochs' function call)
-			}
-			setId(id);
-			return true;
+
+advice "fail::TimerListener" : slice class {
+public:
+	bool onAddition()
+	{
+		// Register the timer listener in the Bochs simulator:
+		timer_id_t id = m_registerTimer(this);
+		if (id == -1) {
+			setId(INVALID_TIMER);
+			return false; // unable to register the timer (error in Bochs' function call)
 		}
-		void onDeletion()
-		{
-			// Unregister the time listener:
-			m_unregisterTimer(this);
-		}
-	private:
-		timer_id_t m_registerTimer(TimerListener* pev)
-		{
-			assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
-			return static_cast<timer_id_t>(
-				oocdw_register_timer(pev, fail::onTimerTrigger,
-				    pev->getTimeout() /*timeout in microseconds*/,
-				    true /*start immediately*/, "Fail*: PandaController"/*name*/));
-		}
-		bool m_unregisterTimer(TimerListener* pev)
-		{
-			assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
-			oocdw_deactivate_timer(static_cast<unsigned>(pev->getId()));
-			return oocdw_unregisterTimer(static_cast<unsigned>(pev->getId()));
-		}
-	};
+		setId(id);
+		return true;
+	}
+	void onDeletion()
+	{
+		// Unregister the time listener:
+		m_unregisterTimer(this);
+	}
+private:
+	timer_id_t m_registerTimer(TimerListener* pev)
+	{
+		assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
+		return static_cast<timer_id_t>(
+			oocdw_register_timer(pev, fail::onTimerTrigger,
+				pev->getTimeout() /*timeout in microseconds*/,
+				true /*start immediately*/, "Fail*: PandaController"/*name*/));
+	}
+	bool m_unregisterTimer(TimerListener* pev)
+	{
+		assert(pev != NULL && "FATAL ERROR: TimerListener object ptr cannot be NULL!");
+		oocdw_deactivate_timer(static_cast<unsigned>(pev->getId()));
+		return oocdw_unregisterTimer(static_cast<unsigned>(pev->getId()));
+	}
+};
+
 };
 
 #endif // BUILD_PANDA && CONFIG_EVENT_BREAKPOINTS

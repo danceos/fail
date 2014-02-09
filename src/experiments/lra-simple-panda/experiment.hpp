@@ -1,6 +1,6 @@
 #ifndef __LRA_SIMPLE_PANDA_EXPERIMENT_HPP__
-  #define __LRA_SIMPLE_PANDA_EXPERIMENT_HPP__
-  
+#define __LRA_SIMPLE_PANDA_EXPERIMENT_HPP__
+
 #include "efw/ExperimentFlow.hpp"
 #include "cpn/InjectionPoint.hpp"
 #include "util/ElfReader.hpp"

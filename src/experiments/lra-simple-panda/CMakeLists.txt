@@ -5,7 +5,7 @@ configure_file(../instantiate-experiment.ah.in
 )
 
 ## Setup desired protobuf descriptions HERE ##
-set(MY_PROTOS 
+set(MY_PROTOS
 	lra_simple.proto
 )
 

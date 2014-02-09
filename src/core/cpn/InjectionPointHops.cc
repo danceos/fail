@@ -6,10 +6,10 @@
 
 namespace fail {
 
-
 InjectionPointHops::~InjectionPointHops() {
-	if (m_initialized)
+	if (m_initialized) {
 		delete m_sa;
+	}
 }
 
 void InjectionPointHops::init()
@@ -17,11 +17,11 @@ void InjectionPointHops::init()
 	m_sa = new SmartHops();
 
 	char * elfpath = getenv("FAIL_TRACE_PATH");
-	if(elfpath == NULL){
+	if (elfpath == NULL) {
 		m_log << "FAIL_TRACE_PATH not set :(" << std::endl;
 		exit(-1);
-	}else{
-		m_sa->init((const char*)elfpath);
+	} else {
+		m_sa->init((const char*) elfpath);
 	}
 
 	m_initialized = true;
@@ -74,7 +74,7 @@ void InjectionPointHops::parseFromInjectionInstr(unsigned instr1, unsigned instr
 		if (!m_sa->calculateFollowingHop(m, new_curr_instr2)) {
 			m_log << "FATAL ERROR: Trace does not contain enough instructions (no instruction with offset "
 					<< new_curr_instr2 << ")" << std::endl;
-					exit(-1);
+			exit(-1);
 		}
 
 		m_results.push_back(m);
@@ -93,7 +93,7 @@ void InjectionPointHops::parseFromInjectionInstr(unsigned instr1, unsigned instr
 	if (search == search_end) {
 		m_ip = *search;
 	} else {
-		for(;search != search_end; search++) {
+		for (;search != search_end; search++) {
 			if (!search->has_costs()) {
 				m_log << "FATAL ERROR: Costs must be delivered in order to calculate minimum costs" << std::endl;
 				exit(-1);

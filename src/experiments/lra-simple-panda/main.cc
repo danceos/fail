@@ -8,8 +8,9 @@
 int main(int argc, char **argv)
 {
 	fail::CommandLine &cmd = fail::CommandLine::Inst();
-	for (int i = 1; i < argc; ++i)
+	for (int i = 1; i < argc; ++i) {
 		cmd.add_args(argv[i]);
+	}
 
 	LraSimpleCampaign c;
 	if (fail::campaignmanager.runCampaign(&c)) {

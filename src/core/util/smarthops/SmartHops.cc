@@ -31,7 +31,7 @@ void SmartHops::convertToIPM(std::vector<result_tuple > &result, unsigned costs,
 	}
 	ipm.set_costs(costs);
 
-	for(;it_hop != result.end();
+	for (; it_hop != result.end();
 		it_hop++) {
 		InjectionPointMessage_Hops *hop = ipm.add_hops();
 		hop->set_address(it_hop->first.first);
@@ -116,7 +116,7 @@ bool SmartHops::calculateFollowingHop(InjectionPointMessage &ip, unsigned instru
 			continue;
 		}
 
-		// Deltion of unnecessary hops
+		// Deletion of unnecessary hops
 
 		/*
 		 *   |----------------|

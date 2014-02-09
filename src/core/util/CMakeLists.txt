@@ -66,8 +66,8 @@ mark_as_advanced(FAIL_OBJDUMP)
 # compile smarthops calculator if needed
 
 if(CONFIG_INJECTIONPOINT_HOPS)
-    add_subdirectory(smarthops)
-    set(ADDITIONAL_LIBS fail-smarthops)
+  add_subdirectory(smarthops)
+  set(ADDITIONAL_LIBS fail-smarthops)
 endif(CONFIG_INJECTIONPOINT_HOPS)
 
 add_library(fail-util ${SRCS})
@@ -78,4 +78,3 @@ option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 pref
 if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)
-

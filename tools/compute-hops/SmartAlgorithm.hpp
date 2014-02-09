@@ -21,19 +21,19 @@ public:
 	SmartAlgorithm(ResultCollector *rc) : BasicAlgorithm(rc), m_next_cp_id(0) {}
 	virtual ~SmartAlgorithm() {}
 
-    bool calculateAllHops(TraceReader& trace);
+	bool calculateAllHops(TraceReader& trace);
 
 private:
 
-    bool
+	bool
 	occurenceInPosIntervall(unsigned int intervall_low,
 							unsigned int intervall_high,
 							address_t add,
 							mem_access_type_e acc);
 
-    std::map<trace_event_tuple_t, trace_pos_t> m_last_positions;
-    std::vector<checkpoint_tuple_t > m_checkpoints;
-    unsigned int m_next_cp_id;
+	std::map<trace_event_tuple_t, trace_pos_t> m_last_positions;
+	std::vector<checkpoint_tuple_t > m_checkpoints;
+	unsigned int m_next_cp_id;
 };
 
 #endif // SMART_ALGORITHM__HPP

@@ -5,7 +5,7 @@ set(SRCS
 )
 
 if(NOT CONFIG_INJECTIONPOINT_HOPS)
-    message (FATAL_ERROR "For building the compute-hops tool you need to enable CONFIG_INJECTIONPOINT_HOPS")
+  message (FATAL_ERROR "For building the compute-hops tool you need to enable CONFIG_INJECTIONPOINT_HOPS")
 endif()
 
 add_executable(compute-hops main.cc ${SRCS})

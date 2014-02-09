@@ -30,8 +30,8 @@ public:
 	// ToDo: If you want to use checkoints as additional hop-chain-element, you may switch
 	// m_use_checkpoints to true, but there will be additional changes needed for this to fully work.
 	// The sal must, for example, generate CPs at the given positions
-	SmartHops() : m_trace_pos(0), m_costs(0),  m_next_cp_id(0), m_log("SmartHops", false), m_use_watchpoints(true),
-		m_use_weights(true), m_use_checkpoints(false), m_cp_thresh(0), m_cost_cp(0), m_rollback_thresh(0){}
+	SmartHops() : m_trace_pos(0), m_costs(0), m_next_cp_id(0), m_log("SmartHops", false), m_use_watchpoints(true),
+		m_use_weights(true), m_use_checkpoints(false), m_cp_thresh(0), m_cost_cp(0), m_rollback_thresh(0) {}
 
 	/**
 	 * Initializes the used TraceReader with given trace file path
@@ -44,24 +44,24 @@ public:
 	 * @param filename Path to the trace file
 	 * @returns \c true if calculation succeeded and \c false if it did not
 	 */
-    bool calculateFollowingHop(InjectionPointMessage &ip, unsigned instruction_offset);
+	bool calculateFollowingHop(InjectionPointMessage &ip, unsigned instruction_offset);
 private:
 
 	/**
-	 * Converts internal representation of a hop chain to a 
+	 * Converts internal representation of a hop chain to a
 	 * InjectionPointMessage. The delivered InjectionPointMessage is
 	 * cleared before parsing.
 	 * @param result Internal representation of a hop chain
 	 * @param costs Costs of the hop chain (extracted from cost model)
 	 * @param ipm InjectionPointMessage to which the hop chain is parsed
 	 */
-    void convertToIPM(std::vector<result_tuple > &result, unsigned costs, InjectionPointMessage &ipm);
+	void convertToIPM(std::vector<result_tuple > &result, unsigned costs, InjectionPointMessage &ipm);
 
 	unsigned int m_trace_pos;
 	unsigned int m_costs;
 
-    TraceReader m_trace_reader;
-    unsigned int m_next_cp_id;
+	TraceReader m_trace_reader;
+	unsigned int m_next_cp_id;
 	Logger m_log;
 
 	bool m_use_watchpoints;
@@ -77,10 +77,10 @@ private:
 	unsigned int m_rollback_thresh;
 
 
-    std::map<trace_event_tuple_t, trace_pos_t> m_last_positions;
-    std::vector<checkpoint_tuple_t > m_checkpoints;
+	std::map<trace_event_tuple_t, trace_pos_t> m_last_positions;
+	std::vector<checkpoint_tuple_t > m_checkpoints;
 
-    std::vector<trace_event_tuple_t > m_trace_events;
+	std::vector<trace_event_tuple_t > m_trace_events;
 	std::vector<result_tuple > m_result;
 };
 

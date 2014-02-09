@@ -12,7 +12,7 @@ set(PROTOS
 )
 
 ## Set concrete implementation of InjectionPointMessage
-# ToDo: Define seperate symbol, so it can also be used in other build types
+# TODO: Define separate symbol, so it can also be used in other build types
 if(CONFIG_INJECTIONPOINT_HOPS)
     set(PROTOS ${PROTOS} InjectionPointHopsMessage.proto)
     set(CONCRETE_INJECTION_POINT InjectionPointHopsMessage.proto)

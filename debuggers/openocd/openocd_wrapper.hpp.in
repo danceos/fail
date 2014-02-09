@@ -8,17 +8,17 @@
 #define OOCD_CONF_FILES_PATH "@OOCD_CONF_FILES_PATH@"
 
 enum halt_type {
-    HALT_TYPE_BP,
-    HALT_TYPE_WP_READWRITE,
-    HALT_TYPE_WP_READ,
-    HALT_TYPE_WP_WRITE,
-    HALT_TYPE_SINGLESTEP,
+	HALT_TYPE_BP,
+	HALT_TYPE_WP_READWRITE,
+	HALT_TYPE_WP_READ,
+	HALT_TYPE_WP_WRITE,
+	HALT_TYPE_SINGLESTEP,
 };
 
 struct halt_condition {
-    enum halt_type type;
-    uint32_t address;
-    uint32_t addr_len;
+	enum halt_type type;
+	uint32_t address;
+	uint32_t addr_len;
 };
 
 /*
@@ -48,7 +48,7 @@ void oocdw_write_reg(uint32_t reg_num, uint32_t data);
 
 /*
  * Set a halt condition
- * 
+ *
  * Halt conditions can be Break- and Watchpoints as well as single-steps
  * @param hc Pointer to struct defining new halt condition
  */
@@ -56,7 +56,7 @@ void oocdw_set_halt_condition(struct halt_condition *hc);
 
 /*
  * Remove a halt condition
- * 
+ *
  * Halt conditions can be Break- and Watchpoints as well as single-steps
  * @param hc Pointer to struct defining to be deleted halt condition
  */
@@ -69,7 +69,7 @@ bool oocdw_halt_target(struct target *target);
 
 /*
  * Target reboot
- * 
+ *
  * The target gets reset and will be navigated to a dynamic instruction
  * right before main entry. Afterwards a new experiment can be executed.
  */
@@ -77,18 +77,18 @@ void oocdw_reboot();
 
 /*
  * Finish OpenOCD execution
- * 
+ *
  * Function will be called by simulator.terminate() and will simply
  * set a finish-flag. Afterwards a coroutine-switch must be called, so
  * the actual finishing will be done in the OpenOCD-Wrapper coroutine.
- * Before returning, another coroutine-switch is called, so the 
+ * Before returning, another coroutine-switch is called, so the
  * experiment is able to exit in desired state.
  */
 void oocdw_finish(int exCode = EXIT_SUCCESS);
 
 /*
  * Read data from pandaboard memory
- * 
+ *
  * @param address Start address of memory region to be read
  * @param chunk_size Size of chunks, which will be read
  * @param chunk_num	Number of chunks to be read
@@ -99,7 +99,7 @@ void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
 
 /*
  * Write data to pandaboard memory
- * 
+ *
  * @param address Start address of memory region to be written
  * @param chunk_size Size of chunks, which will be written
  * @param chunk_num	Number of chunks to be written
@@ -114,29 +114,29 @@ void oocdw_write_to_memory(uint32_t address, uint32_t chunk_size,
 typedef void (*p_timer_handler_t)(void *);
 /*
  * Register new timer
- * 
+ *
  * @param this_ptr This pointer for calling object method
  * @param funct Callback to call if timer expired (object method)
- * @param useconds Number of microseconds until timer expires	
+ * @param useconds Number of microseconds until timer expires
  * @param active Sets if timer is initially active
  * @param id String representation of timer
  * @returns Timer index (ID) or -1 if no timer slot left
  */
-int oocdw_register_timer(void *this_ptr, p_timer_handler_t funct, 
+int oocdw_register_timer(void *this_ptr, p_timer_handler_t funct,
 						uint64_t useconds, bool active, const char *id);
-        					
+
 /*
  * Unregister timer
- * 
- * @param timerID Timer index (ID), which defines the timer to be 
+ *
+ * @param timerID Timer index (ID), which defines the timer to be
  * 					unregistered
  */
 bool oocdw_unregisterTimer(unsigned timerID);
 
 /*
  * Deactivate timer
- * 
- * @param timerID Timer index (ID), which defines the timer to be 
+ *
+ * @param timerID Timer index (ID), which defines the timer to be
  * 					deactivated.
  */
 void oocdw_deactivate_timer(unsigned timer_index);

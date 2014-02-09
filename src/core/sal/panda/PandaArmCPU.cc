@@ -9,7 +9,7 @@ regdata_t PandaArmCPU::getRegisterContent(const Register* reg) const
 	regdata_t data;
 
 	oocdw_read_reg(reg->getId(), &data);
-	
+
 	return data;
 }
 

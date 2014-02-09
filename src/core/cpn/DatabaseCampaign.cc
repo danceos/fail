@@ -35,7 +35,7 @@ bool DatabaseCampaign::run() {
 	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
 														 "-p/--prune-method \tWhich import method to use (default: basic)");
 
-	if(!cmd.parse()) {
+	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
 		exit(-1);
 	}
@@ -82,7 +82,7 @@ bool DatabaseCampaign::run() {
 	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
 	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
 		 it != variants.end(); ++it) {
-		if(!run_variant(*it)) {
+		if (!run_variant(*it)) {
 			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
 			return false;
 		}
@@ -133,12 +133,13 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
 
-	log_send << "Found " << experiment_count << " unfinished experiments in database. (" 
+	log_send << "Found " << experiment_count << " unfinished experiments in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
 
-	// abstraction of injection point
-	// must not be initialized in loop, because hop chain calculator would loose state after loop pass
-	// and so for every hop chain it would have to begin calculating at trace instruction zero
+	// abstraction of injection point:
+	// must not be initialized in loop, because hop chain calculator would lose
+	// state after loop pass and so for every hop chain it would have to begin
+	// calculating at trace instruction zero
 	ConcreteInjectionPoint ip;
 
 	sent_pilots = 0;

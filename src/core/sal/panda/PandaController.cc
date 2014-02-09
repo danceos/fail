@@ -9,7 +9,7 @@
 #include "openocd_wrapper.hpp"
 
 #if defined(CONFIG_FIRE_INTERRUPTS)
-	#error Firing intterupts not implemented for Pandaboard
+	#error Firing interrupts not implemented for Pandaboard
 #endif
 
 #if defined(CONFIG_SR_REBOOT) || defined(CONFIG_SR_RESTORE) || defined(CONFIG_SR_SAVE)
@@ -56,16 +56,7 @@ void PandaController::onTimerTrigger(void* thisPtr)
 
 bool PandaController::save(const std::string& path)
 {
-	// ToDo (PORT): Save
-
-	/*int stat;
-
-	stat = mkdir(path.c_str(), 0777);
-	if (!(stat == 0 || errno == EEXIST)) {
-		return false;
-		// std::cout << "[FAIL] Can not create target-directory to save!" << std::endl;
-		// TODO: (Non-)Verbose-Mode? Log-level? Maybe better: use return value to indicate failure?
-	}*/
+	// TODO
 
 	return true;
 }
@@ -73,11 +64,7 @@ bool PandaController::save(const std::string& path)
 void PandaController::restore(const std::string& path)
 {
 	clearListeners();
-	/*restore_bochs_request = true;
-	BX_CPU(0)->async_event |= 1;
-	sr_path = path;*/
-
-	// ToDo (PORT): Restore
+	// TODO
 }
 
 void PandaController::reboot()

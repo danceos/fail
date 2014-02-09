@@ -1,5 +1,5 @@
 #ifndef __PANDA_ARM_CPU_HPP__
-  #define __PANDA_ARM_CPU_HPP__
+#define __PANDA_ARM_CPU_HPP__
 
 #include "../arm/ArmArchitecture.hpp"
 #include "../arm/ArmCPUState.hpp"
@@ -33,7 +33,7 @@ public:
 	 */
 	regdata_t getRegisterContent(const Register* reg) const;
 	/**
-	 * Sets the register content for the  \a current Pandaboard CPU.
+	 * Sets the register content for the \a current Pandaboard CPU.
 	 * @param reg the (initialized) register object whose content should be set
 	 * @param value the new content of the register \c reg
 	 */

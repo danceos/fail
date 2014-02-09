@@ -150,21 +150,21 @@ static std::vector<struct mem_range> mmu_watch_del_waiting_list;
 static std::vector<struct mem_range> mmu_watch;
 
 /*
- *  Timer related structures
+ * Timer related structures
  */
 #define P_MAX_TIMERS 32
 struct timer{
-    bool inUse;      			// Timer slot is in-use (currently registered).
-    uint64_t  timeToFire; 		// Time to fire next in microseconds
-    struct timeval time_begin;  // Timer value at activation of timer
-    bool active;     			// 0=inactive, 1=active.
-    p_timer_handler_t funct;  	// A callback function for when the
+	bool inUse;					// Timer slot is in-use (currently registered).
+	uint64_t timeToFire; 		// Time to fire next in microseconds
+	struct timeval time_begin;	// Timer value at activation of timer
+	bool active;				// 0=inactive, 1=active.
+	p_timer_handler_t funct;	// A callback function for when the
 								//   timer fires.
-    void *this_ptr;            	// The this-> pointer for C++ callbacks
-                            	//   has to be stored as well.
-    bool freezed;
+	void *this_ptr;				// The this-> pointer for C++ callbacks
+								//   has to be stored as well.
+	bool freezed;
 #define PMaxTimerIDLen 32
-    char id[PMaxTimerIDLen]; 	// String ID of timer.
+	char id[PMaxTimerIDLen]; 	// String ID of timer.
 };
 
 static struct timer timers[P_MAX_TIMERS];
@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
 					exit(-1);
 				}
 #else
-				if(!getHaltingWatchpoint(&halt)) {
+				if (!getHaltingWatchpoint(&halt)) {
 					LOG << "FATAL ERROR: Can't determine memory-access address of halt cause" << endl;
 					exit(-1);
 				}
@@ -687,26 +687,26 @@ int main(int argc, char *argv[])
 				// Get meta information and fire MemoryAccess event
 				int iswrite;
 				switch (halt.type) {
-					case HALT_TYPE_WP_READ:
-						iswrite = 0;
-						break;
-					case HALT_TYPE_WP_WRITE:
-						iswrite = 1;
-						break;
-					case HALT_TYPE_WP_READWRITE:
-						LOG << "We should not get a READWRITE as trigger of"
-								"a watchpoint!" << endl;
-						iswrite = 1;
-						break;
-					default:
-						LOG << "FATAL ERROR: Can't determine memory-access type of halt cause" << endl;
-						exit(-1);
-						break;
+				case HALT_TYPE_WP_READ:
+					iswrite = 0;
+					break;
+				case HALT_TYPE_WP_WRITE:
+					iswrite = 1;
+					break;
+				case HALT_TYPE_WP_READWRITE:
+					LOG << "We should not get a READWRITE as trigger of"
+							"a watchpoint!" << endl;
+					iswrite = 1;
+					break;
+				default:
+					LOG << "FATAL ERROR: Can't determine memory-access type of halt cause" << endl;
+					exit(-1);
+					break;
 				}
 
 				freeze_timers();
 				LOG << "WATCHPOINT EVENT ADDR: " << hex << halt.address << dec
-						<< " LENGTH: " << halt.addr_len  <<	" TYPE: "
+						<< " LENGTH: " << halt.addr_len << " TYPE: "
 						<< (iswrite?'W':'R') << endl;
 				fail::simulator.onMemoryAccess(NULL, halt.address, halt.addr_len, iswrite, pc);
 				unfreeze_timers();
@@ -721,7 +721,7 @@ int main(int argc, char *argv[])
 				break;
 			default:
 				LOG << "FATAL ERROR: Target halted in unexpected cpu state "
-					<< current_dr <<  endl;
+					<< current_dr << endl;
 				exit (-1);
 				break;
 			}
@@ -731,19 +731,19 @@ int main(int argc, char *argv[])
 		update_timers();
 	}
 
-    /* === FINISHING UP === */
-    unregister_all_commands(cmd_ctx, NULL);
+	/* === FINISHING UP === */
+	unregister_all_commands(cmd_ctx, NULL);
 
-    /* free commandline interface */
-    command_done(cmd_ctx);
+	/* free commandline interface */
+	command_done(cmd_ctx);
 
-    adapter_quit();
+	adapter_quit();
 
-    fclose(file);
+	fclose(file);
 
-    LOG << "finished" << endl;
+	LOG << "finished" << endl;
 
-    exit(oocdw_exCode);
+	exit(oocdw_exCode);
 }
 
 void oocdw_finish(int exCode)
@@ -758,7 +758,7 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 	assert((hc != NULL) && "No halt condition defined");
 
 
-	if (hc->type == HALT_TYPE_BP) {							/*  BREAKPOINT */
+	if (hc->type == HALT_TYPE_BP) {							/* BREAKPOINT */
 		LOG << "Adding BP " << hex << hc->address << dec << ":" << hc->addr_len << endl;
 		if (!free_breakpoints) {
 			LOG << "FATAL ERROR: No free breakpoints left" << endl;
@@ -771,13 +771,13 @@ void oocdw_set_halt_condition(struct halt_condition *hc)
 		}
 		free_breakpoints--;
 
-	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/*  SINGLE STEP */
+	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/* SINGLE STEP */
 		// Just set flag, so single step will be executed in according
 		// main loop stage
 		single_step_requested = true;
 	} else if ((hc->type == HALT_TYPE_WP_READ) ||
 				(hc->type == HALT_TYPE_WP_WRITE) ||
-				(hc->type == HALT_TYPE_WP_READWRITE)) {		/*  WATCHPOINT */
+				(hc->type == HALT_TYPE_WP_READWRITE)) {		/* WATCHPOINT */
 
 		// Use MMU for watching ?
 		if ((hc->addr_len > 4) || !free_watchpoints) {
@@ -834,17 +834,17 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 	assert((hc != NULL) && "No halt condition defined");
 
 	// Remove halt condition from pandaboard
-	if (hc->type == HALT_TYPE_BP) {							/*  BREAKPOINT */
+	if (hc->type == HALT_TYPE_BP) {							/* BREAKPOINT */
 		LOG << "Removing BP " << hex << hc->address << dec << ":"
 				<< hc->addr_len << endl;
 		breakpoint_remove(target_a9, hc->address);
 		free_breakpoints++;
-	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/*  SINGLE STEP */
+	} else if (hc->type == HALT_TYPE_SINGLESTEP) {			/* SINGLE STEP */
 		// Do nothing. Single-stepping event hits one time and
 		// extinguishes itself automatically
 	} else if ((hc->type == HALT_TYPE_WP_READWRITE) ||
 			(hc->type == HALT_TYPE_WP_READ) ||
-			(hc->type == HALT_TYPE_WP_WRITE)) {				/*  WATCHPOINT */
+			(hc->type == HALT_TYPE_WP_WRITE)) {				/* WATCHPOINT */
 
 		struct mem_range mr;
 		mr.address = hc->address;
@@ -876,7 +876,7 @@ void oocdw_delete_halt_condition(struct halt_condition *hc)
 		// Remove hardware watchpoint
 		watchpoint_remove(target_a9, hc->address);
 		free_watchpoints++;
-		LOG << hex  << "Removing WP " << hc->address  << ":" << hc->addr_len
+		LOG << hex << "Removing WP " << hc->address << ":" << hc->addr_len
 				<< ":" << ((hc->type == HALT_TYPE_WP_READ) ? "R" :
 				(hc->type == HALT_TYPE_WP_WRITE) ? "W" : "R/W") << dec << endl;
 	}
@@ -956,44 +956,44 @@ void oocdw_reboot()
 		LOG << "Rebooting device" << endl;
 		reboot_success = true;
 
-        // If target is not halted, reset will result in freeze
-        if (target_a9->state != TARGET_HALTED) {
-            if (!oocdw_halt_target(target_a9)) {
-            	reboot_success = false;
-            	if (fail_counter++ > 4) {
+		// If target is not halted, reset will result in freeze
+		if (target_a9->state != TARGET_HALTED) {
+			if (!oocdw_halt_target(target_a9)) {
+				reboot_success = false;
+				if (fail_counter++ > 4) {
 					LOG << "FATAL ERROR: Rebooting not possible" << endl;
 					exit(-1);
 				}
-            	usleep(100*1000);
-            	continue;
-            }
-        }
+				usleep(100*1000);
+				continue;
+			}
+		}
 
-        /*
-         * Clear all halt conditions
-         */
-        breakpoint_clear_target(target_a9);
-        watchpoint_clear_target(target_a9);
+		/*
+		 * Clear all halt conditions
+		 */
+		breakpoint_clear_target(target_a9);
+		watchpoint_clear_target(target_a9);
 
-        /*
-         * Reset state structures
-         */
-        free_watchpoints = 4;
-        free_breakpoints = 6;
-        mmu_recovery_needed = false;
-        mmu_watch.clear();
-        mmu_watch_add_waiting_list.clear();
-        mmu_watch_del_waiting_list.clear();
+		/*
+		 * Reset state structures
+		 */
+		free_watchpoints = 4;
+		free_breakpoints = 6;
+		mmu_recovery_needed = false;
+		mmu_watch.clear();
+		mmu_watch_add_waiting_list.clear();
+		mmu_watch_del_waiting_list.clear();
 
 
-        // Standard configuration: Sections only, all mapped
-        for (int i = 0; i < 4096; i++) {
-        	if (mmu_conf[i].type == DESCRIPTOR_PAGE) {
-        		delete[] mmu_conf[i].second_lvl_mapped;
-        		mmu_conf[i].type = DESCRIPTOR_SECTION;
-        	}
-        	mmu_conf[i].mapped = true;
-        }
+		// Standard configuration: Sections only, all mapped
+		for (int i = 0; i < 4096; i++) {
+			if (mmu_conf[i].type == DESCRIPTOR_PAGE) {
+				delete[] mmu_conf[i].second_lvl_mapped;
+				mmu_conf[i].type = DESCRIPTOR_SECTION;
+			}
+			mmu_conf[i].mapped = true;
+		}
 
 		/*
 		 * The actual reset command executed by OpenOCD jimtcl-engine
@@ -1351,7 +1351,7 @@ void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
 					uint32_t chunk_num, uint8_t *data)
 {
 	if (target_read_memory(target_a9, address, chunk_size, chunk_num, data)) {
-		LOG << "FATAL ERROR: Reading from memory failed. Addr: "  << hex
+		LOG << "FATAL ERROR: Reading from memory failed. Addr: " << hex
 				<< address << dec << " chunk-size: " << chunk_size
 				<< " chunk_num: " << chunk_num << endl;
 		exit(-1);
@@ -1757,7 +1757,7 @@ static void force_page_alignment_mem_range (std::vector<struct mem_range> &in,
 
 static bool compareByAddress(const struct mem_range &a, const struct mem_range &b)
 {
-    return a.address < b.address;
+	return a.address < b.address;
 }
 
 static void merge_mem_ranges (std::vector<struct mem_range> &in_out)
@@ -1768,7 +1768,7 @@ static void merge_mem_ranges (std::vector<struct mem_range> &in_out)
 	std::vector<struct mem_range>::iterator it, next_it;
 	it = in_out.begin();
 	next_it = it; next_it++;
-	while(it != in_out.end() && next_it != in_out.end()) {
+	while (it != in_out.end() && next_it != in_out.end()) {
 		if ((it->address + it->width) >= next_it->address) {
 			uint32_t additive_width = (next_it->address - it->address) + next_it->width;
 			if (additive_width > it->width) {
@@ -1872,7 +1872,7 @@ static bool update_mmu_watch_add()
 						first_lvl->second_lvl_mapped[i] = true;
 						descr_content = (((cand_it->index - (cand_it->index % 256)) + i) << 12) | 0x32;
 						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
-								pageTableAddress + (i  * 4),
+								pageTableAddress + (i * 4),
 								descr_content));
 					}
 					first_lvl->type = DESCRIPTOR_PAGE;
@@ -1885,7 +1885,7 @@ static bool update_mmu_watch_add()
 					if (first_lvl->second_lvl_mapped[cand_it->index % 256]) {
 						uint32_t descr_content = (cand_it->index << 12) | 0x30;
 						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
-							sym_addr_PageTableSecondLevel + (cand_it->index  * 4),
+							sym_addr_PageTableSecondLevel + (cand_it->index * 4),
 							descr_content));
 						first_lvl->second_lvl_mapped[cand_it->index % 256] = false;
 						invalidate = true;
@@ -1908,7 +1908,7 @@ static bool update_mmu_watch_add()
 				if (first_lvl->type == DESCRIPTOR_SECTION) {
 					if (first_lvl->mapped) {
 						uint32_t descr_content = (cand_it->index << 20) | 0xc00;
-						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
+						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index * 4);
 
 						buffer_for_chunked_write.push_back(
 							std::pair<uint32_t, uint32_t>(descr_addr,descr_content));
@@ -2035,7 +2035,7 @@ static bool update_mmu_watch_remove()
 					uint32_t pageTableAddress = sym_addr_PageTableSecondLevel + ((cand_it->index - (cand_it->index % 256)) * 4);
 					uint32_t descr_content = pageTableAddress | 0x1e9;
 					uint32_t target_address = sym_addr_PageTableFirstLevel + ((cand_it->index / 256) * 4);
-					LOG << "Writing to " << hex <<  target_address << dec << endl;
+					LOG << "Writing to " << hex << target_address << dec << endl;
 					oocdw_write_to_memory(target_address, 4, 1, (unsigned char*)(&descr_content), true);
 					invalidate = true;
 
@@ -2046,7 +2046,7 @@ static bool update_mmu_watch_remove()
 						first_lvl->second_lvl_mapped[i] = false;
 						descr_content = (((cand_it->index - (cand_it->index % 256)) + i) << 12) | 0x30;
 						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
-							pageTableAddress + (i  * 4),
+							pageTableAddress + (i * 4),
 							descr_content));
 					}
 					first_lvl->type = DESCRIPTOR_PAGE;
@@ -2056,7 +2056,7 @@ static bool update_mmu_watch_remove()
 					if (!first_lvl->second_lvl_mapped[cand_it->index % 256]) {
 						uint32_t descr_content = (cand_it->index << 12) | 0x32;
 						buffer_for_chunked_write.push_back(std::pair<uint32_t, uint32_t>(
-								sym_addr_PageTableSecondLevel + (cand_it->index  * 4),
+								sym_addr_PageTableSecondLevel + (cand_it->index * 4),
 								descr_content));
 						first_lvl->second_lvl_mapped[cand_it->index % 256] = true;
 					}
@@ -2078,7 +2078,7 @@ static bool update_mmu_watch_remove()
 				if (first_lvl->type == DESCRIPTOR_SECTION) {
 					if (!first_lvl->mapped) {
 						uint32_t descr_content = (cand_it->index << 20) | 0xc02;
-						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index  * 4);
+						uint32_t descr_addr = sym_addr_PageTableFirstLevel + (cand_it->index * 4);
 						LOG << "Write to " << hex << descr_addr << dec << endl;
 						oocdw_write_to_memory(descr_addr, 4, 1, (unsigned char*)(&descr_content), true);
 						LOG << "Writing entry at " << hex << descr_addr << " content: " << descr_content << dec << endl;

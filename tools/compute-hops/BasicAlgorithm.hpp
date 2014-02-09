@@ -5,19 +5,18 @@
 class ResultCollector;
 
 class BasicAlgorithm {
-    public:
-		/**
-		 *
-		 * @returns boolean value for calculation success
-		 */
-        virtual bool calculateAllHops(fail::TraceReader& trace) = 0;
+public:
+	/**
+	 *
+	 * @returns boolean value for calculation success
+	 */
+	virtual bool calculateAllHops(fail::TraceReader& trace) = 0;
 
-        BasicAlgorithm(ResultCollector *rc) {m_resultCollector = rc;}
-        virtual ~BasicAlgorithm() {}
+	BasicAlgorithm(ResultCollector *rc) { m_resultCollector = rc; }
+	virtual ~BasicAlgorithm() {}
 
-    protected:
-        ResultCollector *m_resultCollector;
+protected:
+	ResultCollector *m_resultCollector;
 };
 
 #endif // __BASIC_ALGORITHM__HPP
-

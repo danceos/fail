@@ -37,7 +37,6 @@ Logger LOG("hop-calculator", false);
 
 int main(int argc, char *argv[])
 {
-
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
 
@@ -239,7 +238,7 @@ int main(int argc, char *argv[])
 	if (cmd[CHECKPOINT_OUTPUT_FILE].count() > 0) {
 		std::string filename(cmd[CHECKPOINT_OUTPUT_FILE].first()->arg);
 		g_cp_ofstream.open(filename.c_str());
-		if(!g_cp_ofstream.is_open()) {
+		if (!g_cp_ofstream.is_open()) {
 			LOG << "Unable to open cp_out_file " << filename << std::endl;
 			exit(-1);
 		}
@@ -282,32 +281,32 @@ int main(int argc, char *argv[])
 
 	BasicAlgorithm *algo;
 
-   	switch (algorithm) {
-		case ALGO_SMART:
-			algo = new SmartAlgorithm(&rc);
-			break;
-		case ALGO_SIMPLE:
-			algo = new SimpleAlgorithm(&rc);
-			break;
-		default:
-			break;
+	switch (algorithm) {
+	case ALGO_SMART:
+		algo = new SmartAlgorithm(&rc);
+		break;
+	case ALGO_SIMPLE:
+		algo = new SimpleAlgorithm(&rc);
+		break;
+	default:
+		break;
 	}
 
-   	rc.startTimer();
-   	algo->calculateAllHops(trace);
-    rc.stopTimer();
+	rc.startTimer();
+	algo->calculateAllHops(trace);
+	rc.stopTimer();
 
-    rc.finish();
+	rc.finish();
 
-    // ToDo: close output file if not stdout
+	// ToDo: close output file if not stdout
 	if (outFile != &std::cout) {
 		((std::ofstream*)outFile)->close();
 		delete (std::ofstream*)outFile;
 	}
 
-    if (g_use_checkpoints) {
-    	g_cp_ofstream.close();
-    }
+	if (g_use_checkpoints) {
+		g_cp_ofstream.close();
+	}
 
-    return 0;
+	return 0;
 }

@@ -1,5 +1,5 @@
 #ifndef __PANDA_WATCHPOINTS_AH__
-  #define __PANDA_WATCHPOINTS_AH__
+#define __PANDA_WATCHPOINTS_AH__
 
 #include "config/FailConfig.hpp"
 #include "config/VariantConfig.hpp"
@@ -11,49 +11,56 @@
 
 aspect PandaWatchpoints
 {
-	advice "fail::MemAccessListener" : slice class
+
+advice "fail::MemAccessListener" : slice class
+{
+	int m_t32access;
+public:
+	bool onAddition()
 	{
-    int m_t32access;
-	public:
-		bool onAddition()
-		{
-  			// Setup Watchpoint on Pandaboard (if it cant be realized as WP, mmu will be utilzed)
-  			struct halt_condition hc;
-  			
-  			switch(m_WatchType) {
-    			case MemAccessEvent::MEM_READ: hc.type = HALT_TYPE_WP_READ; break;
-    			case MemAccessEvent::MEM_WRITE: hc.type = HALT_TYPE_WP_WRITE; break;
-    			case MemAccessEvent::MEM_READWRITE: hc.type = HALT_TYPE_WP_READWRITE; break;
-    			default: return false;
-			}
-			
-			hc.address = m_WatchAddr;
-			hc.addr_len = m_WatchWidth;
+		// Setup Watchpoint on Pandaboard (if it can't be realized as WP, MMU will be utilized)
+		struct halt_condition hc;
 
-			oocdw_set_halt_condition(&hc);
-
-      		return true;
+		switch (m_WatchType) {
+		case MemAccessEvent::MEM_READ:
+			hc.type = HALT_TYPE_WP_READ; break;
+		case MemAccessEvent::MEM_WRITE:
+			hc.type = HALT_TYPE_WP_WRITE; break;
+		case MemAccessEvent::MEM_READWRITE:
+			hc.type = HALT_TYPE_WP_READWRITE; break;
+		default: return false;
 		}
 
-		void onDeletion()
-		{
-			// Remove Watchpoint from Pandaboard (if it was realized by mmu, it will be reprogrammed)
-  			struct halt_condition hc;
-  			
-  			switch(m_WatchType) {
-    			case MemAccessEvent::MEM_READ: hc.type = HALT_TYPE_WP_READ; break;
-    			case MemAccessEvent::MEM_WRITE: hc.type = HALT_TYPE_WP_WRITE; break;
-    			case MemAccessEvent::MEM_READWRITE: hc.type = HALT_TYPE_WP_READWRITE; break;
-    			default: return;	// ToDo: Error handling
-			}
-			
-			hc.address = m_WatchAddr;
-			hc.addr_len = m_WatchWidth;
-			
-			// ToDo: Error handling
-			oocdw_delete_halt_condition(&hc);
+		hc.address = m_WatchAddr;
+		hc.addr_len = m_WatchWidth;
+
+		oocdw_set_halt_condition(&hc);
+
+		return true;
+	}
+
+	void onDeletion()
+	{
+		// Remove Watchpoint from Pandaboard (if it was realized by MMU, it will be reprogrammed)
+		struct halt_condition hc;
+
+		switch (m_WatchType) {
+		case MemAccessEvent::MEM_READ:
+			hc.type = HALT_TYPE_WP_READ; break;
+		case MemAccessEvent::MEM_WRITE:
+			hc.type = HALT_TYPE_WP_WRITE; break;
+		case MemAccessEvent::MEM_READWRITE:
+			hc.type = HALT_TYPE_WP_READWRITE; break;
+		default: return;	// ToDo: Error handling
 		}
-	};
+
+		hc.address = m_WatchAddr;
+		hc.addr_len = m_WatchWidth;
+
+		// ToDo: Error handling
+		oocdw_delete_halt_condition(&hc);
+	}
+};
 
 };
 

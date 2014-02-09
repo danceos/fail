@@ -58,7 +58,7 @@ class SmartHops;
 /**
  * \class InjectionPointHops
  *
- * Concrete injection point which contains a hop chain to the target 
+ * Concrete injection point which contains a hop chain to the target
  * trace instruction.
  */
 class InjectionPointHops : public InjectionPointBase {
@@ -79,7 +79,7 @@ public:
 							m_curr_instr2(-1), m_initialized(false) {}
 
 	virtual ~InjectionPointHops();
-	
+
 	/**
 	 * Parses a hop chain from a injection instruction (trace offset).
 	 * @param instr1 trace instruction offset of beginning of equivalence class
@@ -101,7 +101,7 @@ typedef InjectionPointHops ConcreteInjectionPoint;
 class InjectionPointSteps : public InjectionPointBase {
 public:
 	virtual ~InjectionPointSteps() {}
-	
+
 	/**
 	 * Parses a trace offset from a injection instruction (trace offset),
 	 * so it effectively just stores the value in the protobuf message.

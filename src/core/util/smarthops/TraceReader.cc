@@ -53,7 +53,7 @@ bool TraceReader::openTraceFile(const char *filename, unsigned int num_inst)
 }
 
 bool TraceReader::getNextTraceEvents(trace_pos_t& trace_pos,
-							std::vector<trace_event_tuple_t >& trace_events)
+	std::vector<trace_event_tuple_t >& trace_events)
 {
 	// Stop after fixed number of instructions, if given as command line argument
 	if ((m_max_num_inst > 0) && (m_current_position > m_max_num_inst)) {
@@ -86,15 +86,15 @@ bool TraceReader::getNextTraceEvents(trace_pos_t& trace_pos,
 			ev_avail = true;
 			break;
 		}
-		
+
 		// Add a trace_event for every byte in memory access.
-		// This breaks down the calculations to multiple 
-		// memory accesses of length 1. No more complexity 
+		// This breaks down the calculations to multiple
+		// memory accesses of length 1. No more complexity
 		// is needed in hop calculations.
 		if (ev.has_width()) {
 			for (unsigned int i = 0; i < ev.width(); i++) {
 				trace_events.push_back(
-					trace_event_tuple_t(ev.memaddr() + i, 
+					trace_event_tuple_t(ev.memaddr() + i,
 					ev.accesstype() == ev.READ ? ACCESS_READ : ACCESS_WRITE));
 			}
 		}
