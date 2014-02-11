@@ -68,8 +68,6 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	instruction_count_t instr = 0;
 	// instruction counter new memory access events belong to
 	instruction_count_t instr_memaccess = 0;
-	// absolute instruction address of the latest IP event
-	guest_address_t instr_memaccess_absolute = 0;
 
 	// the currently processed event
 	Trace_Event ev;
@@ -106,15 +104,8 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 			// all subsequent mem access events belong to this dynamic instr
 			instr_memaccess = instr;
-			instr_memaccess_absolute = ev.ip();
 			instr++;
 		} else {
-			if (ev.ip() != instr_memaccess_absolute) {
-				LOG << "warning: mem-access IP 0x" << std::hex << ev.ip()
-					<< " differs from previous instruction IP 0x" << instr_memaccess_absolute
-					<< " at instr=" << std::dec << instr_memaccess
-					<< " (mem accesses must follow *after* their corresponding IP events in the trace!)" << std::endl;
-			}
 			if (!handle_mem_event(curtime, instr_memaccess, ev)) {
 				LOG << "error: handle_mem_event() failed at instr=" << instr_memaccess << std::endl;
 				return false;
