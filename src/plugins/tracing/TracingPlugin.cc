@@ -35,18 +35,18 @@ bool TracingPlugin::run()
 	simtime_t prevtime = 0, curtime;
 	simtime_diff_t deltatime;
 
-	bool first = true;
+	bool record_first_ipevent = m_tracetype | TRACE_IP;
 
 	while (true) {
-		if (!first) {
+		if (!record_first_ipevent) {
 			ev = simulator.resume();
 		}
 
 		curtime = simulator.getTimerTicks();
 		deltatime = curtime - prevtime;
 
-		if (ev == &ev_step || (first && (m_tracetype | TRACE_IP))) {
-			first = false;
+		if (ev == &ev_step || record_first_ipevent) {
+			record_first_ipevent = false;
 			simulator.addListener(&ev_step);
 			address_t ip = simulator.getCPU(0).getInstructionPointer();
 
@@ -127,7 +127,7 @@ bool TracingPlugin::run()
 
 				ps->writeMessage(&e);
 			}
-		} else if (!first) {
+		} else {
 			if (m_os)
 				*m_os << "[Tracing] SOMETHING IS SERIOUSLY WRONG\n";
 		}
