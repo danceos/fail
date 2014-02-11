@@ -6,14 +6,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
 #include "campaign.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
-#include "sal/bochs/BochsListener.hpp"
 #include "sal/Listener.hpp"
 #include "util/ElfReader.hpp"
 #include "util/WallclockTimer.hpp"
@@ -24,6 +22,7 @@
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
 
+// for local experiment debugging: don't contact job server, use hard-coded parameters
 #define LOCAL 0
 
 #ifndef PREREQUISITES
@@ -42,66 +41,116 @@
 using namespace std;
 using namespace fail;
 
-#if PREREQUISITES
-bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
-#if BASELINE_ASSESSMENT || STACKPROTECTION
-	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
-	MemoryMap mm;
-	mm.add(addr_data_start, addr_data_end - addr_data_start);
-	mm.writeToFile(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
-#else
-	log << "STEP 0: record memory map with addresses of 'interesting' objects" << endl;
+const std::string EcosKernelTestExperiment::dir_images(DIR_IMAGES);
+const std::string EcosKernelTestExperiment::dir_prerequisites(DIR_PREREQUISITES);
 
-	// run until func_finish is reached
-	BPSingleListener bp;
-	bp.setWatchInstructionPointer(addr_finish);
+bool EcosKernelTestExperiment::writeTraceInfo(unsigned instr_counter, unsigned timeout,
+	unsigned mem1_low, unsigned mem1_high, // < 1M
+	unsigned mem2_low, unsigned mem2_high, // >= 1M
+	const std::string& variant, const std::string& benchmark) {
+	ofstream ti(filename_traceinfo(variant, benchmark).c_str(), ios::out);
+	if (!ti.is_open()) {
+		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
+		return false;
+	}
+	ti << instr_counter << endl << timeout << endl
+	   << mem1_low << endl << mem1_high << endl
+	   << mem2_low << endl << mem2_high << endl;
+	ti.flush();
+	ti.close();
+	return true;
+}
 
-	// memory map serialization
-	// FIXME: use MemoryMap::writeToFile()
-	ofstream mm(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str(), ios::out);
-	if (!mm.is_open()) {
-		log << "failed to open " << EcosKernelTestCampaign::filename_memorymap() << endl;
+bool EcosKernelTestExperiment::readTraceInfo(unsigned &instr_counter, unsigned &timeout,
+	unsigned &mem1_low, unsigned &mem1_high, // < 1M
+	unsigned &mem2_low, unsigned &mem2_high, // >= 1M
+	const std::string& variant, const std::string& benchmark) {
+	ifstream file(filename_traceinfo(variant, benchmark).c_str());
+	if (!file.is_open()) {
+		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
 		return false;
 	}
 
-	GuestListener g;
-	string *str = new string; // buffer for guest listeners' data
-	unsigned number_of_guest_events = 0;
+	string buf;
+	unsigned count = 0;
 
-	while (simulator.addListenerAndResume(&g) == &g) {
-		if (g.getData() == '\t') {
-			// addr complete?
-			//cout << "full: " << *str << "sub: " << str->substr(str->find_last_of('x') - 1) << endl;
-			// interpret the string obtained by the guest listeners as address in hex
-			unsigned guest_addr;
-			stringstream converter(str->substr(str->find_last_of('x') + 1));
-			converter >> hex >> guest_addr;
-			mm << guest_addr << '\t';
-			str->clear();
-		} else if (g.getData() == '\n') {
-			// len complete?
-			// interpret the string obtained by the guest listeners as length in decimal
-			unsigned guest_len;
-			stringstream converter(*str);
-			converter >> dec >> guest_len;
-			mm << guest_len << '\n';
-			str->clear();
-			number_of_guest_events++;
-		} else if (g.getData() == 'Q') {
-			// when the guest system triggers the guest event 'Q',
-			// we can assume that we are in protected mode
-			simulator.addListener(&bp);
-		} else {
-			str->push_back(g.getData());
+	while (getline(file, buf)) {
+		stringstream ss(buf, ios::in);
+		switch (count) {
+		case 0:
+			ss >> instr_counter;
+			break;
+		case 1:
+			ss >> timeout;
+			break;
+		case 2:
+			ss >> mem1_low;
+			break;
+		case 3:
+			ss >> mem1_high;
+			break;
+		case 4:
+			ss >> mem2_low;
+			break;
+		case 5:
+			ss >> mem2_high;
+			break;
 		}
+		count++;
 	}
-	assert(number_of_guest_events > 0);
-	log << "Breakpoint at func_finish reached: created memory map (" << number_of_guest_events << " entries)" << endl;
-	delete str;
+	file.close();
+	assert(count == 6);
+	return (count == 6);
+}
 
-	// close serialized mm
-	mm.close();
-#endif
+std::string EcosKernelTestExperiment::filename_memorymap(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "memorymap.txt";
+	}
+	return "memorymap.txt";
+}
+
+std::string EcosKernelTestExperiment::filename_state(unsigned instr_offset, const std::string& variant, const std::string& benchmark)
+{
+	stringstream ss;
+	ss << instr_offset;
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "state" + "-" + ss.str();
+	}
+	return "state-" + ss.str();
+}
+
+std::string EcosKernelTestExperiment::filename_trace(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "trace.tc";
+	}
+	return "trace.tc";
+}
+
+std::string EcosKernelTestExperiment::filename_traceinfo(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + "-" + "traceinfo.txt";
+	}
+	return "traceinfo.txt";
+}
+
+std::string EcosKernelTestExperiment::filename_elf(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_images + "/" + variant + "/" + benchmark + ".elf";
+	}
+	return "kernel.elf";
+}
+
+#if PREREQUISITES
+bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
+	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
+	MemoryMap mm;
+	mm.add(addr_data_start, addr_data_end - addr_data_start);
+	mm.writeToFile(filename_memorymap(m_variant, m_benchmark).c_str());
 
 	return true;
 }
@@ -137,9 +186,13 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 
 	for (unsigned i = 0; ; ++i) {
 		log << "saving state at offset " << dec << (i * MULTIPLE_SNAPSHOTS_DISTANCE) << endl;
-		simulator.save(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark));
+		if (!simulator.save(filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark))) {
+			log << "state save failed!" << endl;
+			simulator.terminate(1);
+		}
+
 #if MULTIPLE_SNAPSHOTS
-		simulator.restore(EcosKernelTestCampaign::filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark));
+		simulator.restore(filename_state(i * MULTIPLE_SNAPSHOTS_DISTANCE, m_variant, m_benchmark));
 
 		simulator.addListener(&step);
 		simulator.addListener(&finish);
@@ -159,7 +212,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
-	simulator.restore(EcosKernelTestCampaign::filename_state(0, m_variant, m_benchmark));
+	simulator.restore(filename_state(0, m_variant, m_benchmark));
 	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
 	assert(simulator.getCPU(0).getInstructionPointer() == addr_entry);
 
@@ -168,12 +221,15 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	// restrict memory access logging to injection target
 	MemoryMap mm;
-	mm.readFromFile(EcosKernelTestCampaign::filename_memorymap(m_variant, m_benchmark).c_str());
+	mm.readFromFile(filename_memorymap(m_variant, m_benchmark).c_str());
 
 	tp.restrictMemoryAddresses(&mm);
+#if RECORD_FULL_TRACE
+	tp.setFullTrace(true);
+#endif
 
 	// record trace
-	ogzstream of(EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark).c_str());
+	ogzstream of(filename_trace(m_variant, m_benchmark).c_str());
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
@@ -210,8 +266,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 				return false;
 			}
 			simulator.addListener(&ev_count);
-		}
-		else if (ev == &ev_mem) {
+		} else if (ev == &ev_mem) {
 			unsigned lo = ev_mem.getTriggerAddress();
 			unsigned hi = lo + ev_mem.getTriggerWidth() - 1;
 
@@ -229,10 +284,11 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 		ev = simulator.resume();
 	}
 
-	unsigned long long estimated_timeout_overflow_check =
-		simulator.getTimerTicks() - time_start + 55000; // 1s/18.2
-	unsigned estimated_timeout =
-		(unsigned) (estimated_timeout_overflow_check * 1000000 / simulator.getTimerTicksPerSecond());
+	unsigned long long estimated_timeout_ticks =
+		simulator.getTimerTicks() - time_start + simulator.getTimerTicksPerSecond() / 18.2; // 1s/18.2
+	// convert to microseconds
+	unsigned estimated_timeout = (unsigned)
+		(estimated_timeout_ticks * 1000000 / simulator.getTimerTicksPerSecond());
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [0x" << mem1_low << ", 0x" << mem1_high << "] u [0x" << mem2_low << ", 0x" << mem2_high << "] (ignoring VGA mem)" << endl;
@@ -247,18 +303,18 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	}
 
 	// save these values for experiment STEP 3
-	EcosKernelTestCampaign::writeTraceInfo(instr_counter, estimated_timeout,
+	writeTraceInfo(instr_counter, estimated_timeout,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 
 	simulator.removeFlow(&tp);
 
 	// serialize trace to file
 	if (of.fail()) {
-		log << "failed to write " << EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark) << endl;
+		log << "failed to write " << filename_trace(m_variant, m_benchmark) << endl;
 		return false;
 	}
 	of.close();
-	log << "trace written to " << EcosKernelTestCampaign::filename_trace(m_variant, m_benchmark) << endl;
+	log << "trace written to " << filename_trace(m_variant, m_benchmark) << endl;
 
 	return true;
 }
@@ -268,7 +324,11 @@ void EcosKernelTestExperiment::handle_func_test_output(bool &test_failed, bool& 
 {
 	// 1st argument of cyg_test_output shows what has happened (FAIL or PASS)
 	address_t stack_ptr = simulator.getCPU(0).getStackPointer(); // esp
-	int32_t cyg_test_output_argument = simulator.getMemoryManager().getByte(stack_ptr + 4); // 1st argument is at esp+4
+	MemoryManager& mm = simulator.getMemoryManager();
+	if (!mm.isMapped(stack_ptr + 4)) {
+		return;
+	}
+	int32_t cyg_test_output_argument = mm.getByte(stack_ptr + 4); // 1st argument is at esp+4
 
 	log << "cyg_test_output_argument (#1): " << cyg_test_output_argument << endl;
 
@@ -294,7 +354,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
 	// trace info
-	unsigned instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
+	unsigned goldenrun_instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
 	// ELF symbol addresses
 	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
 	                addr_panic, addr_text_start, addr_text_end,
@@ -304,9 +364,11 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 	int experiments = 0;
 #if !LOCAL
-	for (experiments = 0;
-		experiments < 500 || (m_jc.getNumberOfUndoneJobs() != 0); ) { // stop after ~500 experiments to prevent swapping
+	// TODO: measure these numbers again!
+	// stop after ~500 experiments to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
+	for (experiments = 0;
+		experiments < 500 || (m_jc.getNumberOfUndoneJobs() != 0); ) {
 #endif
 
 	// get an experiment parameter set
@@ -320,23 +382,26 @@ bool EcosKernelTestExperiment::faultInjection() {
 	}
 #else
 	// XXX debug
-	param.msg.set_variant(m_variant);
-	param.msg.set_benchmark(m_benchmark);
-	param.msg.set_instr2_offset(7462);
-	//param.msg.set_instr_address(12345);
-	param.msg.set_mem_addr(44540);
+	param.msg.mutable_fsppilot()->set_injection_instr(7462);
+	//param.msg.mutable_fsppilot()->set_injection_instr_absolute(12345);
+	param.msg.mutable_fsppilot()->set_data_address(44540);
+	param.msg.mutable_fsppilot()->set_data_width(1);
+	param.msg.mutable_fsppilot()->set_variant(m_variant);
+	param.msg.mutable_fsppilot()->set_benchmark(m_benchmark);
 #endif
 
-	WallclockTimer timer;
-	timer.startTimer();
+	if (param.msg.fsppilot().data_width() != 1) {
+		log << "cannot deal with data_width = " << param.msg.fsppilot().data_width() << endl;
+		simulator.terminate(1);
+	}
 
 	int id = param.getWorkloadID();
-	m_variant = param.msg.variant();
-	m_benchmark = param.msg.benchmark();
-	int instr_offset = param.msg.instr2_offset();
-	int mem_addr = param.msg.mem_addr();
+	m_variant = param.msg.fsppilot().variant();
+	m_benchmark = param.msg.fsppilot().benchmark();
+	unsigned instr_offset = param.msg.fsppilot().injection_instr();
+	unsigned mem_addr = param.msg.fsppilot().data_address();
 
-	EcosKernelTestCampaign::readTraceInfo(instr_counter, estimated_timeout,
+	readTraceInfo(goldenrun_instr_counter, estimated_timeout,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 	readELFSymbols(addr_entry, addr_finish, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
@@ -345,13 +410,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 	int state_instr_offset = instr_offset - (instr_offset % MULTIPLE_SNAPSHOTS_DISTANCE);
 	string statename;
 #if MULTIPLE_SNAPSHOTS
-	if (access(EcosKernelTestCampaign::filename_state(state_instr_offset, m_variant, m_benchmark).c_str(), R_OK) == 0) {
-		statename = EcosKernelTestCampaign::filename_state(state_instr_offset, m_variant, m_benchmark);
+	if (access(filename_state(state_instr_offset, m_variant, m_benchmark).c_str(), R_OK) == 0) {
+		statename = filename_state(state_instr_offset, m_variant, m_benchmark);
 		log << "using state at offset " << state_instr_offset << endl;
 		instr_offset -= state_instr_offset;
 	} else { // fallback
 #endif
-		statename = EcosKernelTestCampaign::filename_state(0, m_variant, m_benchmark);
+		statename = filename_state(0, m_variant, m_benchmark);
 		state_instr_offset = 0;
 		log << "using state at offset 0 (fallback)" << endl;
 #if MULTIPLE_SNAPSHOTS
@@ -363,6 +428,11 @@ bool EcosKernelTestExperiment::faultInjection() {
 	for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
 		++experiments;
 
+		// TODO timing measurement should be part of the
+		// DatabaseCampaignMessage
+		WallclockTimer timer;
+		timer.startTimer();
+
 		// 8 results in one job
 		EcosKernelTestProtoMsg_Result *result = param.msg.add_result();
 		result->set_bit_offset(bit_offset);
@@ -372,15 +442,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 		log << "restoring state" << endl;
 		simulator.restore(statename);
-
-		// XXX debug
-/*
-		stringstream fname;
-		fname << "job." << ::getpid();
-		ofstream job(fname.str().c_str());
-		job << "job " << id << " instr " << instr_offset << " (" << param.msg.instr_address() << ") mem " << mem_addr << "+" << bit_offset << endl;
-		job.close();
-*/
 
 		// the outcome of ecos' test case
 		bool ecos_test_passed = false;
@@ -400,7 +461,6 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 		// no need to wait if offset is 0
 		if (instr_offset > 0) {
-			// XXX could be improved with intermediate states (reducing runtime until injection)
 			bp.setWatchInstructionPointer(ANY_ADDR);
 			bp.setCounter(instr_offset);
 			simulator.addListener(&bp);
@@ -425,38 +485,35 @@ bool EcosKernelTestExperiment::faultInjection() {
 		MemoryManager& mm = simulator.getMemoryManager();
 		byte_t data = mm.getByte(mem_addr);
 		byte_t newdata;
-		if (param.msg.has_faultmodel() && param.msg.faultmodel() == param.msg.BURST) {
-			newdata = data ^ 0xff;
-			bit_offset = 8; // enforce loop termination
-		} else if (!param.msg.has_faultmodel() || param.msg.faultmodel() == param.msg.SINGLEBITFLIP) {
-			newdata = data ^ (1 << bit_offset);
-		} else {
-			// Won't happen with current campaign implementation.  Keeps
-			// compiler happy.
-			newdata = data;
-		}
+#if ECOS_FAULTMODEL_BURST
+		newdata = data ^ 0xff;
+		bit_offset = 8; // enforce loop termination
+#else
+		newdata = data ^ (1 << bit_offset);
+#endif
 		mm.setByte(mem_addr, newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
-		param.msg.set_injection_ip(injection_ip);
+		uint32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
-		if (param.msg.has_instr2_address() &&
-			injection_ip != param.msg.instr2_address()) {
+		if (param.msg.fsppilot().has_injection_instr_absolute() &&
+			injection_ip != param.msg.fsppilot().injection_instr_absolute()) {
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip
-			   << " != " << param.msg.instr2_address();
+			   << " != " << param.msg.fsppilot().injection_instr_absolute();
 			log << ss.str() << endl;
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
-			result->set_ecos_test_result(result->FAIL);
 			result->set_details(ss.str());
+			result->set_runtime(timer);
 
 			continue;
 		}
-		if (param.msg.has_instr2_address()) {
+		if (param.msg.fsppilot().has_injection_instr_absolute()) {
 			log << "Absolute IP sanity check OK" << endl;
+		} else {
+			log << "Absolute IP sanity check skipped (job parameters insufficient)" << endl;
 		}
 
 		// --- aftermath ---
@@ -506,11 +563,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 		TimerListener ev_timeout(estimated_timeout);
 		simulator.addListener(&ev_timeout);
 
-		// remaining instructions until "normal" ending
-		// number of instructions that are executed additionally for error corrections
-		//BPSingleListener ev_end(ANY_ADDR);
-		//ev_end.setCounter(instr_counter - instr_offset + ECOS_RECOVERYINSTR);
-		//simulator.addListener(&ev_end);
+		// grant generous (10x) more instructions before aborting to avoid false positives
+		BPSingleListener ev_dyninstructions(ANY_ADDR);
+		//ev_dyninstructions.setCounter((goldenrun_instr_counter - param.msg.fsppilot().injection_instr()) * 10);
+		// FIXME overflow possible
+		ev_dyninstructions.setCounter(goldenrun_instr_counter * 10);
+		simulator.addListener(&ev_dyninstructions);
 
 		// function called by ecc aspects, when an uncorrectable error is detected
 		BPSingleListener func_ecc_panic(addr_panic);
@@ -535,7 +593,24 @@ bool EcosKernelTestExperiment::faultInjection() {
 				// re-add this listener
 				simulator.addListener(&func_test_output);
 				handle_func_test_output(ecos_test_failed, ecos_test_passed);
-
+			} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
+				result->set_jump_outside(result->TRUE);
+				// no need to re-add the affected listener
+			} else if (ev == &ev_mem_outside1 || ev == &ev_mem_outside2
+				|| ev == &ev_mem_outside3 || ev == &ev_mem_outside4) {
+				MemAccessListener *mev = dynamic_cast<MemAccessListener *>(ev);
+				if (mev->getTriggerAccessType() == MemAccessEvent::MEM_READ) {
+					result->set_memaccess_outside(result->READ);
+					// re-add this listener, may report a write later on
+					simulator.addListener(mev);
+				} else { // write
+					result->set_memaccess_outside(result->WRITE);
+					// remove all listeners to avoid downgrade to READ
+					simulator.removeListener(&ev_mem_outside1);
+					simulator.removeListener(&ev_mem_outside2);
+					simulator.removeListener(&ev_mem_outside3);
+					simulator.removeListener(&ev_mem_outside4);
+				}
 			// special case: except1 and clockcnv actively generate traps
 			} else if (ev == &ev_trap
 			        && ((m_benchmark == "except1" && ev_trap.getTriggerNumber() == 13)
@@ -549,39 +624,34 @@ bool EcosKernelTestExperiment::faultInjection() {
 		}
 
 		// record latest IP regardless of result
+		// TODO: consider recording latest IP within text segment, too, which
+		// would make this usable for the jump-outside case
 		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		// record error_corrected regardless of result
 		if (addr_errors_corrected != ADDR_INV) {
-			int32_t error_corrected = simulator.getMemoryManager().getByte(addr_errors_corrected);
-			result->set_error_corrected(error_corrected);
+			int32_t error_corrected = mm.getByte(addr_errors_corrected);
+			result->set_error_corrected(error_corrected ? result->TRUE : result->FALSE);
 		} else {
-			result->set_error_corrected(0);
+			// not setting this yields NULL in the DB
+			//result->set_error_corrected(0);
 		}
 
 		// record ecos_test_result
-		if ( (ecos_test_passed == true) && (ecos_test_failed == false) ) {
-			result->set_ecos_test_result(result->PASS);
-			log << "Ecos Test PASS" << endl;
-		} else {
-			result->set_ecos_test_result(result->FAIL);
-			log << "Ecos Test FAIL" << endl;
-		}
+		bool ecos_test_success = ecos_test_passed && !ecos_test_failed;
+		log << "Ecos Test " << (ecos_test_success ? "PASS" : "FAIL") << endl;
 
-		if (ev == &func_finish) {
+		if (ev == &func_finish && ecos_test_success) {
 			// do we reach finish?
 			log << "experiment finished ordinarily" << endl;
-			result->set_resulttype(result->FINISHED);
-		} else if (ev == &ev_timeout /*|| ev == &ev_end*/) {
-			log << "Result TIMEOUT" << endl;
-			result->set_resulttype(result->TIMEOUT);
-		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
-			log << "Result OUTSIDE" << endl;
-			result->set_resulttype(result->OUTSIDE);
-		} else if (ev == &ev_mem_outside1 || ev == &ev_mem_outside2
-		        || ev == &ev_mem_outside3 || ev == &ev_mem_outside4) {
-			log << "Result MEMORYACCESS" << endl;
-			result->set_resulttype(result->MEMORYACCESS);
+			result->set_resulttype(result->OK);
+		} else if (ev == &func_finish && !ecos_test_success) {
+			// do we reach finish?
+			log << "experiment finished, but ecos test failed" << endl;
+			result->set_resulttype(result->SDC);
+		} else if (ev == &func_ecc_panic) {
+			log << "ECC Panic: uncorrectable error" << endl;
+			result->set_resulttype(result->DETECTED); // DETECTED <=> ECC_PANIC <=> reboot
 		} else if (ev == &ev_trap) {
 			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 			result->set_resulttype(result->TRAP);
@@ -589,9 +659,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 			stringstream ss;
 			ss << ev_trap.getTriggerNumber();
 			result->set_details(ss.str());
-		} else if (ev == &func_ecc_panic) {
-			log << "ECC Panic: uncorrectable error" << endl;
-			result->set_resulttype(result->DETECTED); // DETECTED <=> ECC_PANIC <=> reboot
+		} else if (ev == &ev_timeout || ev == &ev_dyninstructions) {
+			log << "Result TIMEOUT" << endl;
+			result->set_resulttype(result->TIMEOUT);
+			if (ev == &ev_dyninstructions) {
+				result->set_details("i");
+			}
 		} else {
 			log << "Result WTF?" << endl;
 			result->set_resulttype(result->UNKNOWN);
@@ -600,17 +673,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 			ss << "event addr " << ev << " EIP " << simulator.getCPU(0).getInstructionPointer();
 			result->set_details(ss.str());
 		}
+
+		result->set_runtime(timer);
 	}
-	// sanity check: do we have exactly 8 results?
-	if ((!param.msg.has_faultmodel() || param.msg.faultmodel() == param.msg.SINGLEBITFLIP)
-	 && param.msg.result_size() != 8) {
-		log << "WTF? param.msg.result_size() != 8" << endl;
-	} else {
-		param.msg.set_runtime(timer);
+
 #if !LOCAL
-		m_jc.sendResult(param);
+	m_jc.sendResult(param);
 #endif
-	}
 
 #if !LOCAL
 	}
@@ -630,7 +699,7 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& data_start,
 	fail::guest_address_t& data_end)
 {
-	ElfReader elfreader(EcosKernelTestCampaign::filename_elf(m_variant, m_benchmark).c_str());
+	ElfReader elfreader(filename_elf(m_variant, m_benchmark).c_str());
 	entry            = elfreader.getSymbol("cyg_start").getAddress();
 	finish           = elfreader.getSymbol("cyg_test_exit").getAddress();
 	test_output      = elfreader.getSymbol("cyg_test_output").getAddress();
@@ -698,8 +767,7 @@ bool EcosKernelTestExperiment::run()
 
 	// step 0
 	if (retrieveGuestAddresses(finish, data_start, data_end)) {
-		log << "STEP 0 finished: rebooting ..." << endl;
-		simulator.reboot();
+		log << "STEP 0 finished: proceeding ..." << endl;
 	} else { return false; }
 
 	// step 1

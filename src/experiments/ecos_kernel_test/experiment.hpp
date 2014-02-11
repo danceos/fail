@@ -11,6 +11,9 @@ class EcosKernelTestExperiment : public fail::ExperimentFlow {
 	fail::JobClient m_jc;
 	fail::Logger log;
 	std::string m_variant, m_benchmark;
+
+	static const std::string dir_images;
+	static const std::string dir_prerequisites;
 public:
 	EcosKernelTestExperiment() : log("eCos Kernel Test", false) {}
 	bool run();
@@ -33,4 +36,12 @@ public:
 		fail::guest_address_t& data_end);
 
 	void handle_func_test_output(bool &test_failed, bool& test_passed);
+
+	static bool writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned mem1_low, unsigned mem1_high, unsigned mem2_low, unsigned mem2_high, const std::string& variant = "", const std::string& benchmark = "");
+	static bool readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &mem1_low, unsigned &mem1_high, unsigned &mem2_low, unsigned &mem2_high, const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_memorymap(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_state(unsigned instr_offset, const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_trace(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_traceinfo(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_elf(const std::string& variant = "", const std::string& benchmark = "");
 };

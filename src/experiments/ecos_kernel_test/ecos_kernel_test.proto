@@ -1,71 +1,48 @@
+import "DatabaseCampaignMessage.proto";
+
 message EcosKernelTestProtoMsg {
-	// Input: experiment parameters
-	// (client executes 8 experiments, one for each bit at mem_addr)
+	required DatabaseCampaignMessage fsppilot = 1;
 
-	// EDM/ERM variant
-	required string variant = 1;
-	// benchmark
-	required string benchmark = 2;
-
-	// pilot ID (database)
-	required uint32 pilot_id = 3;
-	// FI at #instructions from experiment start
-	required uint32 instr2_offset = 4;
-	// the exact IP value at this point in time (from golden run)
-	optional uint32 instr2_address = 5; // for sanity checks
-	// address of the byte to inject bit-flips
-	required uint32 mem_addr = 6;
-
-	// ----------------------------------------------------
-
-	// Output: experiment results
-
-	// IP where we did the injection: for debugging purposes, must be identical
-	// to instr_address
-	optional uint32 injection_ip = 7;
-
-	enum FaultModel {
-		SINGLEBITFLIP = 1;
-		BURST = 2;
-	}
-	optional FaultModel faultmodel = 10;
-
-	repeated group Result = 8 {
+	repeated group Result = 2 {
 		// single experiment bit offset
-		required uint32 bit_offset = 1;
+		required uint32 bit_offset = 1 [(sql_primary_key) = true];
 
-		// result type:
-		// FINISHED = planned number of instructions were executed
-		// TRAP = premature guest "crash"
-		// OUTSIDE = IP left text segment
 		enum ResultType {
-			FINISHED = 1;
-			TRAP = 2;
-			OUTSIDE = 3;
-			DETECTED = 4;
-			TIMEOUT = 5;
-			MEMORYACCESS = 6;
-			UNKNOWN = 7;
+			OK = 0;
+			SDC = 1;
+			DETECTED = 2;
+			TRAP = 3;
+			TIMEOUT = 4;
+			UNKNOWN = 5;
 		}
 		required ResultType resulttype = 2;
 
-		// especially interesting for TRAP/UNKNOWN: latest IP
-		required uint32 latest_ip = 3;
-
-		// test results
-		enum EcosTestResultType {
-			PASS = 1;
-			FAIL = 2;
+		// all subsequent fields are optional, resulting in NULLable DB
+		// columns, saving space when unused; NULL should be interpreted as 0
+		// for these cases
+		enum MemAccessOutside {
+			NONE = 0;
+			READ = 1;
+			WRITE = 2;
 		}
-		required EcosTestResultType ecos_test_result = 4;
+		optional MemAccessOutside memaccess_outside = 3;
+
+		enum Flag {
+			FALSE = 0;
+			TRUE = 1;
+		}
+		optional Flag jump_outside = 4;
 
 		// did ECC correct the fault?
-		optional int32 error_corrected = 6;
+		optional Flag error_corrected = 5;
+
+		// especially interesting for TRAP/UNKNOWN: latest IP
+		optional uint32 latest_ip = 6;
 
 		// optional textual description of what happened
 		optional string details = 7;
-	}
 
-	// aggregated runtime for this job (FIXME: this should be part of the basic campaign communication instead)
-	optional float runtime = 9;
+		// experiment runtime (FIXME: should be part of DatabaseCampaignMessage instead)
+		optional float runtime = 8;
+	}
 }
