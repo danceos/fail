@@ -25,26 +25,26 @@ void  GenericTracing::parseOptions() {
 	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
-
 	CommandLine::option_handle ELF_FILE = cmd.addOption("", "elf-file", Arg::Required,
-															"--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
+		"--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
 	CommandLine::option_handle START_SYMBOL = cmd.addOption("s", "start-symbol", Arg::Required,
-															"-s,--start-symbol \tELF symbol to start tracing (default: main)");
+		"-s,--start-symbol \tELF symbol to start tracing (default: main)");
 	CommandLine::option_handle STOP_SYMBOL	= cmd.addOption("e", "end-symbol", Arg::Required,
-															"-e,--end-symbol \tELF symbol to end tracing");
+		"-e,--end-symbol \tELF symbol to end tracing");
 	CommandLine::option_handle SAVE_SYMBOL	= cmd.addOption("S", "save-symbol", Arg::Required,
-															"-S,--save-symbol \tELF symbol to save the state of the machine (default: main)\n");
+		"-S,--save-symbol \tELF symbol to save the state of the machine (default: main)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
-															"-f,--state-file \tFile/dir to save the state to (default: state)");
+		"-f,--state-file \tFile/dir to save the state to (default: state)");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
-															"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
+		"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
 
-	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None, "--full-trace \tDo a full trace (more data, default: off)");
+	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None,
+		"--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
-															"-m,--memory-symbol \tELF symbol(s) to trace accesses (default: all mem read/writes are traced)");
+		"-m,--memory-symbol \tELF symbol(s) to trace accesses (default: all mem read/writes are traced)");
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
-															"-M,--memory-region \trestrict memory region which is traced"
-															" (Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>)");
+		"-M,--memory-region \trestrict memory region which is traced"
+		" (Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>)");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -56,10 +56,10 @@ void  GenericTracing::parseOptions() {
 		exit(0);
 	}
 
-	if (cmd[ELF_FILE].count() > 0)
+	if (cmd[ELF_FILE]) {
 		elf_file = cmd[ELF_FILE].first()->arg;
-	else {
-		char * elfpath = getenv("FAIL_ELF_PATH");
+	} else {
+		char *elfpath = getenv("FAIL_ELF_PATH");
 		if (elfpath == NULL) {
 			m_log << "FAIL_ELF_PATH not set :( (alternative: --elf-file) " << std::endl;
 			exit(-1);
@@ -69,36 +69,40 @@ void  GenericTracing::parseOptions() {
 	}
 	m_elf = new ElfReader(elf_file.c_str());
 
-	if (cmd[START_SYMBOL].count() > 0)
+	if (cmd[START_SYMBOL]) {
 		start_symbol = cmd[START_SYMBOL].first()->arg;
-	else
+	} else {
 		start_symbol = "main";
+	}
 
-	if (cmd[STOP_SYMBOL].count() > 0)
+	if (cmd[STOP_SYMBOL]) {
 		stop_symbol = std::string(cmd[STOP_SYMBOL].first()->arg);
-	else {
+	} else {
 		m_log << "You have to give an end symbol (-e,--end-symbol)!" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
-	if (cmd[SAVE_SYMBOL].count() > 0)
+	if (cmd[SAVE_SYMBOL]) {
 		save_symbol = std::string(cmd[SAVE_SYMBOL].first()->arg);
-	else
+	} else {
 		save_symbol = "main";
+	}
 
-	if (cmd[STATE_FILE].count() > 0)
+	if (cmd[STATE_FILE]) {
 		state_file = std::string(cmd[STATE_FILE].first()->arg);
-	else
+	} else {
 		state_file = "state";
+	}
 
-	if (cmd[TRACE_FILE].count() > 0)
+	if (cmd[TRACE_FILE]) {
 		trace_file = std::string(cmd[TRACE_FILE].first()->arg);
-	else
+	} else {
 		trace_file = "trace.pb";
+	}
 
 	use_memory_map = false;
 
-	if (cmd[MEM_SYMBOL].count() > 0) {
+	if (cmd[MEM_SYMBOL]) {
 		use_memory_map = true;
 		option::Option *opt = cmd[MEM_SYMBOL].first();
 
@@ -114,7 +118,7 @@ void  GenericTracing::parseOptions() {
 		}
 	}
 
-	if (cmd[MEM_REGION].count() > 0) {
+	if (cmd[MEM_REGION]) {
 		use_memory_map = true;
 		option::Option *opt = cmd[MEM_REGION].first();
 
@@ -173,8 +177,6 @@ void  GenericTracing::parseOptions() {
 	m_log << "state file: "	  << state_file		  << std::endl;
 	m_log << "trace file: "	  << trace_file		  << std::endl;
 	m_log << "full-trace: "	  << this->full_trace << std::endl;
-
-
 }
 
 bool GenericTracing::run()
@@ -216,7 +218,6 @@ bool GenericTracing::run()
 	}
 	m_log << start_symbol << " reached, save state" << std::endl;
 	simulator.save(state_file);
-
 
 	////////////////////////////////////////////////////////////////
 	// Step 3: Continue to the stop point

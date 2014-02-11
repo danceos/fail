@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-
-
 class GenericTracing : public fail::ExperimentFlow {
 	std::string start_symbol;
 	std::string stop_symbol;
@@ -31,7 +29,7 @@ public:
 	void parseOptions();
 	bool run();
 
-	GenericTracing() : full_trace(false), m_log("GenericTracing", false) {};
+	GenericTracing() : full_trace(false), m_log("GenericTracing", false) {}
 };
 
 #endif // __TRACING_TEST_HPP__
