@@ -117,7 +117,7 @@ bool TracingPlugin::run()
 						Trace_Event_Extended_Registers *er = ext.add_registers();
 						er->set_id((*it)->getId());
 						er->set_value(simulator.getCPU(0).getRegisterContent(*it));
-						if (mm.isMapped(er->value())) {
+						if (mm.isMapped(er->value()) && mm.isMapped(er->value() + 3)) {
 							uint32_t value_deref;
 							mm.getBytes(er->value(), 4, &value_deref);
 							er->set_value_deref(value_deref);
