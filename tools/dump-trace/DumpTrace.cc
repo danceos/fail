@@ -107,9 +107,18 @@ int main(int argc, char *argv[])
 				for (int i = 0; i < temp_ext.registers_size(); i++) {
 					const Trace_Event_Extended_Registers& temp_reg = temp_ext.registers(i);
 					ext << " REG "
-					    << (unsigned) temp_reg.id() << " = "
-					    << (uint32_t) temp_reg.value() << " -> "
-					    << (uint32_t) temp_reg.value_deref();
+					    << (unsigned) temp_reg.id() << " = ";
+					if (temp_reg.has_value()) {
+						ext << (uint32_t) temp_reg.value();
+					} else {
+						ext << "??";
+					}
+					ext << " -> ";
+					if (temp_reg.has_value_deref()) {
+						ext << (uint32_t) temp_reg.value_deref();
+					} else {
+						ext << "??";
+					}
 				}
 				if (temp_ext.stack_size() > 0 ) {
 					ext << " STACK:";
