@@ -95,13 +95,16 @@ public:
 		// Map the linear address to the physical address:
 		bx_phy_address physicalAddr;
 		bx_bool fValid = BX_CPU(0)->dbg_xlate_linear2phy(linearAddr, (bx_phy_address*)&physicalAddr);
+		if (!fValid) {
+			return (host_address_t) ADDR_INV; // error
+		}
 		// Determine the *host* address of the physical address:
-		Bit8u* hostAddr = BX_MEM(0)->getHostMemAddr(BX_CPU(0), physicalAddr, BX_READ);
-		// Now, hostAddr contains the "final" address
-		if (!fValid)
-			return ((host_address_t)ADDR_INV); // error
-		else
-			return (reinterpret_cast<host_address_t>(hostAddr)); // okay
+		Bit8u* hostAddr = BX_MEM(0)->getHostMemAddr(BX_CPU(0), physicalAddr, BX_RW);
+		if (!hostAddr) {
+			return (host_address_t) ADDR_INV; // error
+		}
+
+		return reinterpret_cast<host_address_t>(hostAddr);
 	}
 
 	/**
