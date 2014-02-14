@@ -43,7 +43,7 @@ aspect BochsNonVerbose {
 			action = ACT_IGNORE;
 			break;
 		case LOGLEV_ERROR:
-			action = ACT_REPORT;
+			action = ACT_IGNORE;
 			break;
 		case LOGLEV_PANIC:
 		default:
