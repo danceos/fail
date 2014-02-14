@@ -1,5 +1,5 @@
-#ifndef __SERIAL_OUTPUT_HPP__
-#define __SERIAL_OUTPUT_HPP__
+#ifndef __SERIAL_OUTPUT_LOGGER_HPP__
+#define __SERIAL_OUTPUT_LOGGER_HPP__
 
 #include <string>
 
@@ -12,11 +12,11 @@
 #endif
 
 /**
- * \class SerialOutput
+ * \class SerialOutputLogger
  *
  * \brief Plugin to record ioport traffic.
  */
-class SerialOutput : public fail::ExperimentFlow
+class SerialOutputLogger : public fail::ExperimentFlow
 {
 
 private:
@@ -33,7 +33,7 @@ public:
 	 * \arg \c true Output on the given port is captured. This is default.
 	 * \arg \c false Input on the given port is captured.
 	 */
-	SerialOutput(unsigned port, bool out = true) : m_out(out), m_port(port) { }
+	SerialOutputLogger(unsigned port, bool out = true) : m_out(out), m_port(port) { }
 	bool run();
 	/**
 	 * Resets the output variable which contains the traffic of
@@ -46,4 +46,4 @@ public:
 	std::string getOutput();
 };
 
-#endif // __SERIAL_OUTPUT_HPP__
+#endif // __SERIAL_OUTPUT_LOGGER_HPP__

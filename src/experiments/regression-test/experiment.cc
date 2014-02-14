@@ -9,7 +9,7 @@
 #include "sal/Memory.hpp"
 #include "config/FailConfig.hpp"
 #include "../plugins/tracing/TracingPlugin.hpp"
-#include "../plugins/serialoutput/SerialOutput.hpp"
+#include "../plugins/serialoutput/SerialOutputLogger.hpp"
 
 
 // Check if configuration dependencies are satisfied:
@@ -59,7 +59,7 @@ bool RegressionTest::run()
 	tp.setOstream(&of);
 	simulator.addFlow(&tp);
 
-	SerialOutput so(0x3F8);
+	SerialOutputLogger so(0x3F8);
 	simulator.addFlow(&so);
 
 	//BPListener

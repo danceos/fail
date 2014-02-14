@@ -1,10 +1,10 @@
-#include "SerialOutput.hpp"
+#include "SerialOutputLogger.hpp"
 #include "sal/Listener.hpp"
 
 using namespace std;
 using namespace fail;
 
-bool SerialOutput::run()
+bool SerialOutputLogger::run()
 {
 	IOPortListener ev_ioport(m_port, m_out);
 	while (true) {
@@ -15,12 +15,12 @@ bool SerialOutput::run()
 	return true;
 }
 
-void SerialOutput::resetOutput()
+void SerialOutputLogger::resetOutput()
 {
 	m_output.clear();
 }
 
-string SerialOutput::getOutput()
+string SerialOutputLogger::getOutput()
 {
 	return m_output;
 }
