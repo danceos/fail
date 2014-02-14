@@ -22,6 +22,7 @@ class SerialOutputLogger : public fail::ExperimentFlow
 private:
 	bool m_out; //!< Defines the direction of the listener.
 	unsigned m_port; //!< the port the listener is listening on
+	unsigned m_limit; //!< character limit
 	std::string m_output; //!< contains the traffic of ioport
 
 public:
@@ -29,11 +30,13 @@ public:
 	 * Constructor of SerialOutput.
 	 *
 	 * @param port the port the listener is listening on
+	 * @param char_limit limits the number of recorded characters (0 = no limit)
 	 * @param out Defines the direction of the listener.
 	 * \arg \c true Output on the given port is captured. This is default.
 	 * \arg \c false Input on the given port is captured.
 	 */
-	SerialOutputLogger(unsigned port, bool out = true) : m_out(out), m_port(port) { }
+	SerialOutputLogger(unsigned port, unsigned char_limit = 0, bool out = true)
+		: m_out(out), m_port(port), m_limit(char_limit) { }
 	bool run();
 	/**
 	 * Resets the output variable which contains the traffic of
