@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-//#include <string>
+#include <algorithm>
 
 // getpid
 #include <sys/types.h>
@@ -21,6 +21,8 @@
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
+// You need to have the serialoutput plugin enabled for this
+#include "../plugins/serialoutput/SerialOutputLogger.hpp"
 
 // for local experiment debugging: don't contact job server, use hard-coded parameters
 #define LOCAL 0
@@ -37,6 +39,9 @@
 #define VIDEOMEM_START 0xb8000
 #define VIDEOMEM_SIZE  (80*25*2 *2) // two text mode screens
 #define VIDEOMEM_END   (VIDEOMEM_START + VIDEOMEM_SIZE)
+
+#define LIMIT_SERIAL	1024*1024
+#define LIMIT_MEMOUT	1024*1024*10
 
 using namespace std;
 using namespace fail;
@@ -145,6 +150,82 @@ std::string EcosKernelTestExperiment::filename_elf(const std::string& variant, c
 	return "kernel.elf";
 }
 
+std::string EcosKernelTestExperiment::filename_serial(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + ".serial";
+	}
+	return "serial";
+}
+
+std::string EcosKernelTestExperiment::filename_memout(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + "-" + benchmark + ".memout";
+	}
+	return "memout";
+}
+
+std::vector<char> EcosKernelTestExperiment::loadFile(std::string filename)
+{
+	std::vector<char> data;
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (!f) {
+		return data;
+	}
+	fseek(f, 0, SEEK_END);
+	long len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	data.resize(len);
+	fread(&data[0], len, 1, f);
+	fclose(f);
+	return data;
+}
+
+// TODO integrate this in MemoryManager?
+bool EcosKernelTestExperiment::isMapped(fail::MemoryManager& mm, guest_address_t start, unsigned len)
+{
+	const int granularity = 4096;
+	for (guest_address_t a = start & ~(granularity - 1); a < start + len; a += granularity) {
+		if (!mm.isMapped(a)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+std::vector<char> EcosKernelTestExperiment::readFromMem(guest_address_t addr_testdata, guest_address_t addr_testdata_size)
+{
+	std::vector<char> data;
+	if (addr_testdata == ADDR_INV || addr_testdata_size == ADDR_INV) {
+		return data;
+	}
+	MemoryManager& mm = simulator.getMemoryManager();
+	uint32_t size;
+	if (!isMapped(mm, addr_testdata_size, sizeof(size))) {
+		log << "testdata_size isn't mapped" << endl;
+		return data;
+	}
+	mm.getBytes(addr_testdata_size, sizeof(size), &size);
+	if (size > LIMIT_MEMOUT) {
+		log << "truncated in-memory buffer from " << size << " to " << LIMIT_MEMOUT << endl;
+		size = LIMIT_MEMOUT;
+	}
+	uint32_t real_addr_testdata;
+	if (!isMapped(mm, addr_testdata, sizeof(real_addr_testdata))) {
+		log << "testdata isn't mapped" << endl;
+		return data;
+	}
+	mm.getBytes(addr_testdata, sizeof(real_addr_testdata), &real_addr_testdata);
+	if (isMapped(mm, real_addr_testdata, size)) {
+		data.resize(size);
+		mm.getBytes(real_addr_testdata, size, &data.front());
+	} else {
+		log << "testdata array isn't mapped" << endl;
+	}
+	return data;
+}
+
 #if PREREQUISITES
 bool EcosKernelTestExperiment::retrieveGuestAddresses(guest_address_t addr_finish, guest_address_t addr_data_start, guest_address_t addr_data_end) {
 	log << "STEP 0: creating memory map spanning all of DATA and BSS" << endl;
@@ -208,7 +289,8 @@ bool EcosKernelTestExperiment::establishState(guest_address_t addr_entry, guest_
 	return true;
 }
 
-bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_address_t addr_finish) {
+bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_address_t addr_finish,
+	guest_address_t addr_testdata, guest_address_t addr_testdata_size) {
 	log << "STEP 2: record trace for fault-space pruning" << endl;
 
 	log << "restoring state" << endl;
@@ -220,10 +302,10 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	TracingPlugin tp;
 
 	// restrict memory access logging to injection target
-	MemoryMap mm;
-	mm.readFromFile(filename_memorymap(m_variant, m_benchmark).c_str());
+	MemoryMap mmap;
+	mmap.readFromFile(filename_memorymap(m_variant, m_benchmark).c_str());
 
-	tp.restrictMemoryAddresses(&mm);
+	tp.restrictMemoryAddresses(&mmap);
 #if RECORD_FULL_TRACE
 	tp.setFullTrace(true);
 #endif
@@ -233,6 +315,10 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	tp.setTraceFile(&of);
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
+
+	// record serial output
+	SerialOutputLogger sol(0x3f8, LIMIT_SERIAL);
+	simulator.addFlow(&sol);
 
 	// again, run until 'ECOS_FUNC_FINISH' is reached
 	BPSingleListener bp;
@@ -316,6 +402,20 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	of.close();
 	log << "trace written to " << filename_trace(m_variant, m_benchmark) << endl;
 
+	simulator.removeFlow(&sol);
+	ofstream of_serial(filename_serial(m_variant, m_benchmark).c_str(), ios::out|ios::binary);
+	if (!of.fail()) {
+		of_serial << sol.getOutput();
+	} else {
+		log << "failed to write " << filename_serial(m_variant, m_benchmark) << endl;
+	}
+
+	std::vector<char> memout = readFromMem(addr_testdata, addr_testdata_size);
+	if (memout.size() > 0) {
+		ofstream of_memout(filename_memout(m_variant, m_benchmark).c_str(), ios::out|ios::binary);
+		of_memout.write(&memout.front(), memout.size());
+	}
+
 	return true;
 }
 
@@ -356,9 +456,10 @@ bool EcosKernelTestExperiment::faultInjection() {
 	// trace info
 	unsigned goldenrun_instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
 	// ELF symbol addresses
-	guest_address_t addr_entry, addr_finish, addr_test_output, addr_errors_corrected,
-	                addr_panic, addr_text_start, addr_text_end,
-	                addr_data_start, addr_data_end;
+	guest_address_t addr_entry, addr_finish, addr_testdata, addr_testdata_size,
+		addr_test_output, addr_errors_corrected,
+		addr_panic, addr_text_start, addr_text_end,
+		addr_data_start, addr_data_end;
 
 	BPSingleListener bp;
 
@@ -403,9 +504,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 	readTraceInfo(goldenrun_instr_counter, estimated_timeout,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
-	readELFSymbols(addr_entry, addr_finish, addr_test_output,
+	if (!readELFSymbols(addr_entry, addr_finish,
+		addr_testdata, addr_testdata_size, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
-		addr_data_start, addr_data_end);
+		addr_data_start, addr_data_end)) {
+		log << "retrieving ELF symbol addresses failed, essential symbols are missing!" << endl;
+		simulator.terminate(1);
+	}
 
 	int state_instr_offset = instr_offset - (instr_offset % MULTIPLE_SNAPSHOTS_DISTANCE);
 	string statename;
@@ -455,7 +560,13 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// reaching cyg_test_output() could happen before OR after FI
 		// eCos' test output function, which will show if the test PASSed or FAILed
 		BPSingleListener func_test_output(addr_test_output);
-		simulator.addListener(&func_test_output);
+		if (addr_test_output != ADDR_INV) {
+			simulator.addListener(&func_test_output);
+		}
+
+		// record serial output
+		SerialOutputLogger sol(0x3f8, LIMIT_SERIAL);
+		simulator.addFlow(&sol);
 
 		BaseListener* ev;
 
@@ -614,7 +725,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 			// special case: except1 and clockcnv actively generate traps
 			} else if (ev == &ev_trap
 			        && ((m_benchmark == "except1" && ev_trap.getTriggerNumber() == 13)
-					 || (m_benchmark == "clockcnv" && ev_trap.getTriggerNumber() == 7))) {
+					 || (m_benchmark == "clockcnv" && ev_trap.getTriggerNumber() == 7)
+					 || (m_variant == "mibench" && ev_trap.getTriggerNumber() == 7))) {
 				// re-add this listener
 				simulator.addListener(&ev_trap);
 			} else {
@@ -637,17 +749,40 @@ bool EcosKernelTestExperiment::faultInjection() {
 			//result->set_error_corrected(0);
 		}
 
-		// record ecos_test_result
-		bool ecos_test_success = ecos_test_passed && !ecos_test_failed;
-		log << "Ecos Test " << (ecos_test_success ? "PASS" : "FAIL") << endl;
+		// record test result
+		bool output_correct;
+		if (m_variant != "mibench") {
+			output_correct = ecos_test_passed && !ecos_test_failed;
+			log << "Ecos Test " << (output_correct ? "PASS" : "FAIL") << endl;
+		} else {
+			std::vector<char> serial_correct = loadFile(filename_serial(m_variant, m_benchmark));
+			std::vector<char> memout_correct = loadFile(filename_memout(m_variant, m_benchmark));
 
-		if (ev == &func_finish && ecos_test_success) {
+			// sanity check
+			if (serial_correct.size() == 0 && memout_correct.size() == 0) {
+				log << "sanity check failed, golden run should have had output" << endl;
+				simulator.terminate(0);
+			}
+
+			std::string serial_actual = sol.getOutput();
+			std::vector<char> memout_actual = readFromMem(addr_testdata, addr_testdata_size);
+			if (serial_actual.size() == serial_correct.size() &&
+				memout_actual.size() == memout_correct.size() &&
+				equal(serial_actual.begin(), serial_actual.end(), serial_correct.begin()) &&
+				equal(memout_actual.begin(), memout_actual.end(), memout_correct.begin())) {
+				output_correct = true;
+			} else {
+				output_correct = false;
+			}
+		}
+
+		if (ev == &func_finish && output_correct) {
 			// do we reach finish?
 			log << "experiment finished ordinarily" << endl;
 			result->set_resulttype(result->OK);
-		} else if (ev == &func_finish && !ecos_test_success) {
+		} else if (ev == &func_finish && !output_correct) {
 			// do we reach finish?
-			log << "experiment finished, but ecos test failed" << endl;
+			log << "experiment finished, but output incorrect" << endl;
 			result->set_resulttype(result->SDC);
 		} else if (ev == &func_ecc_panic) {
 			log << "ECC Panic: uncorrectable error" << endl;
@@ -691,6 +826,8 @@ bool EcosKernelTestExperiment::faultInjection() {
 bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& entry,
 	fail::guest_address_t& finish,
+	fail::guest_address_t& testdata,
+	fail::guest_address_t& testdata_size,
 	fail::guest_address_t& test_output,
 	fail::guest_address_t& errors_corrected,
 	fail::guest_address_t& panic,
@@ -700,18 +837,36 @@ bool EcosKernelTestExperiment::readELFSymbols(
 	fail::guest_address_t& data_end)
 {
 	ElfReader elfreader(filename_elf(m_variant, m_benchmark).c_str());
-	entry            = elfreader.getSymbol("cyg_start").getAddress();
-	finish           = elfreader.getSymbol("cyg_test_exit").getAddress();
-	test_output      = elfreader.getSymbol("cyg_test_output").getAddress();
-	errors_corrected = elfreader.getSymbol("errors_corrected").getAddress();
-	panic            = elfreader.getSymbol("_Z9ecc_panicv").getAddress();
+
+	if (m_variant == "mibench") {
+		entry            = elfreader.getSymbol("main").getAddress();
+		finish           = elfreader.getSymbol("ECOS_BENCHMARK_FINISHED").getAddress();
+		testdata         = elfreader.getSymbol("ECOS_data").getAddress();
+		testdata_size    = elfreader.getSymbol("ECOS_data_size").getAddress();
+		test_output      = ADDR_INV;
+		errors_corrected = ADDR_INV;
+		panic            = ADDR_INV;
+		// testdata / testdata_size may be optimized away (gc-sections)
+	} else {
+		// ecos_kernel_test
+		entry            = elfreader.getSymbol("cyg_start").getAddress();
+		finish           = elfreader.getSymbol("cyg_test_exit").getAddress();
+		testdata         = ADDR_INV;
+		testdata_size    = ADDR_INV;
+		test_output      = elfreader.getSymbol("cyg_test_output").getAddress();
+		errors_corrected = elfreader.getSymbol("errors_corrected").getAddress();
+		panic            = elfreader.getSymbol("_Z9ecc_panicv").getAddress();
+		// it's OK if errors_corrected or ecc_panic are missing
+		if (test_output == ADDR_INV) {
+			return false;
+		}
+	}
 	text_start       = elfreader.getSymbol("_stext").getAddress();
 	text_end         = elfreader.getSymbol("_etext").getAddress();
 	data_start       = elfreader.getSymbol("__ram_data_start").getAddress();
 	data_end         = elfreader.getSymbol("__bss_end").getAddress();
 
-	// it's OK if errors_corrected or ecc_panic are missing
-	if (entry == ADDR_INV || finish == ADDR_INV || test_output == ADDR_INV ||
+	if (entry == ADDR_INV || finish == ADDR_INV ||
 	    text_start == ADDR_INV || text_end == ADDR_INV ||
 	    data_start == ADDR_INV || data_end == ADDR_INV) {
 		return false;
@@ -757,10 +912,12 @@ bool EcosKernelTestExperiment::run()
 
 #if PREREQUISITES
 	log << "retrieving ELF symbol addresses ..." << endl;
-	guest_address_t entry, finish, test_output, errors_corrected,
-	                panic, text_start, text_end, data_start, data_end;
-	if (!readELFSymbols(entry, finish, test_output, errors_corrected,
-	               panic, text_start, text_end, data_start, data_end)) {
+	guest_address_t entry, finish, testdata, testdata_size,
+		test_output, errors_corrected,
+		panic, text_start, text_end, data_start, data_end;
+	if (!readELFSymbols(entry, finish, testdata, testdata_size,
+			test_output, errors_corrected,
+			panic, text_start, text_end, data_start, data_end)) {
 		log << "failed, essential symbols are missing!" << endl;
 		simulator.terminate(1);
 	}
@@ -776,7 +933,7 @@ bool EcosKernelTestExperiment::run()
 	} else { return false; }
 
 	// step 2
-	if (performTrace(entry, finish)) {
+	if (performTrace(entry, finish, testdata, testdata_size)) {
 		log << "STEP 2 finished: terminating ..." << endl;
 	} else { return false; }
 

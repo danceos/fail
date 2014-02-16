@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
@@ -21,12 +22,15 @@ public:
 	void parseOptions();
 	bool retrieveGuestAddresses(fail::guest_address_t addr_finish, fail::guest_address_t addr_data_start, fail::guest_address_t addr_data_end); // step 0
 	bool establishState(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish, fail::guest_address_t addr_errors_corrected); // step 1
-	bool performTrace(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish); // step 2
+	bool performTrace(fail::guest_address_t addr_entry, fail::guest_address_t addr_finish,
+		fail::guest_address_t addr_testdata, fail::guest_address_t addr_testdata_size); // step 2
 	bool faultInjection(); // step 3
 
 	bool readELFSymbols(
 		fail::guest_address_t& entry,
 		fail::guest_address_t& finish,
+		fail::guest_address_t& testdata,
+		fail::guest_address_t& testdata_size,
 		fail::guest_address_t& test_output,
 		fail::guest_address_t& errors_corrected,
 		fail::guest_address_t& panic,
@@ -44,4 +48,10 @@ public:
 	static std::string filename_trace(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_traceinfo(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_elf(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_serial(const std::string& variant = "", const std::string& benchmark = "");
+	static std::string filename_memout(const std::string& variant = "", const std::string& benchmark = "");
+
+	std::vector<char> loadFile(std::string filename);
+	bool isMapped(fail::MemoryManager& mm, fail::guest_address_t start, unsigned len);
+	std::vector<char> readFromMem(fail::guest_address_t addr_testdata, fail::guest_address_t addr_testdata_size);
 };
