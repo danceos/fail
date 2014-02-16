@@ -4,20 +4,13 @@
 #include <string>
 
 #include "efw/ExperimentFlow.hpp"
-#include "config/FailConfig.hpp"
-
-// Check if configuration dependencies are satisfied:
-#if !defined(CONFIG_EVENT_IOPORT)
-	#warning The serialoutput plugin may (depending on its use) need ioport event. Enable these in the cmake configuration tool.
-#endif
 
 /**
  * \class SerialOutputLogger
  *
  * \brief Plugin to record ioport traffic.
  */
-class SerialOutputLogger : public fail::ExperimentFlow
-{
+class SerialOutputLogger : public fail::ExperimentFlow {
 
 private:
 	bool m_out; //!< Defines the direction of the listener.
