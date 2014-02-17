@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <sstream>
 #include "AdvancedMemoryImporter.hpp"
 
 using namespace llvm;
@@ -24,9 +25,8 @@ void AdvancedMemoryImporter::database_insert_columns(std::string& sql, unsigned&
 
 //#include <google/protobuf/text_format.h>
 
-bool AdvancedMemoryImporter::database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake)
+bool AdvancedMemoryImporter::database_insert_data(Trace_Event &ev, std::stringstream& value_sql, unsigned num_columns, bool is_fake)
 {
-	static my_bool null = true;
 	// FIXME upcall?
 	assert(num_columns == 2);
 #if 0
@@ -40,15 +40,11 @@ bool AdvancedMemoryImporter::database_insert_data(Trace_Event &ev, MYSQL_BIND *b
 	}
 #endif
 	assert(is_fake || delayed_entries.size() == 0 || ev.ip() == delayed_entries.front().ev.ip());
-	bind[0].buffer_type = MYSQL_TYPE_LONG;
-	bind[0].is_unsigned = 1;
-	bind[0].buffer = &delayed_entries.front().opcode;
-	bind[1].buffer_type = MYSQL_TYPE_LONG;
-	bind[1].is_unsigned = 1;
-	bind[1].buffer = &m_cur_branchmask;
 	if (is_fake) {
-		bind[0].is_null = &null;
-		bind[1].is_null = &null;
+		value_sql << "NULL,NULL,";
+	} else {
+		value_sql << delayed_entries.front().opcode << ","
+			<< m_cur_branchmask << ",";
 	}
 	return true;
 }

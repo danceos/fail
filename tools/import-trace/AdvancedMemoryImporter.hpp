@@ -49,7 +49,7 @@ public:
 protected:
 	virtual std::string database_additional_columns();
 	virtual void database_insert_columns(std::string& sql, unsigned& num_columns);
-	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake);
+	virtual bool database_insert_data(Trace_Event &ev, std::stringstream& value_sql, unsigned num_columns, bool is_fake);
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
 		Trace_Event &ev);
 	virtual bool handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,

@@ -105,7 +105,7 @@ bool Database::insert_multiple(char const *insertquery, char const *values)
 		m_insertquery_values.push_back(values);
 	}
 
-	if ((!values && m_insertquery_values.size() > 0) || m_insertquery_values.size() >= 32) {
+	if ((!values && m_insertquery_values.size() > 0) || m_insertquery_values.size() >= 2048) {
 		std::stringstream sql;
 		sql << m_insertquery;
 		bool first = true;

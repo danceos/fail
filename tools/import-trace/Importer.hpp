@@ -3,6 +3,7 @@
 
 #include <mysql/mysql.h>
 #include <map>
+#include <sstream>
 #include "util/ProtoStream.hpp"
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
@@ -85,7 +86,7 @@ protected:
 	 * Will be called back from add_trace_event() to fill in data for the
 	 * columns specified by database_insert_columns().
 	 */
-	virtual bool database_insert_data(Trace_Event &ev, MYSQL_BIND *bind, unsigned num_columns, bool is_fake) { return true; }
+	virtual bool database_insert_data(Trace_Event &ev, std::stringstream& value_sql, unsigned num_columns, bool is_fake) { return true; }
 	/**
 	 * Use this variant if passing through the IP/MEM event does not make any
 	 * sense for your Importer implementation.
