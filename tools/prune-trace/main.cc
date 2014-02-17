@@ -82,8 +82,6 @@ int main(int argc, char *argv[]) {
 		for (option::Option *o = cmd[VARIANT]; o; o = o->next()) {
 			variants.push_back(std::string(o->arg));
 		}
-	} else {
-		variants.push_back(std::string("none"));
 	}
 
 	if (cmd[VARIANT_EXCLUDE]) {
@@ -92,18 +90,26 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	// fallback
+	if (variants.size() == 0 && variants_exclude.size() == 0) {
+		variants.push_back(std::string("none"));
+	}
+
 	if (cmd[BENCHMARK]) {
 		for (option::Option *o = cmd[BENCHMARK]; o; o = o->next()) {
 			benchmarks.push_back(std::string(o->arg));
 		}
-	} else {
-		benchmarks.push_back(std::string("none"));
 	}
 
 	if (cmd[BENCHMARK_EXCLUDE]) {
 		for (option::Option *o = cmd[BENCHMARK_EXCLUDE]; o; o = o->next()) {
 			benchmarks_exclude.push_back(std::string(o->arg));
 		}
+	}
+
+	// fallback
+	if (benchmarks.size() == 0 && benchmarks_exclude.size() == 0) {
+		benchmarks.push_back(std::string("none"));
 	}
 
 	if (!pruner->init(db, variants, variants_exclude, benchmarks, benchmarks_exclude)) {
