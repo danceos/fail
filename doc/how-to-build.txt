@@ -7,7 +7,7 @@ Required for Fail*:
  - libmysqlclient-dev or libmariadbclient-dev
  - libprotobuf-dev
  - libpcl1-dev
- - libboost-thread-dev
+ - libboost-thread-dev libboost-system-dev libboost-regex-dev
  - libdwarf
  - libelf
  - protobuf-compiler
