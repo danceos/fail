@@ -102,4 +102,8 @@ endif(CONFIG_FAST_BREAKPOINTS)
 
 
 add_library(fail-sal ${SRCS})
-add_dependencies(fail-sal fail-efw)
+target_link_libraries(fail-sal fail-efw fail-util)
+
+foreach(exp ${EXPERIMENTS_ACTIVATED})
+	target_link_libraries(fail-sal fail-${exp})
+endforeach()
