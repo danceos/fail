@@ -171,18 +171,30 @@ void JobServer::run()
 				continue;
 			}
 		}
-		// Spawn a thread for further communication,
-		// and add this thread to a list threads
-		// We can limit the generation of threads here.
-		if (m_threadlist.size() >= m_maxThreads) {
-			// Run over list with a timed_join,
-			// removing finished threads.
-			do {
-				m_threadlist.remove_if(timed_join_successful(m_threadtimeout));
-			} while (m_threadlist.size() == m_maxThreads);
-		}
-		// Start new thread
-		th = new boost::thread(CommThread(cs, *this));
+
+		bool creation_failed = false;
+		do {
+			// Spawn a thread for further communication,
+			// and add this thread to a list threads
+			// We can limit the generation of threads here.
+			if (m_threadlist.size() >= m_maxThreads || creation_failed) {
+				// Run over list with a timed_join,
+				// removing finished threads.
+				do {
+					m_threadlist.remove_if(timed_join_successful(m_threadtimeout));
+				} while (m_threadlist.size() >= m_maxThreads);
+			}
+			// Start new thread
+			try {
+				th = new boost::thread(CommThread(cs, *this));
+				creation_failed = false;
+			} catch (boost::thread_resource_error e) {
+				cout << "failed to spawn thread, throttling ..." << endl;
+				creation_failed = true;
+				sleep(1);
+			}
+		} while (creation_failed);
+
 		m_threadlist.push_back(th);
 	}
 	close(s);
