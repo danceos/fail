@@ -17,6 +17,7 @@ protected:
 public:
 	ExperimentData() : msg(0), m_workloadID(0) {};
 	ExperimentData(google::protobuf::Message* m) : msg(m) , m_workloadID(0) { }
+	virtual ~ExperimentData() {}
 
 	google::protobuf::Message& getMessage()  { return *msg; }
 	void setMessage(google::protobuf::Message *msg)  { this->msg = msg; }
