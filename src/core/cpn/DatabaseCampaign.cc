@@ -127,14 +127,31 @@ void DatabaseCampaign::collect_result_thread() {
 }
 
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
+	/* Copy pilot IDs of existing results to tmp table: otherwise, due to
+	 * MyISAMs table-level locking, collect_result_thread() will block in
+	 * INSERT (SHOW PROCESSLIST state "Waiting for table level lock") until the
+	 * (streamed) pilot query finishes.  As one pilot query follows after the
+	 * other, collect_result_thread() may even starve until the memory for the
+	 * JobServer's "done" queue runs out, resulting in a crash and the loss of
+	 * all queued results. */
+	db->query("CREATE TEMPORARY TABLE IF NOT EXISTS result_ids (pilot_id INT NOT NULL PRIMARY KEY)");
+	db->query("TRUNCATE TABLE result_ids");
+	std::stringstream ss;
+	ss << "INSERT INTO result_ids "
+	   << "SELECT r.pilot_id FROM " << db_connect.result_table() << " r "
+	   << "JOIN fsppilot p ON r.pilot_id = p.id "
+	   << "WHERE p.fspmethod_id = " << fspmethod_id
+	   << "  AND p.variant_id = " << variant.id;
+	db->query(ss.str().c_str());
+	ss.str("");
+
 	/* Gather all unfinished jobs */
 	int experiment_count;
 	std::string sql_select = "SELECT p.id, p.fspmethod_id, p.variant_id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width ";
-	std::stringstream ss;
 	ss << " FROM fsppilot p "
 	   << " WHERE p.fspmethod_id = "  << fspmethod_id
 	   << "	   AND p.variant_id = "	<< variant.id
-	   << "    AND (SELECT COUNT(*) FROM " + db_connect.result_table() + " as r WHERE r.pilot_id = p.id)"
+	   << "    AND (SELECT COUNT(*) FROM result_ids as r WHERE r.pilot_id = p.id)"
 	   << " < " << expected_number_of_results(variant.variant, variant.benchmark)
 	   << "    ORDER BY p.injection_instr";
 	std::string sql_body = ss.str();
