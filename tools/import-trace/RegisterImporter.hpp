@@ -44,6 +44,12 @@ protected:
 	virtual void open_unused_ec_intervals() {
 		/* empty, Memory Map has a different meaning in this importer */
 	}
+
+	void getAliases(std::deque<std::string> *aliases) {
+		aliases->push_back("RegisterImporter");
+		aliases->push_back("regs");
+	}
+
 };
 
 #endif

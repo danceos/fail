@@ -11,8 +11,9 @@
 #include "util/Database.hpp"
 #include "util/MemoryMap.hpp"
 #include "comm/TracePlugin.pb.h"
+#include "util/AliasedRegisterable.hpp"
 
-class Importer {
+class Importer : public fail::AliasedRegisterable {
 public:
 	typedef unsigned instruction_count_t; //!< not big enough for some benchmarks
 	struct margin_info_t { instruction_count_t dyninstr; fail::guest_address_t ip; fail::simtime_t time; };

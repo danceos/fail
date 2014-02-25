@@ -20,6 +20,11 @@ protected:
 	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
 				Trace_Event &event, bool is_fake = false);
 	virtual bool trace_end_reached();
+
+public:
+	void getAliases(std::deque<std::string> *aliases) {
+		aliases->push_back("FullTraceImporter");
+	}
 };
 
 #endif

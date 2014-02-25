@@ -17,6 +17,11 @@ protected:
 		/* ignore on purpose */
 		return true;
 	}
+
+	void getAliases(std::deque<std::string> *aliases) {
+		aliases->push_back("InstructionImporter");
+		aliases->push_back("code");
+	}
 };
 
 #endif

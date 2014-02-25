@@ -71,6 +71,12 @@ public:
 	virtual bool create_database();
 	virtual bool copy_to_database(fail::ProtoIStream &ps);
 	virtual bool clear_database();
+
+	void getAliases(std::deque<std::string> *aliases) {
+		aliases->push_back("ElfImporter");
+		aliases->push_back("ObjdumpImporter");
+		aliases->push_back("objdump");
+	}
 };
 
 #endif

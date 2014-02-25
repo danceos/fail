@@ -29,6 +29,9 @@ set(SRCS
  SynchronizedQueue.hpp
  WallclockTimer.cc
  WallclockTimer.hpp
+ AliasedRegistry.hpp
+ AliasedRegistry.cc
+ AliasedRegisterable.hpp
 
 )
 

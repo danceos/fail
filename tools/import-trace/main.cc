@@ -8,6 +8,7 @@
 #include <string>
 #include "MemoryImporter.hpp"
 #include "FullTraceImporter.hpp"
+#include "util/AliasedRegistry.hpp"
 
 #ifdef BUILD_LLVM_DISASSEMBLER
 #include "InstructionImporter.hpp"
@@ -56,6 +57,28 @@ int main(int argc, char *argv[]) {
 	std::string trace_file, variant, benchmark;
 	ElfReader *elf_file = 0;
 	MemoryMap *memorymap = 0;
+
+	AliasedRegistry registry;
+	Importer *importer;
+
+	MemoryImporter mem;
+	registry.add(&mem);
+	FullTraceImporter fti;
+	registry.add(&fti);
+
+#ifdef BUILD_LLVM_DISASSEMBLER
+	RegisterImporter reg;
+	registry.add(&reg);
+	RandomJumpImporter rjump;
+	registry.add(&rjump);
+	AdvancedMemoryImporter adv;
+	registry.add(&adv);
+	ElfImporter elf;
+	registry.add(&elf);
+	InstructionImporter instr;
+	registry.add(&instr);
+#endif
+	std::string importers = registry.getPrimeAliasesCSV();
 
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
@@ -123,41 +146,23 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	Importer *importer;
-
+	// get the desired importer from the commandline; default to MemoryImporter
+	std::string imp("MemoryImporter");
 	if (cmd[IMPORTER]) {
-		std::string imp(cmd[IMPORTER].first()->arg);
-		if (imp == "BasicImporter" || imp == "MemoryImporter" || imp == "memory" || imp == "mem") {
-			imp = "MemoryImporter";
-			importer = new MemoryImporter();
-		} else if (imp == "FullTraceImporter") {
-			importer = new FullTraceImporter();
-#ifdef BUILD_LLVM_DISASSEMBLER
-		} else if (imp == "InstructionImporter" || imp == "code") {
-			imp = "InstructionImporter";
-			importer = new InstructionImporter();
-
-		} else if (imp == "RegisterImporter" || imp == "regs") {
-			imp = "RegisterImporter";
-			importer = new RegisterImporter();
-
-		} else if (imp == "RandomJumpImporter") {
-			importer = new RandomJumpImporter();
-		} else if (imp == "AdvancedMemoryImporter") {
-			importer = new AdvancedMemoryImporter();
-		} else if (imp == "ObjdumpImporter" || imp == "objdump" || imp == "ElfImporter") {
-			importer = new ElfImporter();
-#endif
-		} else {
-			LOG << "Unknown import method: " << imp << endl;
-			exit(-1);
-		}
-		LOG << "Using " << imp << endl;
-
-	} else {
-		LOG << "Using MemoryImporter" << endl;
-		importer = new MemoryImporter();
+		imp = cmd[IMPORTER].first()->arg;
 	}
+
+	// try and get the according importer object ; die on failure
+	if ((importer = (Importer *)registry.get(imp)) == 0) {
+		LOG << "Unknown import method: " << imp << endl;
+		exit(-1);
+	}
+
+	std::string prime;
+	if (registry.getPrimeAlias(importer, prime)) {
+		imp = prime;
+	}
+	LOG << "Using " << imp << endl;
 
 	if (importer && !(importer->cb_commandline_init())) {
 		std::cerr << "Cannot call importers command line initialization!" << std::endl;
