@@ -101,9 +101,10 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle BENCHMARK =
 		cmd.addOption("b", "benchmark", Arg::Required,
 			"-b/--benchmark \tBenchmark label (default: \"none\")\n");
-	CommandLine::option_handle IMPORTER =
-		cmd.addOption("i", "importer", Arg::Required,
-			"-i/--importer \tWhich import method to use (default: MemoryImporter)");
+
+	std::string importer_help = "-i/--importer \tWhich import method to use (default: MemoryImporter); available import methods: " + importers;
+	CommandLine::option_handle IMPORTER = cmd.addOption("i", "importer", Arg::Required, importer_help);
+
 	CommandLine::option_handle ELF_FILE =
 		cmd.addOption("e", "elf-file", Arg::Required,
 			"-e/--elf-file \tELF File (default: UNSET)");
@@ -154,7 +155,10 @@ int main(int argc, char *argv[]) {
 
 	// try and get the according importer object ; die on failure
 	if ((importer = (Importer *)registry.get(imp)) == 0) {
-		LOG << "Unknown import method: " << imp << endl;
+		if (imp != "?" ) {
+			std::cerr << "Unknown import method: " << imp << std::endl;
+		}
+		std::cerr << "Available import methods: " << importers << std::endl;
 		exit(-1);
 	}
 
