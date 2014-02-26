@@ -1,48 +1,68 @@
+#include "LLVMDisassembler.hpp"
 #include "LLVMtoFailBochs.hpp"
 #include "sal/x86/X86Architecture.hpp"
 
 using namespace fail;
 
-LLVMtoFailBochs::LLVMtoFailBochs() {
-	/* These magic numbers are taken from the llvm compiler (MC), they
-	   do not appear in any header. They hopefully will never
-	   change */
-	llvm_to_fail_map[1]	 = reginfo_t(RID_CAX, 8,  8) ;	// AH
-	llvm_to_fail_map[2]	 = reginfo_t(RID_CAX, 8,  0);		// AL
-	llvm_to_fail_map[3]	 = reginfo_t(RID_CAX, 16, 0);		// AX
-	llvm_to_fail_map[43] = reginfo_t(RID_CAX, 32, 0);		// EAX
+LLVMtoFailBochs::LLVMtoFailBochs(LLVMDisassembler *disas) {
+	std::map<std::string, struct reginfo_t> reg_name_map;
 
-	llvm_to_fail_map[4]	 = reginfo_t(RID_CBX, 8,  8);		// BH
-	llvm_to_fail_map[5]	 = reginfo_t(RID_CBX, 8,  0);		// BL
-	llvm_to_fail_map[8]	 = reginfo_t(RID_CBX, 16, 0);		// BX
-	llvm_to_fail_map[45] = reginfo_t(RID_CBX, 32, 0);		// EBX
+	reg_name_map["AH"] = reginfo_t(RID_CAX, 8,  8);
+	reg_name_map["AL"] = reginfo_t(RID_CAX, 8,  0);
+	reg_name_map["AX"] = reginfo_t(RID_CAX, 16, 0);
+	reg_name_map["EAX"] = reginfo_t(RID_CAX, 32, 0);
 
-	llvm_to_fail_map[9]	 = reginfo_t(RID_CCX, 8, 8);		// CH
-	llvm_to_fail_map[10] = reginfo_t(RID_CCX, 8, 0);		// CL
-	llvm_to_fail_map[28] = reginfo_t(RID_CCX, 16, 0);		// CX
-	llvm_to_fail_map[46] = reginfo_t(RID_CCX);	// ECX
+	reg_name_map["BH"] = reginfo_t(RID_CBX, 8,  8);
+	reg_name_map["BL"] = reginfo_t(RID_CBX, 8,  0);
+	reg_name_map["BX"] = reginfo_t(RID_CBX, 16, 0);
+	reg_name_map["EBX"] = reginfo_t(RID_CBX, 32, 0);
 
-	llvm_to_fail_map[29] = reginfo_t(RID_CDX, 8, 8);		// DH
-	llvm_to_fail_map[32] = reginfo_t(RID_CDX, 8, 0);		// DL
-	llvm_to_fail_map[42] = reginfo_t(RID_CDX, 16, 0);		// DX
-	llvm_to_fail_map[48] = reginfo_t(RID_CDX);	// EDX
+	reg_name_map["CH"] = reginfo_t(RID_CCX, 8, 8);
+	reg_name_map["CL"] = reginfo_t(RID_CCX, 8, 0);
+	reg_name_map["CX"] = reginfo_t(RID_CCX, 16, 0);
+	reg_name_map["ECX"] = reginfo_t(RID_CCX);
 
-	llvm_to_fail_map[30] = reginfo_t(RID_CDI, 16, 0);		// DI
-	llvm_to_fail_map[31] = reginfo_t(RID_CDI, 8, 0);		// DIL
-	llvm_to_fail_map[47] = reginfo_t(RID_CDI);	// EDI
+	reg_name_map["DH"] = reginfo_t(RID_CDX, 8, 8);
+	reg_name_map["DL"] = reginfo_t(RID_CDX, 8, 0);
+	reg_name_map["DX"] = reginfo_t(RID_CDX, 16, 0);
+	reg_name_map["EDX"] = reginfo_t(RID_CDX);
 
-	llvm_to_fail_map[6]	 = reginfo_t(RID_CBP, 16, 0);		// BP
-	llvm_to_fail_map[7]	 = reginfo_t(RID_CBP, 8, 0);		// BPL
-	llvm_to_fail_map[44] = reginfo_t(RID_CBP);	// EBP
+	reg_name_map["DI"] = reginfo_t(RID_CDI, 16, 0);
+	reg_name_map["DIL"] = reginfo_t(RID_CDI, 8, 0);
+	reg_name_map["EDI"] = reginfo_t(RID_CDI);
 
-	llvm_to_fail_map[49]   = reginfo_t(RID_FLAGS);		  // EFLAGS
+	reg_name_map["BP"] = reginfo_t(RID_CBP, 16, 0);
+	reg_name_map["BPL"] = reginfo_t(RID_CBP, 8, 0);
+	reg_name_map["EBP"] = reginfo_t(RID_CBP);
 
-	llvm_to_fail_map[50]   = reginfo_t(RID_PC);			   // EIP
+	reg_name_map["EFLAGS"] = reginfo_t(RID_FLAGS);
 
-	llvm_to_fail_map[115] = reginfo_t(RID_CSI, 16, 0);	// SI
-	llvm_to_fail_map[53]  = reginfo_t(RID_CSI); // ESI
+	reg_name_map["EIP"] = reginfo_t(RID_PC);
 
-	llvm_to_fail_map[54]  = reginfo_t(RID_CSP); // ESP
-	llvm_to_fail_map[117] = reginfo_t(RID_CSP, 16, 0);	// SP
-	llvm_to_fail_map[118] = reginfo_t(RID_CSP, 8, 0);		// SPL
+	reg_name_map["SI"] = reginfo_t(RID_CSI, 16, 0);
+	reg_name_map["ESI"] = reginfo_t(RID_CSI);
+
+	reg_name_map["ESP"] = reginfo_t(RID_CSP);
+	reg_name_map["SP"] = reginfo_t(RID_CSP, 16, 0);
+	reg_name_map["SPL"] = reginfo_t(RID_CSP, 8, 0);
+
+	reg_name_map["CR0"] = reginfo_t(RID_CR0);
+	reg_name_map["CR2"] = reginfo_t(RID_CR2);
+	reg_name_map["CR3"] = reginfo_t(RID_CR3);
+	reg_name_map["CR4"] = reginfo_t(RID_CR4);
+
+	reg_name_map["CS"] = reginfo_t(RID_CS, 16, 0);
+	reg_name_map["DS"] = reginfo_t(RID_DS, 16, 0);
+	reg_name_map["ES"] = reginfo_t(RID_ES, 16, 0);
+	reg_name_map["FS"] = reginfo_t(RID_FS, 16, 0);
+	reg_name_map["GS"] = reginfo_t(RID_GS, 16, 0);
+	reg_name_map["SS"] = reginfo_t(RID_SS, 16, 0);
+
+	const llvm::MCRegisterInfo &reg_info = disas->getRegisterInfo();
+	for (unsigned int i = 0; i < reg_info.getNumRegs(); ++i){
+		std::string name = reg_info.getName(i);
+		if (reg_name_map.count(name) > 0) {
+			llvm_to_fail_map[i] = reg_name_map[name];
+		}
+	}
 }

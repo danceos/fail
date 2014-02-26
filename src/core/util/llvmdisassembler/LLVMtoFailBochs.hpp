@@ -7,11 +7,13 @@
 
 namespace fail {
 
+class LLVMDisassembler;
+
 class LLVMtoFailBochs : public LLVMtoFailTranslator {
 
 public:
 
-	LLVMtoFailBochs();
+	LLVMtoFailBochs(LLVMDisassembler *disas);
 
 };
 } // end of namespace
