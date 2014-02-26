@@ -42,6 +42,48 @@ X86Architecture::X86Architecture()
 	pFlagReg->setName("EFLAGS");
 	m_addRegister(pFlagReg, RT_ST);
 
+	// Add the control registers
+	Register* pCR0Reg = new Register(RID_CR0, 32);
+	pCR0Reg->setName("CR0");
+	m_addRegister(pCR0Reg, RT_CONTROL);
+
+	Register* pCR2Reg = new Register(RID_CR2, 32);
+	pCR2Reg->setName("CR2");
+	m_addRegister(pCR2Reg, RT_CONTROL);
+
+	Register* pCR3Reg = new Register(RID_CR3, 32);
+	pCR3Reg->setName("CR3");
+	m_addRegister(pCR3Reg, RT_CONTROL);
+
+	Register* pCR4Reg = new Register(RID_CR4, 32);
+	pCR4Reg->setName("CR4");
+	m_addRegister(pCR4Reg, RT_CONTROL);
+
+	// Add the segment selector registers
+	Register* pCSReg = new Register(RID_CS, 16);
+	pCSReg->setName("CS");
+	m_addRegister(pCSReg, RT_SEGMENT);
+
+	Register* pDSReg = new Register(RID_DS, 16);
+	pDSReg->setName("DS");
+	m_addRegister(pDSReg, RT_SEGMENT);
+
+	Register* pESReg = new Register(RID_ES, 16);
+	pESReg->setName("ES");
+	m_addRegister(pESReg, RT_SEGMENT);
+
+	Register* pFSReg = new Register(RID_FS, 16);
+	pFSReg->setName("FS");
+	m_addRegister(pFSReg, RT_SEGMENT);
+
+	Register* pGSReg = new Register(RID_GS, 16);
+	pGSReg->setName("GS");
+	m_addRegister(pGSReg, RT_SEGMENT);
+
+	Register* pSSReg = new Register(RID_SS, 16);
+	pSSReg->setName("SS");
+	m_addRegister(pSSReg, RT_SEGMENT);
+
 	// Registers used for extended tracing:
 	size_t ids[] = {RID_CAX, RID_CBX, RID_CCX, RID_CDX, RID_CSI, RID_CDI, RID_CSP, RID_CBP, RID_FLAGS};
 	for (size_t i = 0; i < sizeof(ids)/sizeof(*ids); ++i) {
