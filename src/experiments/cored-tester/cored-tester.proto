@@ -1,0 +1,39 @@
+import "DatabaseCampaignMessage.proto";
+
+message CoredTesterProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+        enum ResultType {
+            /* Test did the right thing */
+            OK = 1;
+            OK_DETECTED_ERROR = 3;
+
+            /* Test did the wrong thing */
+            SDC_WRONG_RESULT   = 4;
+
+            /* Test detected the error */
+            ERR_TRAP = 5;
+            ERR_TIMEOUT = 6;
+
+            ERR_ASSERT_UNKOWN       = 7;
+            ERR_ASSERT_SYSTEM_STATE = 8;
+            ERR_ASSERT_CFG_REGION   = 9;
+            ERR_ASSERT_SPURIOUS     = 10;
+
+            UNKNOWN = 20;
+            NOINJECTION = 21;
+        }
+
+        required int32 bitoffset       = 1 [(sql_primary_key) = true];
+        required ResultType resulttype = 2;
+        required uint32 experiment_number = 3;
+
+        /* At which point in time did the crash occur */
+        optional uint64 time_crash = 4;
+
+        optional uint32 original_value = 5;
+
+        optional string details = 6;
+    }
+}
