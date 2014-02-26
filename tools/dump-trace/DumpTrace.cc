@@ -84,7 +84,8 @@ int main(int argc, char *argv[])
 	ProtoIStream ps(&openStream(cmd.parser()->nonOption(0), normal_stream, gz_stream));
 
 	uint64_t acctime = 0;
-	uint64_t stats_instr = 0, stats_reads = 0, stats_writes = 0, starttime = 0;
+	uint64_t stats_instr = 0, stats_reads = 0, stats_writes = 0;
+	uint64_t stats_read_b = 0, stats_write_b = 0, starttime = 0;
 
 	while (ps.getNext(&ev)) {
 		if (ev.has_time_delta()) {
@@ -137,16 +138,23 @@ int main(int argc, char *argv[])
 				     << dec << " t=" << acctime
 				     << ext.str() << "\n";
 			}
-			stats_reads += (ev.accesstype() == Trace_Event_AccessType_READ);
-			stats_writes += (ev.accesstype() == Trace_Event_AccessType_WRITE);
+			if (ev.accesstype() == Trace_Event_AccessType_READ) {
+				stats_reads++;
+				stats_read_b += ev.width();
+			} else {
+				stats_writes++;
+				stats_write_b += ev.width();
+			}
 		}
 	}
 
 	if (stats_only) {
 		cout << "#instructions: " << stats_instr << "\n"
-		     << "#memR:         " << stats_reads << "\n"
-		     << "#memW:         " << stats_writes << "\n"
-		     << "duration:      " << (acctime - starttime + 1) << endl;
+			 << "#memR:         " << stats_reads << "\n"
+			 << "#memR_bytes    " << stats_read_b << "\n"
+			 << "#memW:         " << stats_writes << "\n"
+			 << "#memW_bytes    " << stats_write_b << "\n"
+			 << "duration:      " << (acctime - starttime + 1) << endl;
 	}
 
 	return 0;
