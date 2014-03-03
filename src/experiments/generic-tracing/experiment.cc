@@ -20,6 +20,11 @@
 using namespace std;
 using namespace fail;
 
+// Check if configuration dependencies are satisfied:
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_SAVE)
+  #error This experiment needs: breakpoints, and save. Enable these in the configuration.
+#endif
+
 void  GenericTracing::parseOptions() {
 	CommandLine &cmd = CommandLine::Inst();
 	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
@@ -36,7 +41,8 @@ void  GenericTracing::parseOptions() {
 		"-S,--save-symbol \tELF symbol to save the state of the machine "
 		"(exists for backward compatibility, must be identical to --start-symbol if used)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
-		"-f,--state-file \tFile/dir to save the state to (default: state)");
+		"-f,--state-file \tFile/dir to save the state to (default: state). "
+                "Use /dev/null if no state is required");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
 		"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
 
