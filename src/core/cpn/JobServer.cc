@@ -125,7 +125,7 @@ void JobServer::run()
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		perror("socket");
 		// TODO: Log-level?
-		return;
+		exit(1);
 	}
 
 	/* Enable address reuse */
@@ -133,7 +133,7 @@ void JobServer::run()
 	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1) {
 		perror("setsockopt");
 		// TODO: Log-level?
-		return;
+		exit(1);
 	}
 
 	/* IPv4, bind to all interfaces */
@@ -146,14 +146,14 @@ void JobServer::run()
 	if (::bind(s, (struct sockaddr*) &saddr, sizeof(saddr)) == -1) {
 		perror("bind");
 		// TODO: Log-level?
-		return;
+		exit(1);
 	}
 
 	/* Listen with a backlog of maxThreads */
 	if (listen(s, m_maxThreads) == -1) {
 		perror("listen");
 		// TODO: Log-level?
-		return;
+		exit(1);
 	}
 	cout << "JobServer listening ..." << endl;
 	// TODO: Log-level?
@@ -166,7 +166,7 @@ void JobServer::run()
 			if (errno != EWOULDBLOCK) {
 				perror("poll/accept");
 				// TODO: Log-level?
-				return;
+				exit(1);
 			} else {
 				continue;
 			}
