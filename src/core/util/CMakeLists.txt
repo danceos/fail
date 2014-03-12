@@ -54,6 +54,12 @@ endif()
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
 
+# libelf and libdwarf required by ElfReader/DwarfReader
+find_package(LibElf REQUIRED)
+find_package(LibDwarf REQUIRED)
+include_directories(${LIBELF_INCLUDE_DIRS})
+include_directories(${LIBDWARF_INCLUDE_DIRS})
+
 # objdump required by Diassembler.cc
 
 set(THE_OBJDUMP "${ARCH_TOOL_PREFIX}objdump")
@@ -67,7 +73,7 @@ mark_as_advanced(FAIL_OBJDUMP)
 
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
-target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} ${ZLIB_LIBRARIES} dwarf elf)
+target_link_libraries(fail-util ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LIB_IBERTY} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
 
 option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 preferred, for 3.1 and 3.2 read doc/how-to-build.txt)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
