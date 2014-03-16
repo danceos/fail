@@ -107,6 +107,27 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		do_ip = cmd[IP];
 		do_split_registers = !cmd[NO_SPLIT];
 
+		// retrieve register IDs for general-purpose and flags register(s) for
+		// the configured architecture
+		fail::Architecture arch;
+		m_ip_register_id =
+			(*arch.getRegisterSetOfType(RT_IP)->begin())->getId();
+		fail::UniformRegisterSet *regset;
+		if (do_gp) {
+			regset = arch.getRegisterSetOfType(RT_GP);
+			for (fail::UniformRegisterSet::iterator it = regset->begin();
+				it != regset->end(); ++it) {
+				m_register_ids.insert((*it)->getId());
+			}
+		}
+		if (do_flags) {
+			regset = arch.getRegisterSetOfType(RT_ST);
+			for (fail::UniformRegisterSet::iterator it = regset->begin();
+				it != regset->end(); ++it) {
+				m_register_ids.insert((*it)->getId());
+			}
+		}
+
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
 		llvm::InitializeAllTargetMCs();
@@ -147,12 +168,10 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			continue;
 		}
 
-		/* if not tracing flags, but flags register -> ignore it
-		   if not tracing gp, but ! flags -> ignore it*/
-		if (info.id == RID_FLAGS && !do_flags)
+		/* only proceed if we want to inject into this register */
+		if (m_register_ids.find(info.id) == m_register_ids.end()) {
 			continue;
-		else if (!do_gp)
-			continue;
+		}
 
 		if (!addRegisterTrace(curtime, instr, ev, info, 'R')) {
 			return false;
@@ -169,18 +188,16 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			continue;
 		}
 
-		/* if not tracing flags, but flags register -> ignore it
-		   if not tracing gp, but ! flags -> ignore it*/
-		if (info.id == RID_FLAGS && !do_flags)
+		/* only proceed if we want to inject into this register */
+		if (m_register_ids.find(info.id) == m_register_ids.end()) {
 			continue;
-		else if (!do_gp)
-			continue;
+		}
 
 		if (!addRegisterTrace(curtime, instr, ev, info, 'W'))
 			return false;
 	}
 
-	const LLVMtoFailTranslator::reginfo_t info_pc(RID_PC);
+	const LLVMtoFailTranslator::reginfo_t info_pc(m_ip_register_id);
 	if (do_ip) {
 		if (!addRegisterTrace(curtime, instr, ev, info_pc, 'R'))
 			return false;
