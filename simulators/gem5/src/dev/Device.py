@@ -65,6 +65,19 @@ class IsaFake(BasicPioDevice):
     warn_access = Param.String("", "String to print when device is accessed")
     fake_mem = Param.Bool(False,
       "Is this device acting like a memory and thus may get a cache line sized req")
+#DanceOS
+class FailFakeDevice(BasicPioDevice):
+    type = 'FailFakeDevice'
+    pio_size = Param.Addr(0x8, "Size of address range")
+    ret_data8 = Param.UInt8(0xFF, "Default data to return")
+    ret_data16 = Param.UInt16(0xFFFF, "Default data to return")
+    ret_data32 = Param.UInt32(0xFFFFFFFF, "Default data to return")
+    ret_data64 = Param.UInt64(0xFFFFFFFFFFFFFFFF, "Default data to return")
+    ret_bad_addr = Param.Bool(False, "Return pkt status bad address on access")
+    update_data = Param.Bool(False, "Update the data that is returned on writes")
+    warn_access = Param.String("", "String to print when device is accessed")
+    fake_mem = Param.Bool(False,
+      "Is this device acting like a memory and thus may get a cache line sized req")
 
 class BadAddr(IsaFake):
     pio_addr = 0

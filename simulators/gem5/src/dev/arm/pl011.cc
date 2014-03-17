@@ -43,6 +43,7 @@
 #include "base/trace.hh"
 #include "debug/Checkpoint.hh"
 #include "debug/Uart.hh"
+#include "debug/Fail.hh" //DanceOS
 #include "dev/arm/amba_device.hh"
 #include "dev/arm/gic.hh"
 #include "dev/arm/pl011.hh"
@@ -185,7 +186,9 @@ Pl011::write(PacketPtr pkt)
     switch (daddr) {
         case UART_DR:
           if ((data & 0xFF) == 0x04 && endOnEOT) {
-            exitSimLoop("UART received EOT", 0);
+            //DanceOS
+            //exitSimLoop("UART received EOT", 0);
+            DPRINTF(Fail, "[FAIL] dev/arm/pl011.cc write(): exitSimLoop(\"UART received EOT\", 0) bypassed\n");
         }
 
         term->out(data & 0xFF);

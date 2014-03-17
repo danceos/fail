@@ -49,6 +49,7 @@
 #include "cpu/exetrace.hh"
 #include "debug/ExecFaulting.hh"
 #include "debug/SimpleCPU.hh"
+#include "debug/Fail.hh" //DanceOS
 #include "mem/packet.hh"
 #include "mem/packet_access.hh"
 #include "mem/physical.hh"
@@ -289,7 +290,11 @@ AtomicSimpleCPU::readMem(Addr addr, uint8_t * data,
             }
             dcache_access = true;
 
-            assert(!pkt.isError());
+            //DanceOS
+            //assert(!pkt.isError());
+            if(pkt.isError()) {
+                DPRINTF(Fail, "[FAIL] cpu/simple/atomic.cc readMem(): assert(!pkt.isError()) bypassed\n");
+            }
 
             // DanceOS
             #ifdef CONFIG_EVENT_MEMREAD
@@ -397,7 +402,11 @@ AtomicSimpleCPU::writeMem(uint8_t *data, unsigned size,
                 }
                 dcache_access = true;
 
-                assert(!pkt.isError());
+                //DanceOS
+                //assert(!pkt.isError());
+                if(pkt.isError()) {
+                    DPRINTF(Fail, "[FAIL] cpu/simple/atomic.cc writeMem(): assert(!pkt.isError()) bypassed\n");
+                }
 
                 // DanceOS
                 #ifdef CONFIG_EVENT_MEMWRITE

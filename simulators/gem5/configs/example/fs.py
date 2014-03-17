@@ -130,6 +130,8 @@ else:
                                ranges = [test_sys.physmem.range])
     test_sys.iobridge.slave = test_sys.iobus.master
     test_sys.iobridge.master = test_sys.membus.slave
+    test_sys.failfake = FailFakeDevice(pio_addr=0xF00); #DanceOS
+    test_sys.iobus.default = test_sys.failfake.pio #DanceOS
 
 # Sanity check
 if options.fastmem and (options.caches or options.l2cache):
