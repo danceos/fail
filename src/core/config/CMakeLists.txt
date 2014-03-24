@@ -25,7 +25,7 @@ OPTION(CONFIG_FAST_BREAKPOINTS          "Enable fast breakpoints (requires break
 OPTION(CONFIG_FAST_WATCHPOINTS          "Enable fast watchpoints (requires memory access events to be enabled)" OFF)
 SET(SERVER_COMM_HOSTNAME        "localhost"  CACHE STRING "Job-server hostname or IP")
 SET(SERVER_COMM_TCP_PORT        "1111"       CACHE STRING "Job-server TCP port")
-SET(SERVER_OUT_QUEUE_SIZE       "10000"      CACHE STRING "Queue size for outbound jobs (0 = unlimited)")
+SET(SERVER_OUT_QUEUE_SIZE       "0"      CACHE STRING "Queue size for outbound jobs (0 = unlimited)")
 SET(SERVER_PERF_LOG_PATH        "perf.log"   CACHE STRING "A file name for storing the server's performance log (CSV)")
 SET(SERVER_PERF_STEPPING_SEC    "1"          CACHE STRING "Stepping of performance measurements in seconds")
 SET(CLIENT_RAND_BACKOFF_TSTART  "3"          CACHE STRING "Lower limit of client's backoff phase in seconds")

@@ -200,6 +200,16 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 		}
 	}
+
+	if (*mysql_error(db->getHandle())) {
+		log_send << "MYSQL ERROR: " << mysql_error(db->getHandle()) << std::endl;
+		return false;
+	}
+
+	assert(experiment_count == sent_pilots && "ERROR: not all unfinished experiments pushed to queue");
+
+	mysql_free_result(pilots);
+
 	return true;
 
 }
