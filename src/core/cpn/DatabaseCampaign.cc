@@ -134,14 +134,15 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	 * other, collect_result_thread() may even starve until the memory for the
 	 * JobServer's "done" queue runs out, resulting in a crash and the loss of
 	 * all queued results. */
-	db->query("CREATE TEMPORARY TABLE IF NOT EXISTS result_ids (pilot_id INT NOT NULL PRIMARY KEY)");
+	db->query("CREATE TEMPORARY TABLE IF NOT EXISTS result_ids (pilot_id INT NOT NULL PRIMARY KEY, count INT NOT NULL)");
 	db->query("TRUNCATE TABLE result_ids");
 	std::stringstream ss;
 	ss << "INSERT INTO result_ids "
-	   << "SELECT r.pilot_id FROM " << db_connect.result_table() << " r "
+	   << "SELECT r.pilot_id, COUNT(*) FROM " << db_connect.result_table() << " r "
 	   << "JOIN fsppilot p ON r.pilot_id = p.id "
 	   << "WHERE p.fspmethod_id = " << fspmethod_id
-	   << "  AND p.variant_id = " << variant.id;
+	   << "  AND p.variant_id = " << variant.id
+	   << "  GROUP BY r.pilot_id";
 	db->query(ss.str().c_str());
 	ss.str("");
 
@@ -149,10 +150,12 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	int experiment_count;
 	std::string sql_select = "SELECT p.id, p.fspmethod_id, p.variant_id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width ";
 	ss << " FROM fsppilot p "
+	   << " LEFT JOIN result_ids r ON r.pilot_id = p.id"
 	   << " WHERE p.fspmethod_id = "  << fspmethod_id
 	   << "	   AND p.variant_id = "	<< variant.id
-	   << "    AND (SELECT COUNT(*) FROM result_ids as r WHERE r.pilot_id = p.id)"
+	   << "    AND (r.count"
 	   << " < " << expected_number_of_results(variant.variant, variant.benchmark)
+	   << "    OR r.count IS NULL)"
 	   << "    ORDER BY p.injection_instr";
 	std::string sql_body = ss.str();
 
