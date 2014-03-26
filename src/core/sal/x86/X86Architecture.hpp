@@ -50,7 +50,20 @@ enum PCRegisterId { RID_PC = RID_LAST_GP_ID, RID_LAST_PC_ID };
  * \enum FlagsRegisterId
  * Symbolic identifier to access the flags register.
  */
-enum FlagsRegisterId { RID_FLAGS = RID_LAST_PC_ID };
+enum FlagsRegisterId { RID_FLAGS = RID_LAST_PC_ID, RID_LAST_FLAGS_ID };
+
+/**
+ * \enum SegmentRegisterId
+ * Symbolic identifier to access the segment register.
+ */
+enum SegmentRegisterId { RID_CS = RID_LAST_FLAGS_ID, RID_DS, RID_ES, RID_FS,
+	RID_GS, RID_SS, RID_LAST_SEGMENT_ID};
+
+/**
+ * \enum ControlRegisterId
+ * Symbolic identifier to access the control register.
+ */
+enum ControlRegisterId { RID_CR0 = RID_LAST_SEGMENT_ID, RID_CR1, RID_CR2, RID_CR3, RID_CR4 };
 
 } // end-of-namespace: fail
 
