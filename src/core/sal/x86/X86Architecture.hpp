@@ -29,17 +29,17 @@ typedef X86Architecture Architecture;
  * in case the activated simulator has 64 bit ability.
  */
 enum GPRegisterId {
- #ifdef SIM_SUPPORT_64 // 64 bit register id's:
+ #ifdef SIM_SUPPORT_64 // 64 bit register IDs:
 	RID_RAX = 0, RID_RCX, RID_RDX, RID_RBX, RID_RSP, RID_RBP, RID_RSI, RID_RDI,
 	RID_R8, RID_R9, RID_R10, RID_R11, RID_R12, RID_R13, RID_R14, RID_R15,
- #else // 32 bit register id's:
+ #else // 32 bit register IDs:
 	RID_EAX = 0, RID_ECX, RID_EDX, RID_EBX, RID_ESP, RID_EBP, RID_ESI, RID_EDI,
 	// skip a few IDs to get identical numbers for special-purpose registers in
 	// 32 and 64 bit setups:
 	SKIP_64BIT_IDS = 15,
  #endif
 	RID_LAST_GP_ID,
-	// common register id's (independent of the current register width):
+	// common register IDs (independent of the current register width):
 	RID_CAX = 0, RID_CCX, RID_CDX, RID_CBX, RID_CSP, RID_CBP, RID_CSI, RID_CDI
 };
 
