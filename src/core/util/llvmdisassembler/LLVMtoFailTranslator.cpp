@@ -1,7 +1,10 @@
+#include "LLVMDisassembler.hpp"
 #include "LLVMtoFailTranslator.hpp"
 #include "sal/SALInst.hpp"
 
 using namespace fail;
+using namespace llvm;
+using namespace llvm::object;
 
 const LLVMtoFailTranslator::reginfo_t &	 LLVMtoFailTranslator::getFailRegisterID(unsigned int regid) {
 	ltof_map_t::iterator it = llvm_to_fail_map.find(regid);
@@ -37,4 +40,21 @@ void LLVMtoFailTranslator::setRegisterContent(ConcreteCPU & cpu, const reginfo_t
 	value |= origval;	  //  set bits to write
 
 	cpu.setRegisterContent( reg, value ); // write back register content
+}
+
+LLVMtoFailTranslator* LLVMtoFailTranslator::createFromBinary(const std::string elf_path) {
+	llvm_shutdown_obj Y;
+	llvm::InitializeAllTargetInfos();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllDisassemblers();
+
+	OwningPtr<Binary> binary;
+	assert(createBinary(elf_path, binary) == 0);
+
+	#ifndef __puma
+	LLVMDisassembler disas(dyn_cast<ObjectFile>(binary.get()));
+	return &disas.getTranslator();
+	#else
+	return 0;
+	#endif
 }

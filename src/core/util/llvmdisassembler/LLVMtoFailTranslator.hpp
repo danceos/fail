@@ -68,6 +68,8 @@ public:
 	int getFailRegisterId(unsigned int regid) { return this->getFailRegisterID(regid).id; };
 
 	reginfo_t notfound;
+
+	static LLVMtoFailTranslator* createFromBinary(const std::string elf_path);
 };
 
 } // end of namespace
