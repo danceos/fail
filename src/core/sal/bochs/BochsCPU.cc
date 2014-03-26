@@ -82,9 +82,9 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 	// TODO: BX_CPU(0) *always* correct?
 
 	if (reg->getId() == RID_FLAGS) { // EFLAGS register?
-		regdata_t regdata = getRegisterContent(reg);
 	  #ifdef SIM_SUPPORT_64
 		// We are in 64 bit mode: Just assign the lower 32 bits!
+		regdata_t regdata = getRegisterContent(reg);
 		BX_CPU(id)->writeEFlags((regdata & 0xFFFFFFFF00000000ULL) | (value & 0xFFFFFFFFULL),
 								0xffffffff);
 	  #else
