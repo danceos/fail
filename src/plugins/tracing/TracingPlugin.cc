@@ -107,7 +107,9 @@ bool TracingPlugin::run()
 				if (m_full_trace) {
 					Trace_Event_Extended &ext = *e.mutable_trace_ext();
 					// Read the accessed data
-					assert(width <= 8);
+					if (width > 8) {
+						width = 8;
+					}
 					uint64_t data = 0;
 					mm.getBytes(addr, width, &data);
 					ext.set_data(data);

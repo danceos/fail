@@ -15,7 +15,7 @@ include(FindLLVM)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS} -fno-rtti" )
 
 add_library(fail-llvmdisassembler ${SRCS})
-add_dependencies(fail-llvmdisassembler fail-sal)
+target_link_libraries(fail-llvmdisassembler fail-sal)
 target_link_libraries(fail-llvmdisassembler ${LLVM_LIBS} ${LLVM_LDFLAGS} )
 
 ### Tests

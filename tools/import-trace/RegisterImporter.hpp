@@ -1,7 +1,7 @@
 #ifndef __REGISTER_IMPORTER_H__
 #define __REGISTER_IMPORTER_H__
 
-
+#include <set>
 #include "util/CommandLine.hpp"
 #include "Importer.hpp"
 
@@ -19,6 +19,9 @@ class RegisterImporter : public Importer {
 
 	fail::CommandLine::option_handle NO_GP, FLAGS, IP, NO_SPLIT;
 	bool do_gp, do_flags, do_ip, do_split_registers;
+
+	std::set<unsigned> m_register_ids;
+	unsigned m_ip_register_id;
 
 public:
 	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false),

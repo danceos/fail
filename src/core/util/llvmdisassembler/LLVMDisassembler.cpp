@@ -12,10 +12,10 @@ LLVMtoFailTranslator & LLVMDisassembler::getTranslator() {
 		switch ( llvm::Triple::ArchType(object->getArch()) ) {
 		case llvm::Triple::x86:
 		case llvm::Triple::x86_64:
-			ltofail = new LLVMtoFailBochs;
+			ltofail = new LLVMtoFailBochs(this);
 			break;
 		case llvm::Triple::arm:
-			ltofail = new LLVMtoFailGem5;
+			ltofail = new LLVMtoFailGem5(this);
 			break;
 		default:
 			std::cout << " not supported :(";
