@@ -3,7 +3,10 @@ option( VERBOSE_MAKE "Verbose Makefile output" OFF) # defaults to OFF
 	set(CMAKE_VERBOSE_MAKEFILE ${VERBOSE_MAKE})
 
 ### Additional compiler and linker flags ##
-set(CMAKE_C_FLAGS "-g -Wall")
+# -Wunused-local-typedefs is included in -Wall since GCC 4.8, and generates a
+# flood of "typedef '...' locally defined but not used" warnings in
+# ac++-1.2-generated code
+set(CMAKE_C_FLAGS "-g -Wall -Wno-unused-local-typedefs")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections")
 
