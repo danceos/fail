@@ -85,7 +85,10 @@ void LLVMDisassembler::disassemble()
 			uint64_t End;
 			// The end is either the size of the section or the beginning of the next
 			// symbol.
-			if (si == se - 1)
+			if (Start >= SectSize)
+				// we are beyond the end of the section
+				break;
+			else if (si == se - 1)
 				End = SectSize;
 			// Make sure this symbol takes up space.
 			else if (Symbols[si + 1].first != Start)
@@ -98,7 +101,7 @@ void LLVMDisassembler::disassemble()
 				MCInst Inst;
 
 				if (disas->getInstruction(Inst, Size, memoryObject, Index,
-										  nulls(), nulls())) {
+										  nulls(), nulls()) == MCDisassembler::Success) {
 					const MCInstrDesc &desc = this->instr_info->get(Inst.getOpcode());
 					//			Inst.dump();
 					Instr instr_info;
@@ -106,6 +109,8 @@ void LLVMDisassembler::disassemble()
 					instr_info.length = Size;
 					instr_info.address = SectionAddr + Index;
 					instr_info.conditional_branch = desc.isConditionalBranch();
+
+					assert( Size > 0 && "zero size instruction disassembled" );
 
 					unsigned int  pos = 0;
 					for (MCInst::iterator it = Inst.begin(); it != Inst.end(); ++it) {
