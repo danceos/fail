@@ -1274,6 +1274,12 @@ void bx_floppy_ctrl_c::dma_write(Bit8u *data_byte)
       if (!(BX_FD_THIS s.main_status_reg & FD_MS_NDMA)) {
         DEV_dma_set_drq(FLOPPY_DMA_CHAN, 0);
       }
+
+      // DanceOS
+      if (BX_FD_THIS s.media[drive].sectors_per_track == 0) {
+        return;
+      }
+
       // time to read one sector at 300 rpm
       sector_time = 200000 / BX_FD_THIS s.media[drive].sectors_per_track;
       bx_pc_system.activate_timer(BX_FD_THIS s.floppy_timer_index,
