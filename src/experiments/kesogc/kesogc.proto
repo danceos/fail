@@ -1,0 +1,31 @@
+import "DatabaseCampaignMessage.proto";
+
+message KesoGcProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+		// make these optional to reduce overhead for server->client communication
+		enum ResultType {
+			CALCDONE = 1;
+			TIMEOUT = 2;
+			TRAP = 3;
+			EXC_ERROR = 4;
+			FT_LIST_REPAIRED = 5;
+			EXC_NULLPOINTER = 6;
+			RESILIENT_HEAP_REPAIRED = 7;
+			MEMACCESS = 8;
+			NOINJECTION = 9;
+			FT_LIST_BROKEN = 10;
+			UNKNOWN = 11;
+			RESILIENT_STACK_REPAIRED = 12;
+			EXC_PARITY = 13;
+			EXC_GC_PARITY = 14;
+			EXC_OOBOUNDS = 15;
+		}
+		// result type, see above
+		required ResultType resulttype = 4;
+		required uint32 original_value = 5;
+		required uint32 bitoffset = 6 [(sql_primary_key) = true];
+		optional string details = 7;
+	}
+}
