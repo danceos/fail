@@ -8,7 +8,9 @@
 #include "comm/ExperimentData.hpp"
 #include <google/protobuf/message.h>
 
-
+#ifndef __puma
+#include <boost/icl/interval_map.hpp>
+#endif
 
 namespace fail {
 
@@ -27,6 +29,15 @@ class DatabaseCampaign : public Campaign {
 	int fspmethod_id; // !< Which fspmethod should be put out to the clients
 
 	void collect_result_thread();
+	void load_completed_pilots();
+	unsigned existing_results_for_pilot(unsigned pilot_id);
+
+#ifndef __puma
+	typedef boost::icl::discrete_interval<unsigned>::type id_interval;
+	typedef boost::icl::interval_map<unsigned, unsigned>::type id_map;
+	typedef id_map::const_iterator id_iterator;
+	id_map completed_pilots; // !< map: Pilot IDs -> result count
+#endif
 
 public:
 	DatabaseCampaign() {};
