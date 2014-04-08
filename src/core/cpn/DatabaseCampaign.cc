@@ -88,7 +88,6 @@ bool DatabaseCampaign::run() {
 		}
 	}
 
-	log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 	log_send << "wait for the clients to complete" << std::endl;
 	campaignmanager.noMoreParameters();
 
@@ -170,7 +169,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	log_send << "Found " << experiment_count << " unfinished experiments in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
 
-	sent_pilots = 0;
+	unsigned sent_pilots = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = strtoul(row[0], NULL, 10);
 		unsigned injection_instr = strtoul(row[3], NULL, 10);
@@ -206,6 +205,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		return false;
 	}
 
+	log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 	assert(experiment_count == sent_pilots && "ERROR: not all unfinished experiments pushed to queue");
 
 	mysql_free_result(pilots);

@@ -28,8 +28,6 @@ class DatabaseCampaign : public Campaign {
 
 	void collect_result_thread();
 
-	int sent_pilots;
-
 public:
 	DatabaseCampaign() {};
 
