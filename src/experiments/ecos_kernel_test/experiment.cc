@@ -507,10 +507,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 	readTraceInfo(goldenrun_instr_counter, goldenrun_runtime_ticks,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
-	// convert to microseconds
-	goldenrun_runtime = (unsigned)
-		(goldenrun_runtime_ticks * 1000000.0 / simulator.getTimerTicksPerSecond());
-	timeout_runtime = goldenrun_runtime + 1000000/18.2; // + 1 timer tick
+
 	if (!readELFSymbols(addr_entry, addr_finish,
 		addr_testdata, addr_testdata_size, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
@@ -554,6 +551,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 
 		log << "restoring state" << endl;
 		simulator.restore(statename);
+
+		// convert to microseconds (simulator.getTimerTicksPerSecond() only
+		// works reliably when simulation has begun)
+		goldenrun_runtime = (unsigned)
+			(goldenrun_runtime_ticks * 1000000.0 / simulator.getTimerTicksPerSecond());
+		timeout_runtime = goldenrun_runtime + 1000000/18.2; // + 1 timer tick
 
 		// the outcome of ecos' test case
 		bool ecos_test_passed = false;

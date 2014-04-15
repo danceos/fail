@@ -116,6 +116,10 @@ public:
 	 */
 	void fireInterruptDone();
 	virtual simtime_t getTimerTicks() { return bx_pc_system.time_ticks(); }
+	/**
+	 * Only works reliably when the simulation has already begun, e.g., after
+	 * calling simulator.restore().
+	 */
 	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec() * 1000000; /* imprecise hack */ }
 	/* ********************************************************************
 	 * BochsController-specific (not implemented in SimulatorController!):
