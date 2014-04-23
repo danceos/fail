@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	for (int i = 1; i < argc; ++i)
 		cmd.add_args(argv[i]);
 
-	VEZSCampaign c;
+	KesoGcCampaign c;
 	if (fail::campaignmanager.runCampaign(&c)) {
 		return 0;
 	} else {

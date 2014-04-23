@@ -1,6 +1,7 @@
 set(SRCS
   Importer.cc
   MemoryImporter.cc
+  FullTraceImporter.cc
 )
 
 if (BUILD_LLVM_DISASSEMBLER)

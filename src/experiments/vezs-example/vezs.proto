@@ -1,0 +1,23 @@
+import "DatabaseCampaignMessage.proto";
+
+message VEZSProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+		// make these optional to reduce overhead for server->client communication
+		enum ResultType {
+			POSITIVE_MARKER = 1;
+			NEGATIVE_MARKER = 2;
+            NO_MARKER = 3;
+			TIMEOUT = 4;
+			TRAP = 5;
+            NOINJECTION = 6;
+            UNKNOWN = 7;
+		}
+		// result type, see above
+		required ResultType resulttype = 4;
+		required uint32 original_value = 5;
+		required uint32 bitoffset = 6 [(sql_primary_key) = true];
+		optional string details = 7;
+	}
+}

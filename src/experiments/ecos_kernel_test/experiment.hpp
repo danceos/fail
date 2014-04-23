@@ -41,8 +41,8 @@ public:
 
 	void handle_func_test_output(bool &test_failed, bool& test_passed);
 
-	static bool writeTraceInfo(unsigned instr_counter, unsigned timeout, unsigned mem1_low, unsigned mem1_high, unsigned mem2_low, unsigned mem2_high, const std::string& variant = "", const std::string& benchmark = "");
-	static bool readTraceInfo(unsigned &instr_counter, unsigned &timeout, unsigned &mem1_low, unsigned &mem1_high, unsigned &mem2_low, unsigned &mem2_high, const std::string& variant = "", const std::string& benchmark = "");
+	static bool writeTraceInfo(unsigned instr_counter, unsigned long long runtime, unsigned mem1_low, unsigned mem1_high, unsigned mem2_low, unsigned mem2_high, const std::string& variant = "", const std::string& benchmark = "");
+	static bool readTraceInfo(unsigned &instr_counter, unsigned long long &runtime, unsigned &mem1_low, unsigned &mem1_high, unsigned &mem2_low, unsigned &mem2_high, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_memorymap(const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_state(unsigned instr_offset, const std::string& variant = "", const std::string& benchmark = "");
 	static std::string filename_trace(const std::string& variant = "", const std::string& benchmark = "");

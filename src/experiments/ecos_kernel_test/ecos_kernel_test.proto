@@ -36,13 +36,16 @@ message EcosKernelTestProtoMsg {
 		// did ECC correct the fault?
 		optional Flag error_corrected = 5;
 
+		// simulated runtime factor compared to golden run (1.000 = golden run runtime)
+		optional float sim_runtime_factor = 6;
+
 		// especially interesting for TRAP/UNKNOWN: latest IP
-		optional uint32 latest_ip = 6;
+		optional uint32 latest_ip = 7;
 
 		// optional textual description of what happened
-		optional string details = 7;
+		optional string details = 8;
 
 		// experiment runtime (FIXME: should be part of DatabaseCampaignMessage instead)
-		optional float runtime = 8;
+		optional float runtime = 9;
 	}
 }

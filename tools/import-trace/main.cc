@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include "MemoryImporter.hpp"
+#include "FullTraceImporter.hpp"
 
 #ifdef BUILD_LLVM_DISASSEMBLER
 #include "InstructionImporter.hpp"
@@ -129,6 +130,8 @@ int main(int argc, char *argv[]) {
 		if (imp == "BasicImporter" || imp == "MemoryImporter" || imp == "memory" || imp == "mem") {
 			imp = "MemoryImporter";
 			importer = new MemoryImporter();
+		} else if (imp == "FullTraceImporter") {
+			importer = new FullTraceImporter();
 #ifdef BUILD_LLVM_DISASSEMBLER
 		} else if (imp == "InstructionImporter" || imp == "code") {
 			imp = "InstructionImporter";

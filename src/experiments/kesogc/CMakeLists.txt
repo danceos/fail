@@ -1,12 +1,12 @@
-set(EXPERIMENT_NAME vezs-example)
-set(EXPERIMENT_TYPE VEZSExperiment)
+set(EXPERIMENT_NAME kesogc)
+set(EXPERIMENT_TYPE KESOgc)
 configure_file(../instantiate-experiment.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
 
 ## Setup desired protobuf descriptions HERE ##
 set(MY_PROTOS
-	vezs.proto
+	kesogc.proto
 )
 
 set(MY_CAMPAIGN_SRCS
@@ -29,7 +29,6 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 ## Build library
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME} fail-comm)
 target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY})
 
 ## This is the example's campaign server distributing experiment parameters

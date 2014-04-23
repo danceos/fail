@@ -49,7 +49,7 @@ using namespace fail;
 const std::string EcosKernelTestExperiment::dir_images(DIR_IMAGES);
 const std::string EcosKernelTestExperiment::dir_prerequisites(DIR_PREREQUISITES);
 
-bool EcosKernelTestExperiment::writeTraceInfo(unsigned instr_counter, unsigned timeout,
+bool EcosKernelTestExperiment::writeTraceInfo(unsigned instr_counter, unsigned long long runtime,
 	unsigned mem1_low, unsigned mem1_high, // < 1M
 	unsigned mem2_low, unsigned mem2_high, // >= 1M
 	const std::string& variant, const std::string& benchmark) {
@@ -58,7 +58,7 @@ bool EcosKernelTestExperiment::writeTraceInfo(unsigned instr_counter, unsigned t
 		cout << "failed to open " << filename_traceinfo(variant, benchmark) << endl;
 		return false;
 	}
-	ti << instr_counter << endl << timeout << endl
+	ti << instr_counter << endl << runtime << endl
 	   << mem1_low << endl << mem1_high << endl
 	   << mem2_low << endl << mem2_high << endl;
 	ti.flush();
@@ -66,7 +66,7 @@ bool EcosKernelTestExperiment::writeTraceInfo(unsigned instr_counter, unsigned t
 	return true;
 }
 
-bool EcosKernelTestExperiment::readTraceInfo(unsigned &instr_counter, unsigned &timeout,
+bool EcosKernelTestExperiment::readTraceInfo(unsigned &instr_counter, unsigned long long &runtime,
 	unsigned &mem1_low, unsigned &mem1_high, // < 1M
 	unsigned &mem2_low, unsigned &mem2_high, // >= 1M
 	const std::string& variant, const std::string& benchmark) {
@@ -86,7 +86,7 @@ bool EcosKernelTestExperiment::readTraceInfo(unsigned &instr_counter, unsigned &
 			ss >> instr_counter;
 			break;
 		case 1:
-			ss >> timeout;
+			ss >> runtime;
 			break;
 		case 2:
 			ss >> mem1_low;
@@ -370,15 +370,16 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 		ev = simulator.resume();
 	}
 
-	unsigned long long estimated_timeout_ticks =
-		simulator.getTimerTicks() - time_start + simulator.getTimerTicksPerSecond() / 18.2; // 1s/18.2
+	unsigned long long goldenrun_runtime_ticks = simulator.getTimerTicks() - time_start;
 	// convert to microseconds
-	unsigned estimated_timeout = (unsigned)
-		(estimated_timeout_ticks * 1000000 / simulator.getTimerTicksPerSecond());
+	unsigned goldenrun_runtime = (unsigned)
+		(goldenrun_runtime_ticks * 1000000.0 / simulator.getTimerTicksPerSecond());
 
 	log << dec << "tracing finished after " << instr_counter  << " instructions" << endl;
 	log << hex << "all memory accesses within [0x" << mem1_low << ", 0x" << mem1_high << "] u [0x" << mem2_low << ", 0x" << mem2_high << "] (ignoring VGA mem)" << endl;
-	log << dec << "elapsed simulated time (plus safety margin): " << (estimated_timeout / 1000000.0) << "s" << endl;
+	log << dec << "elapsed simulated time: "
+		<< (goldenrun_runtime / 1000000.0) << "s ("
+		<< goldenrun_runtime_ticks << " ticks)" << endl;
 
 	// sanitize memory ranges
 	if (mem1_low > mem1_high) {
@@ -389,7 +390,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 	}
 
 	// save these values for experiment STEP 3
-	writeTraceInfo(instr_counter, estimated_timeout,
+	writeTraceInfo(instr_counter, goldenrun_runtime_ticks,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
 
 	simulator.removeFlow(&tp);
@@ -454,7 +455,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 	log << "STEP 3: The actual experiment." << endl;
 
 	// trace info
-	unsigned goldenrun_instr_counter, estimated_timeout, mem1_low, mem1_high, mem2_low, mem2_high;
+	unsigned goldenrun_instr_counter, mem1_low, mem1_high, mem2_low, mem2_high;
+	unsigned long long goldenrun_runtime_ticks;
+	unsigned goldenrun_runtime, timeout_runtime;
 	// ELF symbol addresses
 	guest_address_t addr_entry, addr_finish, addr_testdata, addr_testdata_size,
 		addr_test_output, addr_errors_corrected,
@@ -502,8 +505,12 @@ bool EcosKernelTestExperiment::faultInjection() {
 	unsigned instr_offset = param.msg.fsppilot().injection_instr();
 	unsigned mem_addr = param.msg.fsppilot().data_address();
 
-	readTraceInfo(goldenrun_instr_counter, estimated_timeout,
+	readTraceInfo(goldenrun_instr_counter, goldenrun_runtime_ticks,
 		mem1_low, mem1_high, mem2_low, mem2_high, m_variant, m_benchmark);
+	// convert to microseconds
+	goldenrun_runtime = (unsigned)
+		(goldenrun_runtime_ticks * 1000000.0 / simulator.getTimerTicksPerSecond());
+	timeout_runtime = goldenrun_runtime + 1000000/18.2; // + 1 timer tick
 	if (!readELFSymbols(addr_entry, addr_finish,
 		addr_testdata, addr_testdata_size, addr_test_output,
 		addr_errors_corrected, addr_panic, addr_text_start, addr_text_end,
@@ -567,6 +574,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 		// record serial output
 		SerialOutputLogger sol(0x3f8, LIMIT_SERIAL);
 		simulator.addFlow(&sol);
+
+		// measure elapsed time
+		simtime_t time_start = simulator.getTimerTicks();
 
 		BaseListener* ev;
 
@@ -671,7 +681,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		simulator.addListener(&ev_mem_outside4);
 
 		// timeout (e.g., stuck in a HLT instruction)
-		TimerListener ev_timeout(estimated_timeout);
+		TimerListener ev_timeout(timeout_runtime);
 		simulator.addListener(&ev_timeout);
 
 		// grant generous (10x) more instructions before aborting to avoid false positives
@@ -775,6 +785,9 @@ bool EcosKernelTestExperiment::faultInjection() {
 				output_correct = false;
 			}
 		}
+
+		result->set_sim_runtime_factor(
+			(simulator.getTimerTicks() - time_start) / (double) goldenrun_runtime_ticks);
 
 		if (ev == &func_finish && output_correct) {
 			// do we reach finish?

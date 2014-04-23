@@ -13,7 +13,7 @@ Required for Fail*:
  - protobuf-compiler
  - cmake 2.8.2 (2.8.11 preferred)
  - cmake-curses-gui
- - binutils-dev
+ - binutils-dev, on newer systems libiberty-dev
  - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
    obtained from <http://www.aspectc.org>; nightlies can be downloaded from
    <http://akut.aspectc.org>.  Make sure you use the 64-bit version if running

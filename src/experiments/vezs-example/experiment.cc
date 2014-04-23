@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <iostream>
 #include <fstream>
 
@@ -8,87 +9,228 @@
 
 #include <stdlib.h>
 #include "experiment.hpp"
-#include "experimentInfo.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
 
+#include "sal/bochs/BochsListener.hpp"
 #include <string>
+#include <vector>
+#include <set>
+#include <algorithm>
+
+#include "util/llvmdisassembler/LLVMtoFailTranslator.hpp"
+#include "util/llvmdisassembler/LLVMtoFailBochs.hpp"
+#include "campaign.hpp"
+#include "vezs.pb.h"
+#include "util/Disassembler.hpp"
+
 using namespace std;
 using namespace fail;
 
+// Check if configuration dependencies are satisfied:
+#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) 
+     #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
+#endif
+
+void VEZSExperiment::redecodeCurrentInstruction() {
+	/* Flush Instruction Caches and Prefetch queue */
+	BX_CPU_C *cpu_context = simulator.getCPUContext();
+	cpu_context->invalidate_prefetch_q();
+	cpu_context->iCache.flushICacheEntries();
+
+
+	guest_address_t pc = simulator.getCPU(0).getInstructionPointer();
+	bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+
+	cout << "REDECODE INSTRUCTION!" << endl;
+
+	Bit32u eipBiased = pc + cpu_context->eipPageBias;
+	Bit8u  instr_plain[32];
+
+	MemoryManager& mm = simulator.getMemoryManager();
+	mm.getBytes(pc, 32, instr_plain);
+
+	unsigned remainingInPage = cpu_context->eipPageWindowSize - eipBiased;
+	int ret;
+#if BX_SUPPORT_X86_64
+	if (cpu_context->cpu_mode == BX_MODE_LONG_64)
+		ret = cpu_context->fetchDecode64(instr_plain, currInstr, remainingInPage);
+	else
+#endif
+		ret = cpu_context->fetchDecode32(instr_plain, currInstr, remainingInPage);
+	if (ret < 0) {
+		// handle instrumentation callback inside boundaryFetch
+		cpu_context->boundaryFetch(instr_plain, remainingInPage, currInstr);
+	}
+}
+
+unsigned VEZSExperiment::injectBitFlip(address_t data_address, unsigned data_width, unsigned bitpos){
+    MemoryManager& mm = simulator.getMemoryManager();
+    unsigned int value, injectedval;
+
+    value = mm.getByte(data_address);
+    injectedval = value ^ (1 << bitpos);
+    mm.setByte(data_address, injectedval);
+
+    cout << "INJECTION at: 0x" << hex	<< setw(2) << setfill('0') << data_address
+         << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x" << setw(2) << setfill('0') << injectedval << endl;
+
+    /* If it is the current instruction redecode it */
+    guest_address_t pc = simulator.getCPU(0).getInstructionPointer();
+    bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+    if (currInstr) {
+        unsigned length_in_bytes = currInstr->ilen();
+
+        if (pc <= data_address && data_address <= (pc + length_in_bytes)) {
+            redecodeCurrentInstruction();
+        }
+    }
+
+    return value;
+}
+
+
+void handleEvent(VEZSProtoMsg_Result& result, VEZSProtoMsg_Result_ResultType restype, const std::string &msg) {
+	cout << "Result details: " << msg << endl;
+	result.set_resulttype(restype);
+	result.set_details(msg);
+}
+
+
 bool VEZSExperiment::run()
 {
-  //MemoryManager& mm = simulator.getMemoryManager();
+    //  m_dis.init();
+    //******* Boot, and store state *******//
+    cout << "STARTING EXPERIMENT" << endl;
 
-  //m_elf.printDemangled();
-  m_log << "STARTING EXPERIMENT" << endl;
-  m_log << "Instruction Pointer: 0x" << hex << simulator.getCPU(0).getInstructionPointer() << endl;
-// Test register access
-  Register* reg = simulator.getCPU(0).getRegister(RI_R1);
-  m_log << "Register R1: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
+	unsigned executed_jobs = 0;
 
-  reg = simulator.getCPU(0).getRegister(RI_R2);
-  m_log << "Register R2: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
+    // Setup exit points
+    const ElfSymbol &s_positive = m_elf.getSymbol("fail_marker_positive");
+    BPSingleListener l_positive(s_positive.getAddress());
+
+    const ElfSymbol &s_negative = m_elf.getSymbol("fail_marker_negative");
+    BPSingleListener l_negative(s_negative.getAddress());
+
+    const ElfSymbol &s_end = m_elf.getSymbol("fail_trace_stop");
+	BPSingleListener l_end(s_end.getAddress());
+	
+	TrapListener l_trap(ANY_TRAP);
+
+    TimerListener l_timeout(500 * 1000); // 500 ms
+
+    assert(s_positive.isValid() || "fail_marker_positive not found");
+    assert(s_negative.isValid() || "fail_marker_negative not found");
+    assert(s_end.isValid() ||"fail_trace_stop not found");
 
 
-// Test Listeners
-  address_t address = m_elf.getSymbol("incfoo").getAddress();
-  address &= ~1; // Cortex M3 Thumb Mode has the first bit set..
-  m_log << "incfoo() @ 0x" << std::hex << address << std::endl;
+	while (executed_jobs < 25 || m_jc->getNumberOfUndoneJobs() > 0) {
+		cout << "asking jobserver for parameters" << endl;
+		VEZSExperimentData param;
+		if(!m_jc->getParam(param)){
+			cout << "Dying." << endl; // We were told to die.
+			simulator.terminate(1);
+		}
 
-  address_t pfoo = m_elf.getSymbol("foo").getAddress();
-  //BPSingleListener bp(address);
-  //BPRangeListener bp(address-32, address + 32);
-  MemWriteListener l_foo( pfoo );
-  //MemAccessListener l_foo( 0x20002074 ); l_foo.setWatchWidth(0x4);
-  reg = simulator.getCPU(0).getRegister(RI_R4);
+		// Get input data from	Jobserver
+		unsigned  injection_instr = param.msg.fsppilot().injection_instr();
+		address_t data_address = param.msg.fsppilot().data_address();
+		unsigned data_width = param.msg.fsppilot().data_width();
 
-  //unsigned foo = 23;
-  for(int i = 0; i < 15; i++){
-    simulator.addListenerAndResume(&l_foo);
-    //if(i == 0) mm.setBytes(pfoo, 4, (void*)&foo);
-    m_log << " Breakpoint hit! @ 0x" << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
-    m_log << " Trigger PC: 0x" << std::hex << l_foo.getTriggerInstructionPointer() << std::endl;
-    //m_log << " Register R3: 0x" << hex << simulator.getCPU(0).getRegisterContent(reg) << endl;
-    //mm.getBytes(pfoo, 4, (void*)&foo);
-    //m_log << " foo @ 0x"<< std::hex << pfoo << " = " << foo << std::endl;
-  }
+		for (int bit_offset = 0; bit_offset < 8; ++bit_offset) {
+			// 8 results in one job
+			VEZSProtoMsg_Result *result = param.msg.add_result();
+			result->set_bitoffset(bit_offset);
 
-/*
-  BPRangeListener rbp(0xef, 0xff);
-  simulator.addListener(&rbp);
+			cout << "restoring state" << endl;
+			// Restore to the image, which starts at address(main)
+			simulator.restore("state");
+			executed_jobs ++;
 
-  MemAccessListener l_mem_w(0x1111, MemAccessEvent::MEM_WRITE);
-  l_mem_w.setWatchWidth(16);
-  simulator.addListener(&l_mem_w);
+			cout << "Trying to inject @ instr #" << dec << injection_instr << endl;
 
-  MemAccessListener l_mem_r(0x2222, MemAccessEvent::MEM_READ);
-  l_mem_r.setWatchWidth(16);
-  simulator.addListener(&l_mem_r);
 
-  MemAccessListener l_mem_rw(0x3333, MemAccessEvent::MEM_READWRITE);
-  l_mem_rw.setWatchWidth(16);
-  simulator.addListener(&l_mem_rw);
+			if (injection_instr > 0) {
+				simulator.clearListeners();
+				// XXX could be improved with intermediate states (reducing runtime until injection)
+				simulator.addListener(&l_end);
 
-  simulator.clearListeners();
-// resume backend.
-//  simulator.resume();
+                BPSingleListener bp;
+				bp.setWatchInstructionPointer(ANY_ADDR);
+				
+				// Fix offset by 1 error
+				bp.setCounter(injection_instr + 1);
+				
+				simulator.addListener(&bp);
 
-// Test Memory access
-  address_t targetaddress = 0x12345678;
-  MemoryManager& mm = simulator.getMemoryManager();
-  mm.setByte(targetaddress, 0x42);
-  mm.getByte(targetaddress);
+				bool inject = true;
+				while (1) {
+					fail::BaseListener * listener = simulator.resume();
+					// finish() before FI?
+					if (listener == &l_end) {
+						cout << "experiment reached finish() before FI" << endl;
+						handleEvent(*result, result->NOINJECTION, "time_marker reached before instr2");
+						inject = false;
+						break;
+					} else if (listener == &bp) {
+                        break;
+					} else {
+						inject = false;
+						handleEvent(*result, result->NOINJECTION, "WTF");
+						break;
+					}
+				}
 
-  uint8_t tb[] = {0xab, 0xbb, 0xcc, 0xdd};
-  mm.setBytes(targetaddress, 4, tb);
-  *((uint32_t*)(tb)) = 0; // clear array.
-  // read back bytes
-  mm.getBytes(targetaddress, 4, tb);
+				// Next experiment
+				if (!inject)
+					continue;
+			}
+           
+			address_t injection_instr_absolute = param.msg.fsppilot().injection_instr_absolute();
+			if (simulator.getCPU(0).getInstructionPointer() != injection_instr_absolute) {
+				cout << "Invalid Injection address EIP=0x" 
+					  << std::hex << simulator.getCPU(0).getInstructionPointer()
+					  << " != 0x" << injection_instr_absolute << std::endl;
+				simulator.terminate(1);
+			}
 
-*/
-  // Explicitly terminate, or the simulator will continue to run.
-  simulator.terminate();
+			/// INJECT BITFLIP:
+			result->set_original_value(injectBitFlip(data_address, data_width, bit_offset));
+
+            simulator.clearListeners();
+            simulator.addListener(&l_timeout);
+            simulator.addListener(&l_trap);
+            simulator.addListener(&l_positive);
+            simulator.addListener(&l_negative);
+
+
+            cout << "Resuming till the crash" << std::endl;
+            // resume and wait for results
+            fail::BaseListener* l = simulator.resume();
+            cout << "End of execution" << std::endl;
+
+            // Evaluate result
+            if(l == &l_positive) {
+                handleEvent(*result, result->POSITIVE_MARKER, "fail_marker_positive()");
+            } else if(l == &l_negative) {
+                handleEvent(*result, result->NEGATIVE_MARKER, "fail_marker_negative()");
+            } else if (l == &l_timeout) {
+                handleEvent(*result, result->TIMEOUT, "500ms");
+            }  else if (l == &l_trap) {
+                stringstream sstr;
+                sstr << "trap #" << l_trap.getTriggerNumber();
+                handleEvent(*result, result->TRAP, sstr.str());
+            } else {
+                handleEvent(*result, result->UNKNOWN, "UNKNOWN event");
+            }
+            simulator.clearListeners();
+        }
+
+        m_jc->sendResult(param);
+    }
+    // Explicitly terminate, or the simulator will continue to run.
+    simulator.terminate();
 }
+

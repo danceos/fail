@@ -12,14 +12,21 @@ using namespace fail;
 boost::mutex Database::m_global_lock;
 #endif
 
+static CommandLine::option_handle DATABASE, HOSTNAME, USERNAME, DBDEFAULTS;
+
 Database::Database(const std::string &username, const std::string &host, const std::string &database) {
 #ifndef __puma
 	boost::lock_guard<boost::mutex> guard(m_global_lock);
 #endif
+	CommandLine &cmd = CommandLine::Inst();
 
+	std::string db_conf_file = "~/.my.cnf";
+	if (cmd[DBDEFAULTS].count()) {
+		db_conf_file = cmd[DBDEFAULTS].first()->arg;
+	}
 	handle = mysql_init(0);
 	last_result = 0;
-	mysql_options(handle, MYSQL_READ_DEFAULT_FILE, "~/.my.cnf");
+	mysql_options(handle, MYSQL_READ_DEFAULT_FILE, db_conf_file.c_str());
 	if (!mysql_real_connect(handle, host.c_str(),
 							username.c_str(),
 							0, database.c_str(), 0, 0, 0)) {
@@ -231,8 +238,6 @@ std::string Database::escape_string(const std::string unescaped_string) {
 	return result;
 }
 
-static CommandLine::option_handle DATABASE, HOSTNAME, USERNAME;
-
 void Database::cmdline_setup() {
 	CommandLine &cmd = CommandLine::Inst();
 
@@ -241,7 +246,9 @@ void Database::cmdline_setup() {
 	HOSTNAME	  = cmd.addOption("H", "hostname", Arg::Required,
 								  "-h/--hostname \tMYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
-								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)\n");
+								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)");
+	DBDEFAULTS	  = cmd.addOption("", "database-option--file", Arg::Required,
+								  "--database-option-file \toverride MySQL ~/.my.cnf option file (prepend with './' for files in the CWD)\n");
 
 	// should be called before any threads are spawned
 	mysql_library_init(0, NULL, NULL);
