@@ -5,6 +5,9 @@
 #include <unistd.h>
 
 #include "util/Logger.hpp"
+#include "util/ElfReader.hpp"
+#include "util/CommandLine.hpp"
+#include "util/gzstream/gzstream.h"
 
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
@@ -25,6 +28,8 @@
 
 using namespace std;
 using namespace fail;
+const std::string WeatherMonitorExperiment::dir_images(DIR_IMAGES);
+const std::string WeatherMonitorExperiment::dir_prerequisites(DIR_PREREQUISITES);
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
@@ -32,46 +37,169 @@ using namespace fail;
   #error This experiment needs: breakpoints, traps, save, and restore. Enable these in the configuration.
 #endif
 
-bool WeatherMonitorExperiment::run()
+bool WeatherMonitorExperiment::readElfSymbols(
+	guest_address_t& entry,
+	guest_address_t& text_start,
+	guest_address_t& text_end,
+	guest_address_t& data_start,
+	guest_address_t& data_end,
+	guest_address_t& wait_begin,
+	guest_address_t& wait_end,
+	guest_address_t& vptr_panic)
 {
-	char const *statename = "bochs.state" WEATHER_SUFFIX;
-	Logger log("Weathermonitor", false);
-	BPSingleListener bp;
+	ElfReader elfreader(filename_elf(m_variant, m_benchmark).c_str());
 
-	log << "startup" << endl;
+	entry = elfreader.getSymbol("main").getAddress();
+	text_start = elfreader.getSymbol("___TEXT_START__").getAddress();
+	text_end = elfreader.getSymbol("___TEXT_END__").getAddress();
+	data_start = elfreader.getSymbol("___DATA_START__").getAddress();
+	data_end = elfreader.getSymbol("___BSS_END__").getAddress();
+	wait_begin = elfreader.getSymbol("wait_begin").getAddress();
+	wait_end = elfreader.getSymbol("wait_end").getAddress();
 
-/*
- * this does not work as the guestsys doesn't output anything
- * albeit that, it's no longer needed in this experiment
- */
-
-#if 0
-	// STEP 0: record memory map with vptr addresses
-	ofstream mmap;
-	mmap.open ("memory.map");
-	GuestListener g;
-	while (true) {
-		simulator.addListenerAndResume(&g);
-		mmap << g.getData() << flush;
+	// vptr_panic only exists in guarded version
+	vptr_panic = elfreader.getSymbol("vptr_panic").getAddress();
+	// use a dummy address, in case the symbol cannot be found
+	if (vptr_panic == ADDR_INV) {
+		vptr_panic = 99999999;
 	}
-	mmap.close();
-#endif
 
-#if 1
+	if (entry == ADDR_INV || text_start == ADDR_INV || text_end == ADDR_INV ||
+		data_start == ADDR_INV || data_end == ADDR_INV ||
+		wait_begin == ADDR_INV || wait_end == ADDR_INV) {
+		return false;
+	}
+
+	return true;
+}
+
+std::string WeatherMonitorExperiment::filename_elf(const std::string& variant, const std::string& benchmark)
+{
+    if (variant.size() && benchmark.size()) {
+        return dir_images + "/" + variant + ".elf";
+    }
+    return "weather.elf";
+}
+
+std::string WeatherMonitorExperiment::filename_state(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + ".state";
+	}
+	return "state.weather";
+}
+
+std::string WeatherMonitorExperiment::filename_trace(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + ".trace";
+	}
+	return "trace.weather";
+}
+
+std::string WeatherMonitorExperiment::filename_traceinfo(const std::string& variant, const std::string& benchmark)
+{
+	if (variant.size() && benchmark.size()) {
+		return dir_prerequisites + "/" + variant + ".info";
+	}
+	return "weather.info";
+}
+
+bool WeatherMonitorExperiment::writeTraceInfo(unsigned numinstr_tracing, unsigned numinstr_after)
+{
+	ofstream ti(filename_traceinfo(m_variant, m_benchmark).c_str(), ios::out);
+	if (!ti.is_open()) {
+		cout << "failed to open " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		return false;
+	}
+	ti << numinstr_tracing << endl << numinstr_after << endl;
+	ti.flush();
+	ti.close();
+	return true;
+}
+
+bool WeatherMonitorExperiment::readTraceInfo(unsigned& numinstr_tracing, unsigned& numinstr_after)
+{
+	ifstream file(filename_traceinfo(m_variant, m_benchmark).c_str());
+	if (!file.is_open()) {
+		cout << "failed to open " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		return false;
+	}
+
+	string buf;
+	unsigned count = 0;
+
+	while (getline(file, buf)) {
+		stringstream ss(buf, ios::in);
+		switch (count) {
+		case 0:
+			ss >> numinstr_tracing;
+			break;
+		case 1:
+			ss >> numinstr_after;
+			break;
+		}
+		count++;
+	}
+	file.close();
+	assert(count == 2);
+	return (count == 2);
+}
+
+
+void WeatherMonitorExperiment::parseOptions()
+{
+	CommandLine &cmd = CommandLine::Inst();
+	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>");
+	CommandLine::option_handle HELP =
+		cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
+	CommandLine::option_handle VARIANT =
+		cmd.addOption("", "variant", Arg::Required, "--variant v \texperiment variant");
+	CommandLine::option_handle BENCHMARK =
+		cmd.addOption("", "benchmark", Arg::Required, "--benchmark b \tbenchmark");
+
+	if (!cmd.parse()) {
+		cerr << "Error parsing arguments." << endl;
+		simulator.terminate(1);
+	} else if (cmd[HELP]) {
+		cmd.printUsage();
+		simulator.terminate(0);
+	}
+
+	if (cmd[VARIANT].count() > 0 && cmd[BENCHMARK].count() > 0) {
+		m_variant = std::string(cmd[VARIANT].first()->arg);
+		m_benchmark = std::string(cmd[BENCHMARK].first()->arg);
+	} else {
+		cerr << "Please supply parameters for --variant and --benchmark." << endl;
+		simulator.terminate(1);
+	}
+}
+
+bool WeatherMonitorExperiment::establishState(guest_address_t& entry)
+{
 	// STEP 1: run until interesting function starts, and save state
-	bp.setWatchInstructionPointer(WEATHER_FUNC_MAIN);
+	bp.setWatchInstructionPointer(entry);
 	simulator.addListenerAndResume(&bp);
 	log << "test function entry reached, saving state" << endl;
 	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
-	simulator.save(statename);
-	assert(bp.getTriggerInstructionPointer() == WEATHER_FUNC_MAIN);
-	assert(simulator.getCPU(0).getInstructionPointer() == WEATHER_FUNC_MAIN);
+	simulator.save(filename_state(m_variant, m_benchmark).c_str());
+	assert(bp.getTriggerInstructionPointer() == entry);
+	assert(simulator.getCPU(0).getInstructionPointer() == entry);
 
+	return true;
+}
+
+bool WeatherMonitorExperiment::performTrace(
+			guest_address_t& entry,
+			guest_address_t& data_start,
+			guest_address_t& data_end,
+			guest_address_t& wait_end)
+{
 	// STEP 2: record trace for fault-space pruning
-	log << "restoring state" << endl;
-	simulator.restore(statename);
+	log << "STEP 2 restoring state" << endl;
+	simulator.restore(filename_state(m_variant, m_benchmark).c_str());
 	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
-	assert(simulator.getCPU(0).getInstructionPointer() == WEATHER_FUNC_MAIN);
+	assert(simulator.getCPU(0).getInstructionPointer() == entry);
 
 	log << "enabling tracing" << endl;
 	TracingPlugin tp;
@@ -80,13 +208,12 @@ bool WeatherMonitorExperiment::run()
 
 	// restrict memory access logging to injection target
 	MemoryMap mm;
-	mm.add(WEATHER_DATA_START, WEATHER_DATA_END - WEATHER_DATA_START);
+	mm.add(data_start, data_end - data_start);
 	tp.restrictMemoryAddresses(&mm);
 	//tp.setLogIPOnly(true);
 
 	// record trace
-	char const *tracefile = "trace.tc" WEATHER_SUFFIX;
-	ofstream of(tracefile);
+	ogzstream of(filename_trace(m_variant, m_benchmark).c_str());
 	tp.setTraceFile(&of);
 
 	// this must be done *after* configuring the plugin:
@@ -95,7 +222,7 @@ bool WeatherMonitorExperiment::run()
 #if 1
 	// trace WEATHER_NUMITER_TRACING measurement loop iterations
 	// -> calibration
-	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
+	bp.setWatchInstructionPointer(wait_end);
 	bp.setCounter(WEATHER_NUMITER_TRACING);
 #else
 	// FIXME this doesn't work properly: trace is one instruction too short as
@@ -111,43 +238,50 @@ bool WeatherMonitorExperiment::run()
 
 	// count instructions
 	// FIXME add SAL functionality for this?
-	int instr_counter = 0;
+	unsigned numinstr_tracing = 0;
 	while (simulator.resume() == &ev_count) {
-		++instr_counter;
+		++numinstr_tracing;
 		simulator.addListener(&ev_count);
 	}
 
-	log << dec << "tracing finished after " << instr_counter
+	log << dec << "tracing finished after " << numinstr_tracing
 	    << " instructions, seeing wait_end " << WEATHER_NUMITER_TRACING << " times" << endl;
 	simulator.removeFlow(&tp);
 
 	// serialize trace to file
 	if (of.fail()) {
-		log << "failed to write " << tracefile << endl;
+		log << "failed to write " << filename_trace(m_variant, m_benchmark) << endl;
 		simulator.clearListeners(this); // cleanup
 		return false;
 	}
 	of.close();
-	log << "trace written to " << tracefile << endl;
+	log << "trace written to " << filename_trace(m_variant, m_benchmark) << endl;
 
 	// wait another WEATHER_NUMITER_AFTER measurement loop iterations
-	bp.setWatchInstructionPointer(WEATHER_FUNC_WAIT_END);
+	bp.setWatchInstructionPointer(wait_end);
 	bp.setCounter(WEATHER_NUMITER_AFTER);
 	simulator.addListener(&bp);
 
 	// count instructions
 	// FIXME add SAL functionality for this?
-	instr_counter = 0;
+	unsigned numinstr_after = 0;
 	while (simulator.resume() == &ev_count) {
-		++instr_counter;
+		++numinstr_after;
 		simulator.addListener(&ev_count);
 	}
 
-	log << dec << "experiment finished after " << instr_counter
+	log << dec << "experiment finished after " << numinstr_after
 	    << " instructions, seeing wait_end " << WEATHER_NUMITER_AFTER << " times" << endl;
 
-#elif 0
-	// STEP 3: The actual experiment.
+	if (!writeTraceInfo(numinstr_tracing, numinstr_after)) {
+		log << "failed to write " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		return false;
+	}
+	return true;
+}
+
+bool WeatherMonitorExperiment::faultInjection()
+{
 #if !LOCAL
 	for (int i = 0; i < 50 || (m_jc.getNumberOfUndoneJobs() != 0) ; ++i) { // only do 50 sequential experiments, to prevent swapping
 	// 50 exp ~ 0.5GB RAM usage per instance (linearly increasing)
@@ -168,9 +302,29 @@ bool WeatherMonitorExperiment::run()
 	param.msg.fsppilot().set_data_address(0x00103bdc);
 #endif
 
-
 	int id = param.getWorkloadID();
+	m_variant = param.msg.fsppilot().variant();
+	m_benchmark = param.msg.fsppilot().benchmark();
 	unsigned  injection_instr = param.msg.fsppilot().injection_instr();
+
+	/* get symbols from ELF */
+	log << "retrieving ELF addresses..." << endl;
+	guest_address_t entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic;
+	if (!readElfSymbols(entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic)) {
+		log << "failed, essential symbols are missing!" << endl;
+		simulator.terminate(1);
+	} else {
+		log << "successfully retrieved ELF's addresses." << endl;
+	}
+
+	/* get NUMINSTR_TRACING and NUMINSTR_AFTER */
+	unsigned numinstr_tracing, numinstr_after;
+	if (!readTraceInfo(numinstr_tracing, numinstr_after)) {
+		log << "failed to read trace info from " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		simulator.terminate(1);
+		return false;
+	}
+
 	address_t data_address = param.msg.fsppilot().data_address();
 
 	//old data. now it resides in the DatabaseCampaignMessage
@@ -184,7 +338,7 @@ bool WeatherMonitorExperiment::run()
 		    << " mem " << data_address << "+" << bit_offset << endl;
 
 		log << "restoring state" << endl;
-		simulator.restore(statename);
+		simulator.restore(filename_state(m_variant, m_benchmark).c_str());
 
 		// XXX debug
 /*
@@ -197,13 +351,13 @@ bool WeatherMonitorExperiment::run()
 
 		// this marks THE END
 		BPSingleListener ev_end(ANY_ADDR);
-		ev_end.setCounter(WEATHER_NUMINSTR_TRACING + WEATHER_NUMINSTR_AFTER);
+		ev_end.setCounter(numinstr_tracing + numinstr_after);
 		simulator.addListener(&ev_end);
 
 		// count loop iterations by counting wait_begin() calls
 		// FIXME would be nice to have a callback API for this as this needs to
 		//       be done "in parallel"
-		BPSingleListener ev_wait_begin(WEATHER_FUNC_WAIT_BEGIN);
+		BPSingleListener ev_wait_begin(wait_begin);
 		simulator.addListener(&ev_wait_begin);
 		int count_loop_iter_before = 0;
 
@@ -264,12 +418,12 @@ bool WeatherMonitorExperiment::run()
 		TrapListener ev_trap(ANY_TRAP);
 		simulator.addListener(&ev_trap);
 		// jump outside text segment
-		BPRangeListener ev_below_text(ANY_ADDR, WEATHER_TEXT_START - 1);
-		BPRangeListener ev_beyond_text(WEATHER_TEXT_END + 1, ANY_ADDR);
+		BPRangeListener ev_below_text(ANY_ADDR, text_start - 1);
+		BPRangeListener ev_beyond_text(text_end + 1, ANY_ADDR);
 		simulator.addListener(&ev_below_text);
 		simulator.addListener(&ev_beyond_text);
 		// error detected
-		BPSingleListener ev_detected(WEATHER_FUNC_VPTR_PANIC);
+		BPSingleListener ev_detected(vptr_panic);
 		simulator.addListener(&ev_detected);
 		// timeout (e.g., stuck in a HLT instruction)
 		// 10000us = 500000 instructions
@@ -342,7 +496,44 @@ bool WeatherMonitorExperiment::run()
 	}
 #endif
 
+	return true;
+}
+
+bool WeatherMonitorExperiment::run()
+{
+	log << "startup" << endl;
+#if PREREQUISITES
+	parseOptions();
+
+	/* get symbols from ELF */
+	log << "retrieving ELF addresses..." << endl;
+	guest_address_t entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic;
+	if (!readElfSymbols(entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic)) {
+		log << "failed, essential symbols are missing!" << endl;
+		simulator.terminate(1);
+	} else {
+		log << "successfully retrieved ELF's addresses." << endl;
+	}
+
+	//STEP 1
+	if (establishState(entry)) {
+		log << "STEP 1 (establish state) finished." << endl;
+	} else {
+		log << "STEP 1 (establish state) failed!" << endl;
+	}
+
+	//STEP 2
+	if (performTrace(entry, data_start, data_end, wait_end)) {
+		log << "STEP 2 (perform trace) finished." << endl;
+	} else {
+		log << "STEP 2 (perform trace) failed!" << endl;
+	}
+
+#else // !PREREQUISITES  i.e. STEP 3 "the actual experiment"
+	faultInjection();
+
 #endif
+
 	// Explicitly terminate, or the simulator will continue to run.
 	simulator.terminate();
 }
