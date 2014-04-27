@@ -11,8 +11,7 @@ set(SRCS
 
 include(FindLLVM)
 
-# compiling without -fno-rtti fails even when LLVM is not built with that flag
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS} -fno-rtti" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS}" )
 
 add_library(fail-llvmdisassembler ${SRCS})
 target_link_libraries(fail-llvmdisassembler fail-sal)
