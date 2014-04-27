@@ -43,7 +43,7 @@ bool Gem5Converter::convert()
 		   >> dummy >> dummy >> dec >> access_width
 		   >> dummy >> dummy >> hex >> access_address;
 		if (!ss) {
-			if (ifetch_seen && !access_type.c_str()[0] == '0') {
+			if (ifetch_seen && access_type.c_str()[0] != '0') {
 				LOG << "input mismatch, input = " << buf << endl;
 			}
 			continue;
