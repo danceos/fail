@@ -70,6 +70,14 @@ int main(int argc, char *argv[]) {
 		pruner = new BasicPruner();
 	}
 
+	if (pruner && !(pruner->commandline_init())) {
+		std::cerr << "Pruner's commandline initialization failed" << std::endl;
+		exit(-1);
+	}
+	// Since the pruner might have added command line options, we need to
+	// reparse all arguments.
+	cmd.parse();
+
 	if (cmd[HELP]) {
 		cmd.printUsage();
 		exit(0);

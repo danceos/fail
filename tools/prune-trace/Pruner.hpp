@@ -18,6 +18,12 @@ public:
 		const std::vector<std::string>& benchmarks,
 		const std::vector<std::string>& benchmarks_exclude);
 
+	/**
+	 * Callback function that can be used to add command line options
+	 * to the cmd interface
+	 */
+	virtual bool commandline_init() { return true; }
+
 	virtual std::string method_name() = 0;
 
 	virtual bool create_database();
