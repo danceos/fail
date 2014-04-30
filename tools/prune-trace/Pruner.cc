@@ -79,12 +79,14 @@ bool Pruner::create_database() {
 
 bool Pruner::clear_database() {
 	std::stringstream ss;
-	ss << "DELETE FROM fsppilot WHERE variant_id IN (" << m_variant_id_query << ")";
+	ss << "DELETE FROM fsppilot WHERE variant_id IN (" << m_variant_id_query
+		<< ") AND fspmethod_id = " << m_method_id;
 	bool ret = (bool) db->query(ss.str().c_str());
 	LOG << "deleted " << db->affected_rows() << " rows from fsppilot table" << std::endl;
 	ss.str("");
 
-	ss << "DELETE FROM fspgroup WHERE variant_id IN (" << m_variant_id_query << ")";
+	ss << "DELETE FROM fspgroup WHERE variant_id IN (" << m_variant_id_query
+		<< ") AND fspmethod_id = " << m_method_id;
 	ret = ret && (bool) db->query(ss.str().c_str());
 	LOG << "deleted " << db->affected_rows() << " rows from fspgroup table" << std::endl;
 
