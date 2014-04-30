@@ -1,6 +1,7 @@
 set(SRCS
   Pruner.cc
   BasicPruner.cc
+  FESamplingPruner.cc
 )
 
 find_package(MySQL REQUIRED)

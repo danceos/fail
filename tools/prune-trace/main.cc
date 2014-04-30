@@ -11,6 +11,7 @@ using std::endl;
 
 #include "Pruner.hpp"
 #include "BasicPruner.hpp"
+#include "FESamplingPruner.hpp"
 
 int main(int argc, char *argv[]) {
 	std::string username, hostname, database;
@@ -59,6 +60,9 @@ int main(int argc, char *argv[]) {
 		} else if (imp == "BasicPrunerLeft" || imp == "basic-left") {
 			LOG << "Using BasicPruner (use left border, instr1)" << endl;
 			pruner = new BasicPruner(true);
+		} else if (imp == "FESamplingPruner" || imp == "sampling") {
+			LOG << "Using FESamplingPruner" << endl;
+			pruner = new FESamplingPruner;
 
 		} else {
 			LOG << "Unknown pruning method: " << imp << endl;
