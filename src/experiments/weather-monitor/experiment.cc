@@ -227,7 +227,7 @@ bool WeatherMonitorExperiment::run()
 		byte_t newdata = data ^ (1 << bit_offset);
 		mm.setByte(data_address, newdata);
 		// note at what IP we did it
-		int32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
+		uint32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		result->set_iter_before_fi(count_loop_iter_before);
 		log << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
