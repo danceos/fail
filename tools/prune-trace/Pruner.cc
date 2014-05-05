@@ -15,29 +15,24 @@ bool Pruner::init(fail::Database *db,
 		const std::vector<std::string>& benchmarks_exclude)
 {
 	this->db = db;
-	std::stringstream ss;
 
-	// FIXME string escaping
-	ss << "SELECT id FROM variant WHERE ";
-	for (std::vector<std::string>::const_iterator it = variants.begin();
-	     it != variants.end(); ++it) {
-		ss << "variant LIKE '" << *it << "' AND ";
+	m_variants = db->get_variants(
+		variants, variants_exclude,
+		benchmarks, benchmarks_exclude);
+	if (m_variants.size() == 0) {
+		LOG << "no variants found, nothing to do" << std::endl;
+		return false;
 	}
-	for (std::vector<std::string>::const_iterator it = variants_exclude.begin();
-	     it != variants_exclude.end(); ++it) {
-		ss << "variant NOT LIKE '" << *it << "' AND ";
+
+	std::stringstream ss;
+	for (std::vector<fail::Database::Variant>::const_iterator it = m_variants.begin();
+		it != m_variants.end(); ++it) {
+		if (it != m_variants.begin()) {
+			ss << ",";
+		}
+		ss << it->id;
 	}
-	for (std::vector<std::string>::const_iterator it = benchmarks.begin();
-	     it != benchmarks.end(); ++it) {
-		ss << "benchmark LIKE '" << *it << "' AND ";
-	}
-	for (std::vector<std::string>::const_iterator it = benchmarks_exclude.begin();
-	     it != benchmarks_exclude.end(); ++it) {
-		ss << "benchmark NOT LIKE '" << *it << "' AND ";
-	}
-	// dummy terminator to avoid special cases in query construction above
-	ss << "1";
-	m_variant_id_query = ss.str();
+	m_variants_sql = ss.str();
 
 	if (!(m_method_id = db->get_fspmethod_id(method_name()))) {
 		return false;
@@ -79,13 +74,13 @@ bool Pruner::create_database() {
 
 bool Pruner::clear_database() {
 	std::stringstream ss;
-	ss << "DELETE FROM fsppilot WHERE variant_id IN (" << m_variant_id_query
+	ss << "DELETE FROM fsppilot WHERE variant_id IN (" << m_variants_sql
 		<< ") AND fspmethod_id = " << m_method_id;
 	bool ret = (bool) db->query(ss.str().c_str());
 	LOG << "deleted " << db->affected_rows() << " rows from fsppilot table" << std::endl;
 	ss.str("");
 
-	ss << "DELETE FROM fspgroup WHERE variant_id IN (" << m_variant_id_query
+	ss << "DELETE FROM fspgroup WHERE variant_id IN (" << m_variants_sql
 		<< ") AND fspmethod_id = " << m_method_id;
 	ret = ret && (bool) db->query(ss.str().c_str());
 	LOG << "deleted " << db->affected_rows() << " rows from fspgroup table" << std::endl;

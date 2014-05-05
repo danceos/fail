@@ -54,6 +54,16 @@ namespace fail {
 		 */
 		std::vector<Variant> get_variants(const std::string &variant, const std::string &benchmark);
 
+		/**
+		 * Get all variants that fit one of the variant, one of the benchmark,
+		 * and none of the variant/benchmark exclude patterns (will be queried
+		 * with SQL LIKE).
+		 */
+		std::vector<Variant> get_variants(
+			const std::vector<std::string>& variants,
+			const std::vector<std::string>& variants_exclude,
+			const std::vector<std::string>& benchmarks,
+			const std::vector<std::string>& benchmarks_exclude);
 
 		/**
 		 * Get the fault space pruning method id for a specific
@@ -113,6 +123,9 @@ namespace fail {
 		 */
 		static void cmdline_setup();
 		static Database * cmdline_connect();
+
+	private:
+		bool create_variants_table();
 	};
 
 }

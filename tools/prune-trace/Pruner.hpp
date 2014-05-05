@@ -8,8 +8,9 @@
 class Pruner {
 protected:
 	int m_method_id;
-	std::string m_variant_id_query;
 	fail::Database *db;
+	std::vector<fail::Database::Variant> m_variants;
+	std::string m_variants_sql;
 
 public:
 	bool init(fail::Database *db,
