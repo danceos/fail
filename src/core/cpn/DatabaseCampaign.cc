@@ -29,9 +29,9 @@ bool DatabaseCampaign::run() {
 	if (!cb_commandline_init()) return false;
 
 	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
-														 "-v/--variant \tVariant label (default: \"none\"; use % and _ as wildcard characters)");
+														 "-v/--variant \tVariant label (default: \"%\"; use % and _ as wildcard characters)");
 	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
-														 "-b/--benchmark \tBenchmark label (default: \"none\"; use % and _ as wildcard characters)\n");
+														 "-b/--benchmark \tBenchmark label (default: \"%\"; use % and _ as wildcard characters)\n");
 	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
 														 "-p/--prune-method \tWhich import method to use (default: basic)");
 
@@ -50,12 +50,12 @@ bool DatabaseCampaign::run() {
 	if (cmd[VARIANT].count() > 0)
 		variant = std::string(cmd[VARIANT].first()->arg);
 	else
-		variant = "none";
+		variant = "%";
 
 	if (cmd[BENCHMARK].count() > 0)
 		benchmark = std::string(cmd[BENCHMARK].first()->arg);
 	else
-		benchmark = "none";
+		benchmark = "%";
 
 	if (cmd[PRUNER].count() > 0)
 		pruner = std::string(cmd[PRUNER].first()->arg);

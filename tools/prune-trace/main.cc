@@ -29,13 +29,13 @@ int main(int argc, char *argv[]) {
 
 	CommandLine::option_handle VARIANT =
 		cmd.addOption("v", "variant", Arg::Required,
-			"-v/--variant \tVariant label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+			"-v/--variant \tVariant label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle VARIANT_EXCLUDE =
 		cmd.addOption("", "variant-exclude", Arg::Required,
 			"--variant-exclude \tVariant to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle BENCHMARK =
 		cmd.addOption("b", "benchmark", Arg::Required,
-			"-b/--benchmark \tBenchmark label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+			"-b/--benchmark \tBenchmark label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle BENCHMARK_EXCLUDE =
 		cmd.addOption("", "benchmark-exclude", Arg::Required,
 			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
@@ -103,8 +103,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// fallback
-	if (variants.size() == 0 && variants_exclude.size() == 0) {
-		variants.push_back(std::string("none"));
+	if (variants.size() == 0) {
+		variants.push_back("%");
 	}
 
 	if (cmd[BENCHMARK]) {
@@ -120,8 +120,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// fallback
-	if (benchmarks.size() == 0 && benchmarks_exclude.size() == 0) {
-		benchmarks.push_back(std::string("none"));
+	if (benchmarks.size() == 0) {
+		benchmarks.push_back("%");
 	}
 
 	if (!pruner->init(db, variants, variants_exclude, benchmarks, benchmarks_exclude)) {
