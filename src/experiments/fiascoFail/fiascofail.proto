@@ -1,0 +1,51 @@
+import "DatabaseCampaignMessage.proto";
+
+message FiascofailProtoMsg {
+	required DatabaseCampaignMessage fsppilot = 1;
+
+	repeated group Result = 2 {
+		// single experiment bit offset
+		required uint32 bit_offset = 1 [(sql_primary_key) = true];
+
+		enum ResultType {
+			OK = 0;
+			SDC = 1;
+			DETECTED = 2;
+			TRAP = 3;
+			TIMEOUT = 4;
+			UNKNOWN = 5;
+		}
+		required ResultType resulttype = 2;
+
+		// all subsequent fields are optional, resulting in NULLable DB
+		// columns, saving space when unused; NULL should be interpreted as 0
+		// for these cases
+		enum MemAccessOutside {
+			NONE = 0;
+			READ = 1;
+			WRITE = 2;
+		}
+		optional MemAccessOutside memaccess_outside = 3;
+
+		enum Flag {
+			FALSE = 0;
+			TRUE = 1;
+		}
+		optional Flag jump_outside = 4;
+
+		// did ECC correct the fault?
+		optional Flag error_corrected = 5;
+
+		// simulated runtime factor compared to golden run (1.000 = golden run runtime)
+		optional float sim_runtime_factor = 6;
+
+		// especially interesting for TRAP/UNKNOWN: latest IP
+		optional uint32 latest_ip = 7;
+
+		// optional textual description of what happened
+		optional string details = 8;
+
+		// experiment runtime (FIXME: should be part of DatabaseCampaignMessage instead)
+		optional float runtime = 9;
+	}
+}
