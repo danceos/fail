@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "DatabaseCampaign.hpp"
 #include "cpn/CampaignManager.hpp"
 #include "util/CommandLine.hpp"
@@ -28,12 +30,21 @@ bool DatabaseCampaign::run() {
 	   line interface */
 	if (!cb_commandline_init()) return false;
 
-	CommandLine::option_handle VARIANT	 = cmd.addOption("v", "variant", Arg::Required,
-														 "-v/--variant \tVariant label (default: \"%\"; use % and _ as wildcard characters)");
-	CommandLine::option_handle BENCHMARK = cmd.addOption("b", "benchmark", Arg::Required,
-														 "-b/--benchmark \tBenchmark label (default: \"%\"; use % and _ as wildcard characters)\n");
-	CommandLine::option_handle PRUNER	 = cmd.addOption("p", "prune-method", Arg::Required,
-														 "-p/--prune-method \tWhich import method to use (default: basic)");
+	CommandLine::option_handle VARIANT =
+		cmd.addOption("v", "variant", Arg::Required,
+			"-v/--variant \tVariant label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle VARIANT_EXCLUDE =
+		cmd.addOption("", "variant-exclude", Arg::Required,
+			"--variant-exclude \tVariant to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle BENCHMARK =
+		cmd.addOption("b", "benchmark", Arg::Required,
+			"-b/--benchmark \tBenchmark label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle BENCHMARK_EXCLUDE =
+		cmd.addOption("", "benchmark-exclude", Arg::Required,
+			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	CommandLine::option_handle PRUNER =
+		cmd.addOption("p", "prune-method", Arg::Required,
+			"-p/--prune-method \tWhich import method to use (default: basic)");
 
 	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
@@ -45,25 +56,49 @@ bool DatabaseCampaign::run() {
 		exit(0);
 	}
 
-	std::string variant, benchmark, pruner;
+	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
+	if (cmd[VARIANT]) {
+		for (option::Option *o = cmd[VARIANT]; o; o = o->next()) {
+			variants.push_back(std::string(o->arg));
+		}
+	}
 
-	if (cmd[VARIANT].count() > 0)
-		variant = std::string(cmd[VARIANT].first()->arg);
-	else
-		variant = "%";
+	if (cmd[VARIANT_EXCLUDE]) {
+		for (option::Option *o = cmd[VARIANT_EXCLUDE]; o; o = o->next()) {
+			variants_exclude.push_back(std::string(o->arg));
+		}
+	}
 
-	if (cmd[BENCHMARK].count() > 0)
-		benchmark = std::string(cmd[BENCHMARK].first()->arg);
-	else
-		benchmark = "%";
+	// fallback
+	if (variants.size() == 0) {
+		variants.push_back("%");
+	}
 
-	if (cmd[PRUNER].count() > 0)
+	if (cmd[BENCHMARK]) {
+		for (option::Option *o = cmd[BENCHMARK]; o; o = o->next()) {
+			benchmarks.push_back(std::string(o->arg));
+		}
+	}
+
+	if (cmd[BENCHMARK_EXCLUDE]) {
+		for (option::Option *o = cmd[BENCHMARK_EXCLUDE]; o; o = o->next()) {
+			benchmarks_exclude.push_back(std::string(o->arg));
+		}
+	}
+
+	// fallback
+	if (benchmarks.size() == 0) {
+		benchmarks.push_back("%");
+	}
+
+	std::string pruner;
+	if (cmd[PRUNER]) {
 		pruner = std::string(cmd[PRUNER].first()->arg);
-	else
+	} else {
 		pruner = "basic";
+	}
 
 	db = Database::cmdline_connect();
-	log_send << "Variant to use " << variant << "/" << benchmark << std::endl;
 	fspmethod_id = db->get_fspmethod_id(pruner);
 	log_send << "Pruner to use " << pruner << " (ID: " << fspmethod_id << ")" << std::endl;
 
@@ -81,9 +116,10 @@ bool DatabaseCampaign::run() {
 
 	load_completed_pilots();
 
-	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
-	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
-		 it != variants.end(); ++it) {
+	std::vector<Database::Variant> variantlist =
+		db->get_variants(variants, variants_exclude, benchmarks, benchmarks_exclude);
+	for (std::vector<Database::Variant>::const_iterator it = variantlist.begin();
+		 it != variantlist.end(); ++it) {
 		if (!run_variant(*it)) {
 			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
 			return false;
