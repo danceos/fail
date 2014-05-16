@@ -15,11 +15,13 @@
 ///
 class FESamplingPruner : public Pruner {
 	fail::CommandLine::option_handle SAMPLESIZE;
+	fail::CommandLine::option_handle USE_KNOWN_RESULTS;
 
 	unsigned m_samplesize;
+	bool m_use_known_results;
 
 public:
-	FESamplingPruner() : m_samplesize(0) { }
+	FESamplingPruner() : m_samplesize(0), m_use_known_results(false) { }
 	virtual std::string method_name() { return "FESampling"; }
 	virtual bool commandline_init();
 	virtual bool prune_all();
