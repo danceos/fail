@@ -42,7 +42,7 @@ void  GenericTracing::parseOptions() {
 		"(exists for backward compatibility, must be identical to --start-symbol if used)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
 		"-f,--state-file \tFile/dir to save the state to (default: state). "
-                "Use /dev/null if no state is required");
+		"Use /dev/null if no state is required");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
 		"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
 
@@ -53,6 +53,10 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
 		"-M,--memory-region \trestrict memory region which is traced"
 		" (Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>)");
+	CommandLine::option_handle START_ADDRESS = cmd.addOption("B", "start-address", Arg::Required,
+		"-B,--start-address \tStart Address to start tracing");
+	CommandLine::option_handle STOP_ADDRESS = cmd.addOption("E", "end-address",Arg::Required,
+		"-E--end-address \tEnd Address to end tracing");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -66,27 +70,40 @@ void  GenericTracing::parseOptions() {
 
 	if (cmd[ELF_FILE]) {
 		elf_file = cmd[ELF_FILE].first()->arg;
+		m_elf = new ElfReader(elf_file.c_str());
 	} else {
 		char *elfpath = getenv("FAIL_ELF_PATH");
 		if (elfpath == NULL) {
-			m_log << "FAIL_ELF_PATH not set :( (alternative: --elf-file) " << std::endl;
-			exit(-1);
+			m_elf = NULL;
+		} else {
+			elf_file = elfpath;
+			m_elf = new ElfReader(elf_file.c_str());
 		}
-
-		elf_file = elfpath;
 	}
-	m_elf = new ElfReader(elf_file.c_str());
 
-	if (cmd[START_SYMBOL]) {
+	if (cmd[START_SYMBOL] && m_elf != NULL) {
 		start_symbol = cmd[START_SYMBOL].first()->arg;
+		assert(m_elf->getSymbol(start_symbol).isValid());
+		start_address = m_elf->getSymbol(start_symbol).getAddress();
+	} else if (cmd[START_ADDRESS]) {
+		start_address = strtoul(cmd[START_ADDRESS].first()->arg, NULL, 16);
+	} else if (m_elf == NULL) {
+		m_log << "FAIL_ELF_PATH not set or no start address given :( (alternative: --elf-file, --start-address)" << std::endl;
+		exit(EXIT_FAILURE);
 	} else {
 		start_symbol = "main";
+		assert(m_elf->getSymbol(start_symbol).isValid());
+		start_address = m_elf->getSymbol(start_symbol).getAddress();
 	}
 
-	if (cmd[STOP_SYMBOL]) {
+	if (cmd[STOP_SYMBOL] && m_elf != NULL) {
 		stop_symbol = std::string(cmd[STOP_SYMBOL].first()->arg);
+		assert(m_elf->getSymbol(stop_symbol).isValid());
+		stop_address = m_elf->getSymbol(stop_symbol).getAddress();
+	} else if (cmd[STOP_ADDRESS]) {
+		stop_address = strtoul(cmd[STOP_ADDRESS].first()->arg, NULL, 16);
 	} else {
-		m_log << "You have to give an end symbol (-e,--end-symbol)!" << std::endl;
+		m_log << "You have to give an end symbol or an end address (-e,--end-symbol, --end-address)!" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -178,11 +195,13 @@ void  GenericTracing::parseOptions() {
 		this->full_trace = true;
 	}
 
-	assert(m_elf->getSymbol(start_symbol).isValid());
-	assert(m_elf->getSymbol(stop_symbol).isValid());
-
-	m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << m_elf->getSymbol(start_symbol).getAddress() << std::endl;
-	m_log << "stop symbol: "  << stop_symbol  << " 0x" << std::hex << m_elf->getSymbol(stop_symbol).getAddress() << std::endl;
+	if (m_elf != NULL) {
+		m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << start_address << std::endl;
+		m_log << "stop symbol: "  << stop_symbol  << " 0x" << std::hex << stop_address << std::endl;
+	} else {
+		m_log << "start address: 0x" << std::hex << start_address << std::endl;
+		m_log << "stop address: 0x" << std::hex << stop_address << std::endl;
+	}
 
 	m_log << "state file: "	  << state_file		  << std::endl;
 	m_log << "trace file: "	  << trace_file		  << std::endl;
@@ -193,8 +212,8 @@ bool GenericTracing::run()
 {
 	parseOptions();
 
-	BPSingleListener l_start_symbol(m_elf->getSymbol(start_symbol).getAddress());
-	BPSingleListener l_stop_symbol (m_elf->getSymbol(stop_symbol).getAddress());
+	BPSingleListener l_start_symbol(start_address);
+	BPSingleListener l_stop_symbol(stop_address);
 
 	////////////////////////////////////////////////////////////////
 	// STEP 1: run until interesting function starts, save, and start tracing
