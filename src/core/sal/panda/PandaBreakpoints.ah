@@ -1,0 +1,50 @@
+#ifndef __PANDA_BREAKPOINTS_AH__
+#define __PANDA_BREAKPOINTS_AH__
+
+#include "config/FailConfig.hpp"
+#include "config/VariantConfig.hpp"
+
+#if defined(BUILD_PANDA) && defined(CONFIG_EVENT_BREAKPOINTS)
+
+#include "../../../debuggers/openocd/openocd_wrapper.hpp"
+
+aspect PandaBreakpoints
+{
+
+advice "fail::BPSingleListener" : slice class
+{
+public:
+	bool onAddition()
+	{
+		// Setup Breakpoint on Pandaboard
+		struct halt_condition hc;
+		if (m_WatchInstrPtr == ANY_ADDR) {
+			hc.type = HALT_TYPE_SINGLESTEP;
+		} else {
+			hc.type = HALT_TYPE_BP;
+		}
+		hc.address = m_WatchInstrPtr;
+		hc.addr_len = 4; // Thumb? => 2
+		oocdw_set_halt_condition(&hc);
+		return true;
+	}
+
+	void onDeletion()
+	{
+		// Delete Breakpoint on Pandaboard
+		struct halt_condition hc;
+		if (m_WatchInstrPtr == ANY_ADDR) {
+			hc.type = HALT_TYPE_SINGLESTEP;
+		} else {
+			hc.type = HALT_TYPE_BP;
+		}
+		hc.address = m_WatchInstrPtr;
+		hc.addr_len = 4; // Thumb? => 2
+		oocdw_delete_halt_condition(&hc);
+	}
+};
+
+};
+
+#endif // BUILD_PANDA && CONFIG_EVENT_BREAKPOINTS
+#endif // __PANDA_BREAKPOINTS_AH__

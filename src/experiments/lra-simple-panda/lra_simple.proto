@@ -1,0 +1,29 @@
+import "DatabaseCampaignMessage.proto";
+
+message LraSimpleProtoMsg {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+        enum ResultType {
+            OK = 1;
+
+            ERR_WRONG_RESULT = 2;
+
+            ERR_TRAP = 3;
+            ERR_TIMEOUT = 4;
+
+            ERR_OUTSIDE_TEXT = 5;
+        }
+
+        //required int32 bitoffset = 1 [(sql_primary_key) = true];
+
+        required uint32 experiment_number = 1 [(sql_primary_key) = true];
+        required ResultType resulttype = 2;
+
+        // Times for evaluation
+        required float time_init = 3;
+        required float time_nav = 4;
+        required float time_inject = 5;
+        required float time_aftermath = 6;
+    }
+}

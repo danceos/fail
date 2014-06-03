@@ -7,15 +7,31 @@ set(SRCS
 ## Setup desired protobuf descriptions HERE ##
 set(PROTOS
 	FailControlMessage.proto
-	DatabaseCampaignMessage.proto
+	${CMAKE_CURRENT_BINARY_DIR}/DatabaseCampaignMessage.proto
 	TracePlugin.proto
 )
+
+## Set concrete implementation of InjectionPointMessage
+# TODO: Define separate symbol, so it can also be used in other build types
+if(CONFIG_INJECTIONPOINT_HOPS)
+    set(PROTOS ${PROTOS} InjectionPointHopsMessage.proto)
+    set(CONCRETE_INJECTION_POINT InjectionPointHopsMessage.proto)
+else(CONFIG_INJECTIONPOINT_HOPS)
+    set(PROTOS ${PROTOS} InjectionPointStepsMessage.proto)
+    set(CONCRETE_INJECTION_POINT InjectionPointStepsMessage.proto)
+endif(CONFIG_INJECTIONPOINT_HOPS)
+
+# Configure concrete protobuf message to be included by campaign message
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DatabaseCampaignMessage.proto.in
+       ${CMAKE_CURRENT_BINARY_DIR}/DatabaseCampaignMessage.proto)
 
 #### PROTOBUFS ####
 find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+# Let protobuf compiler find defined file (DatabaseCampaignMessage) in binary tree
+set(PROTOBUF_IMPORT_DIRS ${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
 add_library(fail-comm ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})

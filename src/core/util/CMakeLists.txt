@@ -70,15 +70,21 @@ else()
 endif()
 mark_as_advanced(FAIL_OBJDUMP)
 
+# compile smarthops calculator if needed
+
+if(CONFIG_INJECTIONPOINT_HOPS)
+  add_subdirectory(smarthops)
+  set(ADDITIONAL_LIBS fail-smarthops)
+endif(CONFIG_INJECTIONPOINT_HOPS)
+
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
-target_link_libraries(fail-util fail-comm ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
+target_link_libraries(fail-util fail-comm ${ADDITIONAL_LIBS} ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
 
 option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 preferred, for 3.1 and 3.2 read doc/how-to-build.txt)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)
-
 ### Tests
 add_executable(memorymap-test testing/memorymap-test.cc)
 target_link_libraries(memorymap-test fail-util)

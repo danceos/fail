@@ -9,7 +9,7 @@
 #endif
 
 #ifdef BUILD_ARM
-#include "arm/ARMArchitecture.hpp"
+#include "arm/ArmArchitecture.hpp"
 #endif
 
 #endif

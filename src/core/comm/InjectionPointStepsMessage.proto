@@ -1,0 +1,3 @@
+message InjectionPointMessage {
+	required uint32 injection_instr = 1;
+}

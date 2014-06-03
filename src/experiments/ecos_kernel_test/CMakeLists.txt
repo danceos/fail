@@ -25,6 +25,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 find_package(MySQL REQUIRED)
 include_directories(${MYSQL_INCLUDE_DIR})
 
+set(PROTOBUF_IMPORT_DIRS ${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_BINARY_DIR}/../../core/comm)
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 
 ## Build library

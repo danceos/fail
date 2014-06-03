@@ -1,0 +1,144 @@
+#ifndef __OOCD_WRAPPER_H_
+#define __OOCD_WRAPPER_H_
+
+#include <stdint.h>
+#include <cstdlib>
+
+#define OOCD_CONF_FILE_PATH "@OOCD_CONF_FILE_PATH@"
+#define OOCD_CONF_FILES_PATH "@OOCD_CONF_FILES_PATH@"
+
+enum halt_type {
+	HALT_TYPE_BP,
+	HALT_TYPE_WP_READWRITE,
+	HALT_TYPE_WP_READ,
+	HALT_TYPE_WP_WRITE,
+	HALT_TYPE_SINGLESTEP,
+};
+
+struct halt_condition {
+	enum halt_type type;
+	uint32_t address;
+	uint32_t addr_len;
+};
+
+/*
+ * Read value of cycle counter (performance monitor)
+ *
+ * @returns Value of current cycle counter
+ */
+uint64_t oocdw_read_cycle_counter();
+
+/*
+ * Read register value
+ * Reads the value of the register defined by \a regnum.
+ * @param reg_num the target register as defined in the ArmArchitecture
+ * @param rg Definition of register group of register defined by \a reg_num
+ * @param data pointer to data as return value
+ */
+void oocdw_read_reg(uint32_t reg_num, uint32_t *data);
+
+/*
+ * Write register value
+ * Writes the value of the register defined by \a regnum.
+ * @param reg_num the target register as defined in the ArmArchitecture
+ * @param rg Definition of register group of register defined by \a reg_num
+ * @param data data to be written
+ */
+void oocdw_write_reg(uint32_t reg_num, uint32_t data);
+
+/*
+ * Set a halt condition
+ *
+ * Halt conditions can be Break- and Watchpoints as well as single-steps
+ * @param hc Pointer to struct defining new halt condition
+ */
+void oocdw_set_halt_condition(struct halt_condition *hc);
+
+/*
+ * Remove a halt condition
+ *
+ * Halt conditions can be Break- and Watchpoints as well as single-steps
+ * @param hc Pointer to struct defining to be deleted halt condition
+ */
+void oocdw_delete_halt_condition(struct halt_condition *hc);
+
+/*
+ * Immediate target halt without sepcific target instruction
+ */
+bool oocdw_halt_target(struct target *target);
+
+/*
+ * Target reboot
+ *
+ * The target gets reset and will be navigated to a dynamic instruction
+ * right before main entry. Afterwards a new experiment can be executed.
+ */
+void oocdw_reboot();
+
+/*
+ * Finish OpenOCD execution
+ *
+ * Function will be called by simulator.terminate() and will simply
+ * set a finish-flag. Afterwards a coroutine-switch must be called, so
+ * the actual finishing will be done in the OpenOCD-Wrapper coroutine.
+ * Before returning, another coroutine-switch is called, so the
+ * experiment is able to exit in desired state.
+ */
+void oocdw_finish(int exCode = EXIT_SUCCESS);
+
+/*
+ * Read data from pandaboard memory
+ *
+ * @param address Start address of memory region to be read
+ * @param chunk_size Size of chunks, which will be read
+ * @param chunk_num	Number of chunks to be read
+ * @param data Pointer to read destination
+ */
+void oocdw_read_from_memory(uint32_t address, uint32_t chunk_size,
+					uint32_t chunk_num, uint8_t *data);
+
+/*
+ * Write data to pandaboard memory
+ *
+ * @param address Start address of memory region to be written
+ * @param chunk_size Size of chunks, which will be written
+ * @param chunk_num	Number of chunks to be written
+ * @param data Pointer to read source
+ * @param cache_inval Defines if a write to memory should invalidate
+ * 					  the associated cache line.
+ */
+void oocdw_write_to_memory(uint32_t address, uint32_t chunk_size,
+					uint32_t chunk_num, uint8_t const *data,
+					bool cache_inval);
+
+typedef void (*p_timer_handler_t)(void *);
+/*
+ * Register new timer
+ *
+ * @param this_ptr This pointer for calling object method
+ * @param funct Callback to call if timer expired (object method)
+ * @param useconds Number of microseconds until timer expires
+ * @param active Sets if timer is initially active
+ * @param id String representation of timer
+ * @returns Timer index (ID) or -1 if no timer slot left
+ */
+int oocdw_register_timer(void *this_ptr, p_timer_handler_t funct,
+						uint64_t useconds, bool active, const char *id);
+
+/*
+ * Unregister timer
+ *
+ * @param timerID Timer index (ID), which defines the timer to be
+ * 					unregistered
+ */
+bool oocdw_unregisterTimer(unsigned timerID);
+
+/*
+ * Deactivate timer
+ *
+ * @param timerID Timer index (ID), which defines the timer to be
+ * 					deactivated.
+ */
+void oocdw_deactivate_timer(unsigned timer_index);
+
+#endif // __OOCD_WRAPPER_H_

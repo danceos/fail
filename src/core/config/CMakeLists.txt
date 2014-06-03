@@ -23,6 +23,7 @@ OPTION(CONFIG_DISABLE_KEYB_INTERRUPTS   "Target backend: Suppress keyboard inter
 OPTION(SERVER_PERFORMANCE_MEASURE       "Performance measurement in job-server" OFF)
 OPTION(CONFIG_FAST_BREAKPOINTS          "Enable fast breakpoints (requires breakpoint events to be enabled)" OFF)
 OPTION(CONFIG_FAST_WATCHPOINTS          "Enable fast watchpoints (requires memory access events to be enabled)" OFF)
+OPTION(CONFIG_INJECTIONPOINT_HOPS       "Enable hop chain trace navigation to injection point" OFF)
 SET(SERVER_COMM_HOSTNAME        "localhost"  CACHE STRING "Job-server hostname or IP")
 SET(SERVER_COMM_TCP_PORT        "1111"       CACHE STRING "Job-server TCP port")
 SET(SERVER_OUT_QUEUE_SIZE       "0"      CACHE STRING "Queue size for outbound jobs (0 = unlimited)")

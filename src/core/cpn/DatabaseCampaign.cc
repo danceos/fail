@@ -4,7 +4,7 @@
 #include "util/Logger.hpp"
 #include "util/Database.hpp"
 #include "comm/ExperimentData.hpp"
-
+#include "InjectionPoint.hpp"
 
 #ifndef __puma
 #include <boost/thread.hpp>
@@ -131,10 +131,13 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
 	int experiment_count;
 	std::stringstream ss;
-	std::string sql_select = "SELECT p.id, p.fspmethod_id, p.variant_id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width ";
+	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
-	   << " WHERE p.fspmethod_id = "  << fspmethod_id
-	   << "	   AND p.variant_id = "	<< variant.id;
+	   << " JOIN trace t"
+	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
+	   << " WHERE p.fspmethod_id = " << fspmethod_id
+	   << "	  AND p.variant_id = " << variant.id
+	   << " ORDER BY t.instr1"; // Smart-Hopping needs this ordering
 	std::string sql_body = ss.str();
 
 	/* Get the number of unfinished experiments */
@@ -148,6 +151,12 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	log_send << "Found " << experiment_count << " jobs in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
 
+	// abstraction of injection point:
+	// must not be initialized in loop, because hop chain calculator would lose
+	// state after loop pass and so for every hop chain it would have to begin
+	// calculating at trace instruction zero
+	ConcreteInjectionPoint ip;
+
 	unsigned expected_results = expected_number_of_results(variant.variant, variant.benchmark);
 
 	unsigned sent_pilots = 0, skipped_pilots = 0;
@@ -158,20 +167,26 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			continue;
 		}
 
-		unsigned injection_instr = strtoul(row[3], NULL, 10);
-		unsigned data_address    = strtoul(row[5], NULL, 10);
-		unsigned data_width      = strtoul(row[6], NULL, 10);
+		unsigned injection_instr = strtoul(row[1], NULL, 10);
+		unsigned data_address    = strtoul(row[3], NULL, 10);
+		unsigned data_width      = strtoul(row[4], NULL, 10);
+		unsigned instr1          = strtoul(row[5], NULL, 10);
+		unsigned instr2          = strtoul(row[6], NULL, 10);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
 		pilot.set_fspmethod_id(fspmethod_id);
 		pilot.set_variant_id(variant.id);
+		// ToDo: Remove this, if all experiments work with abstract API (InjectionPoint)
 		pilot.set_injection_instr(injection_instr);
 		pilot.set_variant(variant.variant);
 		pilot.set_benchmark(variant.benchmark);
 
-		if (row[4]) {
-			unsigned injection_instr_absolute = strtoul(row[4], NULL, 10);
+		ip.parseFromInjectionInstr(instr1, instr2);
+		ip.addToCampaignMessage(pilot);
+
+		if (row[2]) {
+			unsigned injection_instr_absolute = strtoul(row[2], NULL, 10);
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
