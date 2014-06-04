@@ -136,7 +136,7 @@ void  GenericTracing::parseOptions() {
 
 		while (opt != 0) {
 			char *endptr;
-			guest_address_t begin = strtol(opt->arg, &endptr, 16);
+			guest_address_t begin = strtoul(opt->arg, &endptr, 16);
 			guest_address_t size;
 			if (endptr == opt->arg) {
 				m_log << "Couldn't parse " << opt->arg << std::endl;
@@ -148,14 +148,14 @@ void  GenericTracing::parseOptions() {
 				size = 1;
 			} else if (delim == ':') {
 				char *p = endptr +1;
-				size = strtol(p, &endptr, 16) - begin;
+				size = strtoul(p, &endptr, 16) - begin;
 				if (p == endptr || *endptr != 0) {
 					m_log << "Couldn't parse " << opt->arg << std::endl;
 					exit(-1);
 				}
 			} else if (delim == '+') {
 				char *p = endptr +1;
-				size = strtol(p, &endptr, 10);
+				size = strtoul(p, &endptr, 10);
 				if (p == endptr || *endptr != 0) {
 					m_log << "Couldn't parse " << opt->arg << std::endl;
 					exit(-1);
