@@ -1,0 +1,36 @@
+import "DatabaseCampaignMessage.proto";
+
+message GenericExperimentMessage {
+    required DatabaseCampaignMessage fsppilot = 1;
+
+    repeated group Result = 2 {
+        // This submessage is required by the database experiment and
+        // is filled with standard experiment result values
+        required DatabaseExperimentMessage base_result = 1;
+
+		// make these optional to reduce overhead for server->client communication
+		enum ResultType {
+            OK_MARKER = 1;
+            FAIL_MARKER = 2;
+            DETECTED_MARKER = 3;
+            
+            GROUP1_MARKER = 4;
+            GROUP2_MARKER = 5;
+            GROUP3_MARKER = 6;
+            GROUP4_MARKER = 7;
+
+            TIMEOUT = 8;
+            TRAP    = 9;
+            WRITE_TEXTSEGMENT = 10;
+            WRITE_OUTERSPACE  = 11;
+
+            UNKNOWN = 100;
+		}
+		// result type, see above
+		required ResultType resulttype = 4;
+
+        required uint64 crash_time = 5;
+
+		optional uint64 details = 7;
+	}
+}
