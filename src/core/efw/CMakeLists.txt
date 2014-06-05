@@ -4,6 +4,8 @@ set(SRCS
 	ExperimentFlow.hpp
 	JobClient.hpp
 	JobClient.cc
+	DatabaseExperiment.hpp
+	DatabaseExperiment.cc
 )
 
 add_library(fail-efw ${SRCS})
