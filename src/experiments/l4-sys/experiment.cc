@@ -240,7 +240,7 @@ void L4SysExperiment::startAndSaveInitState(fail::BPSingleListener* bp)
 
 void L4SysExperiment::CR3run(fail::BPSingleListener *bp)
 {
-	log << "CR3Run: Watching for instruction " << hex << L4SYS_FUNC_ENTRY << endl;
+	log << "CR_3Run: Watching for instruction " << hex << L4SYS_FUNC_ENTRY << endl;
 	bp->setWatchInstructionPointer(L4SYS_FUNC_ENTRY);
 	simulator.addListenerAndResume(bp);
 	log << "Reached entry point @ " << hex << bp->getTriggerInstructionPointer()
@@ -471,10 +471,11 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
             simulator.addListener(bp);
             ++count;
         }
-
+#if 0
 		if (curr_addr < 0xC0000000) // XXX filter for kernel-only experiment
 			continue;
-        
+#endif
+
         currtime = simulator.getTimerTicks();
         deltatime = currtime - prevtime;
 
@@ -815,6 +816,10 @@ bool L4SysExperiment::run()
 		BPSingleListener ev_longjmp(L4SYS_BREAK_LONGJMP);
 		simulator.addListener(&ev_longjmp);
 
+		//If we come to our own exit function, we can stop
+		BPSingleListener ev_exit(L4SYS_BREAK_EXIT);
+		simulator.addListener(&ev_exit);
+
         unsigned instr_left = L4SYS_TOTINSTR - instr_offset; // XXX offset is in NUMINSTR, TOTINSTR is higher
         BPSingleListener ev_incomplete(ANY_ADDR, L4SYS_ADDRESS_SPACE);
         /*
@@ -870,6 +875,11 @@ bool L4SysExperiment::run()
             result->set_resulttype(param->msg.TIMEOUT);
             result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
             result->set_output(sanitised(currentOutput.c_str()));
+				} else if (ev == &ev_exit) {
+						log << "Result FAILSTOP" << endl;
+						result->set_resulttype(param->msg.FAILSTOP);
+						result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
+						result->set_output(sanitised(currentOutput.c_str()));
         } else {
             log << "Result WTF?" << endl;
             stringstream ss;
