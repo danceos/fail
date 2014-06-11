@@ -12,7 +12,6 @@
 #include "InstructionFilter.hpp"
 #include "aluinstr.hpp"
 #include "campaign.hpp"
-#include "conversion.hpp"
 
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
@@ -87,89 +86,6 @@ const Bit8u *L4SysExperiment::calculateInstructionAddress() {
 	BX_CPU_C *cpu_context = simulator.getCPUContext();
 	const Bit8u *result = cpu_context->eipFetchPtr + eipBiased();
 	return result;
-}
-
-bx_bool L4SysExperiment::fetchInstruction(BX_CPU_C *instance,
-		const Bit8u *instr, bxInstruction_c *iStorage) {
-	unsigned remainingInPage = instance->eipPageWindowSize - eipBiased();
-	int ret;
-
-#if BX_SUPPORT_X86_64
-	if (BX_CPU_THIS_PTR cpu_mode == BX_MODE_LONG_64)
-	ret = instance->fetchDecode64(instr, iStorage, remainingInPage);
-	else
-#endif
-	ret = instance->fetchDecode32(instr, iStorage, remainingInPage);
-
-	if (ret < 0) {
-		// handle instrumentation callback inside boundaryFetch
-		instance->boundaryFetch(instr, remainingInPage, iStorage);
-		return 0;
-	}
-
-	return 1;
-}
-
-void L4SysExperiment::logInjection() {
-// XXX fixme
-#if 0
-	// explicit type assignment necessary before sending over output stream
-	int id = param->getWorkloadID();
-	int instr_offset = param->msg.instr_offset();
-	int bit_offset = param->msg.bit_offset();
-	int exp_type = param->msg.exp_type();
-	address_t injection_ip = param->msg.injection_ip();
-
-	log << "job " << id << " exp_type " << exp_type << endl;
-	log << "inject @ ip " << hex << injection_ip << " (offset " << dec << instr_offset
-	    << ")" << " bit " << bit_offset << endl;
-#endif
-}
-
-BaseListener *L4SysExperiment::singleStep(bool preserveAddressSpace) {
-	// XXX: fixme
-	return 0;
-#if 0
-	address_t aspace = (preserveAddressSpace ? L4SYS_ADDRESS_SPACE : ANY_ADDR);
-	BPSingleListener singlestepping_event(ANY_ADDR, aspace);
-	simulator.addListener(&singlestepping_event);
-	/* prepare for the case that the kernel panics and never
-	   switches back to this thread by introducing a scheduling timeout
-	   of 10 seconds */
-	TimerListener schedTimeout(10000000);
-	simulator.addListener(&schedTimeout);
-	BaseListener *ev = waitIOOrOther(false);
-	simulator.removeListener(&singlestepping_event);
-	simulator.removeListener(&schedTimeout);
-
-	if (ev == &schedTimeout) {
-		// otherwise we just assume this thread is never scheduled again
-		log << "Result TIMEOUT" << endl;
-		param->msg.set_resulttype(param->msg.TIMEOUT);
-		param->msg.set_resultdata(
-				simulator.getCPU(0).getInstructionPointer());
-		param->msg.set_output(sanitised(currentOutput.c_str()));
-		param->msg.set_details("Timed out immediately after injecting");
-
-		m_jc.sendResult(*param);
-		terminate(0);
-	}
-	return ev;
-#endif
-}
-
-void L4SysExperiment::injectInstruction(
-        bxInstruction_c *oldInstr, bxInstruction_c *newInstr) {
-	// backup the current and insert the faulty instruction
-	bxInstruction_c backupInstr;
-	memcpy(&backupInstr, oldInstr, sizeof(bxInstruction_c));
-	memcpy(oldInstr, newInstr, sizeof(bxInstruction_c));
-
-	// execute the faulty instruction, then return
-	singleStep(false);
-
-	//restore the old instruction
-	memcpy(oldInstr, &backupInstr, sizeof(bxInstruction_c));
 }
 
 unsigned L4SysExperiment::calculateTimeout(unsigned instr_left) {

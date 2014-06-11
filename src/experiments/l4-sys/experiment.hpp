@@ -26,8 +26,6 @@ typedef struct TraceInstrType {
 	unsigned bp_counter;
 } TraceInstr;
 
-typedef std::vector<TraceInstr> TraceVector;
-
 class L4SysExperiment : public fail::ExperimentFlow {
 private:
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
@@ -74,35 +72,6 @@ private:
 	 * @returns a value for Bochs' eipBiased variable
 	 */
 	Bit32u eipBiased();
-	/**
-	 * Parses a raw instruction into a bxInstruction_c structure.
-	 * This simple version of the function is taken from Bochs
-	 * where it is currently disabled due to the TRACE_CACHE option,
-	 * and has been modified to fit the needs of instruction modification.
-	 * @param instance a pointer to the current Bochs CPU
-	 * @param instr a pointer to the address the instruction is fetched from
-	 * @param iStorage an outgoing value which contains the parsed instruction
-	 * @returns \a false if the instruction continued on the following page in memory
-	 */
-	bx_bool fetchInstruction(BX_CPU_C *instance, const Bit8u *instr, bxInstruction_c *iStorage);
-	/**
-	 * Write out the injection parameters to the logger.
-	 */
-	void logInjection();
-	/**
-	 * Proceeds by one single instruction.
-	 * @param preserveAddressSpace if set, the address space of the next instruction
-	 *                             must match with the current address space
-	 *                             (for example, this is important when debugging in the kernel)
-	 * @returns the listener that was triggered, in case there were more than one
-	 */
-	fail::BaseListener *singleStep(bool preserveAddressSpace);
-	/**
-	 * Injects a new instruction into the Bochs instruction stream and restores the previous one
-	 * @param oldInstr address of the instruction to be replaced
-	 * @param newInstr address of the instruction to replace it with
-	 */
-	void injectInstruction(bxInstruction_c *oldInstr, bxInstruction_c *newInstr);
 	/**
 	 * Calculate the timeout of the current workload in milliseconds.
 	 */
