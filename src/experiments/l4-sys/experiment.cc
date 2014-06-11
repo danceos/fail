@@ -36,9 +36,6 @@ using namespace fail;
   save, and restore. Enable these in the configuration.
 #endif
 
-//string golden_run;
-extern L4SysConversion l4sysRegisterConversion;
-
 string L4SysExperiment::sanitised(const string &in_str) {
 	string result;
 	int in_str_size = in_str.size();
@@ -474,8 +471,7 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 #if 0
 		if (curr_addr < 0xC0000000) // XXX filter for kernel-only experiment
 			continue;
-#endif
-
+#endif        
         currtime = simulator.getTimerTicks();
         deltatime = currtime - prevtime;
 
@@ -816,7 +812,7 @@ bool L4SysExperiment::run()
 		BPSingleListener ev_longjmp(L4SYS_BREAK_LONGJMP);
 		simulator.addListener(&ev_longjmp);
 
-		//If we come to our own exit function, we can stop
+		//If we come to our own exit function, we can stop 
 		BPSingleListener ev_exit(L4SYS_BREAK_EXIT);
 		simulator.addListener(&ev_exit);
 
@@ -844,10 +840,6 @@ bool L4SysExperiment::run()
 	        << (void*)&ev_incomplete << endl;
         BaseListener *ev = afterInjection(result);
         log << "afterInj: res.devstep = " << result->deviate_steps() << endl;
-#if 0
-        //do not discard output recorded so far
-        BaseListener *ev = waitIOOrOther(false);
-#endif
 
         /* copying a string object that contains control sequences
          * unfortunately does not work with the library I am using,
@@ -875,11 +867,11 @@ bool L4SysExperiment::run()
             result->set_resulttype(param->msg.TIMEOUT);
             result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
             result->set_output(sanitised(currentOutput.c_str()));
-				} else if (ev == &ev_exit) {
-						log << "Result FAILSTOP" << endl;
-						result->set_resulttype(param->msg.FAILSTOP);
-						result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
-						result->set_output(sanitised(currentOutput.c_str()));
+        } else if (ev == &ev_exit) {
+            log << "Result FAILSTOP" << endl;
+            result->set_resulttype(param->msg.FAILSTOP);
+            result->set_resultdata(simulator.getCPU(0).getInstructionPointer());
+            result->set_output(sanitised(currentOutput.c_str()));
         } else {
             log << "Result WTF?" << endl;
             stringstream ss;
@@ -889,220 +881,6 @@ bool L4SysExperiment::run()
     }
         
     m_jc.sendResult(*param);
-
-// XXX: Fixme to work with database campaign!
-#if 0
-		else if (exp_type == param->msg.IDCFLIP) {
-			// this is a twisted one
-
-			// initial definitions
-			bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-			unsigned length_in_bits = currInstr->ilen() << 3;
-
-			// get the instruction in plain text and inject the error there
-			// Note: we need to fetch some extra bytes into the array
-			// in case the faulty instruction is interpreted to be longer
-			// than the original one
-			Bit8u curr_instr_plain[MAX_INSTR_BYTES];
-			const Bit8u *addr = calculateInstructionAddress();
-			memcpy(curr_instr_plain, addr, MAX_INSTR_BYTES);
-
-			// CampaignManager has no idea of the instruction length
-			// (neither do we), therefore this small adaption
-			bit_offset %= length_in_bits;
-			param->msg.set_bit_offset(bit_offset);
-
-			// do some access calculation
-			int byte_index = bit_offset >> 3;
-			Bit8u bit_index = bit_offset & 7;
-
-			// apply the fault
-			curr_instr_plain[byte_index] ^= 0x80 >> bit_index;
-
-			// decode the instruction
-			bxInstruction_c bochs_instr;
-			memset(&bochs_instr, 0, sizeof(bxInstruction_c));
-			fetchInstruction(simulator.getCPUContext(), curr_instr_plain,
-							 &bochs_instr);
-
-			// inject it
-			injectInstruction(currInstr, &bochs_instr);
-
-			// do the logging
-			logInjection();
-		} else if (exp_type == param->msg.RATFLIP) {
-			ud_type_t which = UD_NONE;
-			unsigned rnd = 0;
-			Udis86 udis(injection_ip);
-			do {
-				bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-				udis.setInputBuffer(calculateInstructionAddress(), currInstr->ilen());
-				if (!udis.fetchNextInstruction()) {
-					terminateWithError(
-									   "Could not decode instruction using UDIS86", 32);
-				}
-				ud_t _ud = udis.getCurrentState();
-
-				/* start Bjoern Doebel's code (slightly modified) */
-				/* ============================================== */
-				unsigned opcount     = 0;
-				unsigned operands[4] = { ~0U, ~0U, ~0U, ~0U };
-				enum {
-					RAT_IDX_MASK   = 0x0FF,
-					RAT_IDX_OFFSET = 0x100
-				};
-
-				for (unsigned i = 0; i < 3; ++i) {
-					/*
-					 * Case 1: operand is a register
-					 */
-					if (_ud.operand[i].type == UD_OP_REG) {
-						operands[opcount++] = i;
-					} else if (_ud.operand[i].type == UD_OP_MEM) {
-						/*
-						 * Case 2: operand is memory op.
-						 *
-						 * In this case, we may have 2 registers involved for the
-						 * index-scale address calculation.
-						 */
-						if (_ud.operand[i].base != 0)  // 0 if hard-wired mem operand
-							operands[opcount++] = i;
-						if (_ud.operand[i].index != 0)
-							operands[opcount++] = i + RAT_IDX_OFFSET;
-					}
-				}
-
-				if (opcount == 0) {
-					// try the next instruction
-					singleStep(true);
-				} else {
-					// assign the necessary variables
-					rnd = rand() % opcount;
-
-					if (operands[rnd] > RAT_IDX_OFFSET) {
-						which = _ud.operand[operands[rnd] - RAT_IDX_OFFSET].index;
-					} else {
-						which = _ud.operand[operands[rnd]].base;
-					}
-				}
-				/* ============================================ */
-				/* end Bjoern Doebel's code (slightly modified) */
-
-			} while (which == UD_NONE &&
-					 simulator.getCPU(0).getInstructionPointer() != L4SYS_FUNC_EXIT);
-
-			if (simulator.getCPU(0).getInstructionPointer() == L4SYS_FUNC_EXIT) {
-				stringstream ss;
-				ss << "Reached the end of the experiment ";
-				ss << "without finding an appropriate instruction";
-
-				terminateWithError(ss.str(), 33);
-			}
-
-			// store the real injection point
-			param->msg.set_injection_ip(simulator.getCPU(0).getInstructionPointer());
-
-			// so we are able to flip the associated registers
-			// for details on the algorithm, see Bjoern Doebel's SWIFI/RATFlip class
-
-			// some declarations
-			GPRegisterId bochs_reg = Udis86::udisGPRToFailBochsGPR(which);
-			param->msg.set_register_offset(static_cast<L4SysProtoMsg_RegisterType>(bochs_reg + 1));
-			ConcreteCPU &cpu = simulator.getCPU(0);
-			Register *bochsRegister = cpu.getRegister(bochs_reg);
-			Register *exchangeRegister = NULL;
-
-			// first, decide if the fault hits a register bound to this thread
-			// (ten percent chance)
-			if (rand() % 10 == 0) {
-				// assure exchange of registers
-				unsigned int exchg_reg = rand() % 7;
-				if (exchg_reg == bochs_reg)
-					exchg_reg++;
-				exchangeRegister = cpu.getRegister(exchg_reg);
-				param->msg.set_details(l4sysRegisterConversion.output(exchg_reg + 1));
-			}
-
-			// prepare the fault
-			regdata_t data = cpu.getRegisterContent(bochsRegister);
-			if (rnd > 0) {
-				//input register - do the fault injection here
-				regdata_t newdata = 0;
-				if (exchangeRegister != NULL) {
-					// the data is taken from a process register chosen before
-					newdata = cpu.getRegisterContent(exchangeRegister);
-				} else {
-					// the data comes from an uninitialised register
-					newdata = rand();
-					stringstream ss;
-					ss << "0x" << hex << newdata;
-					param->msg.set_details(ss.str());
-				}
-				cpu.setRegisterContent(bochsRegister, newdata);
-			}
-
-			// execute the instruction
-			singleStep(true);
-
-			// restore the register if we are still in the thread
-			if (rnd == 0) {
-				// output register - do the fault injection here
-				if (exchangeRegister != NULL) {
-					// write the result into the wrong local register
-					regdata_t newdata = cpu.getRegisterContent(bochsRegister);
-					cpu.setRegisterContent(exchangeRegister, newdata);
-				}
-				// otherwise, just assume it is stored in an unused register
-			}
-			// restore the actual value of the register
-			// in reality, it would never have been overwritten
-			cpu.setRegisterContent(bochsRegister, data);
-
-			// log the injection
-			logInjection();
-
-		} else if (exp_type == param->msg.ALUINSTR) {
-			static BochsALUInstructions aluInstrObject(aluInstructions, aluInstructionsSize);
-			// find the closest ALU instruction after the current IP
-
-			bxInstruction_c *currInstr;
-			while (!aluInstrObject.isALUInstruction(
-													currInstr = simulator.getCurrentInstruction()) &&
-				   simulator.getCPU(0).getInstructionPointer() != L4SYS_FUNC_EXIT) {
-				singleStep(true);
-			}
-
-			if (simulator.getCPU(0).getInstructionPointer() == L4SYS_FUNC_EXIT) {
-				stringstream ss;
-				ss << "Reached the end of the experiment ";
-				ss << "without finding an appropriate instruction";
-
-				terminateWithError(ss.str(), 34);
-			}
-
-			// store the real injection point
-			param->msg.set_injection_ip(simulator.getCPU(0).getInstructionPointer());
-
-			// now exchange it with a random equivalent
-			bxInstruction_c newInstr;
-			string details;
-			aluInstrObject.randomEquivalent(newInstr, details);
-			if (memcmp(&newInstr, currInstr, sizeof(bxInstruction_c)) == 0) {
-				// something went wrong - exit experiment
-				terminateWithError(
-								   "Did not hit an ALU instruction - correct the source code please!",
-								   40);
-			}
-			// record information on the new instruction
-			param->msg.set_details(details);
-
-			// inject it
-			injectInstruction(currInstr, &newInstr);
-
-			// do the logging
-			logInjection();
-		}
-#endif
 
 #endif
 

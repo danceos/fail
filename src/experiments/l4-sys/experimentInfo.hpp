@@ -6,23 +6,29 @@
 
 // the bounds of the program (space, instructions and time)
 // client
-#define L4SYS_ADDRESS_SPACE 0x1fd4c000
+#define L4SYS_ADDRESS_SPACE 0x1fd77000
 // server
 #define L4SYS_ADDRESS_SPACE_TRACE L4SYS_ADDRESS_SPACE
 //#define L4SYS_ADDRESS_SPACE_TRACE 0x1fd4c000
 
+#define L4SYS_exp_start 0x20000216
+#define L4SYS_exp_end 0x2000029c
+#define L4SYS_inj_start 0x2000022f
+#define L4SYS_inj_end 0x20000252
+
 // FUNC_{ENTRY,EXIT} specifies the range that needs to
 // be captured to log program output properly
-#define L4SYS_FUNC_ENTRY                0x20000220
-#define L4SYS_FUNC_EXIT                 0x20000216
+#define L4SYS_FUNC_ENTRY                L4SYS_exp_start
+#define L4SYS_FUNC_EXIT                 L4SYS_exp_end
 // FILTER_{ENTRY,EXIT} specifies the range that injections
 // should be carried out on (should be a subset of the above)
 // and only works with FILTER_INSTRUCTIONS turned on
-#define L4SYS_FILTER_ENTRY      0x200002ba
-#define L4SYS_FILTER_EXIT       0x20000444
+#define L4SYS_FILTER_ENTRY      L4SYS_inj_start
+#define L4SYS_FILTER_EXIT       L4SYS_inj_end
 
-#define L4SYS_BREAK_BLINK 0xf004b800
-#define L4SYS_BREAK_LONGJMP 0xf004c88e
+#define L4SYS_BREAK_BLINK 0x0
+#define L4SYS_BREAK_LONGJMP 0x0
+#define L4SYS_BREAK_EXIT 0x0
 
 // select instruction filtering
 // XXX: this should be always on and the code should be
@@ -31,12 +37,12 @@
 #define L4SYS_FILTER_INSTRUCTIONS 1
 
 // kernel: 2377547, userland: 79405472
-#define L4SYS_NUMINSTR 27025
-#define L4SYS_TOTINSTR 189122
+#define L4SYS_NUMINSTR 16
+#define L4SYS_TOTINSTR 58401
 #define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
-#define L4SYS_STATE_FOLDER		"l4sys.state"
+#define L4SYS_STATE_FOLDER	"l4sys.state"
 #define L4SYS_INSTRUCTION_LIST	"ip.list"
 #define L4SYS_ALU_INSTRUCTIONS	"alu.list"
 #define L4SYS_CORRECT_OUTPUT	"golden.out"

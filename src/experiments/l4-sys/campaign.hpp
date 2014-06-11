@@ -13,15 +13,10 @@ public:
 };
 
 class L4SysCampaign : public fail::DatabaseCampaign {
-#if 0
-public:
-	virtual bool run();
-#else
     virtual const google::protobuf::Descriptor * cb_result_message() 
     { return google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName("L4SysProtoMsg"); }
 
     virtual void cb_send_pilot(DatabaseCampaignMessage pilot);
-#endif
 };
 
 #endif // __L4SYS_CAMPAIGN_HPP__

@@ -20,8 +20,6 @@ set(MY_CAMPAIGN_SRCS
 	UDIS86.cc
 	InstructionFilter.hpp
 	InstructionFilter.cc
-	conversion.hpp
-	conversion.cc
 )
 
 #### PROTOBUFS ####
