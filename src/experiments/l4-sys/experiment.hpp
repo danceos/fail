@@ -28,6 +28,7 @@ typedef struct TraceInstrType {
 
 class L4SysExperiment : public fail::ExperimentFlow {
 private:
+	class L4SysConfig;
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
 	fail::Logger log; //<! the logger
 	L4SysExperimentData *param; //<! the parameter set currently in use by the client
@@ -75,7 +76,7 @@ private:
 	/**
 	 * Calculate the timeout of the current workload in milliseconds.
 	 */
-	unsigned calculateTimeout(unsigned instr_left);
+	unsigned calculateTimeout(unsigned instr_left, unsigned ips);
 	/**
 	 * Send back the experiment parameter set with a description of the error.
 	 */
@@ -84,8 +85,7 @@ private:
 	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
 	 * phase 1)
 	 */
-	void startAndSaveInitState(fail::BPSingleListener* bp);
-	void CR3run(fail::BPSingleListener *bp);
+	void runToStart(fail::BPSingleListener *bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
 	 * filtering if configured (experiment preparation, phase 2).
@@ -97,9 +97,14 @@ private:
 	void goldenRun(fail::BPSingleListener* bp);
 
 	/**
+	 * Doing fault injection expiriments (experiment preparation, phase 0)
+	 */
+	void doExperiments(fail::BPSingleListener *bp);
+
+	/**
 	 * Check that all required setup has been done before an experiment run.
 	 */
-	void validatePrerequisites();
+	void validatePrerequisites(std::string state, std::string output);
 
 	/**
 	 * Load job parameters for an experiment.
@@ -111,7 +116,7 @@ private:
 	/**
 	 * Read the golden run output into the target string.
 	 */
-	void readGoldenRun(std::string& target);
+	void readGoldenRun(std::string& target, std::string golden_run);
 
 	/*
 	 * Prepare memory experiment. Creates a breakpoint to run until the
@@ -137,7 +142,40 @@ private:
 	void doRegisterInjection(int regDesc, int bit);
 	
 
-	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset);
+	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset, std::string instr_list);
+
+	void parseOptions(L4SysConfig&);
+
+	class L4SysConfig {
+		public:
+			unsigned long int max_instr_bytes;
+			unsigned long int address_space;
+			unsigned long int address_space_trace;
+			unsigned long int func_entry;
+			unsigned long int func_exit;
+			unsigned long int filter_entry;
+			unsigned long int filter_exit;
+			unsigned long int break_blink;
+			unsigned long int break_longjmp;
+			unsigned long int break_exit;
+			unsigned long int filter_instructions;
+			unsigned long int emul_ips;
+			std::string state_folder;
+			std::string instruction_list;
+			std::string alu_instructions;
+			std::string golden_run;
+			std::string filter;
+			std::string trace;
+
+			unsigned long int numinstr;
+			unsigned long int totinstr;
+
+			enum {NO_PREP, GET_CR3, CREATE_CHECKPOINT, COLLECT_INSTR_TRACE, GOLDEN_RUN, FULL_PREPARATION} step;
+	};
+
+private:
+	L4SysConfig conf;
 };
+
 
 #endif // __L4SYS_EXPERIMENT_HPP__

@@ -3,9 +3,16 @@
 
 #include "cpn/CampaignManager.hpp"
 #include "campaign.hpp"
+#include "util/CommandLine.hpp"  
 
 int main(int argc, char **argv)
 {
+	fail::CommandLine &cmd = fail::CommandLine::Inst();
+
+	for (int i = 1; i < argc; ++i) {
+		cmd.add_args(argv[i]);
+	}
+
 	L4SysCampaign c;
 	if (fail::campaignmanager.runCampaign(&c)) {
 		return 0;
