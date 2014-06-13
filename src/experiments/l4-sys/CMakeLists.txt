@@ -14,6 +14,9 @@ set(MY_CAMPAIGN_SRCS
 	aluinstr.cc
 	experiment.hpp
 	experiment.cc
+	experimentFI.cc
+	experimentParameter.cc
+	experimentPreparation.cc
 	campaign.hpp
 	campaign.cc
 	UDIS86.hpp

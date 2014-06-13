@@ -26,9 +26,9 @@
 #define L4SYS_FILTER_ENTRY      L4SYS_inj_start
 #define L4SYS_FILTER_EXIT       L4SYS_inj_end
 
-#define L4SYS_BREAK_BLINK 0x0
-#define L4SYS_BREAK_LONGJMP 0x0
-#define L4SYS_BREAK_EXIT 0x0
+#define L4SYS_BREAK_BLINK 0xdead
+#define L4SYS_BREAK_LONGJMP 0xdead
+#define L4SYS_BREAK_EXIT 0xdead
 
 // select instruction filtering
 // XXX: this should be always on and the code should be
@@ -37,8 +37,8 @@
 #define L4SYS_FILTER_INSTRUCTIONS 1
 
 // kernel: 2377547, userland: 79405472
-#define L4SYS_NUMINSTR 16
-#define L4SYS_TOTINSTR 58401
+#define L4SYS_NUMINSTR 0x1
+#define L4SYS_TOTINSTR 0x1
 #define L4SYS_BOCHS_IPS			5000000
 
 // several file names used
