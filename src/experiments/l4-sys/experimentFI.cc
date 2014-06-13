@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "experiment.hpp"
+#include "experimentInfo.hpp"
 #include "UDIS86.hpp"
 #include "InstructionFilter.hpp"
 #include "aluinstr.hpp"
@@ -14,8 +15,6 @@
 #include "config/FailConfig.hpp"
 #include "TracePlugin.pb.h"
 #include "util/ProtoStream.hpp"
-#include "util/gzstream/gzstream.h"
-#include "util/CommandLine.hpp"
 
 using namespace std;
 using namespace fail;
