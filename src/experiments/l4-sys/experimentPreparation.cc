@@ -6,15 +6,10 @@
 #include "aluinstr.hpp"
 
 #include "sal/SALConfig.hpp"
-#include "sal/SALInst.hpp"
-#include "sal/Memory.hpp"
-#include "sal/Listener.hpp"
-#include <sal/bochs/BochsMemory.hpp>
-#include "config/FailConfig.hpp"
-#include "TracePlugin.pb.h"
-#include "util/ProtoStream.hpp"
 #include "util/gzstream/gzstream.h"
-#include "util/CommandLine.hpp"
+#include "util/ProtoStream.hpp"
+#include "TracePlugin.pb.h"
+#include "sal/Listener.hpp"
 
 using namespace std;
 using namespace fail;

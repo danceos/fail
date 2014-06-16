@@ -4,7 +4,6 @@
 #include "campaign.hpp"
 
 #include "sal/SALConfig.hpp"
-#include "config/FailConfig.hpp"
 
 using namespace std;
 using namespace fail;

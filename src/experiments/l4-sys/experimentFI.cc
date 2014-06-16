@@ -2,19 +2,13 @@
 
 #include "experiment.hpp"
 #include "experimentInfo.hpp"
-#include "UDIS86.hpp"
 #include "InstructionFilter.hpp"
+#include "UDIS86.hpp"
 #include "aluinstr.hpp"
 #include "campaign.hpp"
 
-#include "sal/SALConfig.hpp"
-#include "sal/SALInst.hpp"
-#include "sal/Memory.hpp"
-#include "sal/Listener.hpp"
 #include <sal/bochs/BochsMemory.hpp>
-#include "config/FailConfig.hpp"
-#include "TracePlugin.pb.h"
-#include "util/ProtoStream.hpp"
+#include "sal/SALConfig.hpp"
 
 using namespace std;
 using namespace fail;
