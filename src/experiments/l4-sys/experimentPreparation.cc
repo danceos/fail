@@ -78,7 +78,6 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
         exit(1);
     }
 
-#if L4SYS_FILTER_INSTRUCTIONS
 	ofstream instr_list_file(conf.instruction_list.c_str(), ios::binary);
     RangeSetInstructionFilter filtering(conf.filter.c_str());
 	bp->setWatchInstructionPointer(ANY_ADDR);
@@ -185,68 +184,12 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 	instr_list_file.close();
 	log << "test function calculation position reached after "
 	    << dec << count << " instructions; " << inst_accepted << " accepted" << endl;
-    log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
-#else
-	bp->setWatchInstructionPointer(ANY_ADDR);
-	while (bp->getTriggerInstructionPointer() != conf.func_exit)
-	{
-		fail::BaseListener *res = simulator.resume();
-        address_t curr_addr = 0;
-        
-        // XXX: See the API problem below!
-        if (res == &ML) {
-            curr_addr = ML.getTriggerInstructionPointer();
-            simulator.addListener(&ML);
-            if ((func.address_space_trace != ANY_ADDR) && (BX_CPU(0)->cr3 != func.address_space_trace)) {
-                continue;
-            }
-            ++mem;
-        } else if (res == bp) {
-            curr_addr = bp->getTriggerInstructionPointer();
-            assert(curr_addr == simulator.getCPU(0).getInstructionPointer());
-            simulator.addListener(bp);
-            ++count;
-        }
-#if 0
-		if (curr_addr < 0xC0000000) // XXX filter for kernel-only experiment
-			continue;
-#endif        
-        currtime = simulator.getTimerTicks();
-        deltatime = currtime - prevtime;
+	log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
+		
+	conf.numinstr = inst_accepted;
+	conf.totinstr = count;
 
-        if (res == &ML) {
-#if 0
-            log << "Memory event IP " << std::hex << ML.getTriggerInstructionPointer()
-                << " @ " << ML.getTriggerAddress() << "("
-                << ML.getTriggerAccessType() << "," << ML.getTriggerWidth()
-                << ")" << std::endl;
-#endif
-            ++mem_valid;
-
-            Trace_Event te;
-            if (deltatime != 0) { te.set_time_delta(deltatime); };
-            te.set_ip(curr_addr);
-            te.set_memaddr(ML.getTriggerAddress());
-            te.set_accesstype( (ML.getTriggerAccessType() & MemAccessEvent::MEM_READ) ? te.READ : te.WRITE );
-            te.set_width(ML.getTriggerWidth());
-            os->writeMessage(&te);
-        } else if (res == bp) {
-            Trace_Event e;
-            if (deltatime != 0) { e.set_time_delta(deltatime); };
-            e.set_ip(curr_addr);
-            os->writeMessage(&e);
-        } else {
-            printf("Unknown res? %p\n", res);
-        }
-        prevtime = currtime;
-	}
-	log << "test function calculation position reached after "
-	    << dec << count << " instructions; " << count << " accepted" << endl;
-    log << "mem accesses: " << mem << ", valid: " << mem_valid << std::endl;
-#endif
-		conf.numinstr = inst_accepted;
-		conf.totinstr = count;
-    delete bp;
+ 	delete bp;
 }
 
 void L4SysExperiment::goldenRun(fail::BPSingleListener* bp)

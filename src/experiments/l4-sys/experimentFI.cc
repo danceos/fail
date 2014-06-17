@@ -216,13 +216,8 @@ L4SysExperiment::prepareMemoryExperiment(int ip, int offset, int dataAddress)
     log << "\033[34;1mMemory fault injection\033[0m at instruction " << std::hex << offset
         << ", ip " << ip << ", address " << dataAddress << std::endl;
 
-#if L4SYS_FILTER_INSTRUCTIONS
     setupFilteredBreakpoint(bp, offset, conf.instruction_list);
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
-#else
-    bp->setWatchInstructionPointer(ANY_ADDR);
-    bp->setCounter(offset);
-#endif
     return bp;
 }
 
@@ -240,17 +235,11 @@ L4SysExperiment::prepareRegisterExperiment(int ip, int offset, int dataAddress)
 	    << " reg data (" << reg << ", " 
         << regOffset << ")" << std::endl;
 
-#if L4SYS_FILTER_INSTRUCTIONS
     setupFilteredBreakpoint(bp, offset, conf.instruction_list);
     log << bp->getWatchInstructionPointer() << std::endl;
     log << ip << std::endl;
     assert(bp->getWatchInstructionPointer() == (address_t)(ip & 0xFFFFFFFF));
     log << bp->getCounter() << std::endl;
-#else
-    log << "Exp offset: " << offset << std::endl;
-    bp->setWatchInstructionPointer(ANY_ADDR);
-    bp->setCounter(offset);
-#endif
     return bp;
 }
 
@@ -356,9 +345,7 @@ void L4SysExperiment::doExperiments(fail::BPSingleListener* bp) {
 	        << " Start time " << now << ", new time " << simulator.getTimerTicks()
             << ", diff = " << simulator.getTimerTicks() - now << std::endl;
 
-#if L4SYS_FILTER_INSTRUCTIONS
         assert(bp->getTriggerInstructionPointer() == bp->getWatchInstructionPointer());
-#endif
         result->set_injection_ip(bp->getTriggerInstructionPointer());
 
         if (exp_type == param->msg.MEM) {
