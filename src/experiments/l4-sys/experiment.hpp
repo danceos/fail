@@ -140,8 +140,9 @@ private:
 	 * combination.
 	 */
 	void doRegisterInjection(int regDesc, int bit);
-	
 
+	int updateConfig(std::string parameter, std::string value);
+	
 	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset, std::string instr_list);
 
 	void parseOptions(L4SysConfig&);

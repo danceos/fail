@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "experiment.hpp"
-#include "experimentInfo.hpp"
 #include "InstructionFilter.hpp"
 #include "UDIS86.hpp"
 #include "aluinstr.hpp"

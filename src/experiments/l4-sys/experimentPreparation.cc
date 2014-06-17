@@ -1,7 +1,9 @@
 #include <iostream>
+#include <string>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "experiment.hpp"
-#include "experimentInfo.hpp"
 #include "InstructionFilter.hpp"
 #include "aluinstr.hpp"
 
@@ -47,7 +49,11 @@ void L4SysExperiment::runToStart(fail::BPSingleListener *bp)
 		conf.address_space_trace = BX_CPU(0)->cr3;
 	} 
 
-		conf.address_space = BX_CPU(0)->cr3;
+	conf.address_space = BX_CPU(0)->cr3;
+
+	char tmp[20];
+	sprintf(tmp, "0x%lx", BX_CPU(0)->cr3);
+	updateConfig("address_space", tmp );
 }
 
 
@@ -188,6 +194,16 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 		
 	conf.numinstr = inst_accepted;
 	conf.totinstr = count;
+
+	//Write new values into config file
+	char numimstr_str[20];
+
+	sprintf(numimstr_str, "%li", inst_accepted);
+	updateConfig("numinstr", numimstr_str );
+
+	char totinstr_str[20];
+	sprintf(totinstr_str, "%li", count);
+	updateConfig("totinstr", totinstr_str);
 
  	delete bp;
 }

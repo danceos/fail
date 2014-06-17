@@ -8,15 +8,6 @@
 using namespace std;
 using namespace fail;
 
-// Check if configuration dependencies are satisfied:
-#if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE) || \
-    !defined(CONFIG_EVENT_MEMREAD) || !defined(CONFIG_EVENT_MEMWRITE) || \
-    !defined(CONFIG_SR_SAVE) || \
-    !defined(CONFIG_EVENT_IOPORT)
-#error This experiment needs: breakpoints, memory accesses, I/O port events, \
-  save, and restore. Enable these in the configuration.
-#endif
-
 L4SysExperiment::L4SysExperiment()
  : m_jc("localhost"), log("L4Sys", false)
 {
@@ -36,8 +27,6 @@ void L4SysExperiment::terminate(int reason) {
 	destroy();
 	simulator.terminate(reason);
 }
-
-
 
 bool L4SysExperiment::run()
 {
