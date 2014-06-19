@@ -133,6 +133,8 @@ void L4SysExperiment::parseOptions(L4SysConfig &conf) {
 		cmd.addOption("", "filter", Arg::Optional, "--filter \t define L4SYS_FILTER");
 	CommandLine::option_handle OPT_TRACE = 
 		cmd.addOption("", "trace", Arg::Optional, "--trace \t define outputfile for trace (default trace.pb)");
+	CommandLine::option_handle OPT_CAMPAIN_SERVER = 
+		cmd.addOption("", "campain_server", Arg::Optional, "--campain_server \t specify the hostname of the campain server (default localhost)");
 
 	
 	if (!cmd.parse()) { 
@@ -153,8 +155,12 @@ void L4SysExperiment::parseOptions(L4SysConfig &conf) {
 	if (cmd[OPT_ADDRESS_SPACE]) {
 		conf.address_space = strtol(cmd[OPT_ADDRESS_SPACE].arg, NULL, 16);
 		log << "address_space: "<< hex << conf.address_space << endl;
+
+		//Confi address_space=0 means no address space filtering
+		if (conf.address_space == 0)
+			conf.address_space = fail::ANY_ADDR;
 	} else {
-		 parameterMissing(log, "adress_space");
+		conf.address_space = fail::ANY_ADDR;
 	}
 
 	if (cmd[OPT_ADDRESS_SPACE_TRACE]) {
@@ -163,10 +169,13 @@ void L4SysExperiment::parseOptions(L4SysConfig &conf) {
 			conf.address_space_trace = conf.address_space;
 		else
 			log << "address_space_trace: "<< hex << conf.address_space_trace << endl;
-
 	} else {
 			conf.address_space_trace = conf.address_space;
 	}
+
+
+	if (conf.address_space_trace == 0)
+		conf.address_space_trace = fail::ANY_ADDR;
 
 	if (cmd[OPT_FUNC_ENTRY]) {
 		conf.func_entry = strtol(cmd[OPT_FUNC_ENTRY].arg, NULL, 16);
@@ -271,6 +280,13 @@ void L4SysExperiment::parseOptions(L4SysConfig &conf) {
 	 	log << "trace: "<< conf.trace << endl;
 	} else {
 		conf.trace = "trace.pb";
+	}
+
+	if (cmd[OPT_CAMPAIN_SERVER]) {
+		conf.campain_server = std::string(cmd[OPT_CAMPAIN_SERVER].arg);
+	 	log << "campain_server: "<< conf.campain_server << endl;
+	} else {
+		conf.campain_server = "localhost";
 	}
 
 	if (cmd[STEP]) {

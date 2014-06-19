@@ -9,7 +9,7 @@ using namespace std;
 using namespace fail;
 
 L4SysExperiment::L4SysExperiment()
- : m_jc("localhost"), log("L4Sys", false)
+ : log("L4Sys", false)
 {
 	 param = new L4SysExperimentData;
 }
@@ -71,6 +71,7 @@ bool L4SysExperiment::run()
 		}
 		default: {
 			BPSingleListener *bp = 0;
+			m_jc = fail::JobClient(conf.campain_server.c_str());
 			doExperiments(bp);
 		}
 	}

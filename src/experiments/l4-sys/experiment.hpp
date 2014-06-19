@@ -82,22 +82,22 @@ private:
 	 */
 	void terminateWithError(std::string details, int reason, L4SysProtoMsg_Result*);
 	/**
-	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
-	 * phase 1)
+	 * Run until reaching the entry point of the experiment and save 
+	 * state.
 	 */
 	void runToStart(fail::BPSingleListener *bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
-	 * filtering if configured (experiment preparation, phase 2).
+	 * filtering if configured.
 	 */
 	void collectInstructionTrace(fail::BPSingleListener* bp);
 	/**
-	 * Perform the golden run (experiment preparation, phase 3)
+	 * Perform the golden run.
 	 */
 	void goldenRun(fail::BPSingleListener* bp);
 
 	/**
-	 * Doing fault injection expiriments (experiment preparation, phase 0)
+	 * Doing fault injection expiriments.
 	 */
 	void doExperiments(fail::BPSingleListener *bp);
 
@@ -141,12 +141,24 @@ private:
 	 */
 	void doRegisterInjection(int regDesc, int bit);
 
-	int updateConfig(std::string parameter, std::string value);
-	
 	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset, std::string instr_list);
 
+	/**
+	 * Updates a parameter of the config file or adds a new one
+	 * if the parameter was not specified.
+	 */
+	int updateConfig(std::string parameter, std::string value);
+
+	/**
+	 * Adds the value of the config file to the parameter list and 
+	 * parse the parameter list. This function makes use of the
+	 * CommandLine Parser from the fail* framework.
+	 */
 	void parseOptions(L4SysConfig&);
 
+	/**
+	 * Configuration Setup.
+	 */
 	class L4SysConfig {
 		public:
 			unsigned long int max_instr_bytes;
@@ -167,6 +179,7 @@ private:
 			std::string golden_run;
 			std::string filter;
 			std::string trace;
+			std::string campain_server;
 
 			unsigned long int numinstr;
 			unsigned long int totinstr;
