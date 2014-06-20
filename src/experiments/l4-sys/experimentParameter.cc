@@ -181,14 +181,14 @@ void L4SysExperiment::parseOptions(L4SysConfig &conf) {
 		conf.func_entry = strtol(cmd[OPT_FUNC_ENTRY].arg, NULL, 16);
 		log << "func_entry: "<< hex << conf.func_entry << endl;
 	} else{
-		parameterMissing(log, "filter_entry");
+		parameterMissing(log, "func_entry");
 	}
 
 	if (cmd[OPT_FUNC_EXIT]) {
 		conf.func_exit = strtol(cmd[OPT_FUNC_EXIT].arg, NULL, 16);
 		log << "func_exit: "<< hex << conf.func_exit << endl;
 	} else {
-		parameterMissing(log, "filter_exit");
+		parameterMissing(log, "func_exit");
 	}
 
 	if (cmd[OPT_FILTER_ENTRY]) {
