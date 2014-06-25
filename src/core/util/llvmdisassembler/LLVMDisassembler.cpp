@@ -82,7 +82,7 @@ void LLVMDisassembler::disassemble()
 		// Disassemble symbol by symbol.
 		for (unsigned si = 0, se = Symbols.size(); si != se; ++si) {
 			uint64_t Start = Symbols[si].first;
-			uint64_t End;
+			uint64_t End; // exclusive
 			// The end is either the size of the section or the beginning of the next
 			// symbol.
 			if (Start >= SectSize)
@@ -92,12 +92,12 @@ void LLVMDisassembler::disassemble()
 				End = SectSize;
 			// Make sure this symbol takes up space.
 			else if (Symbols[si + 1].first != Start)
-				End = Symbols[si + 1].first - 1;
+				End = Symbols[si + 1].first;
 			else
 				// This symbol has the same address as the next symbol. Skip it.
 				continue;
 
-			for (Index = Start; Index <= End; Index += Size) {
+			for (Index = Start; Index < End; Index += Size) {
 				MCInst Inst;
 
 				if (disas->getInstruction(Inst, Size, memoryObject, Index,
