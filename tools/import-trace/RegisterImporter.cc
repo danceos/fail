@@ -148,10 +148,19 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		LOG << "instructions disassembled: " << instr_map.size() << " Triple: " << disas->GetTriple() <<  std::endl;
 	}
 
+	// instruction pointer is read + written at each instruction
+	const LLVMtoFailTranslator::reginfo_t info_pc(m_ip_register_id);
+	if (do_ip &&
+		(!addRegisterTrace(curtime, instr, ev, info_pc, 'R') ||
+		 !addRegisterTrace(curtime, instr, ev, info_pc, 'W'))) {
+		return false;
+	}
+
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	if (instr_map.find(ev.ip()) == instr_map.end()) {
-		LOG << "Could not find instruction for IP: " << std::hex << ev.ip() << std::endl;
-		return false;
+		LOG << "Could not find instruction for IP " << std::hex << ev.ip()
+			<< ", skipping" << std::endl;
+		return true;
 	}
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
 	//const MCRegisterInfo &reg_info = disas->getRegisterInfo();
@@ -194,14 +203,6 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		}
 
 		if (!addRegisterTrace(curtime, instr, ev, info, 'W'))
-			return false;
-	}
-
-	const LLVMtoFailTranslator::reginfo_t info_pc(m_ip_register_id);
-	if (do_ip) {
-		if (!addRegisterTrace(curtime, instr, ev, info_pc, 'R'))
-			return false;
-		if (!addRegisterTrace(curtime, instr, ev, info_pc, 'W'))
 			return false;
 	}
 
