@@ -382,7 +382,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 
 	m_row_count ++;
 	if (m_row_count % 10000 == 0) {
-		LOG << "Inserted " << m_row_count << " trace events into the database" << std::endl;
+		LOG << "Inserted " << std::dec << m_row_count << " trace events into the database" << std::endl;
 	}
 
 	return true;
@@ -446,6 +446,6 @@ bool Importer::close_ec_intervals() {
 		}
 	}
 
-	LOG << "Inserted " << (m_row_count - row_count_real) << " fake trace events into the database" << std::endl;
+	LOG << "Inserted " << std::dec << (m_row_count - row_count_real) << " fake trace events into the database" << std::endl;
 	return true;
 }
