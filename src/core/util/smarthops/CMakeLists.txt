@@ -6,5 +6,7 @@ set(SRCS
 )
 
 add_library(fail-smarthops ${SRCS})
-# ToDo: Do we really need this dependency?
+# make sure comm/TracePlugin.pb.h has been generated
 add_dependencies(fail-smarthops fail-comm)
+# fail-util: ProtoIStream
+target_link_libraries(fail-smarthops fail-comm fail-util)
