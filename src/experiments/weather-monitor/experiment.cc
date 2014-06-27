@@ -180,8 +180,8 @@ bool WeatherMonitorExperiment::establishState(guest_address_t& entry)
 	// STEP 1: run until interesting function starts, and save state
 	bp.setWatchInstructionPointer(entry);
 	simulator.addListenerAndResume(&bp);
-	log << "test function entry reached, saving state" << endl;
-	log << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
+	LOG << "test function entry reached, saving state" << endl;
+	LOG << "EIP = " << hex << bp.getTriggerInstructionPointer() << endl;
 	simulator.save(filename_state(m_variant, m_benchmark).c_str());
 	assert(bp.getTriggerInstructionPointer() == entry);
 	assert(simulator.getCPU(0).getInstructionPointer() == entry);
@@ -196,12 +196,12 @@ bool WeatherMonitorExperiment::performTrace(
 			guest_address_t& wait_end)
 {
 	// STEP 2: record trace for fault-space pruning
-	log << "STEP 2 restoring state" << endl;
+	LOG << "STEP 2 restoring state" << endl;
 	simulator.restore(filename_state(m_variant, m_benchmark).c_str());
-	log << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
+	LOG << "EIP = " << hex << simulator.getCPU(0).getInstructionPointer() << endl;
 	assert(simulator.getCPU(0).getInstructionPointer() == entry);
 
-	log << "enabling tracing" << endl;
+	LOG << "enabling tracing" << endl;
 	TracingPlugin tp;
 
 	// TODO: record max(ESP)
@@ -244,18 +244,18 @@ bool WeatherMonitorExperiment::performTrace(
 		simulator.addListener(&ev_count);
 	}
 
-	log << dec << "tracing finished after " << numinstr_tracing
+	LOG << dec << "tracing finished after " << numinstr_tracing
 	    << " instructions, seeing wait_end " << WEATHER_NUMITER_TRACING << " times" << endl;
 	simulator.removeFlow(&tp);
 
 	// serialize trace to file
 	if (of.fail()) {
-		log << "failed to write " << filename_trace(m_variant, m_benchmark) << endl;
+		LOG << "failed to write " << filename_trace(m_variant, m_benchmark) << endl;
 		simulator.clearListeners(this); // cleanup
 		return false;
 	}
 	of.close();
-	log << "trace written to " << filename_trace(m_variant, m_benchmark) << endl;
+	LOG << "trace written to " << filename_trace(m_variant, m_benchmark) << endl;
 
 	// wait another WEATHER_NUMITER_AFTER measurement loop iterations
 	bp.setWatchInstructionPointer(wait_end);
@@ -270,11 +270,11 @@ bool WeatherMonitorExperiment::performTrace(
 		simulator.addListener(&ev_count);
 	}
 
-	log << dec << "experiment finished after " << numinstr_after
+	LOG << dec << "experiment finished after " << numinstr_after
 	    << " instructions, seeing wait_end " << WEATHER_NUMITER_AFTER << " times" << endl;
 
 	if (!writeTraceInfo(numinstr_tracing, numinstr_after)) {
-		log << "failed to write " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		LOG << "failed to write " << filename_traceinfo(m_variant, m_benchmark) << endl;
 		return false;
 	}
 	return true;
@@ -288,11 +288,11 @@ bool WeatherMonitorExperiment::faultInjection()
 #endif
 
 	// get an experiment parameter set
-	log << "asking job server for experiment parameters" << endl;
+	LOG << "asking job server for experiment parameters" << endl;
 	WeatherMonitorExperimentData param;
 #if !LOCAL
 	if (!m_jc.getParam(param)) {
-		log << "Dying." << endl;
+		LOG << "Dying." << endl;
 		// communicate that we were told to die
 		simulator.terminate(1);
 	}
@@ -308,19 +308,19 @@ bool WeatherMonitorExperiment::faultInjection()
 	unsigned  injection_instr = param.msg.fsppilot().injection_instr();
 
 	/* get symbols from ELF */
-	log << "retrieving ELF addresses..." << endl;
+	LOG << "retrieving ELF addresses..." << endl;
 	guest_address_t entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic;
 	if (!readElfSymbols(entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic)) {
-		log << "failed, essential symbols are missing!" << endl;
+		LOG << "failed, essential symbols are missing!" << endl;
 		simulator.terminate(1);
 	} else {
-		log << "successfully retrieved ELF's addresses." << endl;
+		LOG << "successfully retrieved ELF's addresses." << endl;
 	}
 
 	/* get NUMINSTR_TRACING and NUMINSTR_AFTER */
 	unsigned numinstr_tracing, numinstr_after;
 	if (!readTraceInfo(numinstr_tracing, numinstr_after)) {
-		log << "failed to read trace info from " << filename_traceinfo(m_variant, m_benchmark) << endl;
+		LOG << "failed to read trace info from " << filename_traceinfo(m_variant, m_benchmark) << endl;
 		simulator.terminate(1);
 		return false;
 	}
@@ -334,10 +334,10 @@ bool WeatherMonitorExperiment::faultInjection()
 		// 8 results in one job
 		WeathermonitorProtoMsg_Result *result = param.msg.add_result();
 		result->set_bitoffset(bit_offset);
-		log << dec << "job " << id << " instr " << injection_instr
+		LOG << dec << "job " << id << " instr " << injection_instr
 		    << " mem " << data_address << "+" << bit_offset << endl;
 
-		log << "restoring state" << endl;
+		LOG << "restoring state" << endl;
 		simulator.restore(filename_state(m_variant, m_benchmark).c_str());
 
 		// XXX debug
@@ -383,7 +383,7 @@ bool WeatherMonitorExperiment::faultInjection()
 		// note at what IP we did it
 		uint32_t injection_ip = simulator.getCPU(0).getInstructionPointer();
 		result->set_iter_before_fi(count_loop_iter_before);
-		log << "fault injected @ ip " << injection_ip
+		LOG << "fault injected @ ip " << injection_ip
 			<< " 0x" << hex << ((int)data) << " -> 0x" << ((int)newdata) << endl;
 		// sanity check
 		if (param.msg.fsppilot().has_injection_instr_absolute() &&
@@ -391,7 +391,7 @@ bool WeatherMonitorExperiment::faultInjection()
 			stringstream ss;
 			ss << "SANITY CHECK FAILED: " << injection_ip
 			   << " != " << param.msg.fsppilot().injection_instr_absolute();
-			log << ss.str() << endl;
+			LOG << ss.str() << endl;
 			result->set_resulttype(result->UNKNOWN);
 			result->set_latest_ip(injection_ip);
 			result->set_details(ss.str());
@@ -432,7 +432,7 @@ bool WeatherMonitorExperiment::faultInjection()
 
 #if LOCAL && 0
 		// XXX debug
-		log << "enabling tracing" << endl;
+		LOG << "enabling tracing" << endl;
 		TracingPlugin tp;
 		tp.setLogIPOnly(true);
 		tp.setOstream(&cout);
@@ -454,28 +454,28 @@ bool WeatherMonitorExperiment::faultInjection()
 		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		if (ev == &ev_end) {
-			log << "Result FINISHED (" << dec
+			LOG << "Result FINISHED (" << dec
 			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
 			result->set_resulttype(result->FINISHED);
 		} else if (ev == &ev_timeout) {
-			log << "Result TIMEOUT (" << dec
+			LOG << "Result TIMEOUT (" << dec
 			    << count_loop_iter_before << "+" << count_loop_iter_after << ")" << endl;
 			result->set_resulttype(result->TIMEOUT);
 		} else if (ev == &ev_below_text || ev == &ev_beyond_text) {
-			log << "Result OUTSIDE" << endl;
+			LOG << "Result OUTSIDE" << endl;
 			result->set_resulttype(result->OUTSIDE);
 		} else if (ev == &ev_trap) {
-			log << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
+			LOG << dec << "Result TRAP #" << ev_trap.getTriggerNumber() << endl;
 			result->set_resulttype(result->TRAP);
 
 			stringstream ss;
 			ss << ev_trap.getTriggerNumber();
 			result->set_details(ss.str());
 		} else if (ev == &ev_detected) {
-			log << dec << "Result DETECTED" << endl;
+			LOG << dec << "Result DETECTED" << endl;
 			result->set_resulttype(result->DETECTED);
 		} else {
-			log << "Result WTF?" << endl;
+			LOG << "Result WTF?" << endl;
 			result->set_resulttype(result->UNKNOWN);
 
 			stringstream ss;
@@ -485,7 +485,7 @@ bool WeatherMonitorExperiment::faultInjection()
 	}
 	// sanity check: do we have exactly 8 results?
 	if (param.msg.result_size() != 8) {
-		log << "WTF? param.msg.result_size() != 8" << endl;
+		LOG << "WTF? param.msg.result_size() != 8" << endl;
 	} else {
 #if !LOCAL
 		m_jc.sendResult(param);
@@ -501,32 +501,32 @@ bool WeatherMonitorExperiment::faultInjection()
 
 bool WeatherMonitorExperiment::run()
 {
-	log << "startup" << endl;
+	LOG << "startup" << endl;
 #if PREREQUISITES
 	parseOptions();
 
 	/* get symbols from ELF */
-	log << "retrieving ELF addresses..." << endl;
+	LOG << "retrieving ELF addresses..." << endl;
 	guest_address_t entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic;
 	if (!readElfSymbols(entry, text_start, text_end, data_start, data_end, wait_begin, wait_end, vptr_panic)) {
-		log << "failed, essential symbols are missing!" << endl;
+		LOG << "failed, essential symbols are missing!" << endl;
 		simulator.terminate(1);
 	} else {
-		log << "successfully retrieved ELF's addresses." << endl;
+		LOG << "successfully retrieved ELF's addresses." << endl;
 	}
 
 	//STEP 1
 	if (establishState(entry)) {
-		log << "STEP 1 (establish state) finished." << endl;
+		LOG << "STEP 1 (establish state) finished." << endl;
 	} else {
-		log << "STEP 1 (establish state) failed!" << endl;
+		LOG << "STEP 1 (establish state) failed!" << endl;
 	}
 
 	//STEP 2
 	if (performTrace(entry, data_start, data_end, wait_end)) {
-		log << "STEP 2 (perform trace) finished." << endl;
+		LOG << "STEP 2 (perform trace) finished." << endl;
 	} else {
-		log << "STEP 2 (perform trace) failed!" << endl;
+		LOG << "STEP 2 (perform trace) failed!" << endl;
 	}
 
 #else // !PREREQUISITES  i.e. STEP 3 "the actual experiment"

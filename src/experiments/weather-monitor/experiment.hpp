@@ -15,7 +15,7 @@ class WeatherMonitorExperiment : public fail::ExperimentFlow {
 	std::string m_variant, m_benchmark;
     static const std::string dir_images;
     static const std::string dir_prerequisites;
-	fail::Logger log;
+	fail::Logger LOG;
 	fail::BPSingleListener bp;
 
 	std::string filename_elf(const std::string& variant, const std::string& benchmark);
@@ -34,7 +34,7 @@ class WeatherMonitorExperiment : public fail::ExperimentFlow {
 	bool faultInjection();
 
 public:
-	WeatherMonitorExperiment() : log("Weathermonitor", false) {}
+	WeatherMonitorExperiment() : LOG("Weathermonitor", false) {}
 	bool run();
 	void parseOptions(void);
 };
