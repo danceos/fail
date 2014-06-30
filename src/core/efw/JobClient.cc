@@ -19,7 +19,7 @@ JobClient::JobClient(const std::string& server, int port)
 	cout << "JobServer: " << m_server.c_str() << endl;
 
 	if (m_server_ent == NULL) {
-		perror("[Client@gethostbyname()]");
+		herror("[Client@gethostbyname()]");
 		// TODO: Log-level?
 		exit(1);
 	}
