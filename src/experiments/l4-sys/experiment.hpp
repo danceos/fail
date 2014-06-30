@@ -26,10 +26,9 @@ typedef struct TraceInstrType {
 	unsigned bp_counter;
 } TraceInstr;
 
-typedef std::vector<TraceInstr> TraceVector;
-
 class L4SysExperiment : public fail::ExperimentFlow {
 private:
+	class L4SysConfig;
 	fail::JobClient m_jc; //!< the job client connecting to the campaign server
 	fail::Logger log; //<! the logger
 	L4SysExperimentData *param; //<! the parameter set currently in use by the client
@@ -75,62 +74,37 @@ private:
 	 */
 	Bit32u eipBiased();
 	/**
-	 * Parses a raw instruction into a bxInstruction_c structure.
-	 * This simple version of the function is taken from Bochs
-	 * where it is currently disabled due to the TRACE_CACHE option,
-	 * and has been modified to fit the needs of instruction modification.
-	 * @param instance a pointer to the current Bochs CPU
-	 * @param instr a pointer to the address the instruction is fetched from
-	 * @param iStorage an outgoing value which contains the parsed instruction
-	 * @returns \a false if the instruction continued on the following page in memory
-	 */
-	bx_bool fetchInstruction(BX_CPU_C *instance, const Bit8u *instr, bxInstruction_c *iStorage);
-	/**
-	 * Write out the injection parameters to the logger.
-	 */
-	void logInjection();
-	/**
-	 * Proceeds by one single instruction.
-	 * @param preserveAddressSpace if set, the address space of the next instruction
-	 *                             must match with the current address space
-	 *                             (for example, this is important when debugging in the kernel)
-	 * @returns the listener that was triggered, in case there were more than one
-	 */
-	fail::BaseListener *singleStep(bool preserveAddressSpace);
-	/**
-	 * Injects a new instruction into the Bochs instruction stream and restores the previous one
-	 * @param oldInstr address of the instruction to be replaced
-	 * @param newInstr address of the instruction to replace it with
-	 */
-	void injectInstruction(bxInstruction_c *oldInstr, bxInstruction_c *newInstr);
-	/**
 	 * Calculate the timeout of the current workload in milliseconds.
 	 */
-	unsigned calculateTimeout(unsigned instr_left);
+	unsigned calculateTimeout(unsigned instr_left, unsigned ips);
 	/**
 	 * Send back the experiment parameter set with a description of the error.
 	 */
 	void terminateWithError(std::string details, int reason, L4SysProtoMsg_Result*);
 	/**
-	 * Run until L4SYS_FUNC_ENTRY and save state (experiment preparation,
-	 * phase 1)
+	 * Run until reaching the entry point of the experiment and save 
+	 * state.
 	 */
-	void startAndSaveInitState(fail::BPSingleListener* bp);
-	void CR3run(fail::BPSingleListener *bp);
+	void runToStart(fail::BPSingleListener *bp);
 	/**
 	 * Collect list of executed instructions, considering instruction
-	 * filtering if configured (experiment preparation, phase 2).
+	 * filtering if configured.
 	 */
 	void collectInstructionTrace(fail::BPSingleListener* bp);
 	/**
-	 * Perform the golden run (experiment preparation, phase 3)
+	 * Perform the golden run.
 	 */
 	void goldenRun(fail::BPSingleListener* bp);
 
 	/**
+	 * Doing fault injection expiriments.
+	 */
+	void doExperiments(fail::BPSingleListener *bp);
+
+	/**
 	 * Check that all required setup has been done before an experiment run.
 	 */
-	void validatePrerequisites();
+	void validatePrerequisites(std::string state, std::string output);
 
 	/**
 	 * Load job parameters for an experiment.
@@ -142,7 +116,7 @@ private:
 	/**
 	 * Read the golden run output into the target string.
 	 */
-	void readGoldenRun(std::string& target);
+	void readGoldenRun(std::string& target, std::string golden_run);
 
 	/*
 	 * Prepare memory experiment. Creates a breakpoint to run until the
@@ -166,9 +140,56 @@ private:
 	 * combination.
 	 */
 	void doRegisterInjection(int regDesc, int bit);
-	
 
-	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset);
+	void setupFilteredBreakpoint(fail::BPSingleListener* bp, int instOffset, std::string instr_list);
+
+	/**
+	 * Updates a parameter of the config file or adds a new one
+	 * if the parameter was not specified.
+	 */
+	int updateConfig(std::string parameter, std::string value);
+
+	/**
+	 * Adds the value of the config file to the parameter list and 
+	 * parse the parameter list. This function makes use of the
+	 * CommandLine Parser from the fail* framework.
+	 */
+	void parseOptions(L4SysConfig&);
+
+	/**
+	 * Configuration Setup.
+	 */
+	class L4SysConfig {
+		public:
+			unsigned long int max_instr_bytes;
+			unsigned long int address_space;
+			unsigned long int address_space_trace;
+			unsigned long int func_entry;
+			unsigned long int func_exit;
+			unsigned long int filter_entry;
+			unsigned long int filter_exit;
+			unsigned long int break_blink;
+			unsigned long int break_longjmp;
+			unsigned long int break_exit;
+			unsigned long int filter_instructions;
+			unsigned long int emul_ips;
+			std::string state_folder;
+			std::string instruction_list;
+			std::string alu_instructions;
+			std::string golden_run;
+			std::string filter;
+			std::string trace;
+			std::string campain_server;
+
+			unsigned long int numinstr;
+			unsigned long int totinstr;
+
+			enum {NO_PREP, GET_CR3, CREATE_CHECKPOINT, COLLECT_INSTR_TRACE, GOLDEN_RUN, FULL_PREPARATION} step;
+	};
+
+private:
+	L4SysConfig conf;
 };
+
 
 #endif // __L4SYS_EXPERIMENT_HPP__

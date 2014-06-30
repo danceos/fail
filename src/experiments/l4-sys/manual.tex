@@ -17,7 +17,8 @@
 %opening
 \title{L4Sys Fault Injection Campaign -- User Manual}
 \author{Martin Unzner (\href{mailto:munzner@os.inf.tu-dresden.de}{munzner@os.inf.tu-dresden.de}), \\
-        Björn Döbel (\href{mailto:doebel@os.inf.tu-dresden.de}{doebel@os.inf.tu-dresden.de})}    
+        Björn Döbel (\href{mailto:doebel@os.inf.tu-dresden.de}{doebel@os.inf.tu-dresden.de}), \\   
+        Tobias Stumpf (\href{mailto:tstumpf@os.inf.tu-dresden.de}{tstumpf@os.inf.tu-dresden.de})}    
 
 \begin{document}
 
@@ -26,7 +27,7 @@
 \begin{abstract}
 This document describes how to use the L4Sys experiment suite.
 However, this is not a complete documentation. When in doubt,
-please read the source code or contact me. Still, I would like
+please read the source code or contact us. Still, we would like
 you to read this whole document before investigating further.
 \end{abstract}
 
@@ -37,14 +38,10 @@ The framework builds on Fail* and provides means to perform fault injection
 experiments for applications running on top of the Fiasco.OC/L4Re
 microkernel-based operating system as well as the underlying microkernel.
 
-\noindent \lfs{} provides four experiment types:
+\noindent \lfs{} provides two experiment types:
 \begin{enumerate}[topsep=0em,itemsep=0em]
-  \item \emph{GPRFlip} simulates bit flips in general purpose registers.
-  \item \emph{RATFlip} simulates errors in the association between the
-        physical register file and general purpose registers.
-  \item \emph{IDCFlip} simulates errors occurring during instruction decoding.
-  \item \emph{ALUInstrFlip} simulates errors in the processor's arithmetic
-        logic unit.
+  \item \emph{GPRFLIP} simulates bit flips in general purpose registers.
+  \item \emph{MEM} simulates memorry bit flipps.
 \end{enumerate}
 
 \noindent \lfs{} currently works for x86/32 running in Fail/Bochs only.
@@ -72,7 +69,7 @@ The following CMake flags need to be set:
 
 Enabling \verb+CONFIG_FAST_BREAKPOINTS+ may speed up the experiment clients
 significantly. Enabling \verb+CONFIG_BOCHS_NO_ABORT+ is necessary to detect
-whether Bochs stopped because of a bad instruction induced by IDCFlip.
+whether Bochs stopped because of a bad instruction (currently not used).
 Keep in mind that this implies the risk of a deadlock
 in the campaign system, because packets (i.e. experiment descriptions)
 are resent if the client does not answer and finally, all clients
@@ -80,7 +77,7 @@ might fail because they tried to execute the same faulty instruction.
 
 \section{Emulator Setup}
 
-The next step is to prepare an L4Re application setup to run in Bochs.  To
+The next step is to prepare a L4Re application setup to run in Bochs.  To
 setup your system, first, you need a dedicated \texttt{bochsrc} file.  It has
 proven useful to have a Bochs resource file or an independent Bochs instance
 with GUI enabled for the initial testing, however the experiments are intended
@@ -102,12 +99,15 @@ injection campaign. This requires three (+ one optional) steps:
 \begin{enumerate}[topsep=0em,itemsep=0em]
   \item \emph{OPTIONAL:} If we want to perform a campaign that only targets
         a single application, we need to determine this application's address
-        space ID.
+        space ID. Choosing a different link address (add
+				\verb+DEFAULT_RELOC = 0x20000000+ in your applications Makefile)
+				helps you to figure out your address space by stopping at a unique
+				instruction pointer.
   \item \emph{REQUIRED:} We perform an initial run of our setup in Bochs until
         the point where Bochs is booted and the application in question
         starts. At this point we take a snapshot of the emulator so that we
         can skip everything upfront in the remaining runs.
-  \item \emph{REQUIRED:} The \lfs{} campaign uses \verb+L4SYS_NUM_INSTR+ to
+  \item \emph{REQUIRED:} The \lfs{} campaign uses the number of instructions to
         determine the set of instructions to inject faults in. We need to
         perform one run of our setup to determine this number.
   \item \emph{REQUIRED:} We need to perform a \emph{golden run} without any
@@ -115,146 +115,103 @@ injection campaign. This requires three (+ one optional) steps:
 \end{enumerate}
 
 All parameters of the \lfs{} experiment can be configured via file
-\texttt{experimentInfo.hpp}. Normally, it should not be necessary to change
-the program flow directly. However, the interested reader is invited to take a
-look at \texttt{experiment.cc}, too.
+\texttt{experiment.conf} or can be given to \verb+fail-client+ as command
+line parameter. 
 
 \subsection{Constants}
 
-Some values are constant throughout all steps of the preparation and also when
-the workload program is run.  The most important constant is
-\verb+L4SYS_BOCHS_IPS+, which has to be consistent with your \texttt{bochsrc}
+Some configuration values are constant throughout all steps of the preparation 
+and also when the workload program is run.  The most important configuration
+parameter is \verb+emul_ipc+, which has to be consistent with your \texttt{bochsrc}
 setting and is used for several timely calculations in the client.
 
-\subsection{Step 0: Determine the address space}
+\subsection{Preparation}
 
 First, we need to find the start and end instruction addresses for our
 workload program and our given experiment. For this purpose, use a
 disassembler, such as \texttt{objdump} or \emph{IDA Pro}. Determine the first
-and last instruction for your campaign and set  \verb+L4SYS_FUNC_ENTRY+ and
-\verb+L4SYS_FUNC_EXIT+ in the header file accordingly. \verb+L4SYS_NUMINSTR+
-is determined automatically in a later preparation step and can be ignored for
-now.
+and last instruction for your campaign and set  \verb+func_entry+ and
+\verb+func_exit+ in the configuration file accordingly. Additionally, you
+can limit the range for FI by setting \verb+filter_entry+ and \verb+filter_exit+.
 
-If you want your campaign only to affect a specific address space (e.g.,
-because you are only interested in faults at the application level), \lfs{}
-leverages Fail*'s address space filtering mechanism. To determine the address
-space identifier, you will have to use Bochs'
-\href{http://bochs.sourceforge.net/doc/docbook/user/internal-debugger.html}{internal
-debugger} and perform the following actions:
-\begin{enumerate}[topsep=0em,itemsep=0em]
-  \item Compile Bochs with support for the internal debugger. This can either
-        be done by configuring and rebuilding the fail client accordingly or
-        using a separate Bochs installation - we don't need Fail*
-        functionality here.\footnote{BD: I saw differing values when using
-        another Bochs installation, though. Perhaps it's safer to use the same
-        Bochs build for testing and injection.}
-  \item Boot your system in Bochs. The debugger prompt (or window) will
-        appear. Use the \verb+lbreak+ command to set an instruction breakpoint
-        to an address in your application. (Hint: Remember you already figured
-        out \verb+L4SYS_FUNC_ENTRY+ previously.)
-  \item Run Bochs until the breakpoint is hit. Verify that you are in the
-        right address space (instruction pointers may be similar in different
-        applications as L4's BID links all programs to the same starting
-        address by default).
-  \item Use the \verb+creg+ command to look at the current control registers.
-        Set \verb+L4SYS_ADDRESS_SPACE+ to the value of the CR3 (page table
-        control) register.     
-\end{enumerate}
+All preparations steps can be done together or step-by-step. To start
+preparation call fail-client with the parameter \verb+-Wf,--step=OPTION+.
+Use \verb+OPTION=all+ for doing all preparations steps together.
+
+\subsubsection{Step 0: Determine the address space (OPTION=cr3)}
 
 If you are not interested in address space filtering, you may set
-\verb+L4SYS_ADDRESS_SPACE+ to \verb+ANY_ADDR+. Note that in this case you will
+\verb+address_space+ to \verb+0+. Note that in this case you will
 probably encounter instruction pointers across various address spaces and may
 not get the unique results you want.
 
-\subsection{Step 1: Save the initial state of the machine}
+During this step, the option \verb+address_space+ of your configuration
+file is is updated.
 
-Make sure \verb+PREPARATION_STEP+ is still set to \texttt{1}, and
-you have set \verb+L4SYS_ADDRESS_SPACE+ accordingly.
+
+\subsubsection{Step 1: Save the initial state of the machine}
+
+Make sure you have set \verb+address_space+ accordingly.
 Now recompile and execute the framework code again, this time with the graphical
 user interface disabled. The experiment client runs until
-\verb+L4SYS_FUNC_ENTRY+ is reached and then saves
-the complete configuration.
+\verb+func_entry+ is reached and then saves the complete configuration.
 
-\subsection{Step 2: Determine the instructions to execute}
+\subsubsection{Step 2: Determine the instructions to execute}
 
-For this part, it depends on how you want to conduct the injection
-experiments. Setting \verb+L4SYS_FILTER_INSTRUCTIONS+
-stores all instructions by default, and
-enables the filter functionality to store only those
-instructions that match the filter.
-Each instruction in the trace requires
-an address plus an unsigned breakpoint counter,
-which means~8 bytes per instruction on a 32-bit system
-and 12~bytes per instruction on a 64-bit system.
 
-If \verb+L4SYS_FILTER_INSTRUCTIONS+ is not set, the instruction
-to perform the fault injection at is determined by single-stepping
-through the program from the beginning, which is quite slow.
-I only recommend it for long programs, where a complete
-instruction trace would require several hundred megabytes of data.
-
-No matter which method you choose, the default implementation
-of the campaign server reads the total instruction count
-from \verb+L4SYS_NUMINSTR+. Thus, it is mandatory to set this
-value to the number of instructions available.
-
-To obtain this number and optionally the instruction trace,
-set \verb+PREPARATION_STEP+ to \texttt{2} and recompile, then execute
-the experiment client. You do not have to pass parameters to Bochs
-any more, because the configuration is overwritten with the
-state saved in step~1.
+For this part the filter-file (\verb+filter.list+ by default) is
+read to filter out instruction which are not in any of the specified
+ranges.
 
 After the program has finished, you will get a summary on the
 total of instructions executed.
 
-If you have
-\verb+L4SYS_FILTER_INSTRUCTIONS+ enabled, this is not the
-value you look for; it merely claims how many
-instructions have been processed at all.
-To set \verb+L4SYS_NUMINSTR+ correctly, you need to look for the
-number before the word \emph{accepted}, which points out how many
-instructions have been accepted by the applied filter. Of course,
-if no filtering is selected, these two figures should be equal.
-Please contact me if that is not the case.
+\subsubsection{Step 3: Determine the correct output}
 
-If \verb+L4SYS_FILTER_INSTRUCTIONS+ is disabled, you should
-get a statistical output on how many of the instructions
-were executed in userland and kernel space, respectively,
-but the interesting figure in this case is of course the overall
-sum of executed instructions.
-
-\subsection{Step 3: Determine the correct output}
-
-This is the easiest step: Set \verb+PREPARATION_STEP+ to \texttt{3},
-recompile the client and execute it in the target directory.
-It runs the complete program and logs the output. You can
+The framework runs the complete program and logs the output. You can
 check the resulting file (by default \texttt{golden.out}),
 and if it does not comply with your expectations of a valid
 run, you should correct the entry and exit point, the address space
 or, in the worst case, your Bochs settings.
 
+\subsubsection{Step 4: Fill the database with your experiments}
+
+Use the tools \verb+import-trace+ and \verb+prune-trace+ to
+import the data and reducing the amount of necessary experiments.
+
+You can call both applications with parameters specifying your
+database setup or using a default config file (\verb+~/.my.cnf+)
+defining username, password and database name. For \verb+import-trace+
+you have to specify the following parameters: 
+
+\begin{itemize}
+	\item \verb+--importer MemoryImport|RegisterImporter+
+	\item \verb+-e+ YourImageName
+	\item \verb+-t+ NameOfYourTraceFile (trace.pb by default)
+\end{itemize}
+
 \section{Campaign Setup}
 
-To setup the actual campaign, you need to edit \texttt{campaign.cc}.
-The full language capabilities of \texttt{AspectC++} are at your hand to define
-the course of your experiments; a sample covering all experiment
-types at random is already provided. In the experiment client,
-set \verb+PREPARATION_STEP+ to \texttt{0}, which means there is nothing more
-to prepare.
+To start a FI-experiment, you need to start both the campaign server 
+(\verb+l4-sys-server+) and the experiment client (texttt{l4-sys-server})
+needs a parameter to specify the experiment type.
 
-After you have successfully compiled both programs, you need to
-start both the campaign server (\texttt{l4-sys-server})
-and the experiment client. By default, they should run on the
-same machine, but you can adapt the \texttt{L4SysExperiment}
-constructor in \texttt{experiment.cc} to connect the \texttt{JobClient}
-to a remote server instead of \texttt{localhost}. Each experiment client processes
-exactly one experiment and exits. To complete your campaign,
-you should use the \texttt{client.sh} script in the \texttt{scripts}
-subdirectory of Fail*.
+If \verb+l4-sys-server+ and \verb+fail-client+ are running on 
+different core then the config parameter \verb+campain_server+ should
+be added to specify the host name or ip addr. of the machine running 
+\verb+l4-sys-server+.
 
-\section{Format of the result file}
+Each experiment client  processes exactly one experiment 
+and exits. To complete your campaign, you should use the \verb+client.sh+
+script in the \texttt{scripts} subdirectory of Fail*.
 
+
+\section{Get your results}
+
+Your results are stored in your database. Look at the table \verb+result_L4SysProtoMsg+
+to see your results. 
+
+\iffalse
 When the campaign is finished, the campaign server generates a report
 file (by default called \texttt{lfsys.csv}) in a primitive CSV dialect.
 The only syntax rules are that the columns are separated by commas,
@@ -342,17 +299,11 @@ the campaign server, from left to right.
        provide the opcode of the new instruction.
 \end{enumerate}
 
+\fi
 \section{Known bugs}
 
 If you need support for more than one processor,
 you will have to extend the code accordingly:
 at the moment, when in doubt, it uses the first CPU.
-
-\section{To Be Continued}
-
-This is everything I consider important so far. If you still encounter
-problems you may
-contact me and I will try to set the record straight.
-Happy experimenting! :)
 
 \end{document}
