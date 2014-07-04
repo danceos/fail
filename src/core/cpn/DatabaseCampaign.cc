@@ -44,7 +44,7 @@ bool DatabaseCampaign::run() {
 			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle PRUNER =
 		cmd.addOption("p", "prune-method", Arg::Required,
-			"-p/--prune-method \tWhich import method to use (default: basic)");
+			"-p/--prune-method \tWhich import method(s) to use (default: \"%\"; use % and _ as wildcard characters)");
 
 	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
@@ -91,16 +91,13 @@ bool DatabaseCampaign::run() {
 		benchmarks.push_back("%");
 	}
 
-	std::string pruner;
 	if (cmd[PRUNER]) {
-		pruner = std::string(cmd[PRUNER].first()->arg);
+		m_fspmethod = std::string(cmd[PRUNER].first()->arg);
 	} else {
-		pruner = "basic";
+		m_fspmethod = "%";
 	}
 
 	db = Database::cmdline_connect();
-	fspmethod_id = db->get_fspmethod_id(pruner);
-	log_send << "Pruner to use " << pruner << " (ID: " << fspmethod_id << ")" << std::endl;
 
 	/* Set up the adapter that maps the results into the MySQL
 	   Database */
@@ -170,11 +167,11 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
 	unsigned long experiment_count;
 	std::stringstream ss;
-	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
+	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, p.fspmethod_id, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
 	   << " JOIN trace t"
 	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
-	   << " WHERE p.fspmethod_id = " << fspmethod_id
+	   << " WHERE p.fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
 	   << "	  AND p.variant_id = " << variant.id
 	   << " ORDER BY t.instr1"; // Smart-Hopping needs this ordering
 	std::string sql_body = ss.str();
@@ -209,11 +206,13 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned injection_instr = strtoul(row[1], NULL, 10);
 		unsigned data_address    = strtoul(row[3], NULL, 10);
 		unsigned data_width      = strtoul(row[4], NULL, 10);
-		unsigned instr1          = strtoul(row[5], NULL, 10);
-		unsigned instr2          = strtoul(row[6], NULL, 10);
+		unsigned fspmethod_id    = strtoul(row[5], NULL, 10);
+		unsigned instr1          = strtoul(row[6], NULL, 10);
+		unsigned instr2          = strtoul(row[7], NULL, 10);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
+		// FIXME the fspmethod_id is auto-generated, send fspmethod.method instead (is this necessary at all?)
 		pilot.set_fspmethod_id(fspmethod_id);
 		pilot.set_variant_id(variant.id);
 		// ToDo: Remove this, if all experiments work with abstract API (InjectionPoint)

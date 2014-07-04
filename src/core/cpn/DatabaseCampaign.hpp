@@ -26,7 +26,7 @@ class DatabaseCampaign : public Campaign {
 	Database *db; // !< The database connection object
 	DatabaseProtobufAdapter db_connect;
 
-	int fspmethod_id; // !< Which fspmethod should be put out to the clients
+	std::string m_fspmethod; // !< LIKE pattern indicating which fspmethod(s) should be put out to the clients
 
 	void collect_result_thread();
 	void load_completed_pilots(std::vector<fail::Database::Variant> &);
