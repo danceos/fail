@@ -8,8 +8,6 @@ import "@CONCRETE_INJECTION_POINT@";
 
 message DatabaseCampaignMessage {
     required uint32 pilot_id                 = 1 [(sql_primary_key) = true];
-    required uint32 variant_id               = 2 [(sql_ignore) = true];
-    required uint32 fspmethod_id             = 3 [(sql_ignore) = true];
 
     // ToDo: injection_instr can be deleted if all experiments switched to
     // using generic InjectionPointMessage
@@ -27,4 +25,3 @@ message DatabaseExperimentMessage {
     required uint32 bitoffset      = 1 [(sql_primary_key) = true];
     required uint32 original_value = 2;
 }
-

@@ -167,7 +167,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
 	unsigned long experiment_count;
 	std::stringstream ss;
-	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, p.fspmethod_id, t.instr1, t.instr2 ";
+	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
 	   << " JOIN trace t"
 	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
@@ -206,15 +206,11 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned injection_instr = strtoul(row[1], NULL, 10);
 		unsigned data_address    = strtoul(row[3], NULL, 10);
 		unsigned data_width      = strtoul(row[4], NULL, 10);
-		unsigned fspmethod_id    = strtoul(row[5], NULL, 10);
-		unsigned instr1          = strtoul(row[6], NULL, 10);
-		unsigned instr2          = strtoul(row[7], NULL, 10);
+		unsigned instr1          = strtoul(row[5], NULL, 10);
+		unsigned instr2          = strtoul(row[6], NULL, 10);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
-		// FIXME the fspmethod_id is auto-generated, send fspmethod.method instead (is this necessary at all?)
-		pilot.set_fspmethod_id(fspmethod_id);
-		pilot.set_variant_id(variant.id);
 		// ToDo: Remove this, if all experiments work with abstract API (InjectionPoint)
 		pilot.set_injection_instr(injection_instr);
 		pilot.set_variant(variant.variant);
