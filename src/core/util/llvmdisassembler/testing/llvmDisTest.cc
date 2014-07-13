@@ -1,4 +1,3 @@
-#ifndef __puma
 #include "../LLVMDisassembler.hpp"
 
 using namespace llvm;
@@ -69,4 +68,3 @@ int main(int argc, char* argv[]) {
 		std::cout << std::endl;
 	}
 }
-#endif
