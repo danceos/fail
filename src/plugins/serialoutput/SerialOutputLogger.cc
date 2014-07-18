@@ -10,7 +10,7 @@ bool SerialOutputLogger::run()
 	while (true) {
 		simulator.addListener(&ev_ioport);
 		simulator.resume();
-		if (m_output.size() < m_limit) {
+		if (m_limit == 0 || m_output.size() < m_limit) {
 			m_output += ev_ioport.getData();
 		}
 	}
