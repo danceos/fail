@@ -79,11 +79,14 @@ bool DatabaseCampaign::run() {
 	boost::thread collect_thread(&DatabaseCampaign::collect_result_thread, this);
 #endif
 
-	load_completed_pilots();
 
 	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
 	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
 		 it != variants.end(); ++it) {
+		// Which Pilots were already processed?
+		load_completed_pilots(*it);
+
+		// Push all other variants to the queue
 		if (!run_variant(*it)) {
 			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
 			return false;
@@ -216,14 +219,17 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 }
 
-void DatabaseCampaign::load_completed_pilots()
+void DatabaseCampaign::load_completed_pilots(Database::Variant variant)
 {
 	// load list of partially or completely finished pilots
+	log_send << "loading completed pilot IDs ... (" << variant.variant << "/"
+		 << variant.benchmark << ")" << std::endl;
 	std::stringstream sql;
-	sql << "SELECT pilot_id, COUNT(*) FROM " << db_connect.result_table()
+	sql << "SELECT pilot_id, COUNT(*) FROM fsppilot p"
+	    << " JOIN " << db_connect.result_table() << " r ON r.pilot_id = p.id"
+	    << " WHERE variant_id = " << variant.id
 	    << " GROUP BY pilot_id ";
 	MYSQL_RES *ids = db->query_stream(sql.str().c_str());
-	log_send << "loading completed pilot IDs ..." << std::endl;
 	MYSQL_ROW row;
 	unsigned rowcount = 0;
 	while ((row = mysql_fetch_row(ids)) != 0) {

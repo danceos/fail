@@ -29,7 +29,7 @@ class DatabaseCampaign : public Campaign {
 	int fspmethod_id; // !< Which fspmethod should be put out to the clients
 
 	void collect_result_thread();
-	void load_completed_pilots();
+	void load_completed_pilots(fail::Database::Variant);
 	unsigned existing_results_for_pilot(unsigned pilot_id);
 
 #ifndef __puma
