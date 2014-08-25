@@ -79,12 +79,14 @@ bool DatabaseCampaign::run() {
 	boost::thread collect_thread(&DatabaseCampaign::collect_result_thread, this);
 #endif
 
-
 	std::vector<Database::Variant> variants = db->get_variants(variant, benchmark);
+
+
+	// Which Pilots were already processed?
+	load_completed_pilots(variants);
+
 	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
 		 it != variants.end(); ++it) {
-		// Which Pilots were already processed?
-		load_completed_pilots(*it);
 
 		// Push all other variants to the queue
 		if (!run_variant(*it)) {
@@ -219,15 +221,27 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 }
 
-void DatabaseCampaign::load_completed_pilots(Database::Variant variant)
+void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &variants)
 {
+	// If no variants were given, do nothing
+	if (variants.size() == 0)
+		return;
+
 	// load list of partially or completely finished pilots
-	log_send << "loading completed pilot IDs ... (" << variant.variant << "/"
-		 << variant.benchmark << ")" << std::endl;
+	std::stringstream variant_str;
+	bool comma = false;
+	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
+		 it != variants.end(); ++it) {
+		if (comma) variant_str << ", ";
+		variant_str << it->id;
+		comma = true; // Next time we need a comma
+	}
+	log_send << "loading completed pilot IDs ..." << std::endl;
+
 	std::stringstream sql;
 	sql << "SELECT pilot_id, COUNT(*) FROM fsppilot p"
 	    << " JOIN " << db_connect.result_table() << " r ON r.pilot_id = p.id"
-	    << " WHERE variant_id = " << variant.id
+	    << " WHERE variant_id in (" << variant_str.str() << ")"
 	    << " GROUP BY pilot_id ";
 	MYSQL_RES *ids = db->query_stream(sql.str().c_str());
 	MYSQL_ROW row;
