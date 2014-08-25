@@ -49,7 +49,9 @@ LLVMtoFailTranslator* LLVMtoFailTranslator::createFromBinary(const std::string e
 	llvm::InitializeAllDisassemblers();
 
 	OwningPtr<Binary> binary;
-	assert(createBinary(elf_path, binary) == 0);
+	llvm::error_code ret = createBinary(elf_path, binary);
+	assert (ret == 0);
+	assert (binary.get() != NULL);
 
 	#ifndef __puma
 	LLVMDisassembler disas(dyn_cast<ObjectFile>(binary.get()));
