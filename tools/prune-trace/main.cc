@@ -4,6 +4,8 @@
 
 #include "util/CommandLine.hpp"
 #include "util/Logger.hpp"
+#include "util/AliasedRegistry.hpp"
+
 static fail::Logger LOG("prune-trace", true);
 
 using namespace fail;
@@ -15,6 +17,17 @@ using std::endl;
 
 int main(int argc, char *argv[]) {
 	std::string username, hostname, database;
+
+	// register possible Pruners
+	AliasedRegistry registry;
+	BasicPruner basicpruner;
+	registry.add(&basicpruner);
+	BasicPrunerLeft basicprunerleft;
+	registry.add(&basicprunerleft);
+	FESamplingPruner fesamplingpruner;
+	registry.add(&fesamplingpruner);
+
+	std::string pruners = registry.getPrimeAliasesCSV();
 
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
@@ -39,9 +52,9 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle BENCHMARK_EXCLUDE =
 		cmd.addOption("", "benchmark-exclude", Arg::Required,
 			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	std::string pruner_help = "-p/--prune-method \tWhich pruning method to use (default: basic); available pruning methods: " + pruners;
 	CommandLine::option_handle PRUNER =
-		cmd.addOption("p", "prune-method", Arg::Required,
-			"-p/--prune-method \tWhich import method to use (default: basic)");
+		cmd.addOption("p", "prune-method", Arg::Required, pruner_help);
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
@@ -55,6 +68,20 @@ int main(int argc, char *argv[]) {
 	}
 
 	Pruner *pruner;
+	std::string pruner_name = "BasicPruner";
+	if (cmd[PRUNER]) {
+		pruner_name = cmd[PRUNER].first()->arg;
+	}
+
+	// try and get the according pruner object; die on failure
+	if ((pruner = (Pruner *)registry.get(pruner_name)) == 0) {
+		if (pruner_name != "?" ) {
+			std::cerr << "Unknown import method: " << pruner_name << std::endl;
+		}
+		std::cerr << "Available import methods: " << pruners << std::endl;
+		exit(-1);
+	}
+
 	if (cmd[PRUNER]) {
 		std::string imp(cmd[PRUNER].first()->arg);
 		if (imp == "BasicPruner" || imp == "basic") {

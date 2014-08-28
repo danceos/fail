@@ -4,8 +4,9 @@
 #include <vector>
 #include <string>
 #include "util/Database.hpp"
+#include "util/AliasedRegisterable.hpp"
 
-class Pruner {
+class Pruner : public fail::AliasedRegisterable {
 protected:
 	int m_method_id;
 	fail::Database *db;
