@@ -45,6 +45,9 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
+	CommandLine::option_handle OVERWRITE =
+		cmd.addOption("", "overwrite", Arg::None,
+			"--overwrite \tOverwrite already existing pruning data (the default is to skip variants with existing entries)");
 
 	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
@@ -88,6 +91,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	Database *db = Database::cmdline_connect();
+	pruner->set_db(db);
 
 	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
 	if (cmd[VARIANT]) {
@@ -124,7 +128,12 @@ int main(int argc, char *argv[]) {
 		benchmarks.push_back("%");
 	}
 
-	if (!pruner->init(db, variants, variants_exclude, benchmarks, benchmarks_exclude)) {
+	if (!pruner->create_database()) {
+		LOG << "pruner->create_database() failed" << endl;
+		exit(-1);
+	}
+
+	if (!pruner->init(variants, variants_exclude, benchmarks, benchmarks_exclude, cmd[OVERWRITE])) {
 		LOG << "pruner->init() failed" << endl;
 		exit(-1);
 	}
@@ -132,12 +141,7 @@ int main(int argc, char *argv[]) {
 	////////////////////////////////////////////////////////////////
 	// Do the actual import
 	////////////////////////////////////////////////////////////////
-	if (!pruner->create_database()) {
-		LOG << "create_database() failed" << endl;
-		exit(-1);
-	}
-
-	if (!cmd[NO_DELETE] && !pruner->clear_database()) {
+	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
