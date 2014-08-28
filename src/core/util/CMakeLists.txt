@@ -89,3 +89,6 @@ endif (BUILD_LLVM_DISASSEMBLER)
 add_executable(memorymap-test testing/memorymap-test.cc)
 target_link_libraries(memorymap-test fail-util)
 add_test(NAME memorymap-test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/testing COMMAND memorymap-test)
+
+add_executable(sumtree-test testing/SumTreeTest.cc)
+add_test(NAME sumtree-test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/testing COMMAND sumtree-test)

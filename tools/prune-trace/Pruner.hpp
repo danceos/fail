@@ -8,8 +8,9 @@
 class Pruner {
 protected:
 	int m_method_id;
-	std::string m_variant_id_query;
 	fail::Database *db;
+	std::vector<fail::Database::Variant> m_variants;
+	std::string m_variants_sql;
 
 public:
 	bool init(fail::Database *db,
@@ -17,6 +18,12 @@ public:
 		const std::vector<std::string>& variants_exclude,
 		const std::vector<std::string>& benchmarks,
 		const std::vector<std::string>& benchmarks_exclude);
+
+	/**
+	 * Callback function that can be used to add command line options
+	 * to the cmd interface
+	 */
+	virtual bool commandline_init() { return true; }
 
 	virtual std::string method_name() = 0;
 

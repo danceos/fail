@@ -11,6 +11,7 @@ using std::endl;
 
 #include "Pruner.hpp"
 #include "BasicPruner.hpp"
+#include "FESamplingPruner.hpp"
 
 int main(int argc, char *argv[]) {
 	std::string username, hostname, database;
@@ -59,6 +60,9 @@ int main(int argc, char *argv[]) {
 		} else if (imp == "BasicPrunerLeft" || imp == "basic-left") {
 			LOG << "Using BasicPruner (use left border, instr1)" << endl;
 			pruner = new BasicPruner(true);
+		} else if (imp == "FESamplingPruner" || imp == "sampling") {
+			LOG << "Using FESamplingPruner" << endl;
+			pruner = new FESamplingPruner;
 
 		} else {
 			LOG << "Unknown pruning method: " << imp << endl;
@@ -69,6 +73,14 @@ int main(int argc, char *argv[]) {
 		LOG << "Using BasicPruner" << endl;
 		pruner = new BasicPruner();
 	}
+
+	if (pruner && !(pruner->commandline_init())) {
+		std::cerr << "Pruner's commandline initialization failed" << std::endl;
+		exit(-1);
+	}
+	// Since the pruner might have added command line options, we need to
+	// reparse all arguments.
+	cmd.parse();
 
 	if (cmd[HELP]) {
 		cmd.printUsage();

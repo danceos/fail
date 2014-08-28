@@ -141,34 +141,81 @@ my_ulonglong Database::insert_id()
 	return mysql_insert_id(handle);
 }
 
-std::vector<Database::Variant> Database::get_variants(const std::string &variant, const std::string &benchmark) {
-	std::vector<Variant> result;
-
+bool Database::create_variants_table()
+{
 	if (!query("CREATE TABLE IF NOT EXISTS variant ("
-		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
-		  "	 variant varchar(255) NOT NULL,"
-		  "	 benchmark varchar(255) NOT NULL,"
-		  "	 PRIMARY KEY (id),"
-		  "UNIQUE KEY variant (variant,benchmark)) ENGINE=MyISAM")) {
+		"      id int(11) NOT NULL AUTO_INCREMENT,"
+		"      variant varchar(255) NOT NULL,"
+		"      benchmark varchar(255) NOT NULL,"
+		"      PRIMARY KEY (id),"
+		"UNIQUE KEY variant (variant,benchmark)) ENGINE=MyISAM")) {
+		return false;
+	}
+	return true;
+}
+
+std::vector<Database::Variant> Database::get_variants(const std::string &variant, const std::string &benchmark)
+{
+	std::vector<std::string> variants;
+	variants.push_back(variant);
+	std::vector<std::string> benchmarks;
+	benchmarks.push_back(benchmark);
+	std::vector<std::string> dummy;
+
+	return get_variants(variants, dummy, benchmarks, dummy);
+}
+
+std::vector<Database::Variant> Database::get_variants(
+	const std::vector<std::string>& variants,
+	const std::vector<std::string>& variants_exclude,
+	const std::vector<std::string>& benchmarks,
+	const std::vector<std::string>& benchmarks_exclude)
+{
+	std::vector<Variant> result;
+	std::stringstream ss;
+
+	// make sure variant table exists
+	if (!create_variants_table()) {
 		return result;
 	}
 
-	std::stringstream ss;
-	// FIXME SQL injection possible
-	ss << "SELECT id, variant, benchmark FROM variant WHERE variant LIKE '" << variant << "' AND benchmark LIKE '" << benchmark << "'";
-	MYSQL_RES *variant_id_res = query(ss.str().c_str(), true);
+	// FIXME string escaping
+	ss << "SELECT id, variant, benchmark FROM variant WHERE ";
+	ss << "(";
+	for (std::vector<std::string>::const_iterator it = variants.begin();
+	     it != variants.end(); ++it) {
+		ss << "variant LIKE '" << *it << "' OR ";
+	}
+	ss << "0) AND (";
+	for (std::vector<std::string>::const_iterator it = benchmarks.begin();
+	     it != benchmarks.end(); ++it) {
+		ss << "benchmark LIKE '" << *it << "' OR ";
+	}
+	// dummy terminator to avoid special cases in query construction above
+	ss << "0) AND NOT (";
+	for (std::vector<std::string>::const_iterator it = variants_exclude.begin();
+	     it != variants_exclude.end(); ++it) {
+		ss << "variant LIKE '" << *it << "' OR ";
+	}
+	for (std::vector<std::string>::const_iterator it = benchmarks_exclude.begin();
+	     it != benchmarks_exclude.end(); ++it) {
+		ss << "benchmark LIKE '" << *it << "' OR ";
+	}
+	// dummy terminator to avoid special cases in query construction above
+	ss << "0)";
 
+	MYSQL_RES *variant_id_res = query(ss.str().c_str(), true);
 	if (!variant_id_res) {
 		return result;
-	} else if (mysql_num_rows(variant_id_res)) {
-		for (unsigned int i = 0; i < mysql_num_rows(variant_id_res); ++i) {
-			MYSQL_ROW row = mysql_fetch_row(variant_id_res);
-			Variant var;
-			var.id = atoi(row[0]);
-			var.variant = std::string(row[1]);
-			var.benchmark = std::string(row[2]);
-			result.push_back(var);
-		}
+	}
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(variant_id_res))) {
+		Variant var;
+		var.id = atoi(row[0]);
+		var.variant = row[1];
+		var.benchmark = row[2];
+		result.push_back(var);
 	}
 
 	return result;

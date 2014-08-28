@@ -19,22 +19,21 @@ bool BasicPruner::prune_all() {
 		  "SELECT 0, variant_id, instr2, " << injection_instr << ", " << injection_instr_absolute << ", "
 		  "  data_address, width, " << m_method_id << " "
 		  "FROM trace "
-		  "WHERE variant_id IN (" << m_variant_id_query << ") AND accesstype = 'R'";
+		  "WHERE variant_id IN (" << m_variants_sql << ") AND accesstype = 'R'";
 	if (!db->query(ss.str().c_str())) return false;
 	ss.str("");
 
 	int rows = db->affected_rows();
 
 	// for each variant:
-	MYSQL_RES *res = db->query(m_variant_id_query.c_str(), true);
-	MYSQL_ROW row;
-	while ((row = mysql_fetch_row(res))) {
+	for (std::vector<fail::Database::Variant>::const_iterator it = m_variants.begin();
+		it != m_variants.end(); ++it) {
 		// single entry for known outcome (write access)
 		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, data_width, fspmethod_id) "
 			  "SELECT 1, variant_id, instr2, " << injection_instr << ", " << injection_instr_absolute << ", "
 			  "  data_address, width, " << m_method_id << " "
 			  "FROM trace "
-			  "WHERE variant_id = " << row[0] << " AND accesstype = 'W' "
+			  "WHERE variant_id = " << it->id << " AND accesstype = 'W' "
 			  "ORDER BY instr2 ASC "
 			  "LIMIT 1";
 		if (!db->query(ss.str().c_str())) return false;
@@ -50,7 +49,7 @@ bool BasicPruner::prune_all() {
 	   << "JOIN trace t ON t.variant_id = p.variant_id AND t.instr2 = p.instr2"
 	   << "            AND t.data_address = p.data_address "
 	   << "WHERE known_outcome = 0 AND p.fspmethod_id = " << m_method_id << " "
-	   << "AND p.variant_id IN (" << m_variant_id_query << ")";
+	   << "AND p.variant_id IN (" << m_variants_sql << ")";
 
 	if (!db->query(ss.str().c_str())) return false;
 	ss.str("");
@@ -61,7 +60,7 @@ bool BasicPruner::prune_all() {
 		"FROM fsppilot p "
 		"JOIN trace t "
 		"ON t.variant_id = p.variant_id AND p.fspmethod_id = " << m_method_id << " AND p.known_outcome = 1 "
-		"WHERE t.variant_id IN (" << m_variant_id_query << ") AND t.accesstype = 'W'";
+		"WHERE t.variant_id IN (" << m_variants_sql << ") AND t.accesstype = 'W'";
 	if (!db->query(ss.str().c_str())) return false;
 	ss.str("");
 	rows += db->affected_rows();
