@@ -51,6 +51,7 @@ LLVMtoFailTranslator* LLVMtoFailTranslator::createFromBinary(const std::string e
 	OwningPtr<Binary> binary;
 	llvm::error_code ret = createBinary(elf_path, binary);
 	assert (ret == 0);
+	(void) ret; // unused in release builds
 	assert (binary.get() != NULL);
 
 	#ifndef __puma

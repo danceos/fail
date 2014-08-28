@@ -134,7 +134,7 @@ void DatabaseCampaign::collect_result_thread() {
 
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
-	int experiment_count;
+	unsigned long experiment_count;
 	std::stringstream ss;
 	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
