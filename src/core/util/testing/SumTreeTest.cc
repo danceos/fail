@@ -1,9 +1,11 @@
 #include "util/SumTree.hpp"
+#include "util/Logger.hpp"
 
 #include <iostream>
-#define LOG std::cerr
 
 using std::endl;
+
+fail::Logger LOG("SumTreeTest");
 
 struct Pilot {
 	uint32_t id;
