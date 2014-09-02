@@ -53,6 +53,34 @@ based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
 Example experiments and code snippets
 =========================================================================================
 
+Experiment "weather-monitor":
+**********************************************************************
+An example of a DatabaseCampaign with separate experiment.
+ 1. Add "weather-monitor" to EXPERIMENTS_ACTIVATED,
+    add "tracing" to PLUGINS_ACTIVATED
+ 2. Enable BUILD_IMPORT_TRACE, BUILD_PRUNE_TRACE, CONFIG_EVENT_BREAKPOINTS,
+	CONFIG_EVENT_BREAKPOINTS_RANGE, CONFIG_EVENT_GUESTSYS, CONFIG_EVENT_MEMREAD,
+	CONFIG_EVENT_MEMWRITE, CONFIG_EVENT_TRAP, CONFIG_SR_RESTORE and CONFIG_SR_SAVE
+	The options BUILD_BOCHS, BUILD_X86	are needed as well, but are defaults.
+ 3. In weather-monitor/experimentInfo.hpp set "PREREQUISITES" to 1 and build
+    Fail*/Bochs using e.g. fail/scripts/rebuild-bochs.sh (-> how-to-build.txt).
+	Upon minor changes (i.e. not e.g. to aspects), append " -" to the call to
+	the script. This will rebuild only parts that changed.
+ 4. Enter experiment_targets/weathermonitor and run:
+		find . -name "*.bz2" -execdir bunzip2 -k {} +
+	This extracts all the bzipped files in place while keeping the archives.
+ 5. In order to record a trace, run the following:
+		fail-client -q -Wf,--benchmark=weather -Wf,--variant=vanilla
+	"variant" is used to find the .elf/.vmi inside oostubs/!
+	The resulting trace thereafter lies within prerequisites/, it's name
+	being VARIANT.trace
+ 6. Use "import-trace" (using correct -b & -v, -t is VARIANT.trace) to get the
+    trace into the database and "prune-trace" to (obviously) prune the data.
+ 7. Change PREREQUISITES (see 5) back to "0" and rebuild Fail*/Bochs.
+ 8. Run the "weather-monitor-server" (Don't forget -v & -b!) and "fail-client -q"
+    from within experiment_targets/weathermonitor/.
+	You'll need several clients to finish the campaign.
+
 Experiment "hsc-simple":
 **********************************************************************
 A simple standalone experiment (without a separate campaign). To compile this
