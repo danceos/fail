@@ -24,6 +24,11 @@ public:
 	virtual bool commandline_init();
 	virtual bool prune_all();
 
+	void getAliases(std::deque<std::string> *aliases) {
+		aliases->push_back("FESamplingPruner");
+		aliases->push_back("sampling");
+	}
+
 private:
 	bool sampling_prune(const fail::Database::Variant& variant);
 };

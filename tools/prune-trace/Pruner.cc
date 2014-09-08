@@ -8,38 +8,72 @@ static Logger LOG ("Pruner");
 #include "Pruner.hpp"
 
 
-bool Pruner::init(fail::Database *db,
+bool Pruner::init(
 		const std::vector<std::string>& variants,
 		const std::vector<std::string>& variants_exclude,
 		const std::vector<std::string>& benchmarks,
-		const std::vector<std::string>& benchmarks_exclude)
+		const std::vector<std::string>& benchmarks_exclude,
+		bool overwrite)
 {
-	this->db = db;
-
 	m_variants = db->get_variants(
 		variants, variants_exclude,
 		benchmarks, benchmarks_exclude);
+
+	if (!(m_method_id = db->get_fspmethod_id(method_name()))) {
+		return false;
+	}
+	LOG << "Pruning with method " << method_name() << " (ID: " << m_method_id << ")"
+	    << std::endl;
+
+	// make sure we only prune variants that haven't been pruned previously
+	// (unless we run with --overwrite)
+	if (!overwrite) {
+		for (std::vector<fail::Database::Variant>::iterator it = m_variants.begin();
+			it != m_variants.end(); ) {
+			std::stringstream ss;
+			MYSQL_RES *res;
+			ss << "(SELECT variant_id FROM fsppilot WHERE "
+			   << " variant_id = " << it->id << " AND "
+			   << " fspmethod_id = " << m_method_id
+			   << " LIMIT 1)"
+			   << " UNION ALL "
+			   << "(SELECT variant_id FROM fspgroup WHERE "
+			   << " variant_id = " << it->id << " AND "
+			   << " fspmethod_id = " << m_method_id
+			   << " LIMIT 1)";
+			if (!(res = db->query(ss.str().c_str(), true))) {
+				return false;
+			}
+			if (mysql_num_rows(res) > 0) {
+				// skip this variant
+				LOG << "skipping " << it->variant << "/" << it->benchmark
+				    << " due to existing pruning data (use --overwrite to skip this check)"
+				    << std::endl;
+				it = m_variants.erase(it);
+			} else {
+				++it;
+			}
+		}
+	}
+
+	// any variants left?
 	if (m_variants.size() == 0) {
 		LOG << "no variants found, nothing to do" << std::endl;
 		return false;
 	}
 
-	std::stringstream ss;
+	// construct comma-separated list usable in SQL "IN (...)"
+	std::stringstream commalist;
 	for (std::vector<fail::Database::Variant>::const_iterator it = m_variants.begin();
 		it != m_variants.end(); ++it) {
+
 		if (it != m_variants.begin()) {
-			ss << ",";
+			commalist << ",";
 		}
-		ss << it->id;
+		commalist << it->id;
 	}
-	m_variants_sql = ss.str();
+	m_variants_sql = commalist.str();
 
-	if (!(m_method_id = db->get_fspmethod_id(method_name()))) {
-		return false;
-	}
-
-	LOG << "Pruning with method " << method_name() << " (ID: " << m_method_id << ")"
-	    << std::endl;
 	return true;
 }
 

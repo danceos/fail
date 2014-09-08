@@ -4,8 +4,9 @@
 #include <vector>
 #include <string>
 #include "util/Database.hpp"
+#include "util/AliasedRegisterable.hpp"
 
-class Pruner {
+class Pruner : public fail::AliasedRegisterable {
 protected:
 	int m_method_id;
 	fail::Database *db;
@@ -13,11 +14,14 @@ protected:
 	std::string m_variants_sql;
 
 public:
-	bool init(fail::Database *db,
+	void set_db(fail::Database *db) { this->db = db; }
+
+	bool init(
 		const std::vector<std::string>& variants,
 		const std::vector<std::string>& variants_exclude,
 		const std::vector<std::string>& benchmarks,
-		const std::vector<std::string>& benchmarks_exclude);
+		const std::vector<std::string>& benchmarks_exclude,
+		bool overwrite);
 
 	/**
 	 * Callback function that can be used to add command line options

@@ -4,6 +4,8 @@
 
 #include "util/CommandLine.hpp"
 #include "util/Logger.hpp"
+#include "util/AliasedRegistry.hpp"
+
 static fail::Logger LOG("prune-trace", true);
 
 using namespace fail;
@@ -15,6 +17,17 @@ using std::endl;
 
 int main(int argc, char *argv[]) {
 	std::string username, hostname, database;
+
+	// register possible Pruners
+	AliasedRegistry registry;
+	BasicPruner basicpruner;
+	registry.add(&basicpruner);
+	BasicPrunerLeft basicprunerleft;
+	registry.add(&basicprunerleft);
+	FESamplingPruner fesamplingpruner;
+	registry.add(&fesamplingpruner);
+
+	std::string pruners = registry.getPrimeAliasesCSV();
 
 	// Manually fill the command line option parser
 	CommandLine &cmd = CommandLine::Inst();
@@ -29,22 +42,25 @@ int main(int argc, char *argv[]) {
 
 	CommandLine::option_handle VARIANT =
 		cmd.addOption("v", "variant", Arg::Required,
-			"-v/--variant \tVariant label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+			"-v/--variant \tVariant label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle VARIANT_EXCLUDE =
 		cmd.addOption("", "variant-exclude", Arg::Required,
 			"--variant-exclude \tVariant to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle BENCHMARK =
 		cmd.addOption("b", "benchmark", Arg::Required,
-			"-b/--benchmark \tBenchmark label (default: \"none\"; use % and _ as wildcard characters; may be used more than once)");
+			"-b/--benchmark \tBenchmark label (default: \"%\"; use % and _ as wildcard characters; may be used more than once)");
 	CommandLine::option_handle BENCHMARK_EXCLUDE =
 		cmd.addOption("", "benchmark-exclude", Arg::Required,
 			"--benchmark-exclude \tBenchmark to exclude (default: UNSET; use % and _ as wildcard characters; may be used more than once)");
+	std::string pruner_help = "-p/--prune-method \tWhich pruning method to use (default: basic); available pruning methods: " + pruners;
 	CommandLine::option_handle PRUNER =
-		cmd.addOption("p", "prune-method", Arg::Required,
-			"-p/--prune-method \tWhich import method to use (default: basic)");
+		cmd.addOption("p", "prune-method", Arg::Required, pruner_help);
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");
+	CommandLine::option_handle OVERWRITE =
+		cmd.addOption("", "overwrite", Arg::None,
+			"--overwrite \tOverwrite already existing pruning data (the default is to skip variants with existing entries)");
 
 	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
@@ -52,6 +68,20 @@ int main(int argc, char *argv[]) {
 	}
 
 	Pruner *pruner;
+	std::string pruner_name = "BasicPruner";
+	if (cmd[PRUNER]) {
+		pruner_name = cmd[PRUNER].first()->arg;
+	}
+
+	// try and get the according pruner object; die on failure
+	if ((pruner = (Pruner *)registry.get(pruner_name)) == 0) {
+		if (pruner_name != "?" ) {
+			std::cerr << "Unknown import method: " << pruner_name << std::endl;
+		}
+		std::cerr << "Available import methods: " << pruners << std::endl;
+		exit(-1);
+	}
+
 	if (cmd[PRUNER]) {
 		std::string imp(cmd[PRUNER].first()->arg);
 		if (imp == "BasicPruner" || imp == "basic") {
@@ -88,6 +118,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	Database *db = Database::cmdline_connect();
+	pruner->set_db(db);
 
 	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
 	if (cmd[VARIANT]) {
@@ -103,8 +134,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// fallback
-	if (variants.size() == 0 && variants_exclude.size() == 0) {
-		variants.push_back(std::string("none"));
+	if (variants.size() == 0) {
+		variants.push_back("%");
 	}
 
 	if (cmd[BENCHMARK]) {
@@ -120,11 +151,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	// fallback
-	if (benchmarks.size() == 0 && benchmarks_exclude.size() == 0) {
-		benchmarks.push_back(std::string("none"));
+	if (benchmarks.size() == 0) {
+		benchmarks.push_back("%");
 	}
 
-	if (!pruner->init(db, variants, variants_exclude, benchmarks, benchmarks_exclude)) {
+	if (!pruner->create_database()) {
+		LOG << "pruner->create_database() failed" << endl;
+		exit(-1);
+	}
+
+	if (!pruner->init(variants, variants_exclude, benchmarks, benchmarks_exclude, cmd[OVERWRITE])) {
 		LOG << "pruner->init() failed" << endl;
 		exit(-1);
 	}
@@ -132,12 +168,7 @@ int main(int argc, char *argv[]) {
 	////////////////////////////////////////////////////////////////
 	// Do the actual import
 	////////////////////////////////////////////////////////////////
-	if (!pruner->create_database()) {
-		LOG << "create_database() failed" << endl;
-		exit(-1);
-	}
-
-	if (!cmd[NO_DELETE] && !pruner->clear_database()) {
+	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}
