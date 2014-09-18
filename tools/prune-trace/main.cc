@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 		cmd.add_args(argv[i]);
 	}
 
-	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
+	cmd.addOption("", "", Arg::None, "USAGE: prune-trace [options]");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	Database::cmdline_setup();
@@ -76,9 +76,9 @@ int main(int argc, char *argv[]) {
 	// try and get the according pruner object; die on failure
 	if ((pruner = (Pruner *)registry.get(pruner_name)) == 0) {
 		if (pruner_name != "?" ) {
-			std::cerr << "Unknown import method: " << pruner_name << std::endl;
+			std::cerr << "Unknown pruning method: " << pruner_name << std::endl;
 		}
-		std::cerr << "Available import methods: " << pruners << std::endl;
+		std::cerr << "Available pruning methods: " << pruners << std::endl;
 		exit(-1);
 	}
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	////////////////////////////////////////////////////////////////
-	// Do the actual import
+	// Do the actual pruning
 	////////////////////////////////////////////////////////////////
 	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
