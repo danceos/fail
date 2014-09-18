@@ -81,30 +81,10 @@ int main(int argc, char *argv[]) {
 		std::cerr << "Available pruning methods: " << pruners << std::endl;
 		exit(-1);
 	}
+	registry.getPrimeAlias(pruner, pruner_name);
+	LOG << "Using " << pruner_name << endl;
 
-	if (cmd[PRUNER]) {
-		std::string imp(cmd[PRUNER].first()->arg);
-		if (imp == "BasicPruner" || imp == "basic") {
-			LOG << "Using BasicPruner" << endl;
-			pruner = new BasicPruner();
-		} else if (imp == "BasicPrunerLeft" || imp == "basic-left") {
-			LOG << "Using BasicPruner (use left border, instr1)" << endl;
-			pruner = new BasicPruner(true);
-		} else if (imp == "FESamplingPruner" || imp == "sampling") {
-			LOG << "Using FESamplingPruner" << endl;
-			pruner = new FESamplingPruner;
-
-		} else {
-			LOG << "Unknown pruning method: " << imp << endl;
-			exit(-1);
-		}
-
-	} else {
-		LOG << "Using BasicPruner" << endl;
-		pruner = new BasicPruner();
-	}
-
-	if (pruner && !(pruner->commandline_init())) {
+	if (!(pruner->commandline_init())) {
 		std::cerr << "Pruner's commandline initialization failed" << std::endl;
 		exit(-1);
 	}
