@@ -49,7 +49,8 @@ int main(int argc, char *argv[])
 	InjectionPointMessage ev;
 
 	CommandLine &cmd = CommandLine::Inst();
-	cmd.addOption("", "", Arg::None, "usage: dump-hops [options] hopfile.hp");
+	CommandLine::option_handle UNKNOWN =
+		cmd.addOption("", "", Arg::None, "usage: dump-hops [options] hopfile.hp");
 	CommandLine::option_handle HELP =
 		cmd.addOption("h", "help", Arg::None, "-h/--help \tPrint usage and exit");
 //	CommandLine::option_handle STATS =
@@ -64,7 +65,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (cmd[HELP] || cmd.parser()->nonOptionsCount() != 1) {
+	if (cmd[HELP] || cmd[UNKNOWN] || cmd.parser()->nonOptionsCount() != 1) {
+		for (option::Option* opt = cmd[UNKNOWN]; opt; opt = opt->next()) {
+			std::cerr << "Unknown option: " << opt->name << "\n";
+		}
+		for (int i = 1; i < cmd.parser()->nonOptionsCount(); ++i) {
+			std::cerr << "Unknown non-option: " << cmd.parser()->nonOption(i) << "\n";
+		}
 		cmd.printUsage();
 		if (cmd[HELP]) {
 			exit(0);

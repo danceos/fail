@@ -17,7 +17,8 @@ static Logger LOG("convert-trace", true);
 
 int main(int argc, char *argv[]) {
 	CommandLine &cmd = CommandLine::Inst();
-	cmd.addOption("", "", Arg::None, "usage: convert-trace -f dump|gem5 -t tracefile.tc");
+	CommandLine::option_handle UNKNOWN =
+		cmd.addOption("", "", Arg::None, "usage: convert-trace -f dump|gem5 -t tracefile.tc");
 	CommandLine::option_handle HELP =
 		cmd.addOption("h", "help", Arg::None, "-h/--help \tPrint usage and exit");
 	CommandLine::option_handle FORMAT =
@@ -28,11 +29,17 @@ int main(int argc, char *argv[]) {
 		cmd.add_args(argv[i]);
 	}
 	if (!cmd.parse()) {
-		LOG << "Error parsing arguments." << endl;
+		std::cerr << "Error parsing arguments." << endl;
 		return 1;
 	}
 
-	if (cmd[HELP] || !cmd[OUTFILE] || !cmd[FORMAT] || cmd.parser()->nonOptionsCount() != 0) {
+	if (cmd[HELP] || !cmd[OUTFILE] || !cmd[FORMAT] || cmd[UNKNOWN] || cmd.parser()->nonOptionsCount() != 0) {
+		for (option::Option* opt = cmd[UNKNOWN]; opt; opt = opt->next()) {
+			std::cerr << "Unknown option: " << opt->name << "\n";
+		}
+		for (int i = 0; i < cmd.parser()->nonOptionsCount(); ++i) {
+			std::cerr << "Unknown non-option: " << cmd.parser()->nonOption(i) << "\n";
+		}
 		cmd.printUsage();
 		if (cmd[HELP]) {
 			exit(0);

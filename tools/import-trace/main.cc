@@ -85,7 +85,8 @@ int main(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i)
 		cmd.add_args(argv[i]);
 
-	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
+	CommandLine::option_handle UNKNOWN =
+		cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
 	CommandLine::option_handle HELP =
 		cmd.addOption("h", "help", Arg::None, "-h/--help \tPrint usage and exit");
 	CommandLine::option_handle TRACE_FILE =
@@ -176,9 +177,15 @@ int main(int argc, char *argv[]) {
 	// reparse all arguments.
 	cmd.parse();
 
-	if (cmd[HELP]) {
+	if (cmd[HELP] || cmd[UNKNOWN] || cmd.parser()->nonOptionsCount() > 0) {
+		for (option::Option* opt = cmd[UNKNOWN]; opt; opt = opt->next()) {
+			std::cerr << "Unknown option: " << opt->name << "\n";
+		}
+		for (int i = 0; i < cmd.parser()->nonOptionsCount(); ++i) {
+			std::cerr << "Unknown non-option: " << cmd.parser()->nonOption(i) << "\n";
+		}
 		cmd.printUsage();
-		exit(0);
+		exit(!cmd[HELP]);
 	}
 
 	if (cmd[TRACE_FILE]) {
