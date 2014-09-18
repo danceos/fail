@@ -138,6 +138,7 @@ class DatabaseProtobufAdapter {
 	};
 
 	struct TypeBridge_string : TypeBridge {
+		std::string buffer;
 		TypeBridge_string(const google::protobuf::FieldDescriptor *desc)
 			: TypeBridge(desc){};
 		virtual std::string sql_type() { return "TEXT"; };

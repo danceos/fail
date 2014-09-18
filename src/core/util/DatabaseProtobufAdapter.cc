@@ -133,9 +133,11 @@ void DatabaseProtobufAdapter::TypeBridge_string::bind(MYSQL_BIND *bind, const go
 	/* Handle the NULL case */
 	if (insert_null(bind, msg)) return;
 
+	buffer = ref->GetString(*msg, desc);
+
 	bind->buffer_type = MYSQL_TYPE_STRING;
-	bind->buffer = (void *) ref->GetString(*msg, desc).c_str();
-	bind->buffer_length = ref->GetString(*msg, desc).length();
+	bind->buffer = (void *) buffer.c_str();
+	bind->buffer_length = buffer.length();
 }
 void DatabaseProtobufAdapter::TypeBridge_enum::bind(MYSQL_BIND *bind, const google::protobuf::Message *msg) {
 	const google::protobuf::Reflection *ref = msg->GetReflection();
