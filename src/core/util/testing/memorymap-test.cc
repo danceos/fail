@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <set>
+#include <stdlib.h>
 #include "util/MemoryMap.hpp"
 
 using namespace fail;
@@ -16,6 +17,7 @@ uint32_t outside[] = { 0, 10, 16, 1, 20, 1, 25, 10 };
 void test_failed(std::string msg)
 {
 	cerr << "MemoryMap test failed (" << msg << ")!" << endl;
+	abort();
 }
 
 // pass by value intentional
@@ -98,6 +100,7 @@ int main()
 	char const *filename_tmp = "tmp.memorymap";
 	char const *filename_test1 = "test1.memorymap";
 	char const *filename_test2 = "test2.memorymap";
+	char const *filename_test3 = "test3.memorymap";
 
 	for (unsigned i = 0; i < LEN(inside); i += 2) {
 		mm.add(inside[i], inside[i+1]);
@@ -124,5 +127,9 @@ int main()
 
 	mm.clear();
 	mm.readFromFile(filename_test2);
+	test(mm);
+
+	mm.clear();
+	mm.readFromFile(filename_test3);
 	test(mm);
 }
