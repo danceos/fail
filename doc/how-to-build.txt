@@ -279,9 +279,12 @@ If your Linux distribution does not provide a library package for LLVM 3.3 or
 newer, and you need LLVM support in Fail*, you may need to build LLVM from the
 sources and install it, e.g., locally in your home.
 
- 1. git clone http://llvm.org/git/llvm.git
- 2. Check out the desired release branch, e.g., git checkout release_34
- 3. Configure as needed.  On mixed 32/64-bit systems (userland/kernel),
+ 1. Download the source tarball of LLVM 3.4 from http://llvm.org (or use the git
+    repository http://llvm.org/git/llvm.git and checkout release_34)
+ 2. Configure as needed.  On mixed 32/64-bit systems (userland/kernel),
     prefixing with "linux32" may be necessary:
     $ linux32 ./configure --prefix=$(echo ~/localroot/usr) --enable-optimized --disable-assertions --disable-werror
- 4. Build with "make REQUIRES_RTTI=1", install.
+    If you have an old version of clang installed, you may need to convince the
+    configure script to use gcc/g++ instead:
+    $ CC=gcc CXX=g++ ./configure --prefix=...
+ 3. Build with "make REQUIRES_RTTI=1", install.
