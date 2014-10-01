@@ -22,10 +22,9 @@ Required for Fail*:
    * LLVM 3.3 or 3.4 (needed for several importers in tools/import-trace)
      (compiles/links with 3.1 or 3.2, but fails to properly import information
      from ELF binaries not compiled with -ffunction-sections)
-     -  configured with, e.g., --enable-optimized --disable-assertions
-        --disable-werror
      -  built with "make REQUIRES_RTTI=1" (the Debian/Ubuntu packages already
         come built this way)
+     -  details below
    * a MySQL 5.0+ or MariaDB 5.1+ (MariaDB 5.5 recommended) server
 
 
@@ -272,3 +271,17 @@ Database backend setup: MySQL / MariaDB
     <http://dev.mysql.com/doc/refman/5.5/en/create-database.html>
     <http://dev.mysql.com/doc/refman/5.5/en/grant.html>
     <http://dev.mysql.com/doc/refman/5.5/en/adding-users.html>
+
+=========================================================================================
+Building LLVM from sources
+=========================================================================================
+If your Linux distribution does not provide a library package for LLVM 3.3 or
+newer, and you need LLVM support in Fail*, you may need to build LLVM from the
+sources and install it, e.g., locally in your home.
+
+ 1. git clone http://llvm.org/git/llvm.git
+ 2. Check out the desired release branch, e.g., git checkout release_34
+ 3. Configure as needed.  On mixed 32/64-bit systems (userland/kernel),
+    prefixing with "linux32" may be necessary:
+    $ linux32 ./configure --prefix=$(echo ~/localroot/usr) --enable-optimized --disable-assertions --disable-werror
+ 4. Build with "make REQUIRES_RTTI=1", install.
