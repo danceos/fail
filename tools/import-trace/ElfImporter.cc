@@ -27,9 +27,7 @@ bool ElfImporter::cb_commandline_init() {
 	OBJDUMP = cmd.addOption("", "objdump", Arg::Required,
 							"--objdump \tObjdump: location of objdump binary, otherwise LLVM Disassembler is used");
 	SOURCECODE = cmd.addOption("", "sources", Arg::None,
-							"--sources \timport all source files into the database");
-	DEBUGINFO = cmd.addOption("", "debug", Arg::None,
-							"--debug \timport some debug informations into the database");
+							"--sources \timport all source files and the mapping of code line<->static instruction into the database");
 	return true;
 }
 
@@ -73,9 +71,7 @@ bool ElfImporter::create_database() {
 		if (!db->query(create_statement.str().c_str())) {
 			return false;
 		}
-	}
 
-	if (cmd[DEBUGINFO]) {
 		create_statement.str("");
 		create_statement << "CREATE TABLE IF NOT EXISTS dbg_mapping ("
 			"	variant_id int(11) NOT NULL,"
@@ -125,9 +121,8 @@ bool ElfImporter::copy_to_database(ProtoIStream &ps) {
 				return false;
 			}
 		}
-	}
 
-	if (cmd[DEBUGINFO]) { // import debug informations
+		// import debug information
 		if(!import_mapping(m_elf->getFilename())) {
 			return false;
 		}
@@ -410,10 +405,8 @@ bool ElfImporter::clear_database() {
 			ret = db->query(ss.str().c_str()) == 0 ? false : true;
 		}
 		LOG << "deleted " << db->affected_rows() << " rows from dbg_source table" << std::endl;
-	}
 
-	//ToDo: Reset auto increment value to 1
-	if (cmd[DEBUGINFO]) {
+		//ToDo: Reset auto increment value to 1
 		ss.str("");
 		ss << "DELETE FROM dbg_mapping WHERE variant_id = " << m_variant_id;
 
