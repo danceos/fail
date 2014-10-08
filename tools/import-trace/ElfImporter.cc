@@ -291,7 +291,9 @@ bool ElfImporter::import_source_code(std::string fileName) {
 			currentLine = db->escape_string(currentLine);
 
 			std::stringstream ss;
-			ss << "SELECT file_id FROM dbg_filename WHERE path = " << "\"" << fileName.c_str() << "\"";
+			ss << "SELECT file_id FROM dbg_filename "
+				<< "WHERE path = '" << fileName.c_str() << "' "
+				<< "AND variant_id = " << m_variant_id;
 
 			MYSQL_RES *res = db->query(ss.str().c_str(), true);
 			MYSQL_ROW row;
@@ -348,7 +350,9 @@ bool ElfImporter::import_mapping(std::string fileName) {
 		temp_addrToLine = mapping.front();
 
 		std::stringstream ss;
-		ss << "SELECT file_id FROM dbg_filename WHERE path = " << "\"" << temp_addrToLine.lineSource << "\"";
+		ss << "SELECT file_id FROM dbg_filename "
+			<< "WHERE path = '" << temp_addrToLine.lineSource << "' "
+			<< "AND variant_id = " << m_variant_id;
 
 		MYSQL_RES *res = db->query(ss.str().c_str(), true);
 		MYSQL_ROW row;
