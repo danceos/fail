@@ -21,17 +21,19 @@ static Logger LOG("ElfImporter");
  * Callback function that can be used to add command line options
  * to the campaign
  */
-bool ElfImporter::cb_commandline_init() {
+bool ElfImporter::cb_commandline_init()
+{
 	CommandLine &cmd = CommandLine::Inst();
 
 	OBJDUMP = cmd.addOption("", "objdump", Arg::Required,
-							"--objdump \tObjdump: location of objdump binary, otherwise LLVM Disassembler is used");
+		"--objdump \tObjdump: location of objdump binary, otherwise LLVM Disassembler is used");
 	SOURCECODE = cmd.addOption("", "sources", Arg::None,
-							"--sources \timport all source files and the mapping of code line<->static instruction into the database");
+		"--sources \timport all source files and the mapping of code line<->static instruction into the database");
 	return true;
 }
 
-bool ElfImporter::create_database() {
+bool ElfImporter::create_database()
+{
 	CommandLine &cmd = CommandLine::Inst();
 	std::stringstream create_statement;
 
@@ -88,7 +90,8 @@ bool ElfImporter::create_database() {
 	return true;
 }
 
-bool ElfImporter::copy_to_database(ProtoIStream &ps) {
+bool ElfImporter::copy_to_database(ProtoIStream &ps)
+{
 	if (!m_elf) {
 		LOG << "please give an elf binary as parameter (-e/--elf)" << std::endl;
 		return false;
@@ -101,7 +104,7 @@ bool ElfImporter::copy_to_database(ProtoIStream &ps) {
 	}
 
 	if (cmd[OBJDUMP]) { // using objdump
-		if(!import_with_objdump(std::string(cmd[OBJDUMP].first()->arg))) {
+		if (!import_with_objdump(std::string(cmd[OBJDUMP].first()->arg))) {
 			return false;
 		}
 	} else {
@@ -111,19 +114,19 @@ bool ElfImporter::copy_to_database(ProtoIStream &ps) {
 	if (cmd[SOURCECODE]) { // import sources
 		std::list<std::string> sourceFiles;
 
-		if (!import_source_files(m_elf->getFilename(),sourceFiles)) {
+		if (!import_source_files(m_elf->getFilename(), sourceFiles)) {
 			cerr << "unable to read dwarf2 debug info" << endl;
 			return false;
 		}
 
 		for (std::list<std::string>::iterator it = sourceFiles.begin(); it != sourceFiles.end(); ++it) {
-			if(!import_source_code(*it)) {
+			if (!import_source_code(*it)) {
 				return false;
 			}
 		}
 
 		// import debug information
-		if(!import_mapping(m_elf->getFilename())) {
+		if (!import_mapping(m_elf->getFilename())) {
 			return false;
 		}
 	}
@@ -131,7 +134,8 @@ bool ElfImporter::copy_to_database(ProtoIStream &ps) {
 	return true;
 }
 
-bool ElfImporter::import_with_objdump(const std::string &binary) {
+bool ElfImporter::import_with_objdump(const std::string &binary)
+{
 #ifndef __puma
 
 	LOG << "importing with " << binary << std::endl;
@@ -162,7 +166,8 @@ bool ElfImporter::import_with_objdump(const std::string &binary) {
 	return true;
 }
 
-bool ElfImporter::evaluate_objdump_line(const std::string& line){
+bool ElfImporter::evaluate_objdump_line(const std::string& line)
+{
 #ifndef __puma
 	// Only read in real code lines:
 	// Code lines start with a leading whitespace! (hopefully in each objdump implementation!)
@@ -198,7 +203,7 @@ bool ElfImporter::evaluate_objdump_line(const std::string& line){
 
 			/* import instruction into database */
 			if (!import_instruction(addr, opcode_read, opcode_length,
-									instruction, comment))
+				instruction, comment))
 				return false;
 		}
 	}
@@ -209,7 +214,8 @@ bool ElfImporter::evaluate_objdump_line(const std::string& line){
 
 
 bool ElfImporter::import_instruction(fail::address_t addr, char *opcode, int opcode_length,
-									 const std::string &instruction, const std::string &comment) {
+	const std::string &instruction, const std::string &comment)
+{
 	/* Prepare a mysql statement if it was not done before */
 	static MYSQL_STMT *stmt = 0;
 	if (!stmt) {
@@ -263,163 +269,172 @@ bool ElfImporter::import_instruction(fail::address_t addr, char *opcode, int opc
 	return true;
 }
 
-bool ElfImporter::import_source_code(std::string fileName) {
+static inline std::string rtrim(std::string str)
+{
+	std::string whitespaces(" \t\f\v\n\r");
 
+	std::size_t found = str.find_last_not_of(whitespaces);
+	if (found != std::string::npos) {
+		str.erase(found+1);
+	} else {
+		str.clear();
+	}
+	return str;
+}
+
+bool ElfImporter::import_source_code(std::string fileName)
+{
 	LOG << "Importing Sourcefile: " << fileName << endl;
 
 	ifstream in(fileName.c_str());
 	if (!in.is_open()) {
 		LOG << "Sourcefile not found: " << fileName << endl;
-	} else {
-		unsigned lineNo=0;
-		while (!in.eof()) {
-			++lineNo;
-
-			// Read and strip the current line
-			string currentLine;
-			getline(in,currentLine);
-			if ((!currentLine.length())&&(in.eof())) break;
-			while (true) {
-				unsigned l=currentLine.length();
-				if (!l) break;
-				char c=currentLine[l-1];
-				if ((c!='\n')&&(c!='\r')&&(c!=' ')&&(c!='\t')) break;
-				currentLine=currentLine.substr(0,l-1);
-			}
-
-			//Sonderzeichen
-			currentLine = db->escape_string(currentLine);
-
-			std::stringstream ss;
-			ss << "SELECT file_id FROM dbg_filename "
-				<< "WHERE path = '" << fileName.c_str() << "' "
-				<< "AND variant_id = " << m_variant_id;
-
-			MYSQL_RES *res = db->query(ss.str().c_str(), true);
-			MYSQL_ROW row;
-			row = mysql_fetch_row(res);
-
-			// INSERT group entry
-			std::stringstream sql;
-
-			sql << "(" << m_variant_id << "," << lineNo << ",";
-			if (row != NULL) {
-				sql << row[0];
-			} else {
-				sql << -1;
-			}
-			sql << "," << "\"" << currentLine << "\"" << ")";
-
-			if (!db->insert_multiple("INSERT INTO dbg_source (variant_id, linenumber, file_id, line) VALUES ", sql.str().c_str())){
-				LOG << "Can not import sourcelines!" << endl;;
-			}
-		}
-		db->insert_multiple();
+		return true; // we can live with this
 	}
-	return true;
-}
 
-bool ElfImporter::import_source_files(const std::string& fileName,std::list<std::string>& lines) {
-
-	//std::list<addrToLine> lines;
-	if (!dwReader.read_source_files(fileName, lines)) {
+	// retrieve file_id
+	std::stringstream ss;
+	ss << "SELECT file_id FROM dbg_filename "
+		<< "WHERE path = '" << fileName.c_str() << "' "
+		<< "AND variant_id = " << m_variant_id;
+	MYSQL_RES *res = db->query(ss.str().c_str(), true);
+	if (!res) {
 		return false;
 	}
-	for (std::list<std::string>::iterator it = lines.begin(); it != lines.end(); ++it) {
-		// INSERT group entry
-		std::stringstream sql;
-		sql << "(" << m_variant_id << "," << "\"" << (*it).c_str() << "\"" << ")";
+	MYSQL_ROW row;
+	if (!(row = mysql_fetch_row(res))) {
+		// this should not happen
+		LOG << "error: no entry for '" << fileName.c_str() << "' in dbg_filename, aborting" << std::endl;
+		return false;
+	}
+	std::string file_id = row[0];
 
-		if(!db->insert_multiple("INSERT INTO dbg_filename (variant_id, path) VALUES ", sql.str().c_str())){
-			LOG << "Can not import filename!"<< endl;
+	// import lines from this file
+	for (unsigned lineNo = 1; !in.eof(); ++lineNo) {
+		// read and strip a line
+		string currentLine;
+		getline(in, currentLine);
+		if (!currentLine.length() && in.eof()) {
+			break;
+		}
+		currentLine = rtrim(currentLine);
+
+		// escape special characters for use in SQL
+		currentLine = db->escape_string(currentLine);
+
+		// insert line into dbg_source
+		std::stringstream sql;
+		sql << "(" << m_variant_id << "," << lineNo
+			<< "," << file_id << ",'" << currentLine << "')";
+		if (!db->insert_multiple("INSERT INTO dbg_source (variant_id, linenumber, file_id, line) VALUES ",
+			sql.str().c_str())) {
+			return false;
 		}
 	}
+	db->insert_multiple();
 	return true;
 }
 
-bool ElfImporter::import_mapping(std::string fileName) {
+bool ElfImporter::import_source_files(const std::string& elf_filename, std::list<std::string>& filenames)
+{
+	if (!dwReader.read_source_files(elf_filename, filenames)) {
+		return false;
+	}
+	for (std::list<std::string>::iterator it = filenames.begin(); it != filenames.end(); ++it) {
+		// INSERT group entry
+		std::stringstream sql;
+		sql << "(" << m_variant_id << ",'" << it->c_str() << "')";
 
+		if (!db->insert_multiple("INSERT INTO dbg_filename (variant_id, path) VALUES ",
+			sql.str().c_str())) {
+			return false;
+		}
+	}
+	db->insert_multiple();
+	return true;
+}
+
+bool ElfImporter::import_mapping(std::string fileName)
+{
 	std::list<addrToLine> mapping;
 	if (!dwReader.read_mapping(fileName, mapping)) {
 		return false;
 	}
 
-	while (!mapping.empty())
-	{
+	while (!mapping.empty()) {
 		struct addrToLine temp_addrToLine;
 		temp_addrToLine = mapping.front();
 
+		// FIXME reuse file_id from previous iteration if file name stays constant
 		std::stringstream ss;
 		ss << "SELECT file_id FROM dbg_filename "
 			<< "WHERE path = '" << temp_addrToLine.lineSource << "' "
 			<< "AND variant_id = " << m_variant_id;
 
 		MYSQL_RES *res = db->query(ss.str().c_str(), true);
+		if (!res) {
+			return false;
+		}
 		MYSQL_ROW row;
 		row = mysql_fetch_row(res);
 
 		// INSERT group entry
 		std::stringstream sql;
 		sql << "(" << m_variant_id << "," << temp_addrToLine.absoluteAddr << "," << temp_addrToLine.lineNumber << ",";
-		if(row != NULL) {
+		if (row != NULL) {
 			sql << row[0] << ")";
 		} else {
-			sql << -1 << ")";
+			// this should not happen
+			LOG << "error: no entry for '" << temp_addrToLine.lineSource << "' in dbg_filename, aborting" << std::endl;
+			return false;
 		}
 
-		//ToDo: Skip duplicated entrys with ON DUPLICATE KEY UPDATE
-		if(!db->insert_multiple("INSERT IGNORE INTO dbg_mapping (variant_id, instr_absolute, linenumber, file_id) VALUES ", sql.str().c_str())){
-			LOG << "Can not import line number information!" << endl;;
+		// TODO: Skip duplicated entries with ON DUPLICATE KEY UPDATE (?)
+		if (!db->insert_multiple("INSERT IGNORE INTO dbg_mapping (variant_id, instr_absolute, linenumber, file_id) VALUES ",
+			sql.str().c_str())) {
+			return false;
 		}
 
 		mapping.pop_front();
 	}
 
+	db->insert_multiple();
+
 	return true;
 }
 
-bool ElfImporter::clear_database() {
+bool ElfImporter::clear_database()
+{
 	CommandLine &cmd = CommandLine::Inst();
 	std::stringstream ss;
-	bool ret = true;
+	bool ret = true, result;
 
 	ss.str("");
 	ss << "DELETE FROM objdump WHERE variant_id = " << m_variant_id;
-
-	if (ret) {
-		ret = db->query(ss.str().c_str()) == 0 ? false : true;
-	}
+	result = db->query(ss.str().c_str());
+	ret = ret && result;
 	LOG << "deleted " << db->affected_rows() << " rows from objdump table" << std::endl;
 
-
-	//ToDo: Reset auto increment value to 1
 	if (cmd[SOURCECODE]) {
 		ss.str("");
 		ss << "DELETE FROM dbg_source WHERE variant_id = " << m_variant_id;
-
-		if (ret) {
-			ret = db->query(ss.str().c_str()) == 0 ? false : true;
-		}
+		result = db->query(ss.str().c_str());
+		ret = ret && result;
 		LOG << "deleted " << db->affected_rows() << " rows from dbg_source table" << std::endl;
 
 		ss.str("");
 		ss << "DELETE FROM dbg_filename WHERE variant_id = " << m_variant_id;
-
-		if (ret) {
-			ret = db->query(ss.str().c_str()) == 0 ? false : true;
-		}
-		LOG << "deleted " << db->affected_rows() << " rows from dbg_source table" << std::endl;
+		result = db->query(ss.str().c_str());
+		ret = ret && result;
+		LOG << "deleted " << db->affected_rows() << " rows from dbg_filename table" << std::endl;
 
 		//ToDo: Reset auto increment value to 1
 		ss.str("");
 		ss << "DELETE FROM dbg_mapping WHERE variant_id = " << m_variant_id;
-
-		if (ret) {
-			ret = db->query(ss.str().c_str()) == 0 ? false : true;
-		}
+		result = db->query(ss.str().c_str());
+		ret = ret && result;
 		LOG << "deleted " << db->affected_rows() << " rows from source table" << std::endl;
 	}
 
 	return ret;
 }
-
