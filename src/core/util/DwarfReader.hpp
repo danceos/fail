@@ -16,8 +16,8 @@ namespace fail {
 */
 
 	struct addrToLine {
-		int absoluteAddr;
-		int lineNumber;
+		unsigned absoluteAddr;
+		unsigned lineNumber;
 		std::string lineSource;
 	};
 

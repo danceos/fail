@@ -40,7 +40,7 @@ bool ElfImporter::create_database()
 	create_statement.str("");
 	create_statement << "CREATE TABLE IF NOT EXISTS objdump ("
 		"	variant_id int(11) NOT NULL,"
-		"	instr_address int(11) NOT NULL,"
+		"	instr_address int(11) UNSIGNED NOT NULL,"
 		"	opcode varchar(32) NOT NULL,"
 		"	disassemble VARCHAR(64),"
 		"	comment VARCHAR(128),"
@@ -77,8 +77,8 @@ bool ElfImporter::create_database()
 		create_statement.str("");
 		create_statement << "CREATE TABLE IF NOT EXISTS dbg_mapping ("
 			"	variant_id int(11) NOT NULL,"
-			"	instr_absolute int(11) NOT NULL,"
-			"	linenumber int(11) NOT NULL,"
+			"	instr_absolute int(11) UNSIGNED NOT NULL,"
+			"	linenumber int(11) UNSIGNED NOT NULL,"
 			"	file_id int(11) NOT NULL,"
 			"	PRIMARY KEY (variant_id, instr_absolute ,linenumber)"
 			") engine=MyISAM ";

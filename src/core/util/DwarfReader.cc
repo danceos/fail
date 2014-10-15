@@ -234,7 +234,7 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 			}
 
 			if (lineNo&&isCode) {
-				struct addrToLine newLine = { (int) addr, (int) lineNo, normalize(lineSource) };
+				struct addrToLine newLine = { addr, lineNo, normalize(lineSource) };
 				addrToLineList.push_back(newLine);
 			}
 
