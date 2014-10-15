@@ -1,4 +1,5 @@
 #include <fstream>
+#include <limits>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -178,7 +179,7 @@ bool DwarfReader::read_source_files(const std::string& fileName,std::list<std::s
 	return true;
 }
 
-bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addrToLineList) {
+bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>& lineMapping) {
 
 	// Open The file
 	int fd=open(fileName.c_str(),O_RDONLY);
@@ -200,9 +201,11 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 
 	// Iterator over the headers
 	Dwarf_Unsigned header;
+	// iterate compilation unit headers
 	while (dwarf_next_cu_header(dbg,0,0,0,0,&header,0)==DW_DLV_OK) {
 		// Access the die
 		Dwarf_Die die;
+		// XXX: "if there are no sibling headers, die" | semantics unclear!
 		if (dwarf_siblingof(dbg,0,&die,0)!=DW_DLV_OK) {
 			return false;
 		}
@@ -234,8 +237,21 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 			}
 
 			if (lineNo&&isCode) {
-				struct addrToLine newLine = { addr, lineNo, normalize(lineSource) };
-				addrToLineList.push_back(newLine);
+				/* default the linetable's address range (->size) to the maximum
+				 * possible range. this results in the last linetable entry having
+				 * maximum range. as this always (?) is a function epilogue, its
+				 * irrelevant for our use-case. */
+				// TODO: properly determine the last interval's range, e.g. via __TEXT_END
+
+				DwarfLineMapping mapping(addr, (std::numeric_limits<unsigned>::max() - addr), 
+					lineNo, lineSource);
+				// the address range for the previous line ends with the current line's address
+				if (!lineMapping.empty()) {
+					DwarfLineMapping& back = lineMapping.back();
+					// update the previous lineRangeSize appropriately
+					back.line_range_size = (addr - back.absolute_addr);
+				}
+				lineMapping.push_back(mapping);
 			}
 
 			dwarf_dealloc(dbg,lineSource,DW_DLA_STRING);
