@@ -5,20 +5,6 @@ configure_file(../instantiate-experiment.ah.in
 )
 
 ## Configuration
-SET(BUILD_BOCHS ON CACHE BOOL "Enable Bochs Support")
-SET(BUILD_X86 ON CACHE BOOL "")
-SET(CONFIG_BOCHS_NO_ABORT ON CACHE BOOL "")
-
-SET(CONFIG_EVENT_BREAKPOINTS ON CACHE BOOL "")
-SET(CONFIG_EVENT_BREAKPOINTS_RANGE ON CACHE BOOL "")
-SET(CONFIG_EVENT_INTERRUPT ON CACHE BOOL "")
-SET(CONFIG_EVENT_IOPORT ON CACHE BOOL "")
-SET(CONFIG_EVENT_MEMREAD ON CACHE BOOL "")
-SET(CONFIG_EVENT_MEMWRITE ON CACHE BOOL "")
-SET(CONFIG_EVENT_TRAP ON CACHE BOOL "")
-SET(CONFIG_SR_RESTORE ON CACHE BOOK "")
-SET(CONFIG_SR_SAVE ON CACHE BOOL "")
-
 SET(PLUGINS_ACTIVATED "tracing" CACHE STRING "")
 
 SET(bochs_configure_params "--enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub;--with-nogui" CACHE STRING "")
