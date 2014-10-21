@@ -195,9 +195,138 @@ const struct BxDisasmOpcodeInfo_t
 
 //DanceOS
 // workaround for include file clash with cpu/instr.h in conjunction with AspectC++
+
+#undef Apw
+#undef Apd
+#undef AL_Reg
+#undef CL_Reg
+#undef AX_Reg
+#undef DX_Reg
+
+#undef EAX_Reg
+#undef RAX_Reg
+
+#undef CS
+#undef DS
+#undef ES
+#undef SS
+#undef FS
+#undef GS
+
+#undef Sw
+
+#undef Td
+
+#undef Cd
+#undef Cq
+
+#undef Dd
+#undef Dq
+
+#undef Reg8
+#undef   RX
+#undef  ERX
+#undef  RRX
+
+#undef Eb
+#undef Ew
+#undef Ed
+#undef Eq
+#undef Ey
+#undef Ebd
+#undef Ewd
+
+#undef Gb
+#undef Gw
+#undef Gd
+#undef Gq
+#undef Gy
+
+#undef I1
+#undef Ib
+#undef Iw
 #undef Id
 #undef Iq
-#undef Iw
-#undef Ib
+
+#undef IbIb
+#undef IwIb
+
+#undef sIbw
+#undef sIbd
+#undef sIbq
+#undef sIdq
+
+#undef ST0
+#undef STi
+
+#undef Rw
+#undef Rd
+#undef Rq
+#undef Ry
+
+#undef Pq
+#undef Qd
+#undef Qq
+#undef Nq
+
+#undef  Vq
+#undef Vdq
+#undef Vss
+#undef Vsd
+#undef Vps
+#undef Vpd
+
+#undef Ups
+#undef Upd
+#undef Udq
+
+#undef  Ww
+#undef  Wd
+#undef  Wq
+#undef Wdq
+#undef Wss
+#undef Wsd
+#undef Wps
+#undef Wpd
+
+#undef Ob
+#undef Ow
+#undef Od
+#undef Oq
+
+#undef  Ma
+#undef  Mp
+#undef  Ms
+#undef  Mx
+#undef  Mb
+#undef  Mw
+#undef  Md
+#undef  Mq
+#undef  Mt
+#undef Mdq
+#undef Mps
+#undef Mpd
+#undef Mss
+#undef Msd
+
+#undef Xb
+#undef Xw
+#undef Xd
+#undef Xq
+
+#undef Yb
+#undef Yw
+#undef Yd
+#undef Yq
+
+#undef sYq
+#undef sYdq
+
+#undef Jb
+#undef Jw
+#undef Jd
+
+#undef XX
+
 
 #endif
