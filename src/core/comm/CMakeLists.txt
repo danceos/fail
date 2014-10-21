@@ -34,5 +34,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(PROTOBUF_IMPORT_DIRS ${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
+add_custom_target(fail-protoc
+  DEPENDS ${PROTO_SRCS} ${PROTO_HDRS}
+)
 add_library(fail-comm ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(fail-comm ${PROTOBUF_LIBRARY})

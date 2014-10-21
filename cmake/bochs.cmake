@@ -85,10 +85,11 @@ if(BUILD_BOCHS)
 
   # Use cmake's external project feature to build fail library
   include(ExternalProject)
+  set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure)
   ExternalProject_Add(
     libfailbochs_external
     SOURCE_DIR ${bochs_src_dir}
-    CONFIGURE_COMMAND ${bochs_src_dir}/configure ${bochs_configure_params} --prefix=${bochs_install_prefix}
+    CONFIGURE_COMMAND MAKEFLAGS="" ${bochs_src_dir}/configure ${bochs_configure_params} --prefix=${bochs_install_prefix}
     PREFIX ${bochs_src_dir}
     BUILD_COMMAND $(MAKE) -C ${bochs_src_dir} ${bochs_build_CXX} ${bochs_build_LIBTOOL} libfailbochs.a
     ## Put install command here, to prevent cmake calling make install
@@ -110,7 +111,12 @@ if(BUILD_BOCHS)
   # FIXME: see FIXME above
   #target_link_libraries(fail-client libfailbochs fail ${bochs_library_dependencies})
   target_link_libraries(fail-client ${bochs_src_dir}/libfailbochs.a fail ${bochs_library_dependencies})
+  add_dependencies(libfailbochs_external-configure fail-protoc)
+  add_dependencies(libfailbochs_external libfailbochs_external-configure)
   add_dependencies(fail-client libfailbochs_external)
+  add_dependencies(fail-sal    libfailbochs_external-configure)
+  add_dependencies(fail-comm   libfailbochs_external-configure)
+  add_dependencies(fail-util   libfailbochs_external-configure)
   # /FIXME
   install(TARGETS fail-client RUNTIME DESTINATION bin)
 
