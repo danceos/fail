@@ -28,6 +28,10 @@ def parseArgs():
                       action="store_false", dest="forever", default=True,
                       help="fail-client to be executed")
 
+    parser.add_option("-j", "--jobs",
+                      dest="jobs", default="1",
+                      help="parallel execution")
+
 
     (options, args) = parser.parse_args()
 
@@ -108,6 +112,14 @@ i440fxsupport: enabled=0, slot1=pcivga
 
 if __name__ == "__main__":
     (options, args) = parseArgs()
+
+    import thread
+    i = 1
+    # n-1 jobs in threads
+    while i < int(options.jobs):
+        thread.start_new_thread(main, (options, args))
+        i = i + 1
+
     main(options, args)
 
 
