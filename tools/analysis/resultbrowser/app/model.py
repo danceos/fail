@@ -143,7 +143,7 @@ def getCode(result_table, variant_id, resultlabel=None):
 
     # I especially like this one:
     select = "SELECT instr_address, opcode, disassemble, comment, sum(t.time2 - t.time1 + 1) as totals,  GROUP_CONCAT(DISTINCT resulttype SEPARATOR ', ') as results FROM variant v "
-    join   = "   JOIN trace t ON v.id = t.variant_id  JOIN fspgroup g ON g.variant_id = t.variant_id AND g.instr2 = t.instr2 AND g.data_address = t.data_address      JOIN result_VEZSProtoMsg r ON r.pilot_id = g.pilot_id  JOIN fsppilot p ON r.pilot_id = p.id JOIN objdump ON objdump.variant_id = v.id AND objdump.instr_address = injection_instr_absolute "
+    join   = "   JOIN trace t ON v.id = t.variant_id  JOIN fspgroup g ON g.variant_id = t.variant_id AND g.instr2 = t.instr2 AND g.data_address = t.data_address      JOIN %s r ON r.pilot_id = g.pilot_id  JOIN fsppilot p ON r.pilot_id = p.id JOIN objdump ON objdump.variant_id = v.id AND objdump.instr_address = injection_instr_absolute " %(scrub(result_table))
     where  = "WHERE v.id = %s "
     group  = "GROUP BY injection_instr_absolute ORDER BY totals DESC "
 
