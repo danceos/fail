@@ -8,11 +8,12 @@ Required for Fail*:
  - libprotobuf-dev
  - libpcl1-dev
  - libboost-thread-dev libboost-system-dev libboost-regex-dev
- - libdwarf
- - libelf
+ - libdwarf-dev
+ - libelf-dev
  - protobuf-compiler
  - cmake 2.8.2 (2.8.11 preferred)
- - cmake-curses-gui
+ - fontconfig1-dev
+ - zlib1g-dev
  - binutils-dev, on newer systems libiberty-dev
  - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
    obtained from <http://www.aspectc.org>; nightlies can be downloaded from
@@ -26,6 +27,8 @@ Required for Fail*:
         come built this way)
      -  details below
    * a MySQL 5.0+ or MariaDB 5.1+ (MariaDB 5.5 recommended) server
+ - optional: cmake-curses-gui
+
 
 
 Required for the Bochs simulator backend:
