@@ -40,7 +40,7 @@ bool ElfImporter::create_database()
 	create_statement.str("");
 	create_statement << "CREATE TABLE IF NOT EXISTS objdump ("
 		"	variant_id int(11) NOT NULL,"
-		"	instr_address int(11) NOT NULL,"
+		"	instr_address int(11) UNSIGNED NOT NULL,"
 		"	opcode varchar(32) NOT NULL,"
 		"	disassemble VARCHAR(64),"
 		"	comment VARCHAR(128),"
@@ -77,8 +77,9 @@ bool ElfImporter::create_database()
 		create_statement.str("");
 		create_statement << "CREATE TABLE IF NOT EXISTS dbg_mapping ("
 			"	variant_id int(11) NOT NULL,"
-			"	instr_absolute int(11) NOT NULL,"
-			"	linenumber int(11) NOT NULL,"
+			"	instr_absolute int(11) UNSIGNED NOT NULL,"
+			"	line_range_size int(11) UNSIGNED NOT NULL,"
+			"	linenumber int(11) UNSIGNED NOT NULL,"
 			"	file_id int(11) NOT NULL,"
 			"	PRIMARY KEY (variant_id, instr_absolute ,linenumber)"
 			") engine=MyISAM ";
@@ -356,19 +357,18 @@ bool ElfImporter::import_source_files(const std::string& elf_filename, std::list
 
 bool ElfImporter::import_mapping(std::string fileName)
 {
-	std::list<addrToLine> mapping;
+	std::list<DwarfLineMapping> mapping;
 	if (!dwReader.read_mapping(fileName, mapping)) {
 		return false;
 	}
 
 	while (!mapping.empty()) {
-		struct addrToLine temp_addrToLine;
-		temp_addrToLine = mapping.front();
+		DwarfLineMapping tmp_mapping = mapping.front();
 
 		// FIXME reuse file_id from previous iteration if file name stays constant
 		std::stringstream ss;
 		ss << "SELECT file_id FROM dbg_filename "
-			<< "WHERE path = '" << temp_addrToLine.lineSource << "' "
+			<< "WHERE path = '" << tmp_mapping.line_source << "' "
 			<< "AND variant_id = " << m_variant_id;
 
 		MYSQL_RES *res = db->query(ss.str().c_str(), true);
@@ -380,17 +380,18 @@ bool ElfImporter::import_mapping(std::string fileName)
 
 		// INSERT group entry
 		std::stringstream sql;
-		sql << "(" << m_variant_id << "," << temp_addrToLine.absoluteAddr << "," << temp_addrToLine.lineNumber << ",";
+		sql << "(" << m_variant_id << "," << tmp_mapping.absolute_addr << ","
+			<< tmp_mapping.line_range_size << "," << tmp_mapping.line_number << ",";
 		if (row != NULL) {
 			sql << row[0] << ")";
 		} else {
 			// this should not happen
-			LOG << "error: no entry for '" << temp_addrToLine.lineSource << "' in dbg_filename, aborting" << std::endl;
+			LOG << "error: no entry for '" << tmp_mapping.line_source << "' in dbg_filename, aborting" << std::endl;
 			return false;
 		}
 
 		// TODO: Skip duplicated entries with ON DUPLICATE KEY UPDATE (?)
-		if (!db->insert_multiple("INSERT IGNORE INTO dbg_mapping (variant_id, instr_absolute, linenumber, file_id) VALUES ",
+		if (!db->insert_multiple("INSERT IGNORE INTO dbg_mapping (variant_id, instr_absolute, line_range_size, linenumber, file_id) VALUES ",
 			sql.str().c_str())) {
 			return false;
 		}
