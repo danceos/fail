@@ -1,6 +1,0 @@
-This is an import of the old danceos svn repository.  The Fail* development
-started with rev 187, but this git import only contains revisions 956 and newer
-due to directory structure changes.
-
-Imported from external gitsvn checkout.
-http://www.kernel.org/pub/software/scm/git/docs/howto/using-merge-subtree.html

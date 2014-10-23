@@ -1,0 +1,40 @@
+FAIL* - FAult Injection Leveraged
+
+Copyright (c) 2011-2014 Horst Schirmeier <horst.schirmeier@tu-dortmund.de>
+Copyright (c) 2011-2013 Adrian Böckenkamp <adrian.boeckenkamp@tu-dortmund.de>
+Copyright (c) 2011-2014 Richard Hellwig <richard.hellwig@tu-dortmund.de>
+Copyright (c) 2011-2014 Martin Hoffmann <hoffmann@cs.fau.de>
+Copyright (c) 2012-2013 Martin Unzner <martin.unzner@googlemail.com>
+Copyright (c) 2013-2014 Christian Dietrich <stettberger@dokucode.de>
+Copyright (c) 2013-2014 Lars Rademacher <lars.rademacher@udo.edu>
+Copyright (c) 2012-2014 Christoph Borchert <christoph.borchert@tu-dortmund.de>
+Copyright (c) 2013-2014 Björn Döbel <bjoern.doebel@gmail.com>
+Copyright (c) 2012-2013 Tobias Friemel <tobias.friemel@tu-dortmund.de>
+Copyright (c) 2013-2014 Michael Lenz <michael.lenz@udo.edu>
+Copyright (c) 2013-2014 Florian Lukas <florian.lukas@gmail.com>
+Copyright (c) 2012      Robby Zippel <robby.zippel@informatik.stud.uni-erlangen.de>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+================================================================
+
+Along the FAIL* source code, the source code of several other open source
+projects is included in this source tree:
+
+   - Bochs: GPLv2 or later
+   - Gem5: BSD/MIT with some files in LGPL
+   - OpenOCD: GPLv2 or later
+   - elfinfo: GPLv2 or later
+   - gzstream: GPLv2 or later
+   - optionparser: MIT
