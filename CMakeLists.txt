@@ -9,7 +9,7 @@ ENABLE_TESTING()
 
 PROJECT(Fail*)
 
-set(PROJECT_VERSION "0.0.1" CACHE STRING "Fail* version number")
+set(PROJECT_VERSION "1.0" CACHE STRING "Fail* version number")
 
 #### Put all resulting library files in <your_build_dir>/lib ####
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
