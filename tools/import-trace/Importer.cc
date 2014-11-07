@@ -210,22 +210,19 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 		// rectangular?
 		ss <<
-			"SELECT t.variant_id, local.data_address, global.min_instr, global.max_instr, local.min_instr, local.max_instr\n"
-			"FROM trace t\n"
-			"JOIN\n"
-			" (SELECT t2.variant_id, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
+			"SELECT local.data_address, global.min_instr, global.max_instr, local.min_instr, local.max_instr\n"
+			"FROM\n"
+			" (SELECT MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
 			"  FROM trace t2\n"
+			"  WHERE variant_id = " << m_variant_id << "\n"
 			"  GROUP BY t2.variant_id) AS global\n"
-			" ON global.variant_id = t.variant_id\n"
 			"JOIN\n"
-			" (SELECT variant_id, data_address, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
+			" (SELECT data_address, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
 			"  FROM trace t3\n"
+			"  WHERE variant_id = " << m_variant_id << "\n"
 			"  GROUP BY t3.variant_id, t3.data_address) AS local\n"
-			" ON local.variant_id = t.variant_id\n"
-			"AND (local.min_instr != global.min_instr\n"
-			"  OR local.max_instr != global.max_instr)\n"
-			"WHERE t.variant_id = " << m_variant_id << "\n"
-			"GROUP BY t.variant_id, local.data_address\n";
+			" ON (local.min_instr != global.min_instr\n"
+			"  OR local.max_instr != global.max_instr)";
 		if (!sanitycheck("Global min/max = FS row local min/max",
 			"global MIN(instr1)/MAX(instr2) != row-local MIN(instr1)/MAX(instr2)",
 			ss.str())) {
