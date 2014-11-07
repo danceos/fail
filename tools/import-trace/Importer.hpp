@@ -113,6 +113,11 @@ protected:
 	 */
 	virtual bool trace_end_reached() { return true; }
 
+	/**
+	 * Executes an SQL statement, assumes a sanity check failure if it returns
+	 * any result rows, and provides some diagnostics.
+	 */
+	bool sanitycheck(std::string check_name, std::string fail_msg, std::string sql);
 public:
 	Importer() : m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);

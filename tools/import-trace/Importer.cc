@@ -59,6 +59,20 @@ bool Importer::clear_database() {
 	return ret;
 }
 
+bool Importer::sanitycheck(std::string check_name, std::string fail_msg, std::string sql)
+{
+	LOG << "Sanity check: " << check_name << " ..." << std::flush;
+	MYSQL_RES *res = db->query(sql.c_str(), true);
+
+	if (res && mysql_num_rows(res) == 0) {
+		std::cout << " OK" << std::endl;
+		return true;
+	} else {
+		std::cout << " FAILED: " << fail_msg << std::endl;
+		return false;
+	}
+}
+
 bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	// For now we just use the min/max occuring timestamp; for "sparse" traces
 	// (e.g., only mem accesses, only a subset of the address space) it might
@@ -149,14 +163,13 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	if (m_sanitychecks) {
 		std::stringstream ss;
 		bool all_ok = true;
-		MYSQL_RES *res;
 
 		// PC-based fault space rectangular, covered, and non-overlapping?
 		// (same for timing-based fault space?)
 
-		LOG << "Sanity check: EC overlaps ..." << std::flush;
+		// non-overlapping?
 		ss <<
-			"SELECT t1.variant_id\n" //, v.variant, v.benchmark, t1.instr1, t1.instr2, t1.data_address, t2.instr1, t2.instr2
+			"SELECT t1.variant_id\n"
 			"FROM trace t1\n"
 			"JOIN variant v\n"
 			"  ON v.id = t1.variant_id\n"
@@ -167,19 +180,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			"  OR (t1.instr2 >= t2.instr1 AND t1.instr2 <= t2.instr2)\n"
 			"  OR (t1.instr1 < t2.instr1 AND t1.instr2 > t2.instr2))\n"
 			"WHERE t1.variant_id = " << m_variant_id;
-
-		res = db->query(ss.str().c_str(), true);
-		ss.str("");
-		ss.clear();
-		if (res && mysql_num_rows(res) == 0) {
-			std::cout << " OK" << std::endl;
-		} else {
-			std::cout << " FAILED: not all ECs are disjoint" << std::endl;
-			// TODO: show a list of overlapping ECs?
+		if (!sanitycheck("EC overlaps", "not all ECs are disjoint", ss.str())) {
 			all_ok = false;
 		}
+		ss.str("");
 
-		LOG << "Sanity check: FS row sum = total width ..." << std::flush;
+		// covered?
 		ss <<
 			"SELECT t.variant_id, t.data_address,\n"
 			" (SELECT (MAX(t2.instr2) - MIN(t2.instr1) + 1)\n"
@@ -195,19 +201,14 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			"GROUP BY t.variant_id, t.data_address\n"
 			"HAVING diff != 0\n"
 			"ORDER BY t.data_address\n";
-
-		res = db->query(ss.str().c_str(), true);
-		ss.str("");
-		ss.clear();
-		if (res && mysql_num_rows(res) == 0) {
-			std::cout << " OK" << std::endl;
-		} else {
-			std::cout << " FAILED: MAX(instr2)-MIN(instr1)+1 == SUM(instr2-instr1+1) not true for all fault-space rows" << std::endl;
-			// TODO: show a list of failing data_addresses?
+		if (!sanitycheck("FS row sum = total width",
+			"MAX(instr2)-MIN(instr1)+1 == SUM(instr2-instr1+1) not true for all fault-space rows",
+			ss.str())) {
 			all_ok = false;
 		}
+		ss.str("");
 
-		LOG << "Sanity check: Global min/max = FS row local min/max ..." << std::flush;
+		// rectangular?
 		ss <<
 			"SELECT t.variant_id, local.data_address, global.min_instr, global.max_instr, local.min_instr, local.max_instr\n"
 			"FROM trace t\n"
@@ -225,17 +226,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			"  OR local.max_instr != global.max_instr)\n"
 			"WHERE t.variant_id = " << m_variant_id << "\n"
 			"GROUP BY t.variant_id, local.data_address\n";
-
-		res = db->query(ss.str().c_str(), true);
-		ss.str("");
-		ss.clear();
-		if (res && mysql_num_rows(res) == 0) {
-			std::cout << " OK" << std::endl;
-		} else {
-			std::cout << " FAILED: global MIN(instr1)/MAX(instr2) != row-local MIN(instr1)/MAX(instr2)" << std::endl;
-			// TODO: show a list of failing data_addresses and global min/max?
+		if (!sanitycheck("Global min/max = FS row local min/max",
+			"global MIN(instr1)/MAX(instr2) != row-local MIN(instr1)/MAX(instr2)",
+			ss.str())) {
 			all_ok = false;
 		}
+		ss.str("");
 
 		if (!all_ok) {
 			return false;
