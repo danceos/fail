@@ -51,7 +51,7 @@ do
 		#nice -n 19 ./bochs -q 2>&1 | tee log.$$.txt | fgrep Result
 		#nice -n 18 ./bochs -q 2>&1 | fgrep Result
 		nice -n 18 ./fail-client -q >/dev/null 2>&1
-		if [ $? -eq 1 ]
+		if [ $? -gt 0 ] # exit on any error
 		then
 			break
 		fi
