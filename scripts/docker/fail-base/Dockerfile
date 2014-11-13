@@ -45,9 +45,9 @@ USER fail
 ENV HOME /home/fail
 WORKDIR /home/fail
 
-# Get the latest version of AspectC++ for 64 Bit
-RUN wget http://aspectc.org:8080/job/Build_Binaries/Platform=linux_x86_64/lastBuild/artifact/binaries.tar.bz2 
-RUN tar xvjf binaries.tar.bz2; mv AspectC++/bin/linux-release bin; rm -rf 'AspectC++'
+# Get AspectC++ v1.2 for 64 Bit
+RUN wget http://www.aspectc.org/releases/1.2/ac-bin-linux-x86-64bit-1.2.tar.gz
+RUN tar xvzf ac-bin-linux-x86-64bit-1.2.tar.gz; mkdir bin; mv aspectc++/ac++ aspectc++/ag++ bin/; rm -rf aspectc++
 ENV PATH /home/fail/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Clone FAIL*
