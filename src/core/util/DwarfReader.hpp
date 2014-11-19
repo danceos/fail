@@ -7,6 +7,16 @@
 
 namespace fail {
 
+// temporary wrapper object for (file, linenumber)
+class SourceLine {
+public:
+	std::string source_file;
+	unsigned line_number;
+
+	SourceLine(std::string source, unsigned line) : source_file(source), line_number(line) {}
+};
+
+// wrapper object for insertion into DB
 class DwarfLineMapping {
 public:
 	unsigned absolute_addr;

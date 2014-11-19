@@ -2,6 +2,7 @@
 #include <limits>
 #include <fcntl.h>
 #include <unistd.h>
+#include <map>
 
 #include "DwarfReader.hpp"
 #include "libdwarf.h"
@@ -180,6 +181,10 @@ bool DwarfReader::read_source_files(const std::string& fileName,std::list<std::s
 }
 
 bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>& lineMapping) {
+	// temporary mapping of instruction address to (file, line)
+	// => static instruction addresses are sorted ascendingly for the whole binary
+	//		(i.e. all instructions from all CUs!)
+	std::map<unsigned, SourceLine> instr_to_sourceline;
 
 	// Open The file
 	int fd=open(fileName.c_str(),O_RDONLY);
@@ -237,21 +242,10 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>
 			}
 
 			if (lineNo&&isCode) {
-				/* default the linetable's address range (->size) to the maximum
-				 * possible range. this results in the last linetable entry having
-				 * maximum range. as this always (?) is a function epilogue, its
-				 * irrelevant for our use-case. */
-				// TODO: properly determine the last interval's range, e.g. via __TEXT_END
-
-				DwarfLineMapping mapping(addr, (std::numeric_limits<unsigned>::max() - addr), 
-					lineNo, lineSource);
-				// the address range for the previous line ends with the current line's address
-				if (!lineMapping.empty()) {
-					DwarfLineMapping& back = lineMapping.back();
-					// update the previous lineRangeSize appropriately
-					back.line_range_size = (addr - back.absolute_addr);
-				}
-				lineMapping.push_back(mapping);
+				// wrap line_number and source_file into an object
+				SourceLine tmp_sl(normalize(lineSource), lineNo);
+				// store SourceLine object with static instr in the map
+				instr_to_sourceline.insert(std::make_pair(addr, tmp_sl));
 			}
 
 			dwarf_dealloc(dbg,lineSource,DW_DLA_STRING);
@@ -267,6 +261,26 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>
 	// Shut down libdwarf
 	if (dwarf_finish(dbg,0)!=DW_DLV_OK) {
 		return false;
+	}
+
+	// iterate instr_to_sourceline to determine the "line_range_size" for mapping
+	std::map<unsigned, SourceLine>::iterator it;
+	for (it = instr_to_sourceline.begin(); it != instr_to_sourceline.end(); it++) {
+		unsigned addr = it->first;
+		SourceLine sl = it->second;
+
+		/* Default the linetable's address range (->"size") to the maximum
+		 * possible value. This results in the last linetable entry having
+		 * maximum range. This entry will either be a dummy or a function's
+		 * epilogue, both of which are irrelevant for our (current) use cases.
+		 * All other entries' sizes are set properly. */
+		DwarfLineMapping mapping(addr, (std::numeric_limits<unsigned>::max() - addr),
+			sl.line_number, sl.source_file);
+		if (!lineMapping.empty()) {
+			DwarfLineMapping& back = lineMapping.back();
+			back.line_range_size = addr - back.absolute_addr;
+		}
+		lineMapping.push_back(mapping);
 	}
 
 	close(fd);
