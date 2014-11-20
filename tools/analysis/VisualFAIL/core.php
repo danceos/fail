@@ -188,17 +188,17 @@ function getAsmCode()
 	//print_r($fehlerdaten);
 	$content = '<div id="maxFehler" ';
 	foreach ($resulttypes as $value) {
-				$temp = $value . '="' . $fehlerdaten[max][$value] . '" ';
+				$temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
 				$content = $content . $temp;
 			}
 	$content = $content .' >';
 	while($row = mysql_fetch_object($asmcode))
 	{
-		if (array_key_exists($row->instr_address,$fehlerdaten[Daten])) {
+		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 			$content = $content . '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 			foreach ($resulttypes as $value) {
-				$temp = $value . '="' . $fehlerdaten[Daten][$row->instr_address][$value] . '" ';
+				$temp = $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 				$content = $content . $temp;
 			}
 
@@ -263,13 +263,13 @@ function getHighlevelCode()
 				$mapping[$lineNumber] [] = '<br>';
 				while($row = mysql_fetch_object($mappingErgebnis)) {
 
-					if (array_key_exists($row->instr_address,$fehlerdaten[Daten])) {
+					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 						$newline = $newline . '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 						foreach ($resulttypes as $value) {
-							$temp = $value . '="' . $fehlerdaten[Daten][$row->instr_address][$value] . '" ';
+							$temp = $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 							$newline = $newline . $temp;
-							$maxFehler[$value] = $maxFehler[$value] + $fehlerdaten[Daten][$row->instr_address][$value];
+							$maxFehler[$value] = $maxFehler[$value] + $fehlerdaten['Daten'][$row->instr_address][$value];
 						}
 
 						$newline  = $newline . ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
