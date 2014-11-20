@@ -43,7 +43,7 @@
 				  <img class="navbar-brand logo" src="images/logos/visualfaillogo_klein.png" alt="Visual Fail* logo" />
 				<!--</div>-->
 			</div>
-			<div class="container"> 
+			<div class="container">
 				<div class="navbar-collapse collapse">
 				  <ul class="nav navbar-nav">
 					<li class="active"><a href="#">Rückabbildung</a></li>
@@ -72,7 +72,7 @@
 							</select>
 						</div>
 				</div>
-				
+
 				<div class="panel panel-default">
 					<div class="panel-heading">Benchmark</div>
 						<div class="panel-body">
@@ -81,7 +81,7 @@
 							</select>
 						</div>
 				</div>
-				
+
 				<div class="panel panel-default">
 					<div class="panel-heading">Variante</div>
 						<div class="panel-body">
@@ -93,8 +93,8 @@
 							</div>
 						</div>
 				</div>
-			</div> 
-			
+			</div>
+
 			<div class="col-md-10">
 						<div class="panel-body">
 							<div class="row">
