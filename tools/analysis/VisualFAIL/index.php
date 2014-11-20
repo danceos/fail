@@ -48,12 +48,14 @@
 				  <ul class="nav navbar-nav">
 					<li class="active"><a href="#">Rückabbildung</a></li>
 					<li><a href="#about">Aggregation</a></li>
+<!--
 					<li class="dropdown">
 					  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b></a>
 					  <ul class="dropdown-menu">
 						<li><a href="adminer-3.7.1.php" target="_blank">Adminer</a></li>
 					  </ul>
 					</li>
+-->
 				  </ul>
 				</div><!--/.nav-collapse -->
 			</div>
