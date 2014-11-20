@@ -64,8 +64,8 @@ function dbTest()
 		return;
 	}
 
+/*
 	$abfrage = "SELECT 1 FROM dbg_methods;";
-
 
 	$ergebnis = mysql_query($abfrage);
 
@@ -73,6 +73,7 @@ function dbTest()
 		echo json_encode('Tabelle dbg_methods nicht gefunden <br>');
 		return;
 	}
+*/
 
 	$abfrage = "SELECT 1 FROM dbg_source;";
 
@@ -83,6 +84,7 @@ function dbTest()
 		return;
 	}
 
+/*
 	$abfrage = "SELECT 1 FROM dbg_stacktrace;";
 
 	$ergebnis = mysql_query($abfrage);
@@ -100,6 +102,7 @@ function dbTest()
 		echo json_encode('Tabelle dbg_variables nicht gefunden <br>');
 		return;
 	}
+*/
 }
 
 function getBinarys()
