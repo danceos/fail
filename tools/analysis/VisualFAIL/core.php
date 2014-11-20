@@ -21,6 +21,8 @@ switch ($_GET['kommando'])
 	case "dechex"			: echo json_encode(dechex($_GET['dec']));break;
 }
 
+mysql_close($verbindung);
+
 function dbTest()
 {
 
@@ -108,8 +110,6 @@ function getBinarys()
 
 	$ergebnis = mysql_query($abfrage);
 
-	mysql_close($verbindung);
-
 	while($row = mysql_fetch_object($ergebnis))
 	{
 		array_push($binarys, $row->benchmark);
@@ -128,8 +128,6 @@ function getVariants()
 
 	$ergebnis = mysql_query($abfrage);
 
-	mysql_close($verbindung);
-
 	while($row = mysql_fetch_object($ergebnis))
 	{
 		$variants[$row->id] = $row->variant;
@@ -145,8 +143,6 @@ function getSourceFiles()
 	$abfrage = "SELECT file_id, path FROM dbg_filename WHERE variant_id = '" . $_GET['variant']. "';";
 
 	$ergebnis = mysql_query($abfrage);
-
-	mysql_close($verbindung);
 
 	while($row = mysql_fetch_object($ergebnis))
 	{
@@ -164,7 +160,6 @@ function asmCode()
 
 	$ergebnis = mysql_query($abfrage);
 
-	mysql_close($verbindung);
 	$content = $content;
 	while($row = mysql_fetch_object($ergebnis))
 	{
@@ -306,8 +301,6 @@ function getHighlevelCode()
 		}
 	}
 
-	mysql_close($verbindung);
-
 	echo json_encode($content);
 }
 
@@ -316,8 +309,6 @@ function getResulttypes(&$resulttypes)
 	$abfrage = "SELECT resulttype FROM " . $GLOBALS['result_table'] . " GROUP BY resulttype;";
 
 	$ergebnis = mysql_query($abfrage);
-
-	mysql_close($verbindung);
 
 	while ($row = mysql_fetch_object($ergebnis)) {
 		//echo $row->resulttype;
@@ -332,8 +323,6 @@ function getResulttypesOUT()
 	$abfrage = "SELECT resulttype FROM " . $GLOBALS['result_table'] . " GROUP BY resulttype;";
 
 	$ergebnis = mysql_query($abfrage);
-
-	mysql_close($verbindung);
 
 	while ($row = mysql_fetch_object($ergebnis)) {
 		//echo $row->resulttype;
@@ -405,8 +394,6 @@ function askDBFehler($variant_id, $resulttypes, $version)
 	//echo $abfrage;
 
 	$ergebnis = mysql_query($abfrage);
-
-	mysql_close($verbindung);
 
 	return $ergebnis;
 }
