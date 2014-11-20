@@ -18,26 +18,26 @@ function dec2hex(dec) {
 
 //Berechne den Farbwert (z.B.: #FFFFFF) fuer gegebene Fehlerwerte
 function calcColor(fehler, maxFehler) {
-					//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler);
+	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler);
 
-					var part = 0;
+	var part = 0;
 
-					if (fehler != 0) {
-						var x =  255/Math.log(maxFehler);
-						part = x*Math.log(fehler);
-					}
+	if (fehler != 0) {
+		var x =  255/Math.log(maxFehler);
+		part = x*Math.log(fehler);
+	}
 
-					//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part);
+	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part);
 
-					var hex = dec2hex(255-part);
+	var hex = dec2hex(255-part);
 
-					//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part + " Farbcode: " + ("#FF" + hex + hex));
+	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part + " Farbcode: " + ("#FF" + hex + hex));
 
-					if (hex >= 0 && hex <= 9 ) {
-						return "#FF" + hex + hex + hex + hex;
-					} else {
-						return "#FF" + hex + hex;
-					}
+	if (hex >= 0 && hex <= 9 ) {
+		return "#FF" + hex + hex + hex + hex;
+	} else {
+		return "#FF" + hex + hex;
+	}
 }
 
 //Tooltip für Instruktionszeilen mit Fehler
