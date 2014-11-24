@@ -1,5 +1,9 @@
 <?php
 require('CONFIGURATION.php');
+
+// increase default script runtime limit
+set_time_limit(60*10);
+
 //Datenbankverbindung aufbauen
 $verbindung = mysql_connect ($host,$username, $password)
 					or die ("keine Verbindung möglich. Benutzername oder Passwort sind falsch");
