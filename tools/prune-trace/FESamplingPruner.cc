@@ -32,6 +32,9 @@ bool FESamplingPruner::commandline_init()
 	USE_KNOWN_RESULTS = cmd.addOption("", "use-known-results", Arg::None,
 		"--use-known-results \tReuse known results from a campaign with the 'basic' pruner "
 		"(abuses the DB layout to a certain degree, use with caution)");
+	NO_WEIGHTING = cmd.addOption("", "no-weighting", Arg::None,
+		"--no-weighting \tDisable weighted sampling (weight = 1 for all ECs) "
+		"(don't do this unless you know what you're doing)");
 	return true;
 }
 
@@ -46,6 +49,10 @@ bool FESamplingPruner::prune_all()
 
 	if (cmd[USE_KNOWN_RESULTS]) {
 		m_use_known_results = true;
+	}
+
+	if (cmd[NO_WEIGHTING]) {
+		m_weighting = false;
 	}
 
 	// for each variant:
@@ -105,7 +112,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			p.instr2 = strtoul(row[0], 0, 10);
 			p.instr2_absolute = strtoul(row[1], 0, 10);
 			p.data_address = strtoul(row[2], 0, 10);
-			p.duration = strtoull(row[3], 0, 10);
+			p.duration = m_weighting ? strtoull(row[3], 0, 10) : 1;
 			pop.add(p);
 			++pilotcount;
 		}
@@ -132,7 +139,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			p.id = strtoul(row[0], 0, 10);
 			p.instr2 = strtoul(row[1], 0, 10);
 			p.data_address = strtoul(row[2], 0, 10);
-			p.duration = strtoull(row[3], 0, 10);
+			p.duration = m_weighting ? strtoull(row[3], 0, 10) : 1;
 			pop.add(p);
 			++pilotcount;
 		}
