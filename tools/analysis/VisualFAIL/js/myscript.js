@@ -52,7 +52,7 @@ $('body').popover({
 		var ausgabe = '';
 		var caller = $(this);
 
-		$.getJSON("core.php", {kommando: 'getResultTypes'}, function(data) {
+		$.getJSON("core.php", {cmd: 'getResultTypes'}, function(data) {
 			$.each(data, function(key, val) {
 				ausgabe = ausgabe  + val +': ' + caller.attr(val) + '<br>';
 			});
@@ -74,7 +74,7 @@ $('body').popover({
 $(document).ready(function() {
 
 	//DB check
-	$.getJSON("core.php", {kommando: 'dbTest'}, function(data) {
+	$.getJSON("core.php", {cmd: 'dbTest'}, function(data) {
 
 		if(data != "ok") {
 			$('html').html(data);
@@ -82,7 +82,7 @@ $(document).ready(function() {
 	});
 
 	//Holen der Binarys, die in der DB in der Tabelle Variant vorkommen
-	$.getJSON("core.php", {kommando: 'getBinarys'}, function(data) {
+	$.getJSON("core.php", {cmd: 'getBinarys'}, function(data) {
 		$.each(data, function(key, val) {
 			$('#binary').append('<option value="' + val + '">' + val + '</option>');
 		});
@@ -91,7 +91,7 @@ $(document).ready(function() {
 	//Auswahl eines Eintrages aus den Source-Files für die Darstellung des Hochsprachencode
 	$('#sourceFiles').change(function() {
 		if($(this).val() != 'none') {
-			$.getJSON("core.php", {kommando: 'getHighlevelCode', variant_id: $('#variant').val(), file_id: $(this).val(), version: $('#faerbung').val()}, function(data) {
+			$.getJSON("core.php", {cmd: 'getHighlevelCode', variant_id: $('#variant').val(), file_id: $(this).val(), version: $('#faerbung').val()}, function(data) {
 
 				$('#hcode').html(data);
 
@@ -148,7 +148,7 @@ $(document).ready(function() {
 	$('#binary').change(function() {
 		if($(this).val() != 'none') {
 			$('#variant').html('<option value="none" selected="selected"></option>');
-			$.getJSON("core.php", {kommando: 'getVariants', datei: $(this).val()}, function(data) {
+			$.getJSON("core.php", {cmd: 'getVariants', datei: $(this).val()}, function(data) {
 				$.each(data, function(key, val) {
 					$('#variant').append('<option value="' + key + '">' + val + '</option>');
 				});
@@ -159,17 +159,17 @@ $(document).ready(function() {
 	//Analyse Button wird gedrueckt
 	$('#analyse').button().click( function () {
 
-		$.getJSON("core.php", {kommando: 'getAsmCode', variant_id: $('#variant').val(), version: $('#faerbung').val()}, function(data) {
+		$.getJSON("core.php", {cmd: 'getAsmCode', variant_id: $('#variant').val(), version: $('#faerbung').val()}, function(data) {
 			$('#asm').html(data);
 		});
 
-		$.getJSON("core.php", {kommando: 'getSourceFiles', variant: $('#variant').val()}, function(data) {
+		$.getJSON("core.php", {cmd: 'getSourceFiles', variant: $('#variant').val()}, function(data) {
 			$.each(data, function(key, val) {
 				$('#sourceFiles').append('<option value="' + key + '">' + val + '</option>');
 			});
 		});
 
-		$.getJSON("core.php", {kommando: 'getResultTypes'}, function(data) {
+		$.getJSON("core.php", {cmd: 'getResultTypes'}, function(data) {
 
 			$('#fehlertypenset').html('');
 			$.each(data, function(key, val) {

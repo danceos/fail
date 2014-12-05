@@ -6,12 +6,12 @@ set_time_limit(60*10);
 
 //Datenbankverbindung aufbauen
 $verbindung = mysql_connect ($host,$username, $password)
-					or die ("keine Verbindung möglich. Benutzername oder Passwort sind falsch");
+					or die ("MySQL connection failed.");
 
-mysql_select_db($database) or die ("Die Datenbank existiert nicht.");
+mysql_select_db($database) or die ("Cannot select database '$database'.");
 
-//Kommande lesen
-switch ($_GET['kommando']) {
+// identify command
+switch ($_GET['cmd']) {
 	case "dbTest"			: dbTest();break;
 	case "getAsmCode"		: getAsmCode();break;
 	case "asmToSourceFile"	: asmToSourceFile();break;

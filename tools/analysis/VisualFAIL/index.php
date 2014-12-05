@@ -46,7 +46,7 @@
 			<div class="container">
 				<div class="navbar-collapse collapse">
 				  <ul class="nav navbar-nav">
-					<li class="active"><a href="#">Rückabbildung</a></li>
+					<li class="active"><a href="#">Result Mapping</a></li>
 					<li><a href="#about">Aggregation</a></li>
 <!--
 					<li class="dropdown">
@@ -65,12 +65,12 @@
 			<div class="col-md-2">
 			  <!-- Main component for a primary marketing message or call to action -->
 				<div class="panel panel-default">
-					<div class="panel-heading">Färbung</div>
+					<div class="panel-heading">Coloring</div>
 						<div class="panel-body">
 							<select class="form-control" id="faerbung">
-							  <option value="onlyRightEdge">Rechter Rand(trace.instr2)</option>
-							  <option value="latestip">Letzte Instruktion(result.latest_ip)</option>
-							  <option value="normal">Äquivalenzklassen</option>
+							  <option value="onlyRightEdge">Right margin (trace.instr2)</option>
+							  <option value="latestip">Last instruction (result.latest_ip)</option>
+							  <option value="normal">Equivalence classes</option>
 							</select>
 						</div>
 				</div>
@@ -85,13 +85,13 @@
 				</div>
 
 				<div class="panel panel-default">
-					<div class="panel-heading">Variante</div>
+					<div class="panel-heading">Variant</div>
 						<div class="panel-body">
 							<select class="form-control" id="variant">
 							  <option></option>
 							</select>
 							<div class="text-center">
-								<button type="button" class="btn btn-default btn-lg" id="analyse">Analyse</button>
+								<button type="button" class="btn btn-default btn-lg" id="analyse">Analysis</button>
 							</div>
 						</div>
 				</div>
