@@ -51,7 +51,7 @@ class SumTree {
 public:
 	SumTree() : m_root(new Bucket), m_depth(0) {}
 	~SumTree() { delete m_root; }
-	//! Adds a new element to the tree.
+	//! Adds a copy of a new element to the tree.  The copy is created internally.
 	void add(const T& element);
 	//! Retrieves (and removes) element at random number position.
 	T get(typename T::size_type pos) { return get(pos, m_root, 0); }
