@@ -183,7 +183,6 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		if (!db->query(ss.str().c_str())) return false;
 		ss.str("");
 		num_fsppilot_entries += db->affected_rows();
-		assert(num_fsppilot_entries == (samplerows + 1));
 
 		LOG << "created " << num_fsppilot_entries << " fsppilot entries" << std::endl;
 
