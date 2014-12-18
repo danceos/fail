@@ -102,8 +102,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		ss << "SELECT instr2, instr2_absolute, data_address, time2-time1+1 AS duration"
 			<< " FROM trace"
 			<< " WHERE variant_id = " << variant.id
-			<< " AND accesstype = 'R'"
-			<< " ORDER BY duration DESC"; // speeds up sampling, but query may be slow
+			<< " AND accesstype = 'R'";
 		res = db->query_stream(ss.str().c_str());
 		ss.str("");
 		if (!res) return false;
@@ -129,8 +128,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			<< " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
 			<< " WHERE p.fspmethod_id = " << db->get_fspmethod_id("basic")
 			<< " AND p.variant_id = " << variant.id
-			<< " AND p.known_outcome = 0"
-			<< " ORDER BY duration DESC"; // speeds up sampling, but query may be slow
+			<< " AND p.known_outcome = 0";
 		res = db->query_stream(ss.str().c_str());
 		ss.str("");
 		if (!res) return false;
