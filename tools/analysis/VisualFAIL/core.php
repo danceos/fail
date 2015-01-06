@@ -264,7 +264,9 @@ function getHighlevelCode()
 				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
 				$mappingErgebnis = mysql_query($InstrMappingAbfrage);
 				//Leerzeile
-				$mapping[$lineNumber] [] = '<br>';
+				if (mysql_num_rows($mappingErgebnis) > 0) {
+					$mapping[$lineNumber] [] = '<br>';
+				}
 				while($row = mysql_fetch_object($mappingErgebnis)) {
 
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
@@ -283,7 +285,7 @@ function getHighlevelCode()
 				}
 
 				//Leerzeile
-				$mapping[$lineNumber] [] = '<br>';
+				//$mapping[$lineNumber] [] = '<br>';
 		}
 		foreach ($resulttypes as $value) {
 			$maxFehlerMapping[$lineNumber][$value] = $maxFehler[$value];
