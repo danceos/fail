@@ -223,8 +223,8 @@ function getHighlevelCode()
 
 	getResulttypes($resulttypes);
 
-	$kleinsteAdresseAbfrage = "SELECT instr_address FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' ORDER BY instr_address LIMIT 1;";
-	$kleinsteAdresseErgebnis = mysql_query($kleinsteAdresseAbfrage);
+	$kleinsteAdresseAbfrage = "SELECT MIN(instr_address) AS instr_address FROM objdump WHERE variant_id = " . $_GET['variant_id'];
+	$kleinsteAdresseErgebnis = mysql_query($kleinsteAdresseAbfrage) or trigger_error($kleinsteAdresseAbfrage, E_USER_NOTICE);
 	$kleinsteAdresse = mysql_fetch_object($kleinsteAdresseErgebnis);
 
 	$highlevelCodeAbfrage = "SELECT linenumber, line FROM dbg_source WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id']. "' ORDER BY linenumber;";
@@ -340,25 +340,21 @@ function getResulttypesOUT()
 function askDBFehler($variant_id, $resulttypes, $version)
 {
 	if($version == 'onlyRightEdge') {
-		$abfrage = "SELECT ft.instr, ft.instr_absolute ";
-					foreach ( $resulttypes as $value) {
-						$temp = ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
-						$abfrage = $abfrage . $temp;
-					}
-		$abfrage = $abfrage . " FROM fulltrace ft
-								LEFT JOIN trace t
-								  ON ft.variant_id = '" . $variant_id . "'
-								 AND t.variant_id = '" . $variant_id . "'
-								 AND ft.instr = t.instr2
-								 AND t.accesstype = 'R'
-								JOIN fsppilot p
-								  ON t.variant_id = '" . $variant_id . "'
-								  AND p.variant_id = '" . $variant_id . "'
-								  AND t.data_address = p.data_address
-								  AND p.instr2 = t.instr2
-								JOIN " . $GLOBALS['result_table'] . " r
-								  ON p.id = r.pilot_id
-								GROUP BY ft.instr_absolute;";
+		// we don't need fulltrace here at all
+		$abfrage = "SELECT t.instr2 AS instr, t.instr2_absolute AS instr_absolute";
+		foreach ( $resulttypes as $value) {
+			$abfrage .= ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
+		}
+		$abfrage .= " FROM trace t
+			JOIN fsppilot p
+			ON t.variant_id = p.variant_id
+			AND t.data_address = p.data_address
+			AND p.instr2 = t.instr2
+			JOIN " . $GLOBALS['result_table'] . " r
+			ON p.id = r.pilot_id
+			WHERE t.variant_id = $variant_id
+			AND t.accesstype = 'R'
+			GROUP BY t.instr2_absolute;";
 	} else if ($version == 'latestip') {
 		$abfrage = "SELECT r.latest_ip ";
 		foreach ( $resulttypes as $value) {
