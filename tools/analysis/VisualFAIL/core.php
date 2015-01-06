@@ -260,7 +260,8 @@ function getHighlevelCode()
 			$maxFehler[$val] = 0;
 		}
 		foreach ($value as $index => $ranges) {
-				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address > '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
+				// was ">" instead of ">=" before
+				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
 				$mappingErgebnis = mysql_query($InstrMappingAbfrage);
 				//Leerzeile
 				$mapping[$lineNumber] [] = '<br>';
