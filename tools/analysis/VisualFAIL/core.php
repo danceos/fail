@@ -236,7 +236,7 @@ function getHighlevelCode()
 
 	// FIXME use values from DB instead
 	for ($i = 0; $i < $numEntrysMapping-1; $i++) {
-		if (!is_array($mappingRanges[$row->linenumber])) {
+		if (!isset($mappingRanges[$row->linenumber])) {
 			$mappingRanges[$row->linenumber] = array();
 		}
 		$oldLineNumber = $row->linenumber;
