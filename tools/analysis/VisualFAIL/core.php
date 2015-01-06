@@ -144,7 +144,7 @@ function getSourceFiles()
 {
 	$sourceFiles = array();
 
-	$abfrage = "SELECT file_id, path FROM dbg_filename WHERE variant_id = '" . $_GET['variant']. "';";
+	$abfrage = "SELECT file_id, path FROM dbg_filename WHERE variant_id = '" . $_GET['variant_id']. "';";
 
 	$ergebnis = mysql_query($abfrage);
 

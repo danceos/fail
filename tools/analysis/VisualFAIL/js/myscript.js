@@ -163,7 +163,7 @@ $(document).ready(function() {
 			$('#asm').html(data);
 		});
 
-		$.getJSON("core.php", {cmd: 'getSourceFiles', variant: $('#variant').val()}, function(data) {
+		$.getJSON("core.php", {cmd: 'getSourceFiles', variant_id: $('#variant').val()}, function(data) {
 			$.each(data, function(key, val) {
 				$('#sourceFiles').append('<option value="' + key + '">' + val + '</option>');
 			});
