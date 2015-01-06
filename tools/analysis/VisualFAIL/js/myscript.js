@@ -29,15 +29,18 @@ function calcColor(fehler, maxFehler) {
 
 	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part);
 
-	var hex = dec2hex(255-part);
+	var brightness = 255 - part;
+	var hex = dec2hex(brightness);
 
-	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part + " Farbcode: " + ("#FF" + hex + hex));
+	var colorcode;
 
-	if (hex >= 0 && hex <= 9 ) {
-		return "#FF" + hex + hex + hex + hex;
+	if (brightness <= 0xf) {
+		colorcode = "#FF" + "0" + hex + "0" + hex;
 	} else {
-		return "#FF" + hex + hex;
+		colorcode = "#FF" + hex + hex;
 	}
+	//console.log("Farbe Fehler: " + fehler + " Max: " + maxFehler + " Part: " + part + " Farbcode: " + colorcode);
+	return colorcode;
 }
 
 //Tooltip für Instruktionszeilen mit Fehler
