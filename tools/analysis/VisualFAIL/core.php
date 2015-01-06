@@ -11,8 +11,7 @@ $verbindung = mysql_connect ($host,$username, $password)
 mysql_select_db($database) or die ("Die Datenbank existiert nicht.");
 
 //Kommande lesen
-switch ($_GET['kommando'])
-{
+switch ($_GET['kommando']) {
 	case "dbTest"			: dbTest();break;
 	case "getAsmCode"		: getAsmCode();break;
 	case "asmToSourceFile"	: asmToSourceFile();break;
@@ -36,7 +35,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle objdump nicht gefunden <br>');
 		return;
 	}
@@ -45,7 +44,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle fulltrace nicht gefunden <br>');
 		return;
 	}
@@ -54,7 +53,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_filename nicht gefunden <br>');
 		return;
 	}
@@ -63,7 +62,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_mapping nicht gefunden <br>');
 		return;
 	}
@@ -73,7 +72,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_methods nicht gefunden <br>');
 		return;
 	}
@@ -83,7 +82,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_source nicht gefunden <br>');
 		return;
 	}
@@ -93,7 +92,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_stacktrace nicht gefunden <br>');
 		return;
 	}
@@ -102,7 +101,7 @@ function dbTest()
 
 	$ergebnis = mysql_query($abfrage);
 
-	if(!$ergebnis) {
+	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_variables nicht gefunden <br>');
 		return;
 	}
@@ -117,8 +116,7 @@ function getBinarys()
 
 	$ergebnis = mysql_query($abfrage);
 
-	while($row = mysql_fetch_object($ergebnis))
-	{
+	while ($row = mysql_fetch_object($ergebnis)) {
 		array_push($binarys, $row->benchmark);
 	}
 
@@ -135,8 +133,7 @@ function getVariants()
 
 	$ergebnis = mysql_query($abfrage);
 
-	while($row = mysql_fetch_object($ergebnis))
-	{
+	while ($row = mysql_fetch_object($ergebnis)) {
 		$variants[$row->id] = $row->variant;
 	}
 
@@ -151,8 +148,7 @@ function getSourceFiles()
 
 	$ergebnis = mysql_query($abfrage);
 
-	while($row = mysql_fetch_object($ergebnis))
-	{
+	while ($row = mysql_fetch_object($ergebnis)) {
 		$sourceFiles[$row->file_id] = $row->path;
 	}
 
@@ -168,8 +164,7 @@ function asmCode()
 	$ergebnis = mysql_query($abfrage);
 
 	$content = $content;
-	while($row = mysql_fetch_object($ergebnis))
-	{
+	while ($row = mysql_fetch_object($ergebnis)) {
 		$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 	}
 	echo json_encode($content);
@@ -192,12 +187,11 @@ function getAsmCode()
 	//print_r($fehlerdaten);
 	$content = '<div id="maxFehler" ';
 	foreach ($resulttypes as $value) {
-				$temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
-				$content .= $temp;
-			}
+        $temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
+        $content .= $temp;
+    }
 	$content .= ' >';
-	while($row = mysql_fetch_object($asmcode))
-	{
+	while ($row = mysql_fetch_object($asmcode)) {
 		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 			$content .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
@@ -240,9 +234,9 @@ function getHighlevelCode()
 
 	$row = mysql_fetch_object($mappingInfo);
 
-	for ($i = 0; $i < $numEntrysMapping-1; $i++)
-	{
-		if(!is_array($mappingRanges[$row->linenumber])) {
+	// FIXME use values from DB instead
+	for ($i = 0; $i < $numEntrysMapping-1; $i++) {
+		if (!is_array($mappingRanges[$row->linenumber])) {
 			$mappingRanges[$row->linenumber] = array();
 		}
 		$oldLineNumber = $row->linenumber;
@@ -267,7 +261,7 @@ function getHighlevelCode()
 				if (mysql_num_rows($mappingErgebnis) > 0) {
 					$mapping[$lineNumber] [] = '<br>';
 				}
-				while($row = mysql_fetch_object($mappingErgebnis)) {
+				while ($row = mysql_fetch_object($mappingErgebnis)) {
 
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 						$newline .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
@@ -292,10 +286,9 @@ function getHighlevelCode()
 		}
 	}
 
-	while($row = mysql_fetch_object($highlevelCode))
-	{
+	while ($row = mysql_fetch_object($highlevelCode)) {
 		$content .= '<span id="' . $row->linenumber . '">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
-		if(array_key_exists($row->linenumber, $mapping)) {
+		if (array_key_exists($row->linenumber, $mapping)) {
 			$content .= '<div id="mapping">';
 			foreach ($mapping[$row->linenumber] as $index => $span) {
 				$content .= $span;
@@ -342,7 +335,7 @@ function getResulttypesOUT()
 
 function askDBFehler($variant_id, $resulttypes, $version)
 {
-	if($version == 'onlyRightEdge') {
+	if ($version == 'onlyRightEdge') {
 		// we don't need fulltrace here at all
 		$abfrage = "SELECT t.instr2 AS instr, t.instr2_absolute AS instr_absolute";
 		foreach ( $resulttypes as $value) {
@@ -414,43 +407,36 @@ function resultsDB($variant_id, $version, $resulttypes)
 	$results = array();
 
 	// We find the fields number
-    $numfields=mysql_num_fields($ergebnis);
+	$numfields=mysql_num_fields($ergebnis);
 
-    for($i=0;$i<$numfields;$i++){
-        $fieldname[$i]=mysql_field_name($ergebnis, $i);
-    }
+	for ($i=0; $i < $numfields; $i++) {
+		$fieldname[$i]=mysql_field_name($ergebnis, $i);
+	}
 
-	for($i=2;$i<$numfields;$i++){
-        $results["max"][$fieldname[$i]] = 0;
-    }
+	for ($i=2; $i < $numfields; $i++) {
+		$results["max"][$fieldname[$i]] = 0;
+	}
 
 	$maxFehler = 0;
-	while($row = mysql_fetch_object($ergebnis))
-	{
-		if($version != 'latestip'){
-			if($row->instr_absolute != NULL)
-			{
+	while ($row = mysql_fetch_object($ergebnis)) {
+		if ($version != 'latestip') {
+			if ($row->instr_absolute != NULL) {
 				$results["Daten"][$row->instr_absolute] = array();
-				for ($i = 2; $i < $numfields ; $i++)
-				{
+				for ($i = 2; $i < $numfields ; $i++) {
 					$results["Daten"][$row->instr_absolute][$fieldname[$i]] = $row->$fieldname[$i];
 
-					if($row->$fieldname[$i] > $results["max"][$fieldname[$i]])
-					{
+					if ($row->$fieldname[$i] > $results["max"][$fieldname[$i]]) {
 						$results["max"][$fieldname[$i]] = $row->$fieldname[$i];
 					}
 				}
 			}
 		} else {
-			if($row->latest_ip != NULL)
-			{
+			if ($row->latest_ip != NULL) {
 				$results["Daten"][$row->latest_ip] = array();
-				for ($i = 0 ; $i < $numfields ; $i++)
-				{
+				for ($i = 0 ; $i < $numfields ; $i++) {
 					$results["Daten"][$row->latest_ip][$fieldname[$i]] = $row->$fieldname[$i];
 
-					if($row->$fieldname[$i] > $results["max"][$fieldname[$i]])
-					{
+					if ($row->$fieldname[$i] > $results["max"][$fieldname[$i]]) {
 						$results["max"][$fieldname[$i]] = $row->$fieldname[$i];
 					}
 				}
