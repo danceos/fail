@@ -170,7 +170,7 @@ function asmCode()
 	$content = $content;
 	while($row = mysql_fetch_object($ergebnis))
 	{
-		$content = $content . '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+		$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 	}
 	echo json_encode($content);
 }
@@ -193,26 +193,25 @@ function getAsmCode()
 	$content = '<div id="maxFehler" ';
 	foreach ($resulttypes as $value) {
 				$temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
-				$content = $content . $temp;
+				$content .= $temp;
 			}
-	$content = $content .' >';
+	$content .= ' >';
 	while($row = mysql_fetch_object($asmcode))
 	{
 		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-			$content = $content . '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
+			$content .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 			foreach ($resulttypes as $value) {
-				$temp = $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
-				$content = $content . $temp;
+				$content .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 			}
 
-			$content  = $content . ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+			$content .= ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 		} else {
-			$content = $content . '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+			$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 		}
 	}
 
-	$content = $content . ' </div>';
+	$content .= ' </div>';
 
 	echo json_encode($content);
 }
@@ -268,15 +267,14 @@ function getHighlevelCode()
 				while($row = mysql_fetch_object($mappingErgebnis)) {
 
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-						$newline = $newline . '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
+						$newline .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 						foreach ($resulttypes as $value) {
-							$temp = $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
-							$newline = $newline . $temp;
+							$newline .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 							$maxFehler[$value] = $maxFehler[$value] + $fehlerdaten['Daten'][$row->instr_address][$value];
 						}
 
-						$newline  = $newline . ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+						$newline .= ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 					} else {
 						$newline = '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
 					}
@@ -293,18 +291,18 @@ function getHighlevelCode()
 
 	while($row = mysql_fetch_object($highlevelCode))
 	{
-		$content = $content . '<span id="' . $row->linenumber . '">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
+		$content .= '<span id="' . $row->linenumber . '">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
 		if(array_key_exists($row->linenumber, $mapping)) {
-			$content = $content . '<div id="mapping">';
+			$content .= '<div id="mapping">';
 			foreach ($mapping[$row->linenumber] as $index => $span) {
-				$content = $content . $span;
+				$content .= $span;
 			}
-			$content = $content . '</div>';
-			$content = $content .'<div class="maxFehlerMapping"';
+			$content .= '</div>';
+			$content .= '<div class="maxFehlerMapping"';
 			foreach ($resulttypes as $value) {
-					$content = $content . $value . '="' . $maxFehlerMapping[$row->linenumber][$value] . '" ';
+					$content .= $value . '="' . $maxFehlerMapping[$row->linenumber][$value] . '" ';
 			}
-			$content = $content .'> </div>';
+			$content .= '> </div>';
 		}
 	}
 
@@ -363,11 +361,10 @@ function askDBFehler($variant_id, $resulttypes, $version)
 								GROUP BY ft.instr_absolute;";
 	} else if ($version == 'latestip') {
 		$abfrage = "SELECT r.latest_ip ";
-					foreach ( $resulttypes as $value) {
-						$temp = ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
-						$abfrage = $abfrage . $temp;
-					}
-		$abfrage = $abfrage . " FROM trace t
+		foreach ( $resulttypes as $value) {
+			$abfrage .= ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
+		}
+		$abfrage .= " FROM trace t
 								JOIN fsppilot p
 								  ON t.variant_id = p.variant_id
 								  AND t.data_address = p.data_address
@@ -379,10 +376,9 @@ function askDBFehler($variant_id, $resulttypes, $version)
 	} else {
 		$abfrage = "SELECT ft.instr, ft.instr_absolute ";
 					foreach ( $resulttypes as $value) {
-						$temp = ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
-						$abfrage = $abfrage . $temp;
+						$abfrage .= ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
 					}
-		$abfrage = $abfrage . " FROM fulltrace ft
+		$abfrage .= " FROM fulltrace ft
 								LEFT JOIN trace t
 								  ON ft.variant_id = '" . $variant_id . "'
 								 AND t.variant_id = '" . $variant_id . "'
