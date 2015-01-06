@@ -432,7 +432,7 @@ function resultsDB($variant_id, $version, $resulttypes)
 			if($row->instr_absolute != NULL)
 			{
 				$results["Daten"][$row->instr_absolute] = array();
-				for ($i = 1 ; $i < $numfields ; $i++)
+				for ($i = 2; $i < $numfields ; $i++)
 				{
 					$results["Daten"][$row->instr_absolute][$fieldname[$i]] = $row->$fieldname[$i];
 
