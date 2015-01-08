@@ -103,7 +103,7 @@ $(document).ready(function() {
 										newFehler = newFehler + parseInt(actualRow.attr(val));
 									});
 
-									console.log("jepp" + newMaxFehler + " " + newFehler);
+									// console.log("jepp" + newMaxFehler + " " + newFehler);
 
 									$(this).prev().prev().prev().css("background-color", calcColor(newFehler, newMaxFehler))
 										   .css('cursor', 'pointer');
