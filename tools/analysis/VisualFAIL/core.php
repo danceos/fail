@@ -165,7 +165,7 @@ function asmCode()
 
 	$content = $content;
 	while ($row = mysql_fetch_object($ergebnis)) {
-		$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+		$content .= dechex($row->instr_address) . '<br>';
 	}
 	echo json_encode($content);
 }
@@ -185,6 +185,7 @@ function getAsmCode()
 	//$fehlerdaten = askDBFehler($_GET['variant_id'], $resulttypes, $_GET['version']);
 
 	//print_r($fehlerdaten);
+	// FIXME id not unique
 	$content = '<div id="maxFehler" ';
 	foreach ($resulttypes as $value) {
         $temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
@@ -193,7 +194,7 @@ function getAsmCode()
 	$content .= ' >';
 	while ($row = mysql_fetch_object($asmcode)) {
 		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-			$content .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
+			$content .= '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 			foreach ($resulttypes as $value) {
 				$content .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
@@ -201,7 +202,7 @@ function getAsmCode()
 
 			$content .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 		} else {
-			$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
+			$content .= dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble);
 		}
 		$content .= '<br>';
 	}
@@ -261,7 +262,7 @@ function getHighlevelCode()
 				while ($row = mysql_fetch_object($mappingErgebnis)) {
 
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-						$newline .= '<span id="' . dechex($row->instr_address) . '" class="hasFehler" ';
+						$newline .= '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 						foreach ($resulttypes as $value) {
 							$newline .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
@@ -270,7 +271,7 @@ function getHighlevelCode()
 
 						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 					} else {
-						$newline = '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
+						$newline = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble);
 					}
 					$newline .= '<br>';
 					$mapping[$lineNumber] [] = $newline;
@@ -282,9 +283,10 @@ function getHighlevelCode()
 	}
 
 	while ($row = mysql_fetch_object($highlevelCode)) {
-		$content .= '<span id="' . $row->linenumber . '">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
+		// FIXME id unique?
+		$content .= '<span data-line="' . $row->linenumber . '" class="sourcecode">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
 		if (array_key_exists($row->linenumber, $mapping)) {
-			$content .= '<div id="mapping">';
+			$content .= '<div class="mapping">';
 			foreach ($mapping[$row->linenumber] as $index => $span) {
 				$content .= $span;
 			}

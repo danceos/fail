@@ -47,7 +47,7 @@ function calcColor(fehler, maxFehler) {
 $('body').popover({
 	selector: ".hasFehler",
 	html: true,
-	title: function() { return $(this).attr("id"); },
+	title: function() { return '0x' + $(this).attr("data-address"); },
 	content: function() {
 		var ausgabe = '';
 		var caller = $(this);
