@@ -170,6 +170,38 @@ function asmCode()
 	echo json_encode($content);
 }
 
+function collapse_repeated($html, $disasm, $force_finish)
+{
+	static $last_disasm = '';
+	static $collect = array();
+	$limit_before = $limit_after = 3;
+
+	$out = '';
+	if ($force_finish || $last_disasm != $disasm) {
+		if (count($collect) > $limit_before + $limit_after + 1) {
+			for ($i = 0; $i < $limit_before; ++$i) {
+				$out .= $collect[$i];
+			}
+			$out .= '<i>-- omitted ' . (count($collect) - $limit_before - $limit_after) . " repetitions of '$last_disasm'</i><br>";
+			for ($i = count($collect) - $limit_after; $i < count($collect); ++$i) {
+				$out .= $collect[$i];
+			}
+		} else {
+			$out = implode('', $collect);
+		}
+		$last_disasm = $disasm;
+		$collect = array();
+	}
+
+	if ($force_finish) {
+		$out .= $html;
+	} else {
+		$collect[] = $html;
+	}
+
+	return $out;
+}
+
 function getAsmCode()
 {
 	$content = "";
@@ -188,25 +220,26 @@ function getAsmCode()
 	// FIXME id not unique
 	$content = '<div id="maxFehler" ';
 	foreach ($resulttypes as $value) {
-        $temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
-        $content .= $temp;
-    }
+		$temp = $value . '="' . $fehlerdaten['max'][$value] . '" ';
+		$content .= $temp;
+	}
 	$content .= ' >';
 	while ($row = mysql_fetch_object($asmcode)) {
 		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-			$content .= '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
+			$line = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 			foreach ($resulttypes as $value) {
-				$content .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
+				$line .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 			}
 
-			$content .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
+			$line .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+			$content .= collapse_repeated($line, 'dontcare', true);
 		} else {
-			$content .= dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble);
+			$line = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '<br>';
+			$content .= collapse_repeated($line, htmlspecialchars($row->disassemble), false);
 		}
-		$content .= '<br>';
 	}
-
+	$content .= collapse_repeated('', '', true);
 	$content .= ' </div>';
 
 	echo json_encode($content);
@@ -265,13 +298,15 @@ function getHighlevelCode()
 							$maxFehler[$value] += $fehlerdaten['Daten'][$row->instr_address][$value];
 						}
 
-						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
+						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+						$newline = collapse_repeated($newline, 'dontcare', true);
 					} else {
-						$newline = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble);
+						$newline = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '<br>';
+						$newline = collapse_repeated($newline, htmlspecialchars($row->disassemble), false);
 					}
-					$newline .= '<br>';
 					$mapping[$lineNumber] [] = $newline;
 				}
+				$mapping[$lineNumber] [] = collapse_repeated('', '', true);
 		}
 		foreach ($resulttypes as $value) {
 			$maxFehlerMapping[$lineNumber][$value] = $maxFehler[$value];
