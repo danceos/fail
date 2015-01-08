@@ -18,7 +18,7 @@ switch ($_GET['cmd']) {
 	case "getBinarys"		: getBinarys();break;
 	case "getVariants"		: getVariants();break;
 	case "getSourceFiles"	: getSourceFiles();break;
-	case "getResultTypes"		: getResulttypesOUT();break;
+	case "getResultTypes"	: getResulttypesOUT();break;
 	case "getHighlevelCode"	: getHighlevelCode();break;
 	case "resultsDB"		: resultsDB();break;
 	case "dechex"			: echo json_encode(dechex($_GET['dec']));break;
@@ -285,28 +285,28 @@ function getHighlevelCode()
 			$maxFehler[$val] = 0;
 		}
 		foreach ($value as $index => $ranges) {
-				// was ">" instead of ">=" before
-				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
-				$mappingErgebnis = mysql_query($InstrMappingAbfrage);
-				while ($row = mysql_fetch_object($mappingErgebnis)) {
-					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-						$newline = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
+			// was ">" instead of ">=" before
+			$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
+			$mappingErgebnis = mysql_query($InstrMappingAbfrage);
+			while ($row = mysql_fetch_object($mappingErgebnis)) {
+				if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
+					$newline = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
-						foreach ($resulttypes as $value) {
-							// FIXME prefix with 'data-results-', adapt JS
-							$newline .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
-							$maxFehler[$value] += $fehlerdaten['Daten'][$row->instr_address][$value];
-						}
-
-						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
-						$newline = collapse_repeated($newline, 'dontcare', true);
-					} else {
-						$newline = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '<br>';
-						$newline = collapse_repeated($newline, htmlspecialchars($row->disassemble), false);
+					foreach ($resulttypes as $value) {
+						// FIXME prefix with 'data-results-', adapt JS
+						$newline .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
+						$maxFehler[$value] += $fehlerdaten['Daten'][$row->instr_address][$value];
 					}
-					$mapping[$lineNumber] [] = $newline;
+
+					$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+					$newline = collapse_repeated($newline, 'dontcare', true);
+				} else {
+					$newline = dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '<br>';
+					$newline = collapse_repeated($newline, htmlspecialchars($row->disassemble), false);
 				}
-				$mapping[$lineNumber] [] = collapse_repeated('', '', true);
+				$mapping[$lineNumber] [] = $newline;
+			}
+			$mapping[$lineNumber] [] = collapse_repeated('', '', true);
 		}
 		foreach ($resulttypes as $value) {
 			$maxFehlerMapping[$lineNumber][$value] = $maxFehler[$value];
@@ -394,9 +394,9 @@ function askDBFehler($variant_id, $resulttypes, $version)
 								GROUP BY r.latest_ip;";
 	} else {
 		$abfrage = "SELECT ft.instr, ft.instr_absolute ";
-					foreach ( $resulttypes as $value) {
-						$abfrage .= ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
-					}
+		foreach ( $resulttypes as $value) {
+			$abfrage .= ", SUM(IF(r.resulttype = '" . $value . "', 1, 0)*(t.time2-t.time1+1)) AS " . $value;
+		}
 		$abfrage .= " FROM fulltrace ft
 								LEFT JOIN trace t
 								  ON ft.variant_id = '" . $variant_id . "'
@@ -422,7 +422,6 @@ function askDBFehler($variant_id, $resulttypes, $version)
 
 function resultsDB($variant_id, $version, $resulttypes)
 {
-
 	getResulttypes($resulttypes);
 
 	//print_r($resulttypes);
