@@ -199,10 +199,11 @@ function getAsmCode()
 				$content .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
 			}
 
-			$content .= ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+			$content .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 		} else {
-			$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+			$content .= '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 		}
+		$content .= '<br>';
 	}
 
 	$content .= ' </div>';
@@ -257,10 +258,6 @@ function getHighlevelCode()
 				// was ">" instead of ">=" before
 				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
 				$mappingErgebnis = mysql_query($InstrMappingAbfrage);
-				//Leerzeile
-				if (mysql_num_rows($mappingErgebnis) > 0) {
-					$mapping[$lineNumber] [] = '<br>';
-				}
 				while ($row = mysql_fetch_object($mappingErgebnis)) {
 
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
@@ -271,15 +268,13 @@ function getHighlevelCode()
 							$maxFehler[$value] = $maxFehler[$value] + $fehlerdaten['Daten'][$row->instr_address][$value];
 						}
 
-						$newline .= ' cursor: pointer;>' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 					} else {
-						$newline = '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span><br>';
+						$newline = '<span id="' . dechex($row->instr_address) . '">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
 					}
+					$newline .= '<br>';
 					$mapping[$lineNumber] [] = $newline;
 				}
-
-				//Leerzeile
-				//$mapping[$lineNumber] [] = '<br>';
 		}
 		foreach ($resulttypes as $value) {
 			$maxFehlerMapping[$lineNumber][$value] = $maxFehler[$value];
@@ -293,12 +288,11 @@ function getHighlevelCode()
 			foreach ($mapping[$row->linenumber] as $index => $span) {
 				$content .= $span;
 			}
-			$content .= '</div>';
-			$content .= '<div class="maxFehlerMapping"';
+			$content .= '</div><div class="maxFehlerMapping"';
 			foreach ($resulttypes as $value) {
 					$content .= $value . '="' . $maxFehlerMapping[$row->linenumber][$value] . '" ';
 			}
-			$content .= '> </div>';
+			$content .= '></div>';
 		}
 	}
 
