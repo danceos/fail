@@ -224,30 +224,26 @@ function getHighlevelCode()
 	$kleinsteAdresse = mysql_fetch_object($kleinsteAdresseErgebnis);
 
 	$highlevelCodeAbfrage = "SELECT linenumber, line FROM dbg_source WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id']. "' ORDER BY linenumber;";
-	$mappingAbfrage = "SELECT instr_absolute, linenumber FROM dbg_mapping WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id'] . "' AND instr_absolute >= '" . $kleinsteAdresse->instr_address . "' ORDER BY instr_absolute;";
+	$mappingAbfrage = "SELECT linenumber, instr_absolute, line_range_size FROM dbg_mapping WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id'] . "' AND instr_absolute >= '" . $kleinsteAdresse->instr_address . "' ORDER BY instr_absolute;";
 
 	$highlevelCode = mysql_query($highlevelCodeAbfrage);
 	$mappingInfo = mysql_query($mappingAbfrage);
 
 	$fehlerdaten = resultsDB($_GET['variant_id'], $_GET['version'], $resulttypes);
 
+	// retrieve mapping of linenumber -> array of [start-address;end-address) ranges
 	$mappingRanges = array();
-	$numEntrysMapping = mysql_num_rows($mappingInfo);
-
-	$row = mysql_fetch_object($mappingInfo);
-
-	// FIXME use values from DB instead
-	for ($i = 0; $i < $numEntrysMapping-1; $i++) {
+	while (($row = mysql_fetch_object($mappingInfo))) {
 		if (!isset($mappingRanges[$row->linenumber])) {
 			$mappingRanges[$row->linenumber] = array();
 		}
-		$oldLineNumber = $row->linenumber;
-		$firstAddr = $row->instr_absolute;
-		$row = mysql_fetch_object($mappingInfo);
-		array_push($mappingRanges[$oldLineNumber], array($firstAddr, $row->instr_absolute));
+		$mappingRanges[$row->linenumber][] =
+			array(intval($row->instr_absolute),
+				$row->instr_absolute + $row->line_range_size);
 	}
 
 	$mapping = array();
+	// "maxFehler" should be "sumFehler" or alike
 	$maxFehlerMapping = array();
 
 	foreach ($mappingRanges as $lineNumber => $value) {
@@ -260,13 +256,13 @@ function getHighlevelCode()
 				$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
 				$mappingErgebnis = mysql_query($InstrMappingAbfrage);
 				while ($row = mysql_fetch_object($mappingErgebnis)) {
-
 					if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
-						$newline .= '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
+						$newline = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
 						foreach ($resulttypes as $value) {
+							// FIXME prefix with 'data-results-', adapt JS
 							$newline .= $value . '="' . $fehlerdaten['Daten'][$row->instr_address][$value] . '" ';
-							$maxFehler[$value] = $maxFehler[$value] + $fehlerdaten['Daten'][$row->instr_address][$value];
+							$maxFehler[$value] += $fehlerdaten['Daten'][$row->instr_address][$value];
 						}
 
 						$newline .= ' style="cursor: pointer;">' . dechex($row->instr_address) . '     ' . htmlspecialchars($row->disassemble) . '</span>';
