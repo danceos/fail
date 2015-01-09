@@ -140,6 +140,35 @@ function getVariants()
 	echo json_encode($variants);
 }
 
+function remove_common_prefix($files)
+{
+	if (count($files) == 0) {
+		return array();
+	}
+
+	// start with arbitrary file
+	$commonprefix = dirname(current($files));
+
+	foreach ($files AS $id => $file) {
+		for ($i = 0; $i < strlen($commonprefix); ++$i) {
+			if ($i >= strlen($file) || $file[$i] != $commonprefix[$i]) {
+				$commonprefix = substr($commonprefix, 0, $i);
+				break;
+			}
+		}
+		if (strlen($commonprefix) == 0) {
+			break;
+		}
+	}
+
+	$out = array();
+	foreach ($files AS $id => $file) {
+		$out[$id] = substr($file, strlen($commonprefix));
+	}
+
+	return $out;
+}
+
 function getSourceFiles()
 {
 	$sourceFiles = array();
@@ -151,6 +180,8 @@ function getSourceFiles()
 	while ($row = mysql_fetch_object($ergebnis)) {
 		$sourceFiles[$row->file_id] = $row->path;
 	}
+
+	$sourceFiles = remove_common_prefix($sourceFiles);
 
 	echo json_encode($sourceFiles);
 }
