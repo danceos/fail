@@ -1,10 +1,10 @@
 <?php
-//Datenbank
+// database credentials
 $host = "localhost";
 $username = "";
 $password = "";
 $database = "";
 
-// Name der result-Tabelle
+// result-table name
 $result_table = "result";
 ?>
