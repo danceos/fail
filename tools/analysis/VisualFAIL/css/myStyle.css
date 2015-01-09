@@ -1,0 +1,23 @@
+body {
+  min-height: 2000px;
+  padding-top: 70px;
+}
+
+/* Custom container */
+.container-full {
+  margin: 0 auto;
+  padding: 0 15px;
+  width: 100%;
+}
+
+.logo {
+  padding: 0 0 0 30px;
+}
+
+.sourcecode {
+  font-weight: bold;
+}
+
+#analyse {
+  margin: 20px 0 0 0;
+}
