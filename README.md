@@ -132,9 +132,15 @@ Publications about FAIL*
 Selected publications using FAIL*
 ---------------------------------
 
-- M. Hoffmann, P. Ulbrich, C. Dietrich, H. Schirmeier, D. Lohmann, and
-  W. Schröder-Preikschat. Experiences with software-based soft-error
-  mitigation using AN-codes. Software Quality Journal, 2015. (accepted).
+- M. Hoffmann, F. Lukas, C. Dietrich, and D. Lohmann. dOSEK: The design and
+  implementation of a dependability-oriented static embedded kernel. In
+  Proceedings of the 21st IEEE Real-Time and Embedded Technology and
+  Applications (RTAS '15), Los Alamitos, CA, USA, Apr. 2015. IEEE Computer
+  Society Press.
+
+- M. Hoffmann, P. Ulbrich, C. Dietrich, H. Schirmeier, D. Lohmann, and W.
+  Schröder-Preikschat. Experiences with software-based soft-error mitigation
+  using AN codes. Software Quality Journal, pages 1–27, 2015.
 
 - I. Stilkerich, P. Taffner, C. Erhardt, C. Dietrich, C. Wawersich, and
   M. Stilkerich. Team Up: Cooperative Memory Management in Embedded
@@ -142,30 +148,27 @@ Selected publications using FAIL*
   Architectures and Synthesis for Embedded Systems (CASES '14). ACM,
   October 2014.
 
-- H. Schirmeier, C. Borchert, and O. Spinczyk. Rapid fault-space
-  exploration by evolutionary pruning. In Proceedings of the 33rd
-  International Conference on Computer Safety, Reliability and
-  Security (SAFECOMP '14), Lecture Notes in Computer
-  Science. Springer-Verlag, Sept. 2014.
+- H. Schirmeier, C. Borchert, and O. Spinczyk. Rapid fault-space exploration by
+  evolutionary pruning. In Proceedings of the 33rd International Conference on
+  Computer Safety, Reliability and Security (SAFECOMP '14), Lecture Notes in
+  Computer Science, pages 17–32. Springer-Verlag, Sept. 2014.
 
-- M. Hoffmann, C. Borchert, C. Dietrich, H. Schirmeier, R. Kapitza,
-  O. Spinczyk, and D. Lohmann. Effectiveness of fault detection
-  mechanisms in static and dynamic operating system designs. In
-  Proceedings of the 17th IEEE International Symposium on
-  Object-Oriented Real-Time Distributed Computing (ISORC '14). IEEE
-  Computer Society Press, June 2014.
+- M. Hoffmann, C. Borchert, C. Dietrich, H. Schirmeier, R. Kapitza, O.
+  Spinczyk, and D. Lohmann. Effectiveness of fault detection mechanisms in
+  static and dynamic operating system designs. In Proceedings of the 17th IEEE
+  International Symposium on Object-Oriented Real-Time Distributed Computing
+  (ISORC '14), pages 230–237. IEEE Computer Society Press, June 2014.
 
-- H. Schirmeier, L. Rademacher, and O. Spinczyk. Smart-hopping: Highly
-  efficient ISA-level fault injection on real hardware. In Proceedings
-  of the 19th IEEE European Test Symposium (ETS '14). IEEE Computer
-  Society Press, May 2014.
+- H. Schirmeier, L. Rademacher, and O. Spinczyk. Smart-hopping: Highly efficient
+  ISA-level fault injection on real hardware. In Proceedings of the 19th IEEE
+  European Test Symposium (ETS '14), pages 69–74. IEEE Computer Society Press,
+  May 2014.
 
-- M. Hoffmann, P. Ulbrich, C. Dietrich, H. Schirmeier, D. Lohmann, and
-  W. Schröder-Preikschat. A practitioner's guide to software-based
-  soft-error mitigation using AN-codes. In Proceedings of the 15th
-  IEEE International Symposium on High Assurance Systems Engineering
-  (HASE '14), Miami, Florida, USA, Jan. 2014. IEEE Computer Society
-  Press.
+- M. Hoffmann, P. Ulbrich, C. Dietrich, H. Schirmeier, D. Lohmann, and W.
+  Schröder-Preikschat. A practitioner's guide to software-based soft-error
+  mitigation using AN-codes. In Proceedings of the 15th IEEE International
+  Symposium on High Assurance Systems Engineering (HASE '14), pages 33–40,
+  Miami, Florida, USA, Jan. 2014. IEEE Computer Society Press.
 
 - C. Borchert, H. Schirmeier, and O. Spinczyk. Return-address
   protection in C/C++ code by dependability aspects. In Proceedings of
