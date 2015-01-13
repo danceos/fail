@@ -64,7 +64,7 @@ aspect FastWatchpoints {
 		// Check for matching MemAccessListener:
 		fail::ResultSet& res = ref.getMemoryListeners().gather(&tmp);
 		while (res.hasMore())
-			ref.makeActive(ref.dereference(res.getNext()));
+			ref.makeActive(res.getNext());
 
 		ref.triggerActiveListeners();
 	}
