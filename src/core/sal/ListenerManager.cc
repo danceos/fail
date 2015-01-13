@@ -50,16 +50,22 @@ void ListenerManager::remove(BaseListener* li)
 		// called onDeletion for these listeners):
 		m_DeleteList.insert(m_DeleteList.end(), m_FireList.begin(), m_FireList.end());
 
-	// - li != 0 -> remove single listener (if added previously)
-	//   * Inform the listeners (call onDeletion)
-	//   * Remove the index in the perf. buffer-list (if existing)
-	//   * Find/remove 'li' in 'm_BufferList'
+	// - li != 0 -> remove single listener
+	//   * If added / not removed before,
+	//     -> inform the listeners (call onDeletion)
+	//     -> Remove the index in the perf. buffer-list (if existing)
+	//     -> Find/remove 'li' in 'm_BufferList'
 	//   * If 'li' in 'm_FireList', copy to 'm_DeleteList'
-	} else if (li->getLocation() != INVALID_INDEX) { // Check if li hasn't been added previously (Q&D)
-		li->onDeletion();
-		if (li->getPerformanceBuffer() != NULL)
-			li->getPerformanceBuffer()->remove(li->getLocation());
-		m_remove(li->getLocation());
+	} else {
+		// has li been removed previously?
+		if (li->getLocation() != INVALID_INDEX) {
+			li->onDeletion();
+			if (li->getPerformanceBuffer() != NULL) {
+				li->getPerformanceBuffer()->remove(li->getLocation());
+			}
+			m_remove(li->getLocation());
+		}
+		// if li hasn't fired yet, make sure it doesn't
 		firelist_t::const_iterator it =
 			std::find(m_FireList.begin(), m_FireList.end(), li);
 		if (it != m_FireList.end()) {
