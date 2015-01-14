@@ -28,7 +28,7 @@ int main()
 		uint64_t pos = tree.get_size() / 2;
 		LOG << "MAIN tree.get_size() = " << tree.get_size()
 			<< ", trying to retrieve pos = " << pos << endl;
-		Pilot p = tree.get(pos);
+		Pilot p = tree.remove(pos);
 		LOG << "MAIN retrieved pilot with duration " << p.duration << endl;
 	}
 }

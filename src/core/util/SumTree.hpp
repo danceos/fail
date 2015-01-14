@@ -7,7 +7,7 @@
 
 // The SumTree implements an efficient tree data structure for
 // "roulette-wheel" sampling, or "sampling with fault expansion", i.e.,
-// sampling of trace entries / pilots without replacement and with a
+// sampling of trace entries / pilots with/without replacement and with a
 // picking probability proportional to the entries' sizes.
 //
 // For every sample, the naive approach picks a random number between 0
@@ -24,9 +24,9 @@
 //
 // Note that the current implementation is built for a pure growth phase
 // (when the tree gets filled with pilots from the database), followed by
-// a sampling phase when the tree gets emptied.  It does not handle a
-// mixed add/remove case very smartly, although it should remain
-// functional.
+// a sampling phase when the tree gets sampled from (with replacement) or
+// emptied (without replacement).  It does not handle a mixed add/remove case
+// very smartly, although it should remain functional.
 
 namespace fail {
 
@@ -53,15 +53,19 @@ public:
 	~SumTree() { delete m_root; }
 	//! Adds a copy of a new element to the tree.  The copy is created internally.
 	void add(const T& element);
-	//! Retrieves (and removes) element at random number position.
-	T get(typename T::size_type pos) { return get(pos, m_root, 0); }
+	//! Retrieves and removes element at random number position.
+	T remove(typename T::size_type pos) { return remove(pos, m_root, 0); }
+	//! Retrieves reference to element at random number position.
+	T& get(typename T::size_type pos) { return get(pos, m_root, 0); }
 	//! Yields the sum over all elements in the tree.
 	typename T::size_type get_size() const { return m_root->size; }
 private:
 	//! Internal, recursive version of add().
 	bool add(Bucket **node, const T& element, unsigned depth_remaining);
+	//! Internal, recursive version of remove().
+	T remove(typename T::size_type pos, Bucket *node, typename T::size_type sum);
 	//! Internal, recursive version of get().
-	T get(typename T::size_type pos, Bucket *node, typename T::size_type sum);
+	T& get(typename T::size_type pos, Bucket *node, typename T::size_type sum);
 };
 
 // template implementation
@@ -137,7 +141,7 @@ bool SumTree<T, BUCKETSIZE>::add(Bucket **node, const T& element, unsigned depth
 }
 
 template <typename T, unsigned BUCKETSIZE>
-T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename T::size_type sum)
+T SumTree<T, BUCKETSIZE>::remove(typename T::size_type pos, Bucket *node, typename T::size_type sum)
 {
 	// sanity check
 	assert(pos >= sum && pos < sum + node->size);
@@ -153,7 +157,7 @@ T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename 
 
 		// found containing bucket, recurse
 		sum -= (*it)->size;
-		T e = get(pos, *it, sum);
+		T e = remove(pos, *it, sum);
 		node->size -= e.size();
 		// remove empty (or, at least, zero-sized) child?
 		if ((*it)->size == 0) {
@@ -182,6 +186,44 @@ T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename 
 	// this should never happen
 	assert(0);
 	return T();
+}
+
+template <typename T, unsigned BUCKETSIZE>
+T& SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename T::size_type sum)
+{
+	// sanity check
+	assert(pos >= sum && pos < sum + node->size);
+
+	// will only be entered for inner nodes
+	for (typename std::vector<Bucket *>::iterator it = node->children.begin();
+		it != node->children.end(); ) {
+		sum += (*it)->size;
+		if (sum <= pos) {
+			++it;
+			continue;
+		}
+
+		// found containing bucket, recurse
+		sum -= (*it)->size;
+		return get(pos, *it, sum);
+	}
+
+	// will only be entered for leaf nodes
+	for (typename std::vector<T>::iterator it = node->elements.begin();
+		it != node->elements.end(); ) {
+		sum += it->size();
+		if (sum <= pos) {
+			++it;
+			continue;
+		}
+
+		// found pilot
+		return *it;
+	}
+
+	// this should never happen
+	assert(0);
+	return *(new T);
 }
 
 } // namespace

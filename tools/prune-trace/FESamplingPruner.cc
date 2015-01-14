@@ -161,7 +161,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 
 		for (uint64_t i = 0; i < samplerows; ++i) {
 			uint64_t pos = my_rand(pop.get_size() - 1);
-			Pilot p = pop.get(pos);
+			Pilot p = pop.remove(pos);
 			ss << "(0," << variant.id << "," << p.instr2 << "," << p.instr2
 				<< "," << p.instr2_absolute << "," << p.data_address
 				<< ",1," << m_method_id << ")";
@@ -203,7 +203,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 
 		for (uint64_t i = 0; i < samplerows; ++i) {
 			uint64_t pos = my_rand(pop.get_size() - 1);
-			Pilot p = pop.get(pos);
+			Pilot p = pop.remove(pos);
 			ss << "(" << variant.id << "," << p.instr2
 				<< "," << p.data_address << "," << m_method_id
 				<< "," << p.id << ")";
