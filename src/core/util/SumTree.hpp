@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <vector>
+#include <stack>
 
 // The SumTree implements an efficient tree data structure for
 // "roulette-wheel" sampling, or "sampling with fault expansion", i.e.,
@@ -44,6 +45,64 @@ class SumTree {
 		std::vector<T> elements;
 	};
 
+public:
+	//! Iterator
+	class TreeIterator : public std::iterator<std::input_iterator_tag, T> {
+		//! Buckets and corresponding element indexes down the tree
+		std::stack<std::pair<Bucket *, unsigned> > hierarchy;
+	public:
+		TreeIterator() {}
+//MyIterator(int* x) :p(x) {}
+		TreeIterator(const TreeIterator& i) : hierarchy(i.hierarchy) { }
+		TreeIterator(const SumTree<T, BUCKETSIZE>& tree)
+		{
+			// go down until we see leaves
+			hierarchy.push(std::pair<Bucket *, unsigned>(tree.m_root, 0));
+			while (!hierarchy.top().first->elements.size() && hierarchy.top().first->children.size() > 0) {
+				hierarchy.push(std::pair<Bucket *, unsigned>(hierarchy.top().first->children[hierarchy.top().second], 0));
+			}
+		}
+		TreeIterator& operator++()
+		{
+			// advance index in the current level
+			hierarchy.top().second++;
+			if (hierarchy.top().second < hierarchy.top().first->elements.size()) {
+				return *this;
+			}
+			// current level is exhausted, go back up to a not yet finished level
+			do {
+				hierarchy.pop();
+			} while (!hierarchy.empty()
+				&& ++hierarchy.top().second >= hierarchy.top().first->children.size());
+			// at the end?
+			if (hierarchy.empty()) {
+				return *this;
+			}
+			// go down until we see leaves again
+			do {
+				hierarchy.push(std::pair<Bucket *, unsigned>(hierarchy.top().first->children[hierarchy.top().second], 0));
+			} while (!hierarchy.top().first->elements.size() && hierarchy.top().first->children.size() > 0);
+			return *this;
+		}
+		TreeIterator operator++(int) { TreeIterator tmp(*this); operator++(); return tmp; }
+	    bool operator==(const TreeIterator& rhs) { return hierarchy == rhs.hierarchy; }
+		bool operator!=(const TreeIterator& rhs) { return hierarchy != rhs.hierarchy; }
+		T& operator*() { return hierarchy.top().first->elements[hierarchy.top().second]; }
+		T *operator->() { return &(operator*()); }
+	};
+	typedef TreeIterator iterator;
+
+	iterator begin()
+	{
+		return iterator(*this);
+	}
+
+	iterator end()
+	{
+		return iterator();
+	}
+
+private:
 	//! Root node
 	Bucket *m_root;
 	//! Tree depth: nodes at level m_depth are leaf nodes, others are inner nodes

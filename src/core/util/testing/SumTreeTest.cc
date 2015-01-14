@@ -17,11 +17,17 @@ struct Pilot {
 
 int main()
 {
-	fail::SumTree<Pilot, 2> tree;
+	typedef fail::SumTree<Pilot, 2> sumtree_type;
+	sumtree_type tree;
 	for (int i = 0; i <= 20; ++i) {
 		Pilot p;
 		p.duration = i;
 		tree.add(p);
+	}
+
+	LOG << "tree contents:" << endl;
+	for (sumtree_type::iterator it = tree.begin(); it != tree.end(); ++it) {
+		LOG << it->size() << endl;
 	}
 
 	while (tree.get_size() > 0) {
