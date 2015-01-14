@@ -30,7 +30,6 @@ public:
 
 	void getAliases(std::deque<std::string> *aliases) {
 		aliases->push_back("FESamplingPruner");
-		aliases->push_back("sampling");
 	}
 
 private:

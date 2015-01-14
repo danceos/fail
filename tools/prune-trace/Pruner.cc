@@ -100,6 +100,7 @@ bool Pruner::create_database() {
 	    "  data_address    int(10) unsigned NOT NULL,"
 	    "  fspmethod_id    int(11) NOT NULL,"
 	    "  pilot_id        int(11) NOT NULL,"
+	    "  weight int(11) UNSIGNED,"
 	    "  PRIMARY KEY (variant_id, data_address, instr2, fspmethod_id),"
 	    "  KEY joinresults (pilot_id,fspmethod_id)) engine=MyISAM";
 

@@ -14,6 +14,7 @@ using std::endl;
 #include "Pruner.hpp"
 #include "BasicPruner.hpp"
 #include "FESamplingPruner.hpp"
+#include "SamplingPruner.hpp"
 
 int main(int argc, char *argv[]) {
 	std::string username, hostname, database;
@@ -26,6 +27,8 @@ int main(int argc, char *argv[]) {
 	registry.add(&basicprunerleft);
 	FESamplingPruner fesamplingpruner;
 	registry.add(&fesamplingpruner);
+	SamplingPruner samplingpruner;
+	registry.add(&samplingpruner);
 
 	std::string pruners = registry.getPrimeAliasesCSV();
 
