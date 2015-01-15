@@ -65,9 +65,17 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle OVERWRITE =
 		cmd.addOption("", "overwrite", Arg::None,
 			"--overwrite \tOverwrite already existing pruning data (the default is to skip variants with existing entries)");
+	CommandLine::option_handle INCREMENTAL =
+		cmd.addOption("", "incremental", Arg::None,
+			"--incremental \tTell the pruner to work incrementally (if supported)");
 
 	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
+		exit(-1);
+	}
+
+	if (cmd[OVERWRITE] && cmd[INCREMENTAL]) {
+		std::cerr << "--overwrite and --incremental cannot be used together." << std::endl;
 		exit(-1);
 	}
 
@@ -110,6 +118,11 @@ int main(int argc, char *argv[]) {
 	Database *db = Database::cmdline_connect();
 	pruner->set_db(db);
 
+	if (cmd[INCREMENTAL] && !pruner->set_incremental(true)) {
+		std::cerr << "Pruner is incapable of running incrementally" << std::endl;
+		exit(-1);
+	}
+
 	std::vector<std::string> variants, benchmarks, variants_exclude, benchmarks_exclude;
 	if (cmd[VARIANT]) {
 		for (option::Option *o = cmd[VARIANT]; o; o = o->next()) {
@@ -150,7 +163,8 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	if (!pruner->init(variants, variants_exclude, benchmarks, benchmarks_exclude, cmd[OVERWRITE])) {
+	if (!pruner->init(variants, variants_exclude, benchmarks, benchmarks_exclude,
+		cmd[OVERWRITE], cmd[INCREMENTAL])) {
 		LOG << "pruner->init() failed" << endl;
 		exit(-1);
 	}
@@ -158,7 +172,7 @@ int main(int argc, char *argv[]) {
 	////////////////////////////////////////////////////////////////
 	// Do the actual pruning
 	////////////////////////////////////////////////////////////////
-	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !pruner->clear_database()) {
+	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !cmd[INCREMENTAL] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;
 		exit(-1);
 	}

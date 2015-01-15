@@ -17,10 +17,10 @@ class SamplingPruner : public Pruner {
 	fail::CommandLine::option_handle NO_WEIGHTING;
 
 	uint64_t m_samplesize;
-	bool m_use_known_results, m_weighting;
+	bool m_use_known_results, m_weighting, m_incremental;
 
 public:
-	SamplingPruner() : m_samplesize(0), m_use_known_results(false), m_weighting(true) { }
+	SamplingPruner() : m_samplesize(0), m_use_known_results(false), m_weighting(true), m_incremental(false) { }
 	virtual std::string method_name() { return "sampling"; }
 	virtual bool commandline_init();
 	virtual bool prune_all();
@@ -29,6 +29,8 @@ public:
 		aliases->push_back("SamplingPruner");
 		aliases->push_back("sampling");
 	}
+
+	virtual bool set_incremental(bool incremental) { m_incremental = incremental; return true; }
 
 private:
 	bool sampling_prune(const fail::Database::Variant& variant);

@@ -13,11 +13,9 @@ using std::endl;
 struct WeightedPilot {
 	uint64_t duration;
 
-	uint32_t instr2;
-	union {
-	uint32_t instr2_absolute;
 	uint32_t id;
-	};
+	uint32_t instr2;
+	uint32_t instr2_absolute;
 	uint32_t data_address;
 	uint32_t weight;
 
@@ -94,13 +92,27 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 	uint64_t pilotcount = 0;
 
 	if (!m_use_known_results) {
-		LOG << "loading trace entries for " << variant.variant << "/" << variant.benchmark << " ..." << endl;
+		LOG << "loading trace entries "
+			<< (m_incremental ? "and existing pilots " : "")
+			<< "for " << variant.variant << "/" << variant.benchmark << " ..." << endl;
 
-		// load trace entries
-		ss << "SELECT instr2, instr2_absolute, data_address, time2-time1+1 AS duration"
-			<< " FROM trace"
-			<< " WHERE variant_id = " << variant.id
-			<< " AND accesstype = 'R'";
+		if (!m_incremental) {
+			// load trace entries
+			ss << "SELECT instr2, instr2_absolute, data_address, time2-time1+1 AS duration"
+				" FROM trace"
+				" WHERE variant_id = " << variant.id <<
+				" AND accesstype = 'R'";
+		} else {
+			// load trace entries and existing pilots
+			ss << "SELECT t.instr2, t.instr2_absolute, t.data_address, t.time2-t.time1+1 AS duration,"
+				" IFNULL(g.pilot_id, 0), IFNULL(g.weight, 0)"
+				" FROM trace t"
+				" LEFT JOIN fspgroup g"
+				" ON t.variant_id = g.variant_id AND t.data_address = g.data_address AND t.instr2 = g.instr2"
+				" AND g.fspmethod_id = " << m_method_id <<
+				" WHERE t.variant_id = " << variant.id <<
+				" AND t.accesstype = 'R'";
+		}
 		res = db->query_stream(ss.str().c_str());
 		ss.str("");
 		if (!res) return false;
@@ -110,7 +122,8 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			p.instr2_absolute = strtoul(row[1], 0, 10);
 			p.data_address = strtoul(row[2], 0, 10);
 			p.duration = m_weighting ? strtoull(row[3], 0, 10) : 1;
-			p.weight = 0;
+			p.id = m_incremental ? strtoul(row[4], 0, 10) : 0;
+			p.weight = m_incremental ? strtoul(row[5], 0, 10) : 0;
 			pop.add(p);
 			++pilotcount;
 		}
@@ -118,14 +131,28 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 	} else {
 		LOG << "loading pilots for " << variant.variant << "/" << variant.benchmark << " ..." << endl;
 
-		// load fsppilot entries
-		ss << "SELECT p.id, p.instr2, p.data_address, t.time2 - t.time1 + 1 AS duration"
-			<< " FROM fsppilot p"
-			<< " JOIN trace t"
-			<< " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
-			<< " WHERE p.fspmethod_id = " << db->get_fspmethod_id("basic")
-			<< " AND p.variant_id = " << variant.id
-			<< " AND p.known_outcome = 0";
+		if (!m_incremental) {
+			// load fsppilot entries
+			ss << "SELECT p.id, p.instr2, p.data_address, t.time2 - t.time1 + 1 AS duration"
+				" FROM fsppilot p"
+				" JOIN trace t"
+				" ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
+				" WHERE p.fspmethod_id = " << db->get_fspmethod_id("basic") <<
+				" AND p.variant_id = " << variant.id <<
+				" AND p.known_outcome = 0";
+		} else {
+			// load fsppilot entries and existing sampling pilots
+			ss << "SELECT p.id, p.instr2, p.data_address, t.time2 - t.time1 + 1 AS duration, IFNULL(g.weight, 0)"
+				" FROM fsppilot p"
+				" JOIN trace t"
+				" ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
+				" LEFT JOIN fspgroup g"
+				" ON t.variant_id = g.variant_id AND t.data_address = g.data_address AND t.instr2 = g.instr2"
+				" AND g.fspmethod_id = " << m_method_id <<
+				" WHERE p.fspmethod_id = " << db->get_fspmethod_id("basic") <<
+				" AND p.variant_id = " << variant.id <<
+				" AND p.known_outcome = 0";
+		}
 		res = db->query_stream(ss.str().c_str());
 		ss.str("");
 		if (!res) return false;
@@ -135,7 +162,7 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			p.instr2 = strtoul(row[1], 0, 10);
 			p.data_address = strtoul(row[2], 0, 10);
 			p.duration = m_weighting ? strtoull(row[3], 0, 10) : 1;
-			p.weight = 0;
+			p.weight = m_incremental ? strtoull(row[4], 0, 10) : 0;
 			pop.add(p);
 			++pilotcount;
 		}
@@ -158,6 +185,8 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		p.weight++;
 		// first time we sample this pilot?
 		if (!m_use_known_results && p.weight == 1) {
+			// no need to special-case existing pilots (incremental mode), as
+			// their initial weight is supposed to be at least 1
 			ss << "(0," << variant.id << "," << p.instr2 << "," << p.instr2
 				<< "," << p.instr2_absolute << "," << p.data_address
 				<< ",1," << m_method_id << ")";
@@ -174,7 +203,13 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 
 	// fspgroup entries for sampled trace entries
 	if (!m_use_known_results) {
-		ss << "INSERT INTO fspgroup (variant_id, instr2, data_address, fspmethod_id, pilot_id, weight) "
+		if (!m_incremental) {
+			ss << "INSERT";
+		} else {
+			// this spares us to delete existing pilots before
+			ss << "REPLACE";
+		}
+		ss << " INTO fspgroup (variant_id, instr2, data_address, fspmethod_id, pilot_id, weight) "
 		   << "SELECT p.variant_id, p.instr2, p.data_address, " << m_method_id << ", p.id, 1 "
 		   << "FROM fsppilot p "
 		   << "WHERE known_outcome = 0 AND p.fspmethod_id = " << m_method_id << " "
@@ -182,7 +217,14 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 
 		if (!db->query(ss.str().c_str())) return false;
 		ss.str("");
-		uint64_t num_fspgroup_entries = db->affected_rows();
+		uint64_t num_fspgroup_entries;
+		if (!m_incremental) {
+			num_fspgroup_entries = db->affected_rows();
+		} else {
+			// with REPLACE INTO, affected_rows does not yield the number of
+			// new rows; take num_fsppilot_entries instead
+			num_fspgroup_entries = num_fsppilot_entries;
+		}
 		LOG << "created " << num_fspgroup_entries << " fspgroup entries" << std::endl;
 
 		// FIXME is this faster than manually INSERTing all fspgroup entries?
@@ -208,13 +250,25 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			}
 			ss.str("");
 		}
-		LOG << "updated " << num_fspgroup_entries << " fspgroup entries" << std::endl;
+
+		if (!m_incremental) {
+			LOG << "updated " << num_fspgroup_entries << " fspgroup entries" << std::endl;
+		} else {
+			// we don't know how many rows we really updated
+			LOG << "updated fspgroup entries" << std::endl;
+		}
 	} else {
 		uint64_t num_fspgroup_entries = 0;
 
 		LOG << "creating fspgroup entries ..." << std::endl;
 
-		ss << "INSERT INTO fspgroup (variant_id, instr2, data_address, fspmethod_id, pilot_id, weight) VALUES ";
+		if (!m_incremental) {
+			ss << "INSERT";
+		} else {
+			// this spares us to delete existing pilots before
+			ss << "REPLACE";
+		}
+		ss << " INTO fspgroup (variant_id, instr2, data_address, fspmethod_id, pilot_id, weight) VALUES ";
 		insert_sql = ss.str();
 		ss.str("");
 

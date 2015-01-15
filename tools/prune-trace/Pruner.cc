@@ -13,7 +13,7 @@ bool Pruner::init(
 		const std::vector<std::string>& variants_exclude,
 		const std::vector<std::string>& benchmarks,
 		const std::vector<std::string>& benchmarks_exclude,
-		bool overwrite)
+		bool overwrite, bool incremental)
 {
 	m_variants = db->get_variants(
 		variants, variants_exclude,
@@ -26,8 +26,8 @@ bool Pruner::init(
 	    << std::endl;
 
 	// make sure we only prune variants that haven't been pruned previously
-	// (unless we run with --overwrite)
-	if (!overwrite) {
+	// (unless we run with --overwrite or --incremental)
+	if (!overwrite && !incremental) {
 		for (std::vector<fail::Database::Variant>::iterator it = m_variants.begin();
 			it != m_variants.end(); ) {
 			std::stringstream ss;
