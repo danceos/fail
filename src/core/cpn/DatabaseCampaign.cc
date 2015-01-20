@@ -271,6 +271,7 @@ void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &var
 	sql << "SELECT pilot_id, COUNT(*) FROM fsppilot p"
 	    << " JOIN " << db_connect.result_table() << " r ON r.pilot_id = p.id"
 	    << " WHERE variant_id in (" << variant_str.str() << ")"
+	    << "   AND fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
 	    << " GROUP BY pilot_id ";
 	MYSQL_RES *ids = db->query_stream(sql.str().c_str());
 	MYSQL_ROW row;
