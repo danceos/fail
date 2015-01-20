@@ -19,11 +19,15 @@ bool MemoryMap::readFromFile(char const * const filename)
 	unsigned count = 0;
 
 	while (getline(file, buf)) {
+		std::string addr, len;
 		std::stringstream ss(buf, std::ios::in);
-		ss >> guest_addr >> guest_len;
+		ss >> addr >> len;
+		guest_addr = strtoul(addr.c_str(), NULL, 0);
+		guest_len = strtoul(len.c_str(), NULL, 0);
 		add(guest_addr, guest_len);
 		count++;
 	}
+
 	// assertion kept from original code; usually something's fishy if the file
 	// contains no entries
 	assert(count > 0);

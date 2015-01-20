@@ -22,3 +22,9 @@ message DatabaseCampaignMessage {
 
     required InjectionPointMessage injection_point	= 10 [(sql_ignore) = true];
 }
+
+message DatabaseExperimentMessage {
+    required uint32 bitoffset      = 1 [(sql_primary_key) = true];
+    required uint32 original_value = 2;
+}
+

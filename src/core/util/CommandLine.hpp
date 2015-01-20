@@ -30,7 +30,7 @@ public:
 private:
 	static CommandLine m_instance;
 
-	std::vector<const char *> argv;
+	std::vector<const char *> argv, argv_reordered;
 	std::vector<option::Descriptor> options;
 	option::Option *parsed_options, *parsed_buffer;
 	option::Parser *m_parser;

@@ -7,6 +7,26 @@
 
 namespace fail {
 
+// temporary wrapper object for (file, linenumber)
+class SourceLine {
+public:
+	std::string source_file;
+	unsigned line_number;
+
+	SourceLine(std::string source, unsigned line) : source_file(source), line_number(line) {}
+};
+
+// wrapper object for insertion into DB
+class DwarfLineMapping {
+public:
+	unsigned absolute_addr;
+	unsigned line_range_size;
+	unsigned line_number;
+	std::string line_source;
+
+	DwarfLineMapping(unsigned addr, unsigned size, unsigned number, std::string src)
+		: absolute_addr(addr), line_range_size(size), line_number(number), line_source(src){}
+};
 
 /**
 	* This source code is based on bcov 0.2.
@@ -15,23 +35,16 @@ namespace fail {
 	* GNU GENERAL PUBLIC LICENSE
 */
 
-	struct addrToLine {
-		int absoluteAddr;
-		int lineNumber;
-		std::string lineSource;
-	};
-
-	/**
-	* \class DwarfReader
-	* ToDO
-	*/
-
-	class DwarfReader {
+/**
+* \class DwarfReader
+* ToDO
+*/
+class DwarfReader {
 
 		public:
 
 		bool read_source_files(const std::string& fileName, std::list<std::string>& lines);
-		bool read_mapping(std::string fileName, std::list<addrToLine>& addrToLineList);
+		bool read_mapping(std::string fileName, std::list<DwarfLineMapping>& lineMapping);
 };
 
 } // end-of-namespace fail

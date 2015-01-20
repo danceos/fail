@@ -35,7 +35,8 @@ int main(int argc, char *argv[]) {
 		cmd.add_args(argv[i]);
 	}
 
-	cmd.addOption("", "", Arg::None, "USAGE: import-trace [options]");
+	CommandLine::option_handle UNKNOWN =
+		cmd.addOption("", "", Arg::None, "USAGE: prune-trace [options]");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	Database::cmdline_setup();
@@ -76,35 +77,15 @@ int main(int argc, char *argv[]) {
 	// try and get the according pruner object; die on failure
 	if ((pruner = (Pruner *)registry.get(pruner_name)) == 0) {
 		if (pruner_name != "?" ) {
-			std::cerr << "Unknown import method: " << pruner_name << std::endl;
+			std::cerr << "Unknown pruning method: " << pruner_name << std::endl;
 		}
-		std::cerr << "Available import methods: " << pruners << std::endl;
+		std::cerr << "Available pruning methods: " << pruners << std::endl;
 		exit(-1);
 	}
+	registry.getPrimeAlias(pruner, pruner_name);
+	LOG << "Using " << pruner_name << endl;
 
-	if (cmd[PRUNER]) {
-		std::string imp(cmd[PRUNER].first()->arg);
-		if (imp == "BasicPruner" || imp == "basic") {
-			LOG << "Using BasicPruner" << endl;
-			pruner = new BasicPruner();
-		} else if (imp == "BasicPrunerLeft" || imp == "basic-left") {
-			LOG << "Using BasicPruner (use left border, instr1)" << endl;
-			pruner = new BasicPruner(true);
-		} else if (imp == "FESamplingPruner" || imp == "sampling") {
-			LOG << "Using FESamplingPruner" << endl;
-			pruner = new FESamplingPruner;
-
-		} else {
-			LOG << "Unknown pruning method: " << imp << endl;
-			exit(-1);
-		}
-
-	} else {
-		LOG << "Using BasicPruner" << endl;
-		pruner = new BasicPruner();
-	}
-
-	if (pruner && !(pruner->commandline_init())) {
+	if (!(pruner->commandline_init())) {
 		std::cerr << "Pruner's commandline initialization failed" << std::endl;
 		exit(-1);
 	}
@@ -112,9 +93,15 @@ int main(int argc, char *argv[]) {
 	// reparse all arguments.
 	cmd.parse();
 
-	if (cmd[HELP]) {
+	if (cmd[HELP] || cmd[UNKNOWN] || cmd.parser()->nonOptionsCount() > 0) {
+		for (option::Option* opt = cmd[UNKNOWN]; opt; opt = opt->next()) {
+			std::cerr << "Unknown option: " << opt->name << "\n";
+		}
+		for (int i = 0; i < cmd.parser()->nonOptionsCount(); ++i) {
+			std::cerr << "Unknown non-option: " << cmd.parser()->nonOption(i) << "\n";
+		}
 		cmd.printUsage();
-		exit(0);
+		exit(!cmd[HELP]);
 	}
 
 	Database *db = Database::cmdline_connect();
@@ -166,7 +153,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	////////////////////////////////////////////////////////////////
-	// Do the actual import
+	// Do the actual pruning
 	////////////////////////////////////////////////////////////////
 	if (!cmd[NO_DELETE] && cmd[OVERWRITE] && !pruner->clear_database()) {
 		LOG << "clear_database() failed" << endl;

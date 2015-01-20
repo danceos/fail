@@ -80,7 +80,7 @@ class DatabaseProtobufAdapter {
 		TypeBridge_uint32(const google::protobuf::FieldDescriptor *desc)
 			: TypeBridge(desc){};
 
-		virtual std::string sql_type() { return "INT"; };
+		virtual std::string sql_type() { return "INT UNSIGNED"; };
 		virtual int element_size() { return 4; };
 		virtual void copy_to(const google::protobuf::Message *msg, int i, void *);
 		virtual void bind(MYSQL_BIND *bind, const google::protobuf::Message *msg);
@@ -101,7 +101,7 @@ class DatabaseProtobufAdapter {
 		TypeBridge_uint64(const google::protobuf::FieldDescriptor *desc)
 			: TypeBridge(desc){};
 
-		virtual std::string sql_type() { return "BIGINT"; };
+		virtual std::string sql_type() { return "BIGINT UNSIGNED"; };
 		virtual int element_size() { return 8; };
 		virtual void copy_to(const google::protobuf::Message *msg, int i, void *);
 		virtual void bind(MYSQL_BIND *bind, const google::protobuf::Message *msg);
@@ -138,6 +138,7 @@ class DatabaseProtobufAdapter {
 	};
 
 	struct TypeBridge_string : TypeBridge {
+		std::string buffer;
 		TypeBridge_string(const google::protobuf::FieldDescriptor *desc)
 			: TypeBridge(desc){};
 		virtual std::string sql_type() { return "TEXT"; };

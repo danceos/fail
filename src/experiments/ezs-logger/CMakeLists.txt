@@ -16,6 +16,5 @@ set(MY_CAMPAIGN_SRCS
 ## Build library
 add_library(fail-${EXPERIMENT_NAME}  ${MY_CAMPAIGN_SRCS})
 add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME} fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME})
+target_link_libraries(fail-${EXPERIMENT_NAME} fail-comm fail-util)
 

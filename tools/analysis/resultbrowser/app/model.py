@@ -63,7 +63,7 @@ def closeSession():
 '''Populate variant results for overview data'''
 def getVariants(cur, table):
     restbl = table.getDetails().getDBName()
-    cur.execute("""SELECT resulttype, variant, variant_id, benchmark, count(*) as total from %s  join fsppilot on %s.pilot_id=fsppilot.id join variant on fsppilot.variant_id=variant.id group by resulttype, variant.id ORDER BY variant.id""" % (restbl, restbl)) # % is used here, as a tablename must not be quoted
+    cur.execute("""SELECT sum((t.time2 - t.time1 + 1) * width) AS total, resulttype,variant, v.id as variant_id, benchmark, details FROM variant v JOIN trace t ON v.id = t.variant_id JOIN fspgroup g ON g.variant_id = t.variant_id AND g.instr2 = t.instr2 AND g.data_address = t.data_address JOIN %s r ON r.pilot_id = g.pilot_id  JOIN fsppilot p ON r.pilot_id = p.id GROUP BY v.id, resulttype, details""" % (restbl)) # % is used here, as a tablename must not be quoted
     res = cur.fetchall()
     rdic = {}
     # Build dict with variant id as key
@@ -115,8 +115,8 @@ def getVariantResult(table, variantid):
     cur = loadSession(sqlconfig)
     restbl = scrub(table)
 
-    stmt = "SELECT resulttype, count(*) as total from %s  join fsppilot on %s.pilot_id=fsppilot.id join variant on fsppilot.variant_id=variant.id" %  (restbl, restbl)
-    where = " WHERE variant.id = %s group by resulttype ORDER BY resulttype"
+    stmt = "SELECT resulttype, count(*) as total from %s r join fsppilot on r.pilot_id=fsppilot.id join variant on fsppilot.variant_id=variant.id" %  (restbl)
+    where = " WHERE variant.id = %s group by resulttype ORDER BY resulttype "
     stmt = stmt + where
     cur.execute(stmt, variantid)
     res = cur.fetchall()
@@ -142,14 +142,14 @@ def getCode(result_table, variant_id, resultlabel=None):
             filt = " and resulttype = '" + resultlabel + "' "
 
     # I especially like this one:
-    select = "SELECT instr_address, opcode, disassemble, comment, COUNT(*) as totals,  GROUP_CONCAT(DISTINCT resulttype SEPARATOR ', ') as results FROM %s " % result_table
-    join   = "JOIN fsppilot ON pilot_id = fsppilot.id JOIN objdump ON objdump.instr_address = injection_instr_absolute "
-    where  = "WHERE objdump.variant_id = %s AND fsppilot.variant_id = %s "
-    group  = "GROUP BY injection_instr_absolute ORDER BY injection_instr_absolute "
+    select = "SELECT instr_address, opcode, disassemble, comment, sum(t.time2 - t.time1 + 1) as totals,  GROUP_CONCAT(DISTINCT resulttype SEPARATOR ', ') as results FROM variant v "
+    join   = "   JOIN trace t ON v.id = t.variant_id  JOIN fspgroup g ON g.variant_id = t.variant_id AND g.instr2 = t.instr2 AND g.data_address = t.data_address      JOIN %s r ON r.pilot_id = g.pilot_id  JOIN fsppilot p ON r.pilot_id = p.id JOIN objdump ON objdump.variant_id = v.id AND objdump.instr_address = injection_instr_absolute " %(scrub(result_table))
+    where  = "WHERE v.id = %s "
+    group  = "GROUP BY injection_instr_absolute ORDER BY totals DESC "
 
     cur = loadSession(sqlconfig)
     stmt = select + join + where + filt + group
-    cur.execute(stmt, (variant_id, variant_id))
+    cur.execute(stmt, (variant_id))
     dump = cur.fetchall()
 
     closeSession()
@@ -158,7 +158,7 @@ def getCode(result_table, variant_id, resultlabel=None):
 
 def getCodeExcerpt(variant_id, instr_addr):
     code = {}
-    limit = 4
+    limit = 8
     cur = loadSession(sqlconfig)
     cur.execute( """(SELECT instr_address, opcode, disassemble, comment FROM objdump \
             WHERE instr_address < %s AND variant_id = %s \
@@ -187,9 +187,7 @@ def getResultsbyInstruction(result_table, variant_id, instr_addr, resultlabel=No
                     restypefilter += "resulttype = '" + dbn + "' OR "
                 restypefilter += "resulttype = '" + dbnames[-1] +"' ) "
 
-
-    #select = "SELECT data_address, data_width, original_value, bitoffset, experiment_number, details, resulttype from %s " % scrub(result_table)
-    select = "SELECT * from %s " % scrub(result_table)
+    select = "SELECT bitoffset as 'Bit Offset', hex(injection_instr_absolute) as 'Instruction Address', hex(original_value) as 'Original Value', hex(data_address) as 'Data Address', resulttype as 'Result Type', details as 'Details' from %s " % scrub(result_table)
     join   = "JOIN fsppilot ON pilot_id = fsppilot.id "
     where  = "WHERE variant_id = %s and injection_instr_absolute = %s "
     order  = "ORDER BY data_address, bitoffset"

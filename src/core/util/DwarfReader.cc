@@ -1,6 +1,8 @@
 #include <fstream>
+#include <limits>
 #include <fcntl.h>
 #include <unistd.h>
+#include <map>
 
 #include "DwarfReader.hpp"
 #include "libdwarf.h"
@@ -128,8 +130,10 @@ bool DwarfReader::read_source_files(const std::string& fileName,std::list<std::s
 	while (dwarf_next_cu_header(dbg,0,0,0,0,&header,0)==DW_DLV_OK) {
 		// Access the die
 		Dwarf_Die die;
-		if (dwarf_siblingof(dbg,0,&die,0)!=DW_DLV_OK)
+		if (dwarf_siblingof(dbg,0,&die,0)!=DW_DLV_OK) {
+			close(fd);
 			return false;
+		}
 
 		// Get the source lines
 		Dwarf_Line* lineBuffer;
@@ -140,17 +144,25 @@ bool DwarfReader::read_source_files(const std::string& fileName,std::list<std::s
 		// Store them
 		for (int index=0;index<lineCount;index++) {
 			Dwarf_Unsigned lineNo;
-			if (dwarf_lineno(lineBuffer[index],&lineNo,0)!=DW_DLV_OK)
+			if (dwarf_lineno(lineBuffer[index],&lineNo,0)!=DW_DLV_OK){
+				close(fd);
 				return false;
+			}
 			char* lineSource;
-			if (dwarf_linesrc(lineBuffer[index],&lineSource,0)!=DW_DLV_OK)
+			if (dwarf_linesrc(lineBuffer[index],&lineSource,0)!=DW_DLV_OK){
+				close(fd);
 				return false;
+			}
 			Dwarf_Bool isCode;
-			if (dwarf_linebeginstatement(lineBuffer[index],&isCode,0)!=DW_DLV_OK)
+			if (dwarf_linebeginstatement(lineBuffer[index],&isCode,0)!=DW_DLV_OK){
+				close(fd);
 				return false;
+			}
 			Dwarf_Addr addr;
-			if (dwarf_lineaddr(lineBuffer[index],&addr,0)!=DW_DLV_OK)
+			if (dwarf_lineaddr(lineBuffer[index],&addr,0)!=DW_DLV_OK){
+				close(fd);
 				return false;
+			}
 
 			if (lineNo&&isCode) {
 				//LOG << "lineNo: " << lineNo   << " addr: " << reinterpret_cast<void*>(addr) << " line source:" << normalize(lineSource) << endl;
@@ -171,14 +183,20 @@ bool DwarfReader::read_source_files(const std::string& fileName,std::list<std::s
 	lines.unique();
 
 	// Shut down libdwarf
-	if (dwarf_finish(dbg,0)!=DW_DLV_OK)
+	if (dwarf_finish(dbg,0)!=DW_DLV_OK) {
+		close(fd);
 		return false;
+	}
 
 	close(fd);
 	return true;
 }
 
-bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addrToLineList) {
+bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>& lineMapping) {
+	// temporary mapping of instruction address to (file, line)
+	// => static instruction addresses are sorted ascendingly for the whole binary
+	//		(i.e. all instructions from all CUs!)
+	std::map<unsigned, SourceLine> instr_to_sourceline;
 
 	// Open The file
 	int fd=open(fileName.c_str(),O_RDONLY);
@@ -200,10 +218,13 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 
 	// Iterator over the headers
 	Dwarf_Unsigned header;
+	// iterate compilation unit headers
 	while (dwarf_next_cu_header(dbg,0,0,0,0,&header,0)==DW_DLV_OK) {
 		// Access the die
 		Dwarf_Die die;
+		// XXX: "if there are no sibling headers, die" | semantics unclear!
 		if (dwarf_siblingof(dbg,0,&die,0)!=DW_DLV_OK) {
+			close(fd);
 			return false;
 		}
 
@@ -211,6 +232,7 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 		Dwarf_Line* lineBuffer;
 		Dwarf_Signed lineCount;
 		if (dwarf_srclines(die,&lineBuffer,&lineCount,0)!=DW_DLV_OK) {
+			close(fd);
 			continue; //return false;
 		}
 
@@ -218,24 +240,30 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 		for (int index=0;index<lineCount;index++) {
 			Dwarf_Unsigned lineNo;
 			if (dwarf_lineno(lineBuffer[index],&lineNo,0)!=DW_DLV_OK) {
+				close(fd);
 				return false;
 			}
 			char* lineSource;
 			if (dwarf_linesrc(lineBuffer[index],&lineSource,0)!=DW_DLV_OK) {
+				close(fd);
 				return false;
 			}
 			Dwarf_Bool isCode;
 			if (dwarf_linebeginstatement(lineBuffer[index],&isCode,0)!=DW_DLV_OK) {
+				close(fd);
 				return false;
 			}
 			Dwarf_Addr addr;
 			if (dwarf_lineaddr(lineBuffer[index],&addr,0)!=DW_DLV_OK) {
+				close(fd);
 				return false;
 			}
 
 			if (lineNo&&isCode) {
-				struct addrToLine newLine = { (int) addr, (int) lineNo, normalize(lineSource) };
-				addrToLineList.push_back(newLine);
+				// wrap line_number and source_file into an object
+				SourceLine tmp_sl(normalize(lineSource), lineNo);
+				// store SourceLine object with static instr in the map
+				instr_to_sourceline.insert(std::make_pair(addr, tmp_sl));
 			}
 
 			dwarf_dealloc(dbg,lineSource,DW_DLA_STRING);
@@ -250,7 +278,28 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<addrToLine>& addr
 
 	// Shut down libdwarf
 	if (dwarf_finish(dbg,0)!=DW_DLV_OK) {
+		close(fd);
 		return false;
+	}
+
+	// iterate instr_to_sourceline to determine the "line_range_size" for mapping
+	std::map<unsigned, SourceLine>::iterator it;
+	for (it = instr_to_sourceline.begin(); it != instr_to_sourceline.end(); it++) {
+		unsigned addr = it->first;
+		SourceLine sl = it->second;
+
+		/* Default the linetable's address range (->"size") to the maximum
+		 * possible value. This results in the last linetable entry having
+		 * maximum range. This entry will either be a dummy or a function's
+		 * epilogue, both of which are irrelevant for our (current) use cases.
+		 * All other entries' sizes are set properly. */
+		DwarfLineMapping mapping(addr, (std::numeric_limits<unsigned>::max() - addr),
+			sl.line_number, sl.source_file);
+		if (!lineMapping.empty()) {
+			DwarfLineMapping& back = lineMapping.back();
+			back.line_range_size = addr - back.absolute_addr;
+		}
+		lineMapping.push_back(mapping);
 	}
 
 	close(fd);

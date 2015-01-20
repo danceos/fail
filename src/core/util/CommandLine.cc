@@ -43,8 +43,13 @@ bool CommandLine::parse() {
 	option::Descriptor desc = {0, 0, 0, 0, 0, 0};
 	this->options.push_back(desc);
 
-	// Generate the options stats
-	option::Stats stats(this->options.data(), argv.size(), argv.data());
+	// Copy argv to preserve original argument order
+	// (for proper re-parsing after adding more options)
+	argv_reordered = argv;
+
+	// Generate the options stats (GNU mode)
+	option::Stats stats(true, this->options.data(),
+		argv_reordered.size(), argv_reordered.data());
 
 	if (parsed_options)
 		delete[] parsed_options;
@@ -56,9 +61,9 @@ bool CommandLine::parse() {
 	parsed_options = new option::Option[stats.options_max];
 	parsed_buffer  = new option::Option[stats.buffer_max];
 
-	m_parser = new option::Parser(this->options.data(), argv.size(), argv.data(),
-			parsed_options, parsed_buffer);
-
+	m_parser = new option::Parser(true, this->options.data(),
+		argv_reordered.size(), argv_reordered.data(),
+		parsed_options, parsed_buffer);
 
 	// Pop the terminating entry
 	this->options.pop_back();

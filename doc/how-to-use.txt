@@ -53,6 +53,34 @@ based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
 Example experiments and code snippets
 =========================================================================================
 
+Experiment "weather-monitor":
+**********************************************************************
+An example of a DatabaseCampaign with separate experiment.
+ 1. Add "weather-monitor" to EXPERIMENTS_ACTIVATED,
+    add "tracing" to PLUGINS_ACTIVATED
+ 2. Enable BUILD_IMPORT_TRACE, BUILD_PRUNE_TRACE, CONFIG_EVENT_BREAKPOINTS,
+	CONFIG_EVENT_BREAKPOINTS_RANGE, CONFIG_EVENT_GUESTSYS, CONFIG_EVENT_MEMREAD,
+	CONFIG_EVENT_MEMWRITE, CONFIG_EVENT_TRAP, CONFIG_SR_RESTORE and CONFIG_SR_SAVE
+	The options BUILD_BOCHS, BUILD_X86	are needed as well, but are defaults.
+ 3. In weather-monitor/experimentInfo.hpp set "PREREQUISITES" to 1 and build
+    Fail*/Bochs using e.g. fail/scripts/rebuild-bochs.sh (-> how-to-build.txt).
+	Upon minor changes (i.e. not e.g. to aspects), append " -" to the call to
+	the script. This will rebuild only parts that changed.
+ 4. Enter experiment_targets/weathermonitor and run:
+		find . -name "*.bz2" -execdir bunzip2 -k {} +
+	This extracts all the bzipped files in place while keeping the archives.
+ 5. In order to record a trace, run the following:
+		fail-client -q -Wf,--benchmark=weather -Wf,--variant=vanilla
+	"variant" is used to find the .elf/.vmi inside oostubs/!
+	The resulting trace thereafter lies within prerequisites/, it's name
+	being VARIANT.trace
+ 6. Use "import-trace" (using correct -b & -v, -t is VARIANT.trace) to get the
+    trace into the database and "prune-trace" to (obviously) prune the data.
+ 7. Change PREREQUISITES (see 5) back to "0" and rebuild Fail*/Bochs.
+ 8. Run the "weather-monitor-server" (Don't forget -v & -b!) and "fail-client -q"
+    from within experiment_targets/weathermonitor/.
+	You'll need several clients to finish the campaign.
+
 Experiment "hsc-simple":
 **********************************************************************
 A simple standalone experiment (without a separate campaign). To compile this
@@ -169,6 +197,37 @@ instantiating the generic DatabaseCampaign.  The general workflow is as follows:
    created result table with columns corresponding to the fields in the Result
    group of the protobuf message.
 
+Experiment "weather-monitor" with gem5:
+**********************************************************************
+This experiment simulates a simple weather-station.
+To compile this experiment, the following steps are required:
+
+ 1.  Adapt fail/src/experiments/weather-monitor/experimentInfo.hpp
+ 2.  Enter ${FAIL_DIR}/build/
+ 3.  Add "weather-monitor" to ccmake's EXPERIMENTS_ACTIVATED.
+ 4.  Add "tracing" to ccmake's PLUGINS_ACTIVATED.
+ 5.  Enable BUILD_ARM, BUILD_GEM5, BUILD_IMPORT_TRACE, BUILD_PRUNE_TRACE,
+     CONFIG_EVENT_BREAKPOINTS, CONFIG_EVENT_BREAKPOINTS_RANGE, CONFIG_EVENT_GUESTSYS,
+     CONFIG_EVENT_MEMREAD, CONFIG_EVENT_MEMWRITE, CONFIG_EVENT_TRAP, CONFIG_SR_RESTORE
+     and CONFIG_SR_SAVE.
+ 6.  Enable STEP1 in fail/src/experiments/weather-monitor/experiment.cc
+ 7.  Build Fail* and gem5, see "how-to-build.txt" for details.
+ 8.  Start the gem5-fail-client by typing
+     "../scripts/run-gem5.sh ../../experiment_targets/weathermonitor_arm/weather.elf
+     weathermonitor_arm/weather.elf"
+ 9.  Import the trace with
+     "import-trace -t trace.tc.weather -d YOUR_DB -v baseline -b weather -i
+     BasicImporter -e ../../experiment_targets/weathermonitor_arm/weather.elf
+     --faultspace-rightmargin W"
+ 10. Prune the trace with
+     "prune-trace -d YOUR_DB -v baseline -b weather"
+ 11.  Enable STEP3 in fail/src/experiments/weather-monitor/experiment.cc
+ 12. Build Fail* and gem5, see "how-to-build.txt" for details.
+ 13. Start the campaign-server
+     "bin/weather-monitor-server -v baseline -b weather"
+ 14. Start the gem5-fail-client by typing
+     "../scripts/run-gem5.sh ../../experiment_targets/weathermonitor_arm/weather.elf
+
 =========================================================================================
 Parallelization
 =========================================================================================
@@ -206,6 +265,7 @@ themselves, they contain some documentation):
  - multiple-clients.sh: Is run on an experiment host by runcampaign.sh,
                         starts several instances of client.sh in a tmux session.
  - client.sh: (Repeatedly) Runs a single fail-client instance.
+ - run-gem5.sh: Runs a single gem5-fail-client instance.
 
 
 Some useful things to note:
@@ -239,6 +299,11 @@ Steps to run an experiment with gem5:
         ./disks/boot.arm              # the ARM bootloader (FIXME: dito)
  4. Run gem5 in  $FAIL_DIR/simulators/gem5/  with:
       $ M5_PATH=$SYSTEM build/ARM/gem5.debug configs/example/fs.py --bare-metal --kernel kernelname
+
+Step 4 has been encapsulated in a shell script:
+ 1. Enter ${FAIL_DIR}/build/
+ 2. Run the run-gem5.sh script with the path of the elf-binary
+    ../scripts/run-gem5.sh path-to-elf-binary
 
 =========================================================================================
 Steps to run an experiment with the pandaboard/openocd backend:

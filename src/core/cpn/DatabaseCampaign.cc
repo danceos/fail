@@ -114,12 +114,15 @@ bool DatabaseCampaign::run() {
 	boost::thread collect_thread(&DatabaseCampaign::collect_result_thread, this);
 #endif
 
-	load_completed_pilots();
-
 	std::vector<Database::Variant> variantlist =
 		db->get_variants(variants, variants_exclude, benchmarks, benchmarks_exclude);
+
+	// Which Pilots were already processed?
+	load_completed_pilots(variantlist);
+
 	for (std::vector<Database::Variant>::const_iterator it = variantlist.begin();
 		 it != variantlist.end(); ++it) {
+		// Push all other variants to the queue
 		if (!run_variant(*it)) {
 			log_send << "run_variant failed for " << it->variant << "/" << it->benchmark <<std::endl;
 			return false;
@@ -165,7 +168,7 @@ void DatabaseCampaign::collect_result_thread() {
 
 bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
-	int experiment_count;
+	unsigned long experiment_count;
 	std::stringstream ss;
 	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
@@ -252,14 +255,29 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 }
 
-void DatabaseCampaign::load_completed_pilots()
+void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &variants)
 {
+	// If no variants were given, do nothing
+	if (variants.size() == 0)
+		return;
+
 	// load list of partially or completely finished pilots
+	std::stringstream variant_str;
+	bool comma = false;
+	for (std::vector<Database::Variant>::const_iterator it = variants.begin();
+		 it != variants.end(); ++it) {
+		if (comma) variant_str << ", ";
+		variant_str << it->id;
+		comma = true; // Next time we need a comma
+	}
+	log_send << "loading completed pilot IDs ..." << std::endl;
+
 	std::stringstream sql;
-	sql << "SELECT pilot_id, COUNT(*) FROM " << db_connect.result_table()
+	sql << "SELECT pilot_id, COUNT(*) FROM fsppilot p"
+	    << " JOIN " << db_connect.result_table() << " r ON r.pilot_id = p.id"
+	    << " WHERE variant_id in (" << variant_str.str() << ")"
 	    << " GROUP BY pilot_id ";
 	MYSQL_RES *ids = db->query_stream(sql.str().c_str());
-	log_send << "loading completed pilot IDs ..." << std::endl;
 	MYSQL_ROW row;
 	unsigned rowcount = 0;
 	while ((row = mysql_fetch_row(ids)) != 0) {

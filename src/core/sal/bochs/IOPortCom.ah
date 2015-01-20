@@ -12,29 +12,33 @@
 #include "../SALInst.hpp"
 #include "BochsHelpers.hpp"
 
-// TODO: ATM only capturing bytewise output (most common, I suppose)
+// FIXME ATM only capturing the first byte of a multi-byte in/out
 
 aspect IOPortCom {
-	pointcut outInstruction() = "% ...::bx_cpu_c::OUT_DXAL(...)";
+	pointcut devices_outp() = "% ...::bx_devices_c::outp(...)";
 
-	advice execution (outInstruction()) : after ()
+	advice call (devices_outp()) && within ("...::bx_cpu_c") : before ()
 	{
-		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
-		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
-		
-		// Detect the CPU that triggered the change:
+		unsigned port = *(tjp->arg<0>());
+		unsigned data = *(tjp->arg<1>());
+
+		// detect the CPU that triggered the access
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
-		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, true);
+		// forward to SimulatorController
+		fail::simulator.onIOPort(&triggerCPU, data, port, true);
 	}
 
-	pointcut inInstruction() = "% ...::bx_cpu_c::IN_ALDX(...)";
+	pointcut devices_inp() = "% ...::bx_devices_c::inp(...)";
 
-	advice execution (inInstruction()) : after ()
+	advice call (devices_inp()) && within ("...::bx_cpu_c") : after ()
 	{
-		unsigned rDX = getCPU(tjp->that())->gen_reg[2].word.rx; // port number
-		unsigned char rAL = getCPU(tjp->that())->gen_reg[0].word.byte.rl; // data
+		unsigned port = *(tjp->arg<0>());
+		unsigned data = *(tjp->result());
+
+		// detect the CPU that triggered the access
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
-		fail::simulator.onIOPort(&triggerCPU, rAL, rDX, false);
+		// forward to SimulatorController
+		fail::simulator.onIOPort(&triggerCPU, data, port, false);
 	}
 };
 

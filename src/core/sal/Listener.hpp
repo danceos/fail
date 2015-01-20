@@ -749,9 +749,20 @@ public:
 	void setId(timer_id_t id) { m_Data.setId(id); }
 	/**
 	 * Retrieves the timer's timeout value.
-	 * @return the timout in microseconds
+	 * @return the timeout in microseconds
 	 */
 	unsigned getTimeout() const { return m_Timeout; }
+	/**
+	 * Set the timeout value. Returns the old timeout value. Be aware,
+	 * that this method might have no effects, after the listener was added.
+	 * @return the old timeout in microseconds
+	 */
+	unsigned setTimeout(unsigned timeout) {
+		unsigned tmp = m_Timeout;
+		m_Timeout = timeout;
+		return tmp;
+	}
+
 };
 
 } // end-of-namespace: fail

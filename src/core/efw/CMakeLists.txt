@@ -4,10 +4,12 @@ set(SRCS
 	ExperimentFlow.hpp
 	JobClient.hpp
 	JobClient.cc
+	DatabaseExperiment.hpp
+	DatabaseExperiment.cc
 )
 
 add_library(fail-efw ${SRCS})
-add_dependencies(fail-efw fail-comm)
+add_dependencies(fail-efw fail-protoc)
 target_link_libraries(fail-efw fail-comm)
 target_link_libraries(fail-efw fail-util) # WallclockTimer
 
