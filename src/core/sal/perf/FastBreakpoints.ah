@@ -65,12 +65,12 @@ aspect FastBreakpoints {
 		// Check for matching BPSingleListeners:
 		fail::ResultSet& res1 = ref.getSingleListeners().gather(&tmp);
 		while (res1.hasMore())
-			ref.makeActive(ref.dereference(res1.getNext()));
+			ref.makeActive(res1.getNext());
 
 		// Check for matching BPRangeListeners:
 		fail::ResultSet& res2 = ref.getRangeListeners().gather(&tmp);
 		while (res2.hasMore())
-			ref.makeActive(ref.dereference(res2.getNext()));
+			ref.makeActive(res2.getNext());
 
 		ref.triggerActiveListeners();
 	}

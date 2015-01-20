@@ -16,7 +16,7 @@ ResultSet& PerfVectorBreakpoints::gather(BPEvent* pData)
 			// Update trigger IPtr:
 			pLi->setTriggerInstructionPointer(pData->getTriggerInstructionPointer());
 			pLi->setTriggerCPU(pData->getTriggerCPU());
-			res.add(*it);
+			res.add(pLi);
 		}
 	}
 	return res;

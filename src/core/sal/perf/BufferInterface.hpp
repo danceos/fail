@@ -44,14 +44,15 @@ public:
  * Results (= indices of matching listeners) returned by the "gather"-method,
  * see below. (This class can be seen as a "temporary fire-list".)
  */
+class BaseListener;
 class ResultSet {
 private:
-	std::vector<index_t> m_Res; //!< vector of matching listener indices
+	std::vector<BaseListener *> m_Res; //!< vector of pointers to matching listeners
 public:
 	ResultSet() { }
 	bool hasMore() const { return !m_Res.empty(); }
-	index_t getNext() { index_t idx = m_Res.back(); m_Res.pop_back(); return idx; }
-	void add(index_t idx) { m_Res.push_back(idx); }
+	BaseListener *getNext() { BaseListener *l = m_Res.back(); m_Res.pop_back(); return l; }
+	void add(BaseListener *l) { m_Res.push_back(l); }
 	size_t size() const { return m_Res.size(); }
 	void clear() { m_Res.clear(); }
 };
