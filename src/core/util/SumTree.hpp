@@ -4,10 +4,11 @@
 #include <assert.h>
 #include <stdint.h>
 #include <vector>
+#include <stack>
 
 // The SumTree implements an efficient tree data structure for
 // "roulette-wheel" sampling, or "sampling with fault expansion", i.e.,
-// sampling of trace entries / pilots without replacement and with a
+// sampling of trace entries / pilots with/without replacement and with a
 // picking probability proportional to the entries' sizes.
 //
 // For every sample, the naive approach picks a random number between 0
@@ -24,9 +25,9 @@
 //
 // Note that the current implementation is built for a pure growth phase
 // (when the tree gets filled with pilots from the database), followed by
-// a sampling phase when the tree gets emptied.  It does not handle a
-// mixed add/remove case very smartly, although it should remain
-// functional.
+// a sampling phase when the tree gets sampled from (with replacement) or
+// emptied (without replacement).  It does not handle a mixed add/remove case
+// very smartly, although it should remain functional.
 
 namespace fail {
 
@@ -44,6 +45,64 @@ class SumTree {
 		std::vector<T> elements;
 	};
 
+public:
+	//! Iterator
+	class TreeIterator : public std::iterator<std::input_iterator_tag, T> {
+		//! Buckets and corresponding element indexes down the tree
+		std::stack<std::pair<Bucket *, unsigned> > hierarchy;
+	public:
+		TreeIterator() {}
+//MyIterator(int* x) :p(x) {}
+		TreeIterator(const TreeIterator& i) : hierarchy(i.hierarchy) { }
+		TreeIterator(const SumTree<T, BUCKETSIZE>& tree)
+		{
+			// go down until we see leaves
+			hierarchy.push(std::pair<Bucket *, unsigned>(tree.m_root, 0));
+			while (!hierarchy.top().first->elements.size() && hierarchy.top().first->children.size() > 0) {
+				hierarchy.push(std::pair<Bucket *, unsigned>(hierarchy.top().first->children[hierarchy.top().second], 0));
+			}
+		}
+		TreeIterator& operator++()
+		{
+			// advance index in the current level
+			hierarchy.top().second++;
+			if (hierarchy.top().second < hierarchy.top().first->elements.size()) {
+				return *this;
+			}
+			// current level is exhausted, go back up to a not yet finished level
+			do {
+				hierarchy.pop();
+			} while (!hierarchy.empty()
+				&& ++hierarchy.top().second >= hierarchy.top().first->children.size());
+			// at the end?
+			if (hierarchy.empty()) {
+				return *this;
+			}
+			// go down until we see leaves again
+			do {
+				hierarchy.push(std::pair<Bucket *, unsigned>(hierarchy.top().first->children[hierarchy.top().second], 0));
+			} while (!hierarchy.top().first->elements.size() && hierarchy.top().first->children.size() > 0);
+			return *this;
+		}
+		TreeIterator operator++(int) { TreeIterator tmp(*this); operator++(); return tmp; }
+	    bool operator==(const TreeIterator& rhs) { return hierarchy == rhs.hierarchy; }
+		bool operator!=(const TreeIterator& rhs) { return hierarchy != rhs.hierarchy; }
+		T& operator*() { return hierarchy.top().first->elements[hierarchy.top().second]; }
+		T *operator->() { return &(operator*()); }
+	};
+	typedef TreeIterator iterator;
+
+	iterator begin()
+	{
+		return iterator(*this);
+	}
+
+	iterator end()
+	{
+		return iterator();
+	}
+
+private:
 	//! Root node
 	Bucket *m_root;
 	//! Tree depth: nodes at level m_depth are leaf nodes, others are inner nodes
@@ -51,17 +110,21 @@ class SumTree {
 public:
 	SumTree() : m_root(new Bucket), m_depth(0) {}
 	~SumTree() { delete m_root; }
-	//! Adds a new element to the tree.
+	//! Adds a copy of a new element to the tree.  The copy is created internally.
 	void add(const T& element);
-	//! Retrieves (and removes) element at random number position.
-	T get(typename T::size_type pos) { return get(pos, m_root, 0); }
+	//! Retrieves and removes element at random number position.
+	T remove(typename T::size_type pos) { return remove(pos, m_root, 0); }
+	//! Retrieves reference to element at random number position.
+	T& get(typename T::size_type pos) { return get(pos, m_root, 0); }
 	//! Yields the sum over all elements in the tree.
 	typename T::size_type get_size() const { return m_root->size; }
 private:
 	//! Internal, recursive version of add().
 	bool add(Bucket **node, const T& element, unsigned depth_remaining);
+	//! Internal, recursive version of remove().
+	T remove(typename T::size_type pos, Bucket *node, typename T::size_type sum);
 	//! Internal, recursive version of get().
-	T get(typename T::size_type pos, Bucket *node, typename T::size_type sum);
+	T& get(typename T::size_type pos, Bucket *node, typename T::size_type sum);
 };
 
 // template implementation
@@ -137,7 +200,7 @@ bool SumTree<T, BUCKETSIZE>::add(Bucket **node, const T& element, unsigned depth
 }
 
 template <typename T, unsigned BUCKETSIZE>
-T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename T::size_type sum)
+T SumTree<T, BUCKETSIZE>::remove(typename T::size_type pos, Bucket *node, typename T::size_type sum)
 {
 	// sanity check
 	assert(pos >= sum && pos < sum + node->size);
@@ -153,7 +216,7 @@ T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename 
 
 		// found containing bucket, recurse
 		sum -= (*it)->size;
-		T e = get(pos, *it, sum);
+		T e = remove(pos, *it, sum);
 		node->size -= e.size();
 		// remove empty (or, at least, zero-sized) child?
 		if ((*it)->size == 0) {
@@ -182,6 +245,44 @@ T SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename 
 	// this should never happen
 	assert(0);
 	return T();
+}
+
+template <typename T, unsigned BUCKETSIZE>
+T& SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename T::size_type sum)
+{
+	// sanity check
+	assert(pos >= sum && pos < sum + node->size);
+
+	// will only be entered for inner nodes
+	for (typename std::vector<Bucket *>::iterator it = node->children.begin();
+		it != node->children.end(); ) {
+		sum += (*it)->size;
+		if (sum <= pos) {
+			++it;
+			continue;
+		}
+
+		// found containing bucket, recurse
+		sum -= (*it)->size;
+		return get(pos, *it, sum);
+	}
+
+	// will only be entered for leaf nodes
+	for (typename std::vector<T>::iterator it = node->elements.begin();
+		it != node->elements.end(); ) {
+		sum += it->size();
+		if (sum <= pos) {
+			++it;
+			continue;
+		}
+
+		// found pilot
+		return *it;
+	}
+
+	// this should never happen
+	assert(0);
+	return *(new T);
 }
 
 } // namespace

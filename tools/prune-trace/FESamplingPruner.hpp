@@ -1,6 +1,7 @@
 #ifndef __FESAMPLING_PRUNER_H__
 #define __FESAMPLING_PRUNER_H__
 
+#include <stdint.h>
 #include "Pruner.hpp"
 #include "util/CommandLine.hpp"
 
@@ -15,18 +16,20 @@
 ///
 class FESamplingPruner : public Pruner {
 	fail::CommandLine::option_handle SAMPLESIZE;
+	fail::CommandLine::option_handle USE_KNOWN_RESULTS;
+	fail::CommandLine::option_handle NO_WEIGHTING;
 
-	unsigned m_samplesize;
+	uint64_t m_samplesize;
+	bool m_use_known_results, m_weighting;
 
 public:
-	FESamplingPruner() : m_samplesize(0) { }
+	FESamplingPruner() : m_samplesize(0), m_use_known_results(false), m_weighting(true) { }
 	virtual std::string method_name() { return "FESampling"; }
 	virtual bool commandline_init();
 	virtual bool prune_all();
 
 	void getAliases(std::deque<std::string> *aliases) {
 		aliases->push_back("FESamplingPruner");
-		aliases->push_back("sampling");
 	}
 
 private:

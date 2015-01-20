@@ -21,7 +21,7 @@ public:
 		const std::vector<std::string>& variants_exclude,
 		const std::vector<std::string>& benchmarks,
 		const std::vector<std::string>& benchmarks_exclude,
-		bool overwrite);
+		bool overwrite, bool incremental);
 
 	/**
 	 * Callback function that can be used to add command line options
@@ -35,6 +35,14 @@ public:
 	virtual bool clear_database();
 
 	virtual bool prune_all() = 0;
+
+	/**
+	 * Tell the pruner to work incrementally.  For example, a sampling pruner
+	 * could add more pilots to already existing ones (which already may be
+	 * associated with fault-injection results).  Returns false if the pruner
+	 * is incapable of working in the desired mode.
+	 */
+	virtual bool set_incremental(bool incremental) { return !incremental; }
 };
 
 #endif
