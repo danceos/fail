@@ -146,4 +146,17 @@ EOT
 	)
 fi
 
+if table_exists symbol
+then
+	echo -n "removing widowed entries in symbol ..."
+	echo " "$(
+	$MYSQL $DB <<EOT
+DELETE FROM symbol
+WHERE variant_id NOT IN
+(SELECT id FROM variant);
+SELECT ROW_COUNT() AS "deleted rows:";
+EOT
+	)
+fi
+
 echo "done.  Consider running \`mysqloptimize $DB' now."
