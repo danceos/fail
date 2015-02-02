@@ -49,6 +49,10 @@ bool SamplingPruner::prune_all()
 		m_use_known_results = true;
 	}
 
+	if (cmd[NO_WEIGHTING]) {
+		m_weighting = false;
+	}
+
 	// for each variant:
 	for (std::vector<fail::Database::Variant>::const_iterator it = m_variants.begin();
 		it != m_variants.end(); ++it) {
