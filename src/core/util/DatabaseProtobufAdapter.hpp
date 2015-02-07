@@ -146,7 +146,6 @@ class DatabaseProtobufAdapter {
 	};
 
 	struct TypeBridge_enum : TypeBridge {
-		int32_t size;
 		TypeBridge_enum(const google::protobuf::FieldDescriptor *desc) : TypeBridge(desc) {};
 		virtual std::string sql_type();
 		virtual void bind(MYSQL_BIND *bind, const google::protobuf::Message *msg);
