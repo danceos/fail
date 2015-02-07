@@ -108,6 +108,7 @@ private:
 	//! Tree depth: nodes at level m_depth are leaf nodes, others are inner nodes
 	unsigned m_depth;
 public:
+	T notfound; //! Returned if no element was found.
 	SumTree() : m_root(new Bucket), m_depth(0) {}
 	~SumTree() { delete m_root; }
 	//! Adds a copy of a new element to the tree.  The copy is created internally.
@@ -244,7 +245,7 @@ T SumTree<T, BUCKETSIZE>::remove(typename T::size_type pos, Bucket *node, typena
 
 	// this should never happen
 	assert(0);
-	return T();
+	return notfound;
 }
 
 template <typename T, unsigned BUCKETSIZE>
@@ -282,7 +283,7 @@ T& SumTree<T, BUCKETSIZE>::get(typename T::size_type pos, Bucket *node, typename
 
 	// this should never happen
 	assert(0);
-	return *(new T);
+	return notfound;
 }
 
 } // namespace
