@@ -105,8 +105,7 @@ void ElfReader::setup(const char* path) {
 			process_section(&sec_hdr, buff);
 		}
 	}
-	if (buff)
-		free(buff);
+	free(buff);
 
 	fclose(fp);
 
