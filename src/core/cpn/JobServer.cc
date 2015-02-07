@@ -152,6 +152,7 @@ void JobServer::run()
 	/* Listen with a backlog of maxThreads */
 	if (listen(s, m_maxThreads) == -1) {
 		perror("listen");
+		close(s);
 		// TODO: Log-level?
 		return;
 	}
@@ -165,6 +166,7 @@ void JobServer::run()
 		if (cs < 0) {
 			if (errno != EWOULDBLOCK) {
 				perror("poll/accept");
+				close(s);
 				// TODO: Log-level?
 				return;
 			} else {
