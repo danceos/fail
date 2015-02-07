@@ -173,7 +173,7 @@ class DatabaseProtobufAdapter {
 		TypeBridge_message(const google::protobuf::FieldDescriptor *desc,
 						   const google::protobuf::Descriptor *msg_type,
 						   TypeBridge_message *parent)
-			: TypeBridge(desc), msg_type(msg_type), parent(parent) {
+			: TypeBridge(desc), msg_type(msg_type), field_count(0), selector(0), parent(parent) {
 			if (parent)
 				nesting_level = parent->nesting_level+1;
 			else
