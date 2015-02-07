@@ -137,7 +137,7 @@ void JobServer::run()
 	}
 
 	/* IPv4, bind to all interfaces */
-	struct sockaddr_in saddr;
+	struct sockaddr_in saddr = {0};
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(m_port);
 	saddr.sin_addr.s_addr = htons(INADDR_ANY);
