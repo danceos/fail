@@ -19,6 +19,8 @@ DatabaseProtobufAdapter::TypeBridge::TypeBridge(const FieldDescriptor *desc)
 	if (desc) { // top-level type bridge has no desc pointer
 		const FieldOptions& field_options = desc->options();
 		this->primary_key = field_options.GetExtension(sql_primary_key);
+	} else { // initialize top-level type bridge, too
+		primary_key = false;
 	}
 }
 
