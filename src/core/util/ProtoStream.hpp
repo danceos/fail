@@ -34,7 +34,7 @@ namespace fail {
  */
 class ProtoOStream {
 private:
-	uint32_t m_size; // TODO: comments needed here
+	// TODO: comments needed here
 	Logger m_log;
 	std::ostream* m_outfile;
 public:
@@ -56,8 +56,7 @@ public:
  */
 class ProtoIStream {
 private:
-	uint32_t m_size; // TODO: comments needed here
-	long m_sizeOfInfile;
+	// TODO: comments needed here
 	Logger m_log;
 	std::istream *m_infile;
 public:

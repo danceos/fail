@@ -11,7 +11,7 @@ ProtoOStream::ProtoOStream(std::ostream *outfile) : m_outfile(outfile)
 
 bool ProtoOStream::writeMessage(google::protobuf::Message *m)
 {
-	m_size = htonl(m->ByteSize());
+	uint32_t m_size = htonl(m->ByteSize());
 	m_outfile->write(reinterpret_cast<char*>(&m_size), sizeof(m_size));
 
 	if (m_outfile->bad()) {
@@ -40,6 +40,7 @@ void ProtoIStream::reset()
 
 bool ProtoIStream::getNext(google::protobuf::Message *m)
 {
+	uint32_t m_size;
 	m_infile->read(reinterpret_cast<char*>(&m_size), sizeof(m_size));
 	if (!m_infile->good())
 		return false;
