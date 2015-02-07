@@ -138,7 +138,7 @@ bool DatabaseExperiment::run()
 			}
 
 			address_t injection_instr_absolute = fsppilot->injection_instr_absolute();
-			bool found_eip;
+			bool found_eip = false;
 			for (int i = 0; i < BX_SMP_PROCESSORS; i++) {
 				address_t eip = simulator.getCPU(i).getInstructionPointer();
 				if (eip == injection_instr_absolute) {
