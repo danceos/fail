@@ -175,7 +175,10 @@ int main(int argc, char *argv[]) {
 	}
 	// Since the importer might have added command line options, we need to
 	// reparse all arguments.
-	cmd.parse();
+	if (!cmd.parse()) {
+		std::cerr << "Error parsing arguments." << std::endl;
+		exit(-1);
+	}
 
 	if (cmd[HELP] || cmd[UNKNOWN] || cmd.parser()->nonOptionsCount() > 0) {
 		for (option::Option* opt = cmd[UNKNOWN]; opt; opt = opt->next()) {
