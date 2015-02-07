@@ -280,7 +280,7 @@ std::string Database::escape_string(const std::string unescaped_string) {
 
 	std::string result = temp;
 
-	delete temp;
+	delete[] temp;
 
 	return result;
 }
