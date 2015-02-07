@@ -119,7 +119,10 @@ protected:
 	 */
 	bool sanitycheck(std::string check_name, std::string fail_msg, std::string sql);
 public:
-	Importer() : m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), m_row_count(0), m_time_trace_start(0) {}
+	Importer() : m_variant_id(0), m_elf(NULL), m_mm(NULL), m_faultspace_rightmargin('W'),
+		m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), db(NULL),
+		m_extended_trace_regs(NULL), m_row_count(0), m_time_trace_start(0),
+		m_last_ip(0), m_last_instr(0), m_last_time(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	/**

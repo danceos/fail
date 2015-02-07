@@ -44,7 +44,8 @@ class AdvancedMemoryImporter : public MemoryImporter {
 	void insert_delayed_entries(bool finalizing);
 
 public:
-	AdvancedMemoryImporter() : m_last_was_conditional_branch(false) {}
+	AdvancedMemoryImporter() : m_last_was_conditional_branch(false),
+		m_ip_jump_not_taken(0), m_cur_branchmask(0) {}
 
 protected:
 	virtual std::string database_additional_columns();
