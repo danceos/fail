@@ -176,8 +176,10 @@ std::vector<char> EcosKernelTestExperiment::loadFile(std::string filename)
 	fseek(f, 0, SEEK_END);
 	long len = ftell(f);
 	fseek(f, 0, SEEK_SET);
-	data.resize(len);
-	fread(&data[0], len, 1, f);
+	if (len > 0) {
+		data.resize(len);
+		fread(&data[0], len, 1, f);
+	}
 	fclose(f);
 	return data;
 }
