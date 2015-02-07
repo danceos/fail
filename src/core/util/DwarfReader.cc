@@ -232,8 +232,13 @@ bool DwarfReader::read_mapping(std::string fileName, std::list<DwarfLineMapping>
 		Dwarf_Line* lineBuffer;
 		Dwarf_Signed lineCount;
 		if (dwarf_srclines(die,&lineBuffer,&lineCount,0)!=DW_DLV_OK) {
+#if 0
 			close(fd);
-			continue; //return false;
+			return false;
+#else
+			// Richard decided this case is OK
+			continue;
+#endif
 		}
 
 		// Store them
