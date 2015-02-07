@@ -20,7 +20,7 @@ bool TracingPlugin::run()
 
 	// ev_step is added in the first loop iteration
 
-	if (m_tracetype | TRACE_MEM) {
+	if (m_tracetype & TRACE_MEM) {
 		simulator.addListener(&ev_mem);
 	}
 	if (m_protoStreamFile) {
@@ -35,7 +35,7 @@ bool TracingPlugin::run()
 	simtime_t prevtime = 0, curtime;
 	simtime_diff_t deltatime;
 
-	bool record_first_ipevent = m_tracetype | TRACE_IP;
+	bool record_first_ipevent = m_tracetype & TRACE_IP;
 
 	while (true) {
 		if (!record_first_ipevent) {
