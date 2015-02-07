@@ -40,9 +40,10 @@ bool CPUState::removeSuppressedInterrupt(unsigned interruptNum)
 {
 	for (size_t i = 0; i < m_SuppressedInterrupts.size(); i++) {
 		if (m_SuppressedInterrupts[i] == interruptNum+32 ||
-			m_SuppressedInterrupts[i] == ANY_INTERRUPT)
+			m_SuppressedInterrupts[i] == ANY_INTERRUPT) {
 			m_SuppressedInterrupts.erase(m_SuppressedInterrupts.begin() + i);
 			return true;
+		}
 	}
 	return false;
 }
