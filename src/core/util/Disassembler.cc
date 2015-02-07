@@ -55,7 +55,9 @@ int Disassembler::init(const char* path) {
 
 std::ostream& operator <<(std::ostream & os, const fail::Instruction & i) {
 #ifndef __puma
+	std::ios::fmtflags f(os.flags()); // save ostream state
 	os << std::hex << ((int)(i.address)) << "\t" << i.opcode << "\t" << i.instruction << "\t" << i.comment;
+	os.flags(f); // restore ostream state
 #endif
 	return os;
 }
