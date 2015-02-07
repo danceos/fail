@@ -18,7 +18,7 @@ bx_bool interrupt_injection_request = false;
 
 BochsController::BochsController()
 	: SimulatorController(new BochsMemoryManager()),
-	  m_CPUContext(NULL), m_CurrentInstruction(NULL)
+	  m_CurrFlow(NULL), m_CPUContext(NULL), m_CurrentInstruction(NULL)
 {
 	for (unsigned i = 0; i < BX_SMP_PROCESSORS; i++)
 		addCPU(new ConcreteCPU(i));
