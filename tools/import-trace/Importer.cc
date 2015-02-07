@@ -428,9 +428,16 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 		return false;
 	}
 
-	// replace trailing ",\s*$" with ")"
+	// replace trailing ",[^,]*$" with ")"
 	std::string value_sql_str = value_sql.str();
-	value_sql_str[value_sql_str.find_last_of(',')] = ')';
+	size_t comma_pos = value_sql_str.find_last_of(',');
+	if (comma_pos == std::string::npos) {
+		// should never happen
+		comma_pos = value_sql_str.length();
+		LOG << "internal error: no comma found in SQL value list" << std::endl;
+	}
+	value_sql_str.resize(comma_pos + 1);
+	value_sql_str[comma_pos] = ')';
 
 	if (!db->insert_multiple(insert_sql->c_str(), value_sql_str.c_str())) {
 		LOG << "Database::insert_multiple() failed" << std::endl;
