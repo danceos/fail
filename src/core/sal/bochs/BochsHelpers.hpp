@@ -3,6 +3,7 @@
 
 #include "cpu/cpu.h"
 
+static inline BX_CPU_C *getCPU(BX_CPU_C *that) __attribute__((unused));
 static inline BX_CPU_C *getCPU(BX_CPU_C *that)
 {
 #if BX_USE_CPU_SMF == 0
