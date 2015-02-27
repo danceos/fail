@@ -13,10 +13,30 @@
 #include "../SALInst.hpp"
 
 aspect RestoreState {
-	pointcut restoreState()  = "void bx_sr_after_restore_state()";
+	pointcut restoreState() = "void bx_sr_after_restore_state()";
+	pointcut cpuLoop()  = "void defineCPULoopJoinPoint(...)";
 
 	advice execution (restoreState()) : after ()
 	{
+		// did the experiment trigger this restore?
+		if (fail::restore_bochs_request) {
+			fail::restore_bochs_request = false;
+			fail::restore_bochs_finished = true;
+		}
+	}
+
+	// Make sure the "RestoreState" aspect comes *after* the breakpoint stuff
+	// to create a simulator / experiment state very similar to when the state
+	// was saved.  In an "after" advice this means it must get a *higher*
+	// precedence, therefore it's first in the order list.
+	advice execution (cpuLoop()) : order ("RestoreState", "Breakpoints");
+
+	advice execution (cpuLoop()) : after ()
+	{
+		if (!fail::restore_bochs_finished) {
+			return;
+		}
+		fail::restore_bochs_finished = false;
 		std::cout << "[FAIL] Restore finished" << std::endl;
 		// TODO: Log-Level?
 		fail::simulator.restoreDone();

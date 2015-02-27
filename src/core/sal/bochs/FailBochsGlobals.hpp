@@ -9,6 +9,7 @@ namespace fail {
 
 #ifdef DANCEOS_RESTORE
 extern bx_bool restore_bochs_request;
+extern bx_bool restore_bochs_finished;
 extern bx_bool save_bochs_request;
 extern std::string sr_path;
 #endif

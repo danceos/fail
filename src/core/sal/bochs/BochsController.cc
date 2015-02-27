@@ -9,6 +9,7 @@ namespace fail {
 
 #ifdef DANCEOS_RESTORE
 bx_bool restore_bochs_request = false;
+bx_bool restore_bochs_finished = false;
 bx_bool save_bochs_request    = false;
 std::string  sr_path          = "";
 #endif
@@ -106,6 +107,7 @@ void BochsController::restore(const std::string& path)
 {
 	clearListeners();
 	restore_bochs_request = true;
+	restore_bochs_finished = false;
 	BX_CPU(0)->async_event |= 1;
 	sr_path = path;
 	m_CurrFlow = m_Flows.getCurrent();
@@ -114,7 +116,6 @@ void BochsController::restore(const std::string& path)
 
 void BochsController::restoreDone()
 {
-	restore_bochs_request = false;
 	m_Flows.toggle(m_CurrFlow);
 }
 
