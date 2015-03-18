@@ -349,11 +349,11 @@ bool CoredVoter::run() {
             // Fast forward to injection address
 			m_log << "Trying to inject @ instr #" << dec << injection_instr << endl;
 
-			if ((injection_instr + 2) > 0) {
+			if (injection_instr > 0) {
 				simulator.clearListeners();
                 BPSingleListener bp;
 				bp.setWatchInstructionPointer(ANY_ADDR);
-				bp.setCounter(injection_instr + 2); // FIXME: FISHY!
+				bp.setCounter(injection_instr);
 				simulator.addListener(&bp);
 
                 fail::BaseListener * listener = simulator.resume();

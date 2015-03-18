@@ -161,7 +161,7 @@ bool KESOrefs::run()
 
                 BPSingleListener bp;
 				bp.setWatchInstructionPointer(ANY_ADDR);
-				bp.setCounter(injection_instr + 1);
+				bp.setCounter(injection_instr);
 				simulator.addListener(&bp);
 
 				bool inject = true;
