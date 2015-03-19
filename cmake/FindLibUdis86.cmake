@@ -6,10 +6,10 @@
 #  LIBUDIS86_LIBRARIES - Link these to use libudis86
 #  LIBUDIS86_DEFINITIONS - Compiler switches required for using libudis86
 
-FIND_PATH(LIBUDIS86_INCLUDE_DIRS udis86.h)
+FIND_PATH(LIBUDIS86_INCLUDE_DIRS udis86.h PATHS ${LIBUDIS86_PREFIX_DIR}/include)
 
 FIND_LIBRARY(LIBUDIS86_LIBRARIES NAMES udis86
-	PATHS /usr/lib /usr/local/lib /opt/local/lib
+	PATHS /usr/lib /usr/local/lib /opt/local/lib ${LIBUDIS86_PREFIX_DIR}/lib
 	ENV LIBRARY_PATH   # PATH and LIB will also work
 	ENV LD_LIBRARY_PATH)
 
