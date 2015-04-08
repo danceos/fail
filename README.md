@@ -132,11 +132,25 @@ Publications about FAIL*
 Selected publications using FAIL*
 ---------------------------------
 
+- C. Dietrich, M. Hoffmann, and D. Lohmann. Cross-kernel control-flow-graph
+  analysis for event-driven real-time systems. In Proceedings of the 2015 ACM
+  SIGPLAN/SIGBED Conference on Languages, Compilers and Tools for Embedded
+  Systems (LCTES '15), New York, NY, USA, June 2015. ACM Press. To appear.
+
+- H. Schirmeier, C. Borchert, and O. Spinczyk. Avoiding pitfalls in
+  fault-injection based comparison of program susceptibility to soft errors. In
+  Proceedings of the 45th IEEE/IFIP International Conference on Dependable
+  Systems and Networks (DSN '15). IEEE Computer Society Press, June 2015. To
+  appear.
+
 - M. Hoffmann, F. Lukas, C. Dietrich, and D. Lohmann. dOSEK: The design and
   implementation of a dependability-oriented static embedded kernel. In
   Proceedings of the 21st IEEE Real-Time and Embedded Technology and
   Applications (RTAS '15), Los Alamitos, CA, USA, Apr. 2015. IEEE Computer
   Society Press.
+
+- Christian Dietrich and Daniel Lohmann. The dataref versuchung. ACM Operating
+  Systems Review, pages 1–10, 2015.
 
 - M. Hoffmann, P. Ulbrich, C. Dietrich, H. Schirmeier, D. Lohmann, and W.
   Schröder-Preikschat. Experiences with software-based soft-error mitigation
@@ -152,6 +166,13 @@ Selected publications using FAIL*
   evolutionary pruning. In Proceedings of the 33rd International Conference on
   Computer Safety, Reliability and Security (SAFECOMP '14), Lecture Notes in
   Computer Science, pages 17–32. Springer-Verlag, Sept. 2014.
+
+- Björn Döbel. Operating System Support for Redundant Multithreading.
+  Dissertation, Technische Universität Dresden, August 2014.
+
+- Peter Ulbrich. Ganzheitliche Fehlertoleranz in eingebetteten
+  Softwaresystemen. Dissertation, Friedrich-Alexander-Universität
+  Erlangen-Nürnberg, August 2014.
 
 - M. Hoffmann, C. Borchert, C. Dietrich, H. Schirmeier, R. Kapitza, O.
   Spinczyk, and D. Lohmann. Effectiveness of fault detection mechanisms in
@@ -190,7 +211,7 @@ Selected publications using FAIL*
 
 - C. Borchert, H. Schirmeier, and O. Spinczyk. Generative
   software-based memory error detection and correction for operating
-  system data structures. In Proceedings of the 43nd IEEE/IFIP
+  system data structures. In Proceedings of the 43rd IEEE/IFIP
   International Conference on Dependable Systems and Networks (DSN
   '13). IEEE Computer Society Press, June 2013.
 
