@@ -160,8 +160,7 @@ bool VEZSExperiment::run()
                 BPSingleListener bp;
 				bp.setWatchInstructionPointer(ANY_ADDR);
 				
-				// Fix offset by 1 error
-				bp.setCounter(injection_instr + 1);
+				bp.setCounter(injection_instr);
 				
 				simulator.addListener(&bp);
 

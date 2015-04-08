@@ -109,28 +109,29 @@ bool DatabaseExperiment::run()
 
 			simulator.clearListeners();
 
-			// Generate an experiment listener, that matches on any IP
-			// event. It is used to forward to the injection
-			// point. The +1 is needed, since even for the zeroth
-			// dynamic instruction we need at least one breakpoint
-			// event.
-			BPSingleListener bp;
-			bp.setWatchInstructionPointer(ANY_ADDR);
-			bp.setCounter(injection_instr + 1);
-			simulator.addListener(&bp);
-
 			if (!this->cb_before_fast_forward()) {
 				continue;
 			}
-			fail::BaseListener * listener;
-			while (true) {
-				listener = simulator.resume();
-				if (listener == &bp) {
-					break;
-				} else {
-					bool should_continue = this->cb_during_fast_forward(listener);
-					if (!should_continue)
-						break; // Stop fast forwarding
+
+			// Do we need to fast-forward at all?
+			if (injection_instr > 0) {
+				// Create a listener that matches any IP event. It is used to
+				// forward to the injection point.
+				BPSingleListener bp;
+				bp.setWatchInstructionPointer(ANY_ADDR);
+				bp.setCounter(injection_instr);
+				simulator.addListener(&bp);
+
+				fail::BaseListener * listener;
+				while (true) {
+					listener = simulator.resume();
+					if (listener == &bp) {
+						break;
+					} else {
+						bool should_continue = this->cb_during_fast_forward(listener);
+						if (!should_continue)
+							break; // Stop fast forwarding
+					}
 				}
 			}
 			if (!this->cb_after_fast_forward(listener)) {

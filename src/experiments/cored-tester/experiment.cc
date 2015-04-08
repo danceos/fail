@@ -321,18 +321,22 @@ bool CoredTester::run() {
 			simulator.addListener(&l_fail_trace);
 
 			BPSingleListener bp;
-			bp.setWatchInstructionPointer(ANY_ADDR);
-			// TODO: why does this need a +1?
-			bp.setCounter(injection_instr+1);
-			simulator.addListener(&bp);
-
-			fail::BaseListener * listener = simulator.resume();
+			fail::BaseListener *listener = 0;
 			bool ok = true;
 
-			while ( ok && (listener == &l_fail_trace) ) {
-				// m_log << "CP IP 0x" << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
-				ok = cpoint.check(s_fail_trace, l_fail_trace.getTriggerInstructionPointer()) == Checkpoint::IDENTICAL;
-				if(ok) listener = simulator.addListenerAndResume(&l_fail_trace);
+			// do we have to fast-forward at all?
+			if (injection_instr > 0) {
+				bp.setWatchInstructionPointer(ANY_ADDR);
+				bp.setCounter(injection_instr);
+				simulator.addListener(&bp);
+
+				listener = simulator.resume();
+
+				while ( ok && (listener == &l_fail_trace) ) {
+					// m_log << "CP IP 0x" << std::hex << simulator.getCPU(0).getInstructionPointer() << std::endl;
+					ok = cpoint.check(s_fail_trace, l_fail_trace.getTriggerInstructionPointer()) == Checkpoint::IDENTICAL;
+					if(ok) listener = simulator.addListenerAndResume(&l_fail_trace);
+				}
 			}
 
 			unsigned experiment_number = cpoint.getCount();
@@ -347,7 +351,7 @@ bool CoredTester::run() {
 
 				break;
 			}
-			if (listener != &bp) {
+			if (listener != &bp && injection_instr > 0) {
 				result = param.msg.add_result();
 				handleEvent(*result, result->NOINJECTION, "WTF");
 

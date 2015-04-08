@@ -19,13 +19,14 @@ aspect SaveState {
 	advice execution (cpuLoop()) : order ("SaveState", "Breakpoints");
 
 	advice execution (cpuLoop()) : after () {
-		if (!fail::save_bochs_request)
-			return;
-		assert(fail::sr_path.size() > 0 && "FATAL ERROR: tried to save state without valid path");
-		SIM->save_state(fail::sr_path.c_str());
-		std::cout << "[FAIL] Save finished" << std::endl;
-		// TODO: Log-Level?
-		fail::simulator.saveDone();
+		// loop allows to call save() multiple times in a row
+		while (fail::save_bochs_request) {
+			assert(fail::sr_path.size() > 0 && "FATAL ERROR: tried to save state without valid path");
+			SIM->save_state(fail::sr_path.c_str());
+			std::cout << "[FAIL] Save finished" << std::endl;
+			// TODO: Log-Level?
+			fail::simulator.saveDone();
+		}
 	}
 };
 

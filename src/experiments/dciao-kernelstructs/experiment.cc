@@ -197,7 +197,7 @@ bool DCIAOKernelStructs::run() {
 				simulator.addListener(&l_time_marker_print);
 
 				bp.setWatchInstructionPointer(ANY_ADDR);
-				bp.setCounter(injection_instr+1);
+				bp.setCounter(injection_instr);
 				simulator.addListener(&bp);
 
 				// Add vport listener
