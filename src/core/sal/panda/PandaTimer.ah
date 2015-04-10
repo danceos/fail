@@ -6,6 +6,8 @@
 
 #if defined(BUILD_PANDA)
 
+#include <assert.h>
+
 #include "../../../debuggers/openocd/openocd_wrapper.hpp"
 #include "PandaListener.hpp"
 

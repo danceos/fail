@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <stdlib.h>
 
 #include "MemoryMap.hpp"
 
