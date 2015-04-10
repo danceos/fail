@@ -114,6 +114,7 @@ bool DatabaseExperiment::run()
 			}
 
 			// Do we need to fast-forward at all?
+			fail::BaseListener *listener = 0;
 			if (injection_instr > 0) {
 				// Create a listener that matches any IP event. It is used to
 				// forward to the injection point.
@@ -122,7 +123,6 @@ bool DatabaseExperiment::run()
 				bp.setCounter(injection_instr);
 				simulator.addListener(&bp);
 
-				fail::BaseListener * listener;
 				while (true) {
 					listener = simulator.resume();
 					if (listener == &bp) {
