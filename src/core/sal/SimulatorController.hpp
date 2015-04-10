@@ -153,6 +153,11 @@ public:
 	 */
 	ConcreteCPU& getCPU(size_t id) const;
 	/**
+	 * Get the total number of CPUs.
+	 * @return the CPU count
+	 */
+	size_t getCPUCount() const { return m_CPUs.size(); }
+	/**
 	 * Returns the (constant) initialized memory manager.
 	 * @return a reference to the memory manager
 	 */
