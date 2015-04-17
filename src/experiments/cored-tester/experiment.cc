@@ -103,8 +103,10 @@ unsigned CoredTester::injectBitFlip(address_t data_address, unsigned data_width,
 			<< ") bitpos: " << bitpos
 			<< " value: 0x" << hex << setw(2) << setfill('0') << value << " -> 0x" << setw(2) << setfill('0') << injectedval
 			<< dec << endl;
-		if (reginfo.id == RID_PC)
+		if (reginfo.id == RID_PC) {
+			m_log << "Redecode current instruction" << endl;
 			redecodeCurrentInstruction();
+		}
 
 		return value;
 	} else {
@@ -415,7 +417,11 @@ bool CoredTester::run() {
 			simulator.addListener(&l_panic);
 			simulator.addListener(&l_timeout);
 			simulator.addListener(&l_fail_trace);
-			simulator.addListener(&l_color_assert_port);
+			if (s_color_assert_port.isValid()) {
+				simulator.addListener(&l_color_assert_port);
+			} else {
+				m_log << "No color assert port" << endl;
+			}
 			simulator.addListener(&l_trace_end_marker);
 
 			// BPSingleListener single_step;
