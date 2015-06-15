@@ -6,29 +6,28 @@
 #include "util/Logger.hpp"
 #include "efw/ExperimentFlow.hpp"
 #include "efw/JobClient.hpp"
-#include "sal/Listener.hpp"
 
 class FiascoFailExperiment : public fail::ExperimentFlow
 {
 private:
-	fail::Logger m_log;
+	fail::Logger log;
 	fail::JobClient m_jc;
 	std::string m_variant, m_benchmark;
-	void readGoldenRun(std::string &);
-	fail::BaseListener* waitIOOrOther(bool);
-	void parseOptions();
+	static const std::string dir_images;
+	static const std::string dir_prerequisites;
+
+	bool readTraceInfo(unsigned &instr_counter, unsigned long long &runtime, fail::guest_address_t &addr_finish,
+		const std::string& variant, const std::string& benchmark);
+
+	std::string filename_state(unsigned instr_offset, const std::string& variant, const std::string& benchmark);
+	std::string filename_traceinfo(const std::string& variant, const std::string& benchmark);
+	std::string filename_elf(const std::string& variant, const std::string& benchmark);
+	std::string filename_serial(const std::string& variant, const std::string& benchmark);
+	std::vector<char> loadFile(std::string filename);
+
 	bool faultInjection();
 
-	std::string m_CurrentOutput;
-	fail::guest_address_t endAddress;
-	unsigned golden_run_instructions;
-	unsigned long long golden_run_timer_ticks;
-	fail::guest_address_t ecc_panic_address;
-	fail::guest_address_t addr_errors_corrected;
-	bool _golden_run;
-	void goldenRun();
-
 public:
-	FiascoFailExperiment() : m_log("FiascoFail", false){}
+	FiascoFailExperiment() : log("FiascoFail", false){}
 	bool run();
 };
