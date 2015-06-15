@@ -10,6 +10,8 @@
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
+// You need to have the serialoutput plugin enabled for this
+#include "../plugins/serialoutput/SerialOutputLogger.hpp"
 
 
 /*
@@ -57,6 +59,10 @@ void  GenericTracing::parseOptions() {
 		"-B,--start-address \tStart Address to start tracing");
 	CommandLine::option_handle STOP_ADDRESS = cmd.addOption("E", "end-address",Arg::Required,
 		"-E--end-address \tEnd Address to end tracing");
+	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
+		"--serial-port \tListen to a given I/O address (default: 0x3F8)");
+	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
+		"--serial-file \tSave the serial output to file");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -195,6 +201,26 @@ void  GenericTracing::parseOptions() {
 		this->full_trace = true;
 	}
 
+	if (cmd[SERIAL_PORT]) {
+		option::Option *opt = cmd[SERIAL_PORT].first();
+		char *endptr;
+		serial_port = strtoul(opt->arg, &endptr, 16);
+		if (endptr == opt->arg) {
+			m_log << "Couldn't parse " << opt->arg << std::endl;
+			exit(-1);
+		}
+		m_log << "serial port: " << serial_port << std::endl;
+	} else {
+		serial_port = 0x3F8;
+	}
+
+	if (cmd[SERIAL_FILE]) {
+		serial_file = std::string(cmd[SERIAL_FILE].first()->arg);
+		m_log << "serial file: " << serial_file << std::endl;
+	} else {
+		serial_file = "";
+	}
+
 	if (m_elf != NULL) {
 		m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << start_address << std::endl;
 		m_log << "stop symbol: "  << stop_symbol  << " 0x" << std::hex << stop_address << std::endl;
@@ -243,6 +269,12 @@ bool GenericTracing::run()
 	// this must be done *after* configuring the plugin:
 	simulator.addFlow(&tp);
 
+	// record serial output
+	SerialOutputLogger sol(serial_port);
+	if (serial_file != "") {
+		simulator.addFlow(&sol);
+	}
+
 	////////////////////////////////////////////////////////////////
 	// Step 2: Continue to the stop point
 	simulator.addListener(&l_stop_symbol);
@@ -258,6 +290,17 @@ bool GenericTracing::run()
 		return false;
 	}
 	of.close();
+
+	if (serial_file != "") {
+		simulator.removeFlow(&sol);
+		ofstream of_serial(serial_file.c_str(), ios::out|ios::binary);
+		if (!of_serial.fail()) {
+			of_serial << sol.getOutput();
+		} else {
+			m_log << "failed to write " << serial_file << endl;
+		}
+		of_serial.close();
+	}
 
 	simulator.clearListeners();
 	simulator.terminate();
