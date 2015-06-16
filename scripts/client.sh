@@ -43,7 +43,7 @@ do
 	fi
 
 	# only start a client if at least 500 MiB is available
-	FREE_MEM=$(free -m | grep "buffers/cache:" | awk '{print $4}')
+	FREE_MEM=$(LC_ALL=C free -m | grep "buffers/cache:" | awk '{print $4}')
 	if [ $FREE_MEM -lt "500" ]; then
 		# waiting for free memory. sleep 1-60s and retry.
 		sleep $(($RANDOM / (32768 / 60) + 1))
