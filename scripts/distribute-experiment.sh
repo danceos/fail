@@ -39,7 +39,7 @@ fi
 for h in $FAIL_DISTRIBUTE_HOSTS
 do
 	echo Distributing to $h ...
-	rsync -az --partial --delete-before --delete-excluded --exclude=core --exclude=*.tc . $h:"$FAIL_EXPERIMENT_TARGETDIR" &
+	rsync -az --partial --delete-before --delete-excluded --exclude=core --exclude=*.tc --exclude=*.pb . $h:"$FAIL_EXPERIMENT_TARGETDIR" &
 done
 
 wait
