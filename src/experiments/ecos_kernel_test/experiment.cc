@@ -407,7 +407,7 @@ bool EcosKernelTestExperiment::performTrace(guest_address_t addr_entry, guest_ad
 
 	simulator.removeFlow(&sol);
 	ofstream of_serial(filename_serial(m_variant, m_benchmark).c_str(), ios::out|ios::binary);
-	if (!of.fail()) {
+	if (!of_serial.fail()) {
 		of_serial << sol.getOutput();
 	} else {
 		log << "failed to write " << filename_serial(m_variant, m_benchmark) << endl;
