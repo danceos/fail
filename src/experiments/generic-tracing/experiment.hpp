@@ -22,6 +22,7 @@ class GenericTracing : public fail::ExperimentFlow {
 	bool use_memory_map;
 	fail::MemoryMap traced_memory_map;
 
+	bool restore;
 	bool full_trace;
 
 	fail::guest_address_t serial_port;
@@ -34,7 +35,8 @@ public:
 	void parseOptions();
 	bool run();
 
-	GenericTracing() : full_trace(false), m_log("GenericTracing", false) {}
+	GenericTracing() : restore(false),
+		full_trace(false), m_log("GenericTracing", false) {}
 };
 
 #endif // __TRACING_TEST_HPP__

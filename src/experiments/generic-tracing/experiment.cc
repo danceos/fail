@@ -48,6 +48,10 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
 		"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
 
+	CommandLine::option_handle RESTORE = cmd.addOption("", "restore", Arg::None,
+		"--restore \tRestore to the saved state of the machine immediately after saving (default: off). "
+		"This option is needed when the state is used by other experiments that depend on the "
+		"trace, which slighty differs without a restore.");
 	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None,
 		"--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
@@ -197,6 +201,9 @@ void  GenericTracing::parseOptions() {
 		}
 	}
 
+	if (cmd[RESTORE]) {
+		this->restore = true;
+	}
 	if (cmd[FULL_TRACE]) {
 		this->full_trace = true;
 	}
@@ -247,6 +254,11 @@ bool GenericTracing::run()
 
 	m_log << start_symbol << " reached, save ..." << std::endl;
 	simulator.save(state_file);
+
+	if (restore) {
+		m_log << "restoring clean state ..." << std::endl;
+		simulator.restore(state_file);
+	}
 
 	m_log << "... and start tracing" << std::endl;
 
