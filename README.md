@@ -120,6 +120,13 @@ mailing list
 Publications about FAIL*
 ------------------------
 
+ - H. Schirmeier, M. Hoffmann, C. Dietrich, M. Lenz, D. Lohmann, and O.
+   Spinczyk. FAIL*: An open and versatile fault-injection framework for the
+   assessment of software-implemented hardware fault tolerance. In Proceedings
+   of the 11th European Dependable Computing Conference (EDCC '15). IEEE
+   Computer Society Press, Sept. 2015. To appear.
+   [PDF](http://www.danceos.org/publications/EDCC-2015-Schirmeier.pdf)
+
  - H. Schirmeier, M. Hoffmann, R. Kapitza, D. Lohmann, and
    O. Spinczyk. FAIL*: Towards a versatile fault-injection experiment
    framework. In G. Mühl, J. Richling, and A. Herkersdorf, editors,
@@ -135,13 +142,12 @@ Selected publications using FAIL*
 - C. Dietrich, M. Hoffmann, and D. Lohmann. Cross-kernel control-flow-graph
   analysis for event-driven real-time systems. In Proceedings of the 2015 ACM
   SIGPLAN/SIGBED Conference on Languages, Compilers and Tools for Embedded
-  Systems (LCTES '15), New York, NY, USA, June 2015. ACM Press. To appear.
+  Systems (LCTES '15), New York, NY, USA, June 2015. ACM Press.
 
 - H. Schirmeier, C. Borchert, and O. Spinczyk. Avoiding pitfalls in
   fault-injection based comparison of program susceptibility to soft errors. In
   Proceedings of the 45th IEEE/IFIP International Conference on Dependable
-  Systems and Networks (DSN '15). IEEE Computer Society Press, June 2015. To
-  appear.
+  Systems and Networks (DSN '15). IEEE Computer Society Press, June 2015.
 
 - M. Hoffmann, F. Lukas, C. Dietrich, and D. Lohmann. dOSEK: The design and
   implementation of a dependability-oriented static embedded kernel. In
