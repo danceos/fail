@@ -15,14 +15,21 @@
 #include "../SALInst.hpp"
 #include "BochsHelpers.hpp"
 
-// FIXME: We currently assume a "flat" memory model and ignore the segment
-//        parameter of all memory accesses.
+// FIXME: This aspect currently only retrieves linear addresses, not
+// physical ones.  Addresses may become invalid once the guest OS switches
+// to a different page table.  Nevertheless, linear addresses come in quite
+// handy for matching with high-level data structures.
+
 // TODO: Instruction fetch?
 // TODO: Warn on uncovered memory accesses.
 
 aspect MemAccess {
 	fail::address_t rmw_address;
 
+	// It would be nice to hook bx_cpu_c::access_write_linear(), but
+	// unfortunately it seems quite commonplace in Bochs code to bypass it.
+	// TODO: Investigate using the BX_INSTR_LIN_ACCESS instrumentation hook
+	// instead.
 	pointcut write_methods() =
 		"% ...::bx_cpu_c::write_virtual_%(...)" && // -> access32/64.cc
 	// not an actual memory access:
@@ -64,8 +71,11 @@ aspect MemAccess {
 	advice execution (write_methods()) : after ()
 	{
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		unsigned s = *(tjp->arg<0>()); // segment selector
+		uint32_t offset = *(tjp->arg<1>());
+		uint32_t laddr = tjp->that()->get_laddr32(s, offset);
 		fail::simulator.onMemoryAccess(&triggerCPU,
-			*(tjp->arg<1>()), sizeof(*(tjp->arg<2>())), true,
+			laddr, sizeof(*(tjp->arg<2>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
@@ -82,8 +92,10 @@ aspect MemAccess {
 		//std::cerr << "WOOOOOT write_methods_new_stack" << std::endl;
 		// TODO: Log-level?
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		uint32_t offset = *(tjp->arg<1>());
+		uint32_t laddr = (Bit32u)((*(tjp->arg<0>()))->cache.u.segment.base) + offset;
 		fail::simulator.onMemoryAccess(&triggerCPU,
-			*(tjp->arg<1>()), sizeof(*(tjp->arg<3>())), true,
+			laddr, sizeof(*(tjp->arg<3>())), true,
 			getCPU(tjp->that())->prev_rip);
 	}
 
@@ -122,16 +134,22 @@ aspect MemAccess {
 	advice execution (read_methods()) : before ()
 	{
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		unsigned s = *(tjp->arg<0>()); // segment selector
+		uint32_t offset = *(tjp->arg<1>());
+		uint32_t laddr = tjp->that()->get_laddr32(s, offset);
 		fail::simulator.onMemoryAccess(&triggerCPU,
-			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
+			laddr, sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 	}
 
 	advice execution (read_methods_dqword()) : before ()
 	{
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
+		unsigned s = *(tjp->arg<0>()); // segment selector
+		uint32_t offset = *(tjp->arg<1>());
+		uint32_t laddr = tjp->that()->get_laddr32(s, offset);
 		fail::simulator.onMemoryAccess(&triggerCPU,
-			*(tjp->arg<1>()), 16, false,
+			laddr, 16, false,
 			getCPU(tjp->that())->prev_rip);
 	}
 #endif
@@ -139,12 +157,15 @@ aspect MemAccess {
 	advice execution (read_methods_RMW()) : before ()
 	{
 #if defined(CONFIG_EVENT_MEMREAD) || defined(CONFIG_EVENT_MEMWRITE)
-		rmw_address = *(tjp->arg<1>());
+		unsigned s = *(tjp->arg<0>()); // segment selector
+		uint32_t offset = *(tjp->arg<1>());
+		uint32_t laddr = tjp->that()->get_laddr32(s, offset);
+		rmw_address = laddr;
 #endif
 #ifdef CONFIG_EVENT_MEMREAD
 		fail::ConcreteCPU& triggerCPU = fail::simulator.detectCPU(getCPU(tjp->that()));
 		fail::simulator.onMemoryAccess(&triggerCPU,
-			*(tjp->arg<1>()), sizeof(*(tjp->result())), false,
+			laddr, sizeof(*(tjp->result())), false,
 			getCPU(tjp->that())->prev_rip);
 #endif
 	}
