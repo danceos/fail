@@ -89,7 +89,11 @@ void L4SysExperiment::collectInstructionTrace(fail::BPSingleListener* bp)
 	bp->setWatchInstructionPointer(ANY_ADDR);
 
 	map<address_t, unsigned> times_called_map;
-    bool injecting = false;
+	/* We run until the IP reaches func_entry. We will not
+	 * reach the same IP again. So, if filter and func entry are
+	 * equal, then we have to enable injections.
+	 */
+	bool injecting = conf.filter_entry == conf.func_entry;
 
 	while (bp->getTriggerInstructionPointer() != conf.func_exit) {
 		fail::BaseListener *res = simulator.resume();
