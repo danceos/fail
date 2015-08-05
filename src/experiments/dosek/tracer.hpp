@@ -10,7 +10,7 @@
 
 
 
-class CoRedTracing : public fail::ExperimentFlow {
+class dOSEKTracer : public fail::ExperimentFlow {
 	std::string start_symbol;
 	std::string stop_symbol;
 	std::string save_symbol;
@@ -31,7 +31,7 @@ public:
 	void parseOptions();
 	bool run();
 
-	CoRedTracing() : full_trace(false), m_log("CoRedTracing", false) {};
+	dOSEKTracer() : full_trace(false), m_log("dOSEKTracer", false) {};
 };
 
 #endif // __CORED_TRACING_HPP__

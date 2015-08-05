@@ -1,6 +1,6 @@
-set(EXPERIMENT_NAME cored-tester)
-set(EXPERIMENT_TYPE CoredTester)
-configure_file(../instantiate-experiment.ah.in
+set(EXPERIMENT_NAME dosek)
+set(EXPERIMENT_TYPE dOSEK)
+configure_file(../instantiate-experiment-indirect.ah.in
                ${CMAKE_CURRENT_BINARY_DIR}/instantiate-${EXPERIMENT_NAME}.ah @ONLY
 )
 
@@ -10,8 +10,14 @@ set(MY_PROTOS
 )
 
 set(MY_CAMPAIGN_SRCS
-	experiment.hpp
-	experiment.cc
+    experiment.cc
+
+    tracer.cc
+    tracer.hpp
+    
+	tester.hpp
+	tester.cc
+
 	campaign.hpp
 	campaign.cc
 )
@@ -27,7 +33,7 @@ PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${MY_PROTOS})
 ## Build library
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME} fail-comm)
+target_link_libraries(fail-${EXPERIMENT_NAME} fail-comm fail-tracing)
 target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY} fail-llvmdisassembler)
 
 ## This is the example's campaign server distributing experiment parameters

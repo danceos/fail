@@ -4,7 +4,7 @@
 #include "sal/SALInst.hpp"
 #include "sal/Register.hpp"
 #include "sal/Listener.hpp"
-#include "experiment.hpp"
+#include "tracer.hpp"
 #include "util/CommandLine.hpp"
 #include "util/gzstream/gzstream.h"
 
@@ -16,9 +16,9 @@
 using namespace std;
 using namespace fail;
 
-void  CoRedTracing::parseOptions() {
+void  dOSEKTracer::parseOptions() {
 	CommandLine &cmd = CommandLine::Inst();
-	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
+	cmd.addOption("", "", Arg::None, "Tracer: -Wf,--mode=tracer  -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 
@@ -173,7 +173,7 @@ void  CoRedTracing::parseOptions() {
 
 }
 
-bool CoRedTracing::run()
+bool dOSEKTracer::run()
 {
 	parseOptions();
 

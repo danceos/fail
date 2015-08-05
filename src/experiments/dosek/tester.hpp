@@ -11,7 +11,7 @@
 #include <string>
 #include "util/llvmdisassembler/LLVMtoFailTranslator.hpp"
 
-class CoredTester : public fail::ExperimentFlow {
+class dOSEKTester : public fail::ExperimentFlow {
 public:
 
 private:
@@ -25,7 +25,7 @@ private:
 	const fail::ElfSymbol& getELFSymbol(const std::string name);
 
 public:
-	CoredTester() : m_log("CoredTester", false), m_mm(fail::simulator.getMemoryManager()) {}
+	dOSEKTester() : m_log("dOSEKTester", false), m_mm(fail::simulator.getMemoryManager()) {}
 
 	bool run();
 };

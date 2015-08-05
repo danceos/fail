@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 #include <stdlib.h>
-#include "experiment.hpp"
+#include "tester.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/SALInst.hpp"
 #include "sal/Memory.hpp"
@@ -45,7 +45,7 @@ using namespace fail;
 #error This experiment needs: MemRead and MemWrite. Enable these in the configuration.
 #endif
 
-void CoredTester::redecodeCurrentInstruction() {
+void dOSEKTester::redecodeCurrentInstruction() {
 	/* Flush Instruction Caches and Prefetch queue */
 	BX_CPU_C *cpu_context = simulator.getCPUContext();
 	cpu_context->invalidate_prefetch_q();
@@ -87,7 +87,7 @@ void CoredTester::redecodeCurrentInstruction() {
 }
 
 
-unsigned CoredTester::injectBitFlip(address_t data_address, unsigned data_width, unsigned bitpos) {
+unsigned dOSEKTester::injectBitFlip(address_t data_address, unsigned data_width, unsigned bitpos) {
 	/* First 32 Registers, this might neeed adaption */
 	if (data_address < (32 << 8)) {
 		LLVMtoFailTranslator::reginfo_t reginfo = LLVMtoFailTranslator::reginfo_t::fromDataAddress(data_address, data_width);
@@ -172,7 +172,7 @@ std::string handleMemoryAccessEvent(fail::MemAccessListener* l_mem) {
 }
 
 
-const ElfSymbol& CoredTester::getELFSymbol(const std::string name) {
+const ElfSymbol& dOSEKTester::getELFSymbol(const std::string name) {
 	const ElfSymbol &symbol = m_elf.getSymbol(name);
 	if (!symbol.isValid()) {
 		m_log << "Couldn't find symbol: " << name << std::endl;
@@ -183,7 +183,7 @@ const ElfSymbol& CoredTester::getELFSymbol(const std::string name) {
 }
 
 
-bool CoredTester::run() {
+bool dOSEKTester::run() {
 	m_log << "STARTING EXPERIMENT" << endl;
 
 	// seed random number generator
@@ -200,8 +200,10 @@ bool CoredTester::run() {
 
 	const ElfSymbol &s_panic_handler = getELFSymbol("__OS_HOOK_FaultDetectedHook");
 	const ElfSymbol &s_panic_handler_2 = getELFSymbol("irq_handler_2");
+	const ElfSymbol &s_panic_handler_3 = getELFSymbol("irq_handler_14");
 
 	assert(s_panic_handler.isValid() && s_panic_handler_2.isValid());
+	assert(s_panic_handler_3.isValid());
 
 
 	const ElfSymbol &s_fail_trace = getELFSymbol("fail_trace");
@@ -225,6 +227,9 @@ bool CoredTester::run() {
 	m_log << "PANIC handler @ " << std::hex << s_panic_handler.getAddress() << std::endl;
 	BPSingleListener l_panic_2(s_panic_handler_2.getAddress());
 	m_log << "PANIC2 handler @ " << std::hex << s_panic_handler_2.getAddress() << std::endl;
+	BPSingleListener l_panic_3(s_panic_handler_3.getAddress());
+	m_log << "PANIC3 handler @ " << std::hex << s_panic_handler_3.getAddress() << std::endl;
+
 
 	unsigned upper_timeout, lower_timeout, instr_timeout;
 	if (m_elf.getFilename().find("isorc") != std::string::npos) {
@@ -300,6 +305,7 @@ bool CoredTester::run() {
 			// Extract stack ranges for checkpoint plugin
 			Checkpoint::range_vector check_ranges;
 			ElfReader::symbol_iterator it = m_elf.sym_begin();
+			std::map<fail::address_t, fail::address_t> stackpointers;
 			for( ; it != m_elf.sym_end(); ++it) {
 				const std::string name = it->getName();
 
@@ -324,6 +330,14 @@ bool CoredTester::run() {
 				Checkpoint::indirectable_address_t start = std::make_pair(s_sptr.getAddress(), true);
 				Checkpoint::indirectable_address_t end = std::make_pair(s_end.getEnd(), false);
 				check_ranges.push_back(std::make_pair(start, end));
+
+				// Save the stackpointer address (in this variable the
+				// actual stackpointer is stored)
+				address_t paddr = s_sptr.getAddress();
+				stackpointers[paddr] = paddr;
+				stackpointers[paddr+1] = paddr;
+				stackpointers[paddr+2] = paddr;
+				stackpointers[paddr+3] = paddr;
 			}
 
 			// Init Plugins
@@ -412,6 +426,9 @@ bool CoredTester::run() {
 				continue; // next experiment
 			}
 
+			MemWriteListener *stackpointer_event = 0;
+			bool stackpointer_event_valid = false;
+
 			// perform injection
 			if (pc_injection) {
 				// jump to "data" address
@@ -427,6 +444,20 @@ bool CoredTester::run() {
 			} else {
 				// inject random bitflip
 				// experiment_id == bitpos
+
+				// We cache the stackpointer value inside the
+				// checkpoint plugin, if we inject it. This prevents
+				// the Checkpoint plugin to read invalid values.
+				if (stackpointers.find(data_address) != stackpointers.end()) {
+					guest_address_t paddr = stackpointers[data_address];
+					guest_address_t value = 0;
+					simulator.getMemoryManager().getBytes(paddr, 4, &value);
+					cpoint.cache_stackpointer_variable(paddr, value);
+					stackpointer_event = new MemWriteListener(paddr);
+					stackpointer_event_valid = true;
+					m_log << "Injected Stackpointer; saved old stackpointer value ("
+						  << hex << "0x" << paddr << "="<< value << dec << ")"<< std::endl;
+				}
 				result->set_original_value(injectBitFlip(data_address, data_width, experiment_id));
 			}
 
@@ -435,6 +466,7 @@ bool CoredTester::run() {
 			simulator.clearListeners(this);
 			simulator.addListener(&l_panic);
 			simulator.addListener(&l_panic_2);
+			simulator.addListener(&l_panic_3);
 			l_timeout.setTimeout(upper_timeout);
 			simulator.addListener(&l_timeout);
 			simulator.addListener(&l_timeout_hard);
@@ -454,13 +486,29 @@ bool CoredTester::run() {
 			}
 			simulator.addListener(&l_trace_end_marker);
 
+			if (stackpointer_event_valid) {
+				m_log << "Injected Stackpointer; add listener 0x"
+					  << hex << stackpointer_event->getWatchAddress() << dec
+					  << " " << stackpointer_event->getTriggerAccessType() << endl;
+				simulator.addListener(stackpointer_event);
+			}
+
 			// resume and wait for results
-			m_log << "Resuming till the crash (time: " <<  simulator.getTimerTicks() << ")"<< std::endl;
+			m_log << "Resuming till the crash (time: " <<  simulator.getTimerTicks() << ")" << std::endl;
+			
 			bool reached_check_start = false;
 			fail::BaseListener* l = simulator.resume();
 
 			int checkpoints = 0;
-			while(l == &l_fail_trace) {
+			while(l == &l_fail_trace || l == stackpointer_event) {
+				m_log << "Trace_event!" << endl;
+				if (l == stackpointer_event) {
+					cpoint.uncache_stackpointer_variable(stackpointer_event->getWatchAddress());
+					m_log << "Injected Stackpointer; cleared stackpointer cache" << std::endl;
+					l = simulator.resume();
+					continue;
+				}
+				assert (l == &l_fail_trace);
 				Checkpoint::check_result res = cpoint.check(s_fail_trace, l_fail_trace.getTriggerInstructionPointer());
 				checkpoints ++;
 				if(res == Checkpoint::DIFFERENT_IP) {
@@ -505,9 +553,13 @@ bool CoredTester::run() {
 
 				l = simulator.addListenerAndResume(&l_fail_trace);
 			}
+			if (stackpointer_event_valid)
+				delete stackpointer_event;
 
 			// End of Injection Phase. Now we have crashed
-			m_log << "Crashed (time: " <<  simulator.getTimerTicks() << ")"<< std::endl;
+			m_log << "Crashed (time: " <<  simulator.getTimerTicks() << "), IP=0x" 
+				  << hex << simulator.getCPU(0).getInstructionPointer() << dec
+				  << ")"<< std::endl;
 			result->set_time_crash(simulator.getTimerTicks());
 
 			if(l == &l_fail_trace) {
@@ -517,7 +569,7 @@ bool CoredTester::run() {
 				std::stringstream ss;
 				ss << "correct end after " << cpoint.getCount() << " checkpoints";
 				handleEvent(*result, result->OK, ss.str());
-			} else if (l == &l_panic || l == &l_panic_2) {
+			} else if (l == &l_panic || l == &l_panic_2 || l == &l_panic_3) {
 				// error detected
 				stringstream sstr;
 				sstr << "PANIC";
