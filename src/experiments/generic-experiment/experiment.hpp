@@ -59,7 +59,7 @@ public:
 
 		end_marker_groups["ok-marker"] = &OK_marker;
 		end_marker_groups["fail-marker"] = &FAIL_marker;
-		end_marker_groups["detected-marker"] = &FAIL_marker;
+		end_marker_groups["detected-marker"] = &DETECTED_marker;
 		end_marker_groups["group1-marker"] = &GROUP1_marker;
 		end_marker_groups["group2-marker"] = &GROUP2_marker;
 		end_marker_groups["group3-marker"] = &GROUP3_marker;

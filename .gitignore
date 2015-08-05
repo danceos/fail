@@ -8,6 +8,7 @@
 *.pb.cc
 *.gcda
 *.pyc
+*.swp
 *~
 Makefile
 build
