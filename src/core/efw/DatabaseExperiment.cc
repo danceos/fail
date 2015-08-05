@@ -146,8 +146,12 @@ bool DatabaseExperiment::run()
 					found_eip = true;
 				}
 			}
-			if (!found_eip) {
-				m_log << "Invalid Injection address  != 0x" << injection_instr_absolute << std::endl;
+			if (fsppilot->has_injection_instr_absolute() && !found_eip) {
+				m_log << "Invalid Injection address  != 0x" << std::hex << injection_instr_absolute<< std::endl;
+				for (size_t i = 0; i < simulator.getCPUCount(); i++) {
+					address_t eip = simulator.getCPU(i).getInstructionPointer();
+					m_log << " CPU " << i << " EIP = 0x" << std::hex << eip << std::dec << std::endl;
+				}
 				simulator.terminate(1);
 			}
 
