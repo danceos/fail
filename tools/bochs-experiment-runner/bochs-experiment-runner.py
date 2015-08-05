@@ -24,6 +24,9 @@ def parseArgs():
     parser.add_option("-V", "--vgabios", dest="vgabios", default="/proj/i4ciao/tools/fail/vgabios.bin",
                       help="vgabios image for bochs", metavar="VGABIOS")
 
+    parser.add_option("-F", "--freq", dest="freq", default="5",
+                      help="frquency in MHZ", metavar="MHZ")
+
     parser.add_option("-1", "--once",
                       action="store_false", dest="forever", default=True,
                       help="fail-client to be executed")
@@ -44,9 +47,21 @@ def execute(options, args, bochsrc, statedir):
     command = "env FAIL_ELF_PATH=%s FAIL_STATEDIR=%s %s -q -f %s %s" %\
     (options.elf_file, statedir, options.fail_client, bochsrc, " ".join(args))
     print "executing: " + command
-    p = Popen(command, shell=True)
+    p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
+    reconnect = 0
+    while p.poll() is None:
+        line = p.stdout.readline()
+        if line is None:
+            break
+        if "Connection refused" in line:
+            reconnect += 1
+        print line,
+        if reconnect > 10:
+            return 1
     p.wait()
 
+    if reconnect > 0:
+        return 123
     return p.returncode
 
 def main(options, args):
@@ -54,14 +69,15 @@ def main(options, args):
         "memory": options.memory,
         "bios": options.bios,
         "vgabios": options.vgabios,
-        "iso": options.iso_file
+        "iso": options.iso_file,
+        "ips": int(options.freq) * 1000000,
         }
 
     bochsrc_text = """
 config_interface: textconfig
 display_library: nogui
 romimage: file="{bios}"
-cpu: count=1, ips=5000000, reset_on_triple_fault=1, ignore_bad_msrs=1, msrs="msrs.def"
+cpu: count=1, ips={ips}, reset_on_triple_fault=1, ignore_bad_msrs=1, msrs="msrs.def"
 cpuid: mmx=1, sep=1, sse=sse4_2, xapic=1, aes=1, movbe=1, xsave=1, cpuid_limit_winnt=0
 memory: guest={memory}, host={memory}
 vgaromimage: file="{vgabios}"
