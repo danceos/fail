@@ -102,6 +102,7 @@ unsigned CoredTester::injectBitFlip(address_t data_address, unsigned data_width,
 			<< " offset " << (int) reginfo.offset
 			<< ") bitpos: " << bitpos
 			<< " value: 0x" << hex << setw(2) << setfill('0') << value << " -> 0x" << setw(2) << setfill('0') << injectedval
+			<< " stackptr: " << hex << simulator.getCPU(0).getStackPointer()
 			<< dec << endl;
 		if (reginfo.id == RID_PC) {
 			m_log << "Redecode current instruction" << endl;
@@ -123,7 +124,9 @@ unsigned CoredTester::injectBitFlip(address_t data_address, unsigned data_width,
 		mm.setByte(data_address, injectedval);
 
 		m_log << "INJECTION at: 0x" << hex	<< setw(2) << setfill('0') << data_address
-			<< " value: 0x" << setw(2) << setfill('0') << value << " -> 0x" << setw(2) << setfill('0') << injectedval << endl;
+			  << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x" << setw(2) << setfill('0') << injectedval
+			  << " stackptr: " << hex << simulator.getCPU(0).getStackPointer()
+			  << dec << endl;
 
 		/* If it is the current instruction redecode it */
 		guest_address_t pc = simulator.getCPU(0).getInstructionPointer();
@@ -195,7 +198,11 @@ bool CoredTester::run() {
 	const ElfSymbol &s_stext_app = getELFSymbol("_stext_application");
 	const ElfSymbol &s_etext_app = getELFSymbol("_etext_application");
 
-	const ElfSymbol &s_panic_handler = getELFSymbol("irq_handler_2");
+	const ElfSymbol &s_panic_handler = getELFSymbol("__OS_HOOK_FaultDetectedHook");
+	const ElfSymbol &s_panic_handler_2 = getELFSymbol("irq_handler_2");
+
+	assert(s_panic_handler.isValid() && s_panic_handler_2.isValid());
+
 
 	const ElfSymbol &s_fail_trace = getELFSymbol("fail_trace");
 	MemAccessListener l_fail_trace(s_fail_trace.getAddress());
@@ -216,10 +223,22 @@ bool CoredTester::run() {
 	//TrapListener l_trap(2);  // NMI trap?
 	BPSingleListener l_panic(s_panic_handler.getAddress());
 	m_log << "PANIC handler @ " << std::hex << s_panic_handler.getAddress() << std::endl;
+	BPSingleListener l_panic_2(s_panic_handler_2.getAddress());
+	m_log << "PANIC2 handler @ " << std::hex << s_panic_handler_2.getAddress() << std::endl;
 
-	unsigned i_timeout = 50 * 1000;
-	TimerListener l_timeout(i_timeout); // 1s in microseconds
-	TimerListener l_timeout_hard(1 * 1000 * 1000); // 1s in microseconds
+	unsigned upper_timeout, lower_timeout, instr_timeout;
+	if (m_elf.getFilename().find("isorc") != std::string::npos) {
+		upper_timeout = 2*1000*1000;
+		lower_timeout = 50 * 1000;
+		instr_timeout = 500000;
+	} else {
+		upper_timeout = 2*1000*1000;
+		lower_timeout = 50 * 1000;
+		instr_timeout = 500000;
+	}
+
+	TimerListener l_timeout(lower_timeout); // 1s in microseconds
+	TimerListener l_timeout_hard(upper_timeout); // 1s in microseconds
 
 	// initialize LLVM disassembler
 	m_ltof = LLVMtoFailTranslator::createFromBinary(m_elf.getFilename());
@@ -415,7 +434,18 @@ bool CoredTester::run() {
 			// add listeners
 			simulator.clearListeners(this);
 			simulator.addListener(&l_panic);
+			simulator.addListener(&l_panic_2);
+			l_timeout.setTimeout(upper_timeout);
 			simulator.addListener(&l_timeout);
+			simulator.addListener(&l_timeout_hard);
+			BPSingleListener l_timeout_instr;
+			l_timeout_instr.setWatchInstructionPointer(ANY_ADDR);
+			if (instr_timeout != 0) {
+				// Simulate only further 500 000 instructions
+				l_timeout_instr.setCounter(instr_timeout);
+				simulator.addListener(&l_timeout_instr);
+			}
+
 			simulator.addListener(&l_fail_trace);
 			if (s_color_assert_port.isValid()) {
 				simulator.addListener(&l_color_assert_port);
@@ -424,65 +454,15 @@ bool CoredTester::run() {
 			}
 			simulator.addListener(&l_trace_end_marker);
 
-			// BPSingleListener single_step;
-			// single_step.setWatchInstructionPointer(ANY_ADDR);
-			// simulator.addListener(&single_step);
-			// fail::BaseListener* ll = simulator.resume();
-			// while (ll == &single_step || ll == &l_fail_trace) {
-			// 	if (ll == &l_fail_trace) {
-			// 		Checkpoint::check_result res = cpoint.check(s_fail_trace, l_fail_trace.getTriggerInstructionPointer());
-
-			// 	if(res == Checkpoint::DIFFERENT_IP) {
-			// 		std::stringstream ss;
-			// 		ss << "different IP";
-			// 		ss << "@ IP 0x" << std::hex << l_fail_trace.getTriggerInstructionPointer();
-			// 		ss << " (checkpoint " << std::dec << cpoint.getCount() << ")";
-			// 		std::cout << ss.str() << endl;
-			// 		break;
-			// 	} else if(res == Checkpoint::DIFFERENT_VALUE) {
-			// 		std::stringstream ss;
-			// 		ss << "different value";
-			// 		ss << "@ IP 0x" << std::hex << l_fail_trace.getTriggerInstructionPointer();
-			// 		ss << " (checkpoint " << std::dec << cpoint.getCount() << ")";
-			// 		std::cout << ss.str() << endl;
-			// 		break;
-			// 	} else if(res == Checkpoint::DIFFERENT_DIGEST) {
-			// 		std::stringstream ss;
-			// 		ss << "different digest";
-			// 		ss << "@ IP 0x" << std::hex << l_fail_trace.getTriggerInstructionPointer();
-			// 		ss << " (checkpoint " << std::dec << cpoint.getCount() << ")";
-			// 		std::cout << ss.str() << endl;
-			// 		break;
-			// 	} else if(res == Checkpoint::INVALID) {
-			// 		std::stringstream ss;
-			// 		ss << "invalid checkpoint";
-			// 		ss << "@ IP 0x" << std::hex << l_fail_trace.getTriggerInstructionPointer();
-			// 		ss << " (checkpoint " << std::dec << cpoint.getCount() << ")";
-			// 		std::cout << ss.str() << endl;
-			// 		break;
-			// 	}
-			// 	}
-
-			// 	std::stringstream ss;
-			// 	ss << "@ IP " << std::hex << simulator.getCPU(0).getInstructionPointer();
-			// 	const ElfSymbol &sym = m_elf.getSymbol(simulator.getCPU(0).getInstructionPointer());
-			// 	ss << " " << sym.getName();
-			// 	std::cout << ss.str() << endl;
-			// 	ll = simulator.addListenerAndResume(ll);
-			// }
-
-			// std::cout << (ll == &l_color_assert_port) << " COLOR ASSERT" << endl;
-
-			// //continue;
-			// simulator.terminate(0);
-
 			// resume and wait for results
 			m_log << "Resuming till the crash (time: " <<  simulator.getTimerTicks() << ")"<< std::endl;
 			bool reached_check_start = false;
 			fail::BaseListener* l = simulator.resume();
 
+			int checkpoints = 0;
 			while(l == &l_fail_trace) {
 				Checkpoint::check_result res = cpoint.check(s_fail_trace, l_fail_trace.getTriggerInstructionPointer());
+				checkpoints ++;
 				if(res == Checkpoint::DIFFERENT_IP) {
 					std::stringstream ss;
 					ss << "different IP";
@@ -515,6 +495,11 @@ bool CoredTester::run() {
 
 				// Reset the soft timeout listener
 				simulator.removeListener(&l_timeout);
+				unsigned  i_timeout = upper_timeout;
+				if (checkpoints > 5) {
+					i_timeout = lower_timeout;
+				}
+				l_timeout.setTimeout(i_timeout);
 				simulator.addListener(&l_timeout);
 				assert(l_timeout.getTimeout() == i_timeout);
 
@@ -532,7 +517,7 @@ bool CoredTester::run() {
 				std::stringstream ss;
 				ss << "correct end after " << cpoint.getCount() << " checkpoints";
 				handleEvent(*result, result->OK, ss.str());
-			} else if (l == &l_panic) {
+			} else if (l == &l_panic || l == &l_panic_2) {
 				// error detected
 				stringstream sstr;
 				sstr << "PANIC";
@@ -563,7 +548,7 @@ bool CoredTester::run() {
 				uint32_t color = 0;
 				mm.getBytes(s_color_assert_port.getAddress(), 4, &color);
 				std::stringstream ss;
-				ss << "@ IP" << std::hex << simulator.getCPU(0).getInstructionPointer();
+				ss << "color assert @ IP" << std::hex << simulator.getCPU(0).getInstructionPointer();
 
 				if (color == 0xb83829de) {
 					handleEvent(*result, result->ERR_ASSERT_UNKOWN, ss.str());
@@ -574,9 +559,14 @@ bool CoredTester::run() {
 				} else {
 					handleEvent(*result, result->ERR_ASSERT_SPURIOUS, ss.str());
 				}
-			} else if ( l == &l_timeout || l == &l_timeout_hard) {
-				// timeout, probably infinite loop
-				handleEvent(*result, result->ERR_TIMEOUT, "");
+			} else if ( l == &l_timeout || l == &l_timeout_hard || l == &l_timeout_instr) {
+				if (l == &l_timeout) {
+					handleEvent(*result, result->ERR_TIMEOUT, "soft timeout");
+				} else if (l == &l_timeout_hard) {
+					handleEvent(*result, result->ERR_TIMEOUT, "hard timeout");
+				} else if (l == &l_timeout_instr) {
+					handleEvent(*result, result->ERR_TIMEOUT, "instr timeout");
+				}
 			} else {
 				// what happened?
 				handleEvent(*result, result->UNKNOWN, "WTF");
