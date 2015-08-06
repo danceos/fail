@@ -222,9 +222,10 @@ For the first time (incl. selecting an experiment):
       $ cmake ..
  4. Modify the generated configuration according to your needs using
       $ ccmake .
-    At least, you should set an experiment and turn on the following
-    flags: BUILD_GEM5 = BUILD_ARM = ON. Additionally, all config
-    options specific for other simulator should be turned OFF.
+    At least, you should set an experiment and turn on the configuration flags
+    BUILD_GEM5 and BUILD_ARM. Additionally, all config options specific for
+    other back-ends and architectures should be turned OFF, especially
+    BUILD_BOCHS and BUILD_X86.
  5. Typing
       $ make   (or  nice make -jN)
     will start the build process of Fail* and gem5. This automatically
@@ -238,6 +239,9 @@ For the first time (incl. selecting an experiment):
     different core count in the -jN option. This and various other stuff
     (e.g. a release build, i.e. using "gem5.fast" instead of "gem5.debug")
     can be changed in the aforementioned gem5.cmake file.
+
+NOTE: gem5 currently does not compile with the newer clang-based daily builds
+      of AspectC++ (ac++).  You may need to use the ac++ 1.2 release instead.
 
 After changes to Fail*/gem5 code (incl. aspect headers):
 ------------------------------------------------------------
