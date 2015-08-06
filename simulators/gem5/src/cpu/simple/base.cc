@@ -334,7 +334,8 @@ BaseSimpleCPU::checkForInterrupts()
         if (interrupt != NoFault) {
             // DanceOS
             #ifdef CONFIG_EVENT_INTERRUPT
-            fail::simulator.onInterrupt(dynamic_cast<ArmFault*>(interrupt.get())->offset(), false);
+            // FIXME pass the currently active ConcreteCPU instance
+            fail::simulator.onInterrupt(NULL, dynamic_cast<ArmFault*>(interrupt.get())->offset(), false);
             #endif
             fetchOffset = 0;
             interrupts->updateIntrInfo(tc);
