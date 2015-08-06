@@ -184,10 +184,13 @@ bool ElfImporter::evaluate_objdump_line(const std::string& line)
 			ss >> addr;
 			std::string opcode = res[2];
 			boost::trim(opcode);
+			opcode = opcode.substr(0,32);
 			std::string instruction = res[3];
 			boost::trim(instruction);
+			instruction = instruction.substr(0, 64);
 			std::string comment = res[4];
 			boost::trim(comment);
+			comment = comment.substr(0, 128);
 
 			// transform hex opcode to char array
 			char opcode_read[33];
