@@ -441,7 +441,7 @@ WPREAD_CTOR_SCOPE:
 class MemWriteListener : public MemAccessListener {
 WPWRITE_CTOR_SCOPE:
 	MemWriteListener(ConcreteCPU* cpu = NULL)
-		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
+		: MemAccessListener(MemAccessEvent::MEM_WRITE, cpu) { }
 	MemWriteListener(address_t addr, ConcreteCPU* cpu = NULL)
 		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE, cpu) { }
 };
