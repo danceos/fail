@@ -41,6 +41,11 @@ private:
 	std::ifstream m_istream; //!< inputfile stream
 	unsigned m_count;
 
+	// In this map, we save the contents of stackpointer-variables to
+	// beginning/end of region markers. We allow this to make those
+	// stackpointer-variables injectable.
+	std::map<fail::address_t, fail::address_t> cached_stackpointer_variables;
+
 public:
 	/**
 	 * Construct Checkpoint Logger in tracing (output) mode.
@@ -96,6 +101,29 @@ public:
 	 * @return check result
 	 */
 	check_result check(const fail::ElfSymbol symbol, fail::address_t ip);
+
+	/**
+	 * Checks whether the given address is currently (according to the
+	 * machine state) within the checked ranges.
+	 *
+	 * @param addr address to check
+	 * @return addr is in checked ranges
+	 */
+	bool in_range(fail::address_t addr);
+
+	/**
+	 * Cache a memory address, which is to be dereferenced by the checkpoint plugin.
+	 *
+	 * @param address of the stackpointer variable
+	 * @param value of the stackpointer variable
+	 */
+	void cache_stackpointer_variable(fail::address_t addr, fail::address_t value) {
+		cached_stackpointer_variables[addr] = value;
+	}
+
+	void uncache_stackpointer_variable(fail::address_t addr) {
+		cached_stackpointer_variables.erase(addr);
+	}
 
 private:
 	//! calulate checksum over memory regions

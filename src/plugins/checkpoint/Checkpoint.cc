@@ -53,10 +53,16 @@ address_t Checkpoint::resolve_address(const indirectable_address_t &addr) {
 		const address_t paddr = addr.first;
 		address_t value = 0;
 
-		MemoryManager& mm = simulator.getMemoryManager();
+		std::map<fail::address_t, fail::address_t>::iterator it = cached_stackpointer_variables.find(paddr);
+		if (it != cached_stackpointer_variables.end()) {
+			m_log << "Use Cached Value! " << std::hex << it->first << "=" << it->second << std::dec << endl;
+			value = it->second;
+		} else {
+			MemoryManager& mm = simulator.getMemoryManager();
 
-		if(mm.isMapped(paddr) && mm.isMapped(paddr+1) && mm.isMapped(paddr+2) && mm.isMapped(paddr+3)) {
-			simulator.getMemoryManager().getBytes(paddr, 4, &value);
+			if(mm.isMapped(paddr) && mm.isMapped(paddr+1) && mm.isMapped(paddr+2) && mm.isMapped(paddr+3)) {
+				simulator.getMemoryManager().getBytes(paddr, 4, &value);
+			}
 		}
 
 		// HACK/WORKAROUND for dOSEK, which uses bit 31 for parity!
@@ -66,6 +72,24 @@ address_t Checkpoint::resolve_address(const indirectable_address_t &addr) {
 	} else {
 		return addr.first;
 	}
+}
+
+bool Checkpoint::in_range(fail::address_t addr)
+{
+	// iterate memory regions
+	std::vector<address_range>::const_iterator it = m_check_ranges.begin();
+	for( ; it != m_check_ranges.end(); ++it) {
+		fail::address_t start = resolve_address(it->first);
+		fail::address_t end = resolve_address(it->second);
+		if((start == 0) || (end == 0)) {
+			m_log << std::hex << "invalid checksum range pointer" << std::endl;
+			continue;
+		}
+		if (start <= addr && addr < end) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void Checkpoint::checksum(uint8_t (&Message_Digest)[20])
@@ -97,7 +121,8 @@ void Checkpoint::checksum(uint8_t (&Message_Digest)[20])
 			continue;
 		}
 
-		//m_log << std::hex << "checksumming 0x" << start << " - 0x" << end << std::endl;
+		// if (start != end)
+		// m_log << std::hex << "checksumming 0x" << start << " - 0x" << end << std::endl;
 
 		for(fail::address_t addr = start; addr < end; addr++) {
 			if(mm.isMapped(addr)) {
