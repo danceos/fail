@@ -123,8 +123,8 @@ Publications about FAIL*
  - H. Schirmeier, M. Hoffmann, C. Dietrich, M. Lenz, D. Lohmann, and O.
    Spinczyk. FAIL*: An open and versatile fault-injection framework for the
    assessment of software-implemented hardware fault tolerance. In Proceedings
-   of the 11th European Dependable Computing Conference (EDCC '15). IEEE
-   Computer Society Press, Sept. 2015. To appear.
+   of the 11th European Dependable Computing Conference (EDCC '15), pages
+   245–255.  IEEE Computer Society Press, Sept. 2015.
    [PDF](http://www.danceos.org/publications/EDCC-2015-Schirmeier.pdf)
 
  - H. Schirmeier, M. Hoffmann, R. Kapitza, D. Lohmann, and
@@ -138,6 +138,10 @@ Publications about FAIL*
 
 Selected publications using FAIL*
 ---------------------------------
+
+- T. Stumpf. How to Protect the Protector?  In Proceedings of the 45th Annual
+  IEEE/IFIP International Conference on Dependable Systems and Networks (DSN '15),
+  Student Forum. IEEE Computer Society Press, June 2015.
 
 - C. Dietrich, M. Hoffmann, and D. Lohmann. Cross-kernel control-flow-graph
   analysis for event-driven real-time systems. In Proceedings of the 2015 ACM
