@@ -71,12 +71,12 @@ if(BUILD_BOCHS)
   endif()
 
   # FIXME: some libraries still need to be located the "cmake way"
-  set(bochs_library_dependencies ${bochs_library_dependencies} -lfontconfig -lrt -lvgagl -pthread)
+  set(bochs_library_dependencies ${bochs_library_dependencies} -lfontconfig -lrt -pthread)
 
 
   set(bochs_src_dir ${PROJECT_SOURCE_DIR}/simulators/bochs)
   set(bochs_install_prefix ${bochs_src_dir}/install CACHE STRING "FailBochs installation path")
-  set(bochs_configure_params --enable-a20-pin --enable-x86-64 --enable-cpu-level=6 --enable-ne2000 --enable-acpi --enable-pci --enable-usb --enable-trace-cache --enable-fast-function-calls --enable-host-specific-asms --enable-disasm --enable-readline --enable-clgd54xx --enable-fpu --enable-vmx=2 --enable-monitor-mwait --enable-cdrom --enable-sb16=linux --enable-gdb-stub --disable-docbook --with-all-libs CACHE STRING "Bochs default configure parameters")
+  set(bochs_configure_params --enable-a20-pin --enable-x86-64 --enable-cpu-level=6 --enable-ne2000 --enable-acpi --enable-pci --enable-usb --enable-trace-cache --enable-fast-function-calls --enable-host-specific-asms --enable-disasm --enable-readline --enable-clgd54xx --enable-fpu --enable-vmx=2 --enable-monitor-mwait --enable-cdrom --enable-sb16=linux --enable-gdb-stub --disable-docbook --with-nogui --with-x11 --with-wx --with-sdl CACHE STRING "Bochs configure parameters")
 
   ## Bochs CXX args for calling make
   set(bochs_build_CXX CXX=${AGXX}\ -p\ ${PROJECT_SOURCE_DIR}/src\ -p\ ${PROJECT_SOURCE_DIR}/simulators\ -p\ ${PROJECT_SOURCE_DIR}/debuggers\ -p\ ${PROJECT_SOURCE_DIR}/tools\ -p\ ${PROJECT_BINARY_DIR}/src\ -I${PROJECT_SOURCE_DIR}/src/core\ -I${CMAKE_BINARY_DIR}/src/core\ ${CMAKE_AGPP_FLAGS}\ --Xcompiler)

@@ -11,16 +11,18 @@ Required for Fail*:
  - libdwarf-dev
  - libelf-dev
  - protobuf-compiler
- - cmake 2.8.2 (2.8.11 preferred)
- - fontconfig1-dev
+ - cmake >=2.8.2 (2.8.11 preferred)
+ - libfontconfig1-dev
  - zlib1g-dev
  - binutils-dev, on newer systems libiberty-dev
- - AspectC++ (ag++, ac++): AspectC++ 1.1 or newer is known to work and can be
-   obtained from <http://www.aspectc.org>; nightlies can be downloaded from
-   <http://akut.aspectc.org>.  Make sure you use the 64-bit version if running
-   in a 64-bit environment.
-   * AspectC++ >1.2 (clang-based AspectC++): build with CMAKE_AGPP_FLAGS
-     "-D__NO_MATH_INLINES" or "--c_compiler clang++"
+ - AspectC++ (ag++, ac++):
+   * AspectC++ 1.1 or 1.2 as well as the clang-based >1.2 versions are known to
+     work and can be obtained from <http://www.aspectc.org>.  Make sure you use
+     the 64-bit version if running in a 64-bit environment.
+   * In some environments, some AspectC++ versions have issues ingesting
+     specific system headers.  Workaround: build with CMAKE_AGPP_FLAGS
+     "-D__NO_MATH_INLINES -D__STRICT_ANSI__" or "--c_compiler clang++" (the
+     latter requires the clang++ compiler).
  - optional:
    * LLVM 3.3 or 3.4 (needed for several importers in tools/import-trace)
      (compiles/links with 3.1 or 3.2, but fails to properly import information
@@ -29,7 +31,8 @@ Required for Fail*:
         come built this way)
      -  details below
    * a MySQL 5.0+ or MariaDB 5.1+ (MariaDB 5.5 recommended) server
- - optional: cmake-curses-gui
+   * doxygen
+   * cmake-curses-gui
 
 
 
@@ -37,7 +40,7 @@ Required for the Bochs simulator backend:
 **********************************************************************
  - libpthread
  - Probably more, depending on, e.g., the GUI you configure (X11 ->
-   libsvga1-dev, libxrandr-dev)
+   libsdl1.2-dev, wx -> libwxgtk2.8-dev libwxbase2.8-dev)
 
 Required for the gem5 simulator backend:
 **********************************************************************
@@ -150,14 +153,15 @@ FailBochs: Bochs configuration features
  The autotools-based bochs is configured within the Fail* build run. 
  The configuration flags can be set within the ccmake configuration (ccmake ${FAIL_DIR}/build)
      - Sufficient:
-         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub;--disable-docbook
-     - More simulator features (FailBochs default configuration):
-         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub;--disable-docbook;--with-all-libs
-    Instead of --with-all-libs, you could use --with-nogui for "headless" experiments,
-    additionally removing lots of library dependencies (thus reducing startup overhead).
-    --with-x11 enables only the "x" (X11), --with-wx only the "wx" (wxWidgets) GUI.
-    Note that "wx" does not play well together with Fail*'s "restore" feature (FailBochs
-    will fall back to "x" if available, or die trying.)
+         --enable-cpu-level=6;--enable-ne2000;--enable-trace-cache;--enable-gdb-stub;--disable-docbook;--with-nogui
+     - More simulator features and GUIs (FailBochs default configuration):
+         --enable-a20-pin;--enable-x86-64;--enable-cpu-level=6;--enable-ne2000;--enable-acpi;--enable-pci;--enable-usb;--enable-trace-cache;--enable-fast-function-calls;--enable-host-specific-asms;--enable-disasm;--enable-readline;--enable-clgd54xx;--enable-fpu;--enable-vmx=2;--enable-monitor-mwait;--enable-cdrom;--enable-sb16=linux;--enable-gdb-stub;--disable-docbook;--with-nogui;--with-x11;--with-wx;--with-sdl
+    The --with-nogui flag suffices for for "headless" experiments, with the
+    advantage of removing lots of library dependencies (thus reducing startup
+    overhead).  --with-x11 enables only the "x" (X11), --with-wx only the "wx"
+    (wxWidgets) GUI.  Note that "wx" does not play well together with Fail*'s
+    "restore" feature (FailBochs will fall back to "x" if available, or die
+    trying.)
     Once you know everything works as it should, you may want to add the
     following flags before running larger campaigns:
       --disable-logging --disable-assert-checks

@@ -5,6 +5,10 @@ if("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
   # (makes cmake 2.8.4 and newer)
   cmake_policy(SET CMP0017 NEW)
 endif("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
+if(NOT ("${CMAKE_VERSION}" VERSION_LESS 3.0)) # >= 3.0?
+  # don't overwrite PROJECT_VERSION when calling PROJECT()
+  cmake_policy(SET CMP0048 OLD)
+endif()
 ENABLE_TESTING()
 
 PROJECT(Fail*)
