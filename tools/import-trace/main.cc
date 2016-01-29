@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 			"-e/--elf-file \tELF File (default: UNSET)");
 	CommandLine::option_handle MEMORYMAP =
 		cmd.addOption("m", "memorymap", Arg::Required,
-			"-m/--memorymap \tMemory map to intersect with trace (may be used more than once; default: UNSET)");
+			"-m/--memorymap \tMemory map to intersect with trace (if used more than once, the union of all maps will be used; default: UNSET)");
 	CommandLine::option_handle NO_DELETE =
 		cmd.addOption("", "no-delete", Arg::None,
 			"--no-delete \tAssume there are no DB entries for this variant/benchmark, don't issue a DELETE");

@@ -17,15 +17,14 @@
 	already in place to import things related to an ELF binary into
 	the database.
 
-	The ElfImporter calls objdump and dissassembles an ELF binary
-	and imports the results into the database
+	The ElfImporter calls objdump to dissassemble an ELF binary, and
+	imports the results into the database.
 
-	In addition, debugging information can be imported:
-
-	If the --sources option is set, the source files will be imported
-	into the database. Only the files that were actually used in the
-	ELF binary will be imported.  Additionally, the line number table of the
-	ELF binary will be imported into the database.
+	In addition, debugging information can be imported: If the --sources
+	option is set, the source files will be imported into the database.
+	Only the files that were actually used in the ELF binary will be imported.
+	Additionally, the line number table of the ELF binary will be imported
+	into the database.
 */
 class ElfImporter : public Importer {
 	llvm::OwningPtr<llvm::object::Binary> binary;
