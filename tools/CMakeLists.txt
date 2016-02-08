@@ -6,6 +6,8 @@ option(BUILD_CONVERT_TRACE "Build the trace converter tool?" OFF)
 option(BUILD_COMPUTE_HOPS  "Build the compute hops tool?" OFF)
 option(BUILD_DUMP_HOPS  "Build the hops dump tool?" OFF)
 
+option(BUILD_FAULTSPACEPLOT "Build the faultspace plotting tool?" OFF)
+
 ### Setup search paths for headers ##
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src/core)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src/core)
@@ -33,3 +35,7 @@ endif(BUILD_COMPUTE_HOPS)
 if(BUILD_DUMP_HOPS)
 	add_subdirectory(dump-hops)
 endif(BUILD_DUMP_HOPS)
+
+if(BUILD_FAULTSPACEPLOT)
+	add_subdirectory(analysis/faultspaceplot)
+endif(BUILD_FAULTSPACEPLOT)
