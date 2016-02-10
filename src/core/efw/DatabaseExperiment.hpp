@@ -15,6 +15,7 @@ class DatabaseExperiment : public fail::ExperimentFlow {
 	fail::JobClient *m_jc;
 
 	unsigned injectBitFlip(fail::address_t data_address, unsigned bitpos);
+	unsigned injectBurst(fail::address_t data_address);
 
 	/**
 	   The current experiment data as returned by the job client. This

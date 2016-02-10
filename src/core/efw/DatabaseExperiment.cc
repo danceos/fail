@@ -27,6 +27,18 @@ DatabaseExperiment::~DatabaseExperiment()  {
 	delete this->m_jc;
 }
 
+unsigned DatabaseExperiment::injectBurst(address_t data_address) {
+	unsigned value, burst_value;
+	value = m_mm.getByte(data_address);
+	burst_value = value ^ 0xff;
+	m_mm.setByte(data_address, burst_value);
+
+	m_log << "INJECTED BURST at: 0x" << hex<< setw(2) << setfill('0') << data_address
+		  << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x"
+		  << setw(2) << setfill('0') << burst_value << endl;
+	return value;
+}
+
 unsigned DatabaseExperiment::injectBitFlip(address_t data_address, unsigned bitpos){
 	unsigned int value, injectedval;
 
@@ -92,8 +104,9 @@ bool DatabaseExperiment::run()
 		unsigned  injection_instr = fsppilot->injection_instr();
 		address_t data_address = fsppilot->data_address();
 		unsigned width = fsppilot->data_width();
+		unsigned injection_width = fsppilot->inject_bursts() ? 8 : 1;
 
-		for (unsigned bit_offset = 0; bit_offset < width * 8; ++bit_offset) {
+		for (unsigned bit_offset = 0; bit_offset < width * 8; bit_offset += injection_width) {
 			// 8 results in one job
 			Message *outer_result = cb_new_result(param);
 			m_current_result = outer_result;
@@ -157,8 +170,14 @@ bool DatabaseExperiment::run()
 
 			simulator.clearListeners();
 
-			/// INJECT BITFLIP:
-			result->set_original_value(injectBitFlip(data_address, bit_offset));
+			if (fsppilot->inject_bursts()) {
+				/// INJECT BURST:
+				result->set_original_value(injectBurst((data_address+bit_offset/8)));
+			} else {
+				/// INJECT BITFLIP:
+				result->set_original_value(injectBitFlip(data_address, bit_offset));
+			}
+			result->set_injection_width(injection_width);
 
 			if (!this->cb_before_resume()) {
 				continue; // Continue to next experiment
