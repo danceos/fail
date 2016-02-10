@@ -56,7 +56,7 @@ void GenericExperiment::parseSymbols(const std::string &args, std::set<fail::Bas
 	std::stringstream ss(args);
 	std::string item;
 	while (std::getline(ss, item, ',')) {
-		const ElfSymbol * symbol = &m_elf.getSymbol(item);
+		const ElfSymbol * symbol = &(m_elf->getSymbol(item));
 		if (!symbol->isValid()) {
 			m_log << "ELF Symbol not found: " << item << endl;
 			simulator.terminate(1);
@@ -75,6 +75,9 @@ bool GenericExperiment::cb_start_experiment() {
 	CommandLine &cmd = CommandLine::Inst();
 	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
+
+	CommandLine::option_handle ELF_FILE = cmd.addOption("", "elf-file", Arg::Required,
+														 "--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
 
 	CommandLine::option_handle STATE_DIR = cmd.addOption("", "state-dir", Arg::Required,
 														 "--state-dir \t Path to the state directory");
@@ -104,7 +107,7 @@ bool GenericExperiment::cb_start_experiment() {
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
-		exit(-1);
+		exit(1);
 	}
 
 	if (cmd[HELP]) {
@@ -112,13 +115,32 @@ bool GenericExperiment::cb_start_experiment() {
 		exit(0);
 	}
 
+	if (cmd[ELF_FILE]) {
+		elf_file = cmd[ELF_FILE].first()->arg;
+		m_elf = new ElfReader(elf_file.c_str());
+		m_log << "ELF file specified: " << elf_file << std::endl;
+	} else {
+		char *elfpath = getenv("FAIL_ELF_PATH");
+		if (elfpath == NULL) {
+			m_elf = NULL;
+		} else {
+			elf_file = elfpath;
+			m_elf = new ElfReader(elf_file.c_str());
+			m_log << "ELF file via environment variable: " << elf_file << std::endl;
+		}
+	}
+	if (m_elf == NULL) {
+		m_log << "ERROR: no FAIL_ELF_PATH set or --elf-file given. exiting!" << std::endl;
+		exit(1);
+	}
+
 	address_t minimal_ip = INT_MAX; // Every address is lower
 	address_t maximal_ip = 0;
 	address_t minimal_data = 0x100000; // 1 Mbyte
 	address_t maximal_data = 0;
 
-	for (ElfReader::section_iterator it = m_elf.sec_begin();
-		 it != m_elf.sec_end(); ++it) {
+	for (ElfReader::section_iterator it = m_elf->sec_begin();
+		 it != m_elf->sec_end(); ++it) {
 		const ElfSymbol &symbol = *it;
 		std::string prefix(".text");
 		if (symbol.getName().compare(0, prefix.size(), prefix) == 0) {

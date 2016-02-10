@@ -14,7 +14,8 @@
 
 
 class GenericExperiment : public fail::DatabaseExperiment {
-	fail::ElfReader m_elf;
+	fail::ElfReader *m_elf;
+	std::string elf_file;
 
 	std::string m_state_dir;
 
