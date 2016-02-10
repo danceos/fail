@@ -42,6 +42,23 @@ google::protobuf::Message* GenericExperiment::cb_new_result(ExperimentData* data
     return result;
 }
 
+std::vector<char> loadFile(std::string filename)
+{
+	std::vector<char> data;
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (!f) {
+		return data;
+	}
+	fseek(f, 0, SEEK_END);
+	long len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if (len > 0) {
+		data.resize(len);
+		fread(&data[0], len, 1, f);
+	}
+	fclose(f);
+	return data;
+}
 
 void handleEvent(GenericExperimentMessage_Result& result,
 				 GenericExperimentMessage_Result_ResultType restype,
@@ -94,6 +111,9 @@ bool GenericExperiment::cb_start_experiment() {
 
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
 													   "--timeout \t Experiment Timeout in uS");
+
+	CommandLine::option_handle E9_FILE = cmd.addOption("", "e9-file", Arg::Required,
+													  "--e9-file FILE \t data logged via port 0xE9 in golden run");
 
 
 	std::map<std::string, CommandLine::option_handle> option_handles;
@@ -150,6 +170,12 @@ bool GenericExperiment::cb_start_experiment() {
 			minimal_data = std::min(minimal_data, symbol.getStart());
 			maximal_data = std::max(maximal_data, symbol.getEnd());
 		}
+	}
+
+	if (cmd[E9_FILE]) {
+		m_log << "enabled logging on port E9 for SDC-detection" << std::endl;
+		enabled_e9_sol = true;
+		e9_file = std::string(cmd[E9_FILE].first()->arg);
 	}
 
 	if (cmd[WRITE_MEM_TEXT]) {
@@ -229,6 +255,10 @@ bool GenericExperiment::cb_before_resume() {
 		simulator.addListener(*it);
 	}
 
+	if (enabled_e9_sol) {
+		simulator.addFlow(&e9_sol);
+	}
+
 	return true; // everything OK
 }
 
@@ -237,7 +267,6 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 
 	// Record the crash time
 	result->set_crash_time(simulator.getTimerTicks());
-
 
 	if (event == &l_timeout) {
 		handleEvent(*result, result->TIMEOUT, m_Timeout);
@@ -257,6 +286,17 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 	} else if (OK_marker.find(event) != OK_marker.end()) {
 		const ElfSymbol *symbol = listener_to_symbol[event];
 		handleEvent(*result, result->OK_MARKER, symbol->getAddress());
+
+		// check experiment's data for SDC
+		if (enabled_e9_sol) {
+			// compare golden run to experiment
+			std::vector<char> e9_goldenrun = loadFile(e9_file);
+			std::string e9_experiment = e9_sol.getOutput();
+			if ( ! (e9_experiment.size() == e9_goldenrun.size()
+					&& equal(e9_experiment.begin(), e9_experiment.end(), e9_goldenrun.begin())) ) {
+				handleEvent(*result, result->SDC, 0);
+			}
+		}
 
 	} else if (FAIL_marker.find(event) != FAIL_marker.end()) {
 		const ElfSymbol *symbol = listener_to_symbol[event];
@@ -284,5 +324,11 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 
 	} else {
 		handleEvent(*result, result->UNKNOWN, 0);
+	}
+
+	// remove and reset 0xE9 logger even if this run was not "OK"
+	if (enabled_e9_sol) {
+		simulator.removeFlow(&e9_sol);
+		e9_sol.resetOutput();
 	}
 }

@@ -13,7 +13,7 @@ message GenericExperimentMessage {
             OK_MARKER = 1;
             FAIL_MARKER = 2;
             DETECTED_MARKER = 3;
-            
+
             GROUP1_MARKER = 4;
             GROUP2_MARKER = 5;
             GROUP3_MARKER = 6;
@@ -23,6 +23,8 @@ message GenericExperimentMessage {
             TRAP    = 9;
             WRITE_TEXTSEGMENT = 10;
             WRITE_OUTERSPACE  = 11;
+
+            SDC = 12;
 
             UNKNOWN = 100;
 		}

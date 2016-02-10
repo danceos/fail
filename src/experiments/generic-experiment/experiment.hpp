@@ -7,6 +7,7 @@
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
 #include "util/ElfReader.hpp"
+#include "../plugins/serialoutput/SerialOutputLogger.hpp"
 #include <string>
 #include <stdlib.h>
 #include <map>
@@ -18,6 +19,10 @@ class GenericExperiment : public fail::DatabaseExperiment {
 	std::string elf_file;
 
 	std::string m_state_dir;
+
+	bool enabled_e9_sol;
+	std::string e9_file;
+	SerialOutputLogger e9_sol;
 
 	bool enabled_mem_text;
 	fail::MemAccessListener l_mem_text;
@@ -52,6 +57,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 public:
 	GenericExperiment() : DatabaseExperiment("GenericExperiment"),
 						  m_state_dir("state"),
+						  e9_sol(0xE9),
 						  l_trap(fail::ANY_TRAP), l_timeout(0) {
 		enabled_mem_text = false;
 		enabled_mem_outerspace = false;
