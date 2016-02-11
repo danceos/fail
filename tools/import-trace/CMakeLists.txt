@@ -42,3 +42,4 @@ if (BUILD_LLVM_DISASSEMBLER)
 endif (BUILD_LLVM_DISASSEMBLER)
 
 install(TARGETS import-trace RUNTIME DESTINATION bin)
+install(PROGRAMS import-symbols.sh DESTINATION bin)
