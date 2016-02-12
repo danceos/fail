@@ -40,7 +40,7 @@ Required for the Bochs simulator backend:
 **********************************************************************
  - libpthread
  - Probably more, depending on, e.g., the GUI you configure (X11 ->
-   libsdl1.2-dev, wx -> libwxgtk2.8-dev libwxbase2.8-dev)
+   libsdl1.2-dev, wx -> libgtk2.0-dev libwxgtk2.8-dev libwxbase2.8-dev)
 
 Required for the gem5 simulator backend:
 **********************************************************************
