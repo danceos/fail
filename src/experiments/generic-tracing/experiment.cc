@@ -62,7 +62,7 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle START_ADDRESS = cmd.addOption("B", "start-address", Arg::Required,
 		"-B,--start-address \tStart Address to start tracing");
 	CommandLine::option_handle STOP_ADDRESS = cmd.addOption("E", "end-address",Arg::Required,
-		"-E--end-address \tEnd Address to end tracing");
+		"-E,--end-address \tEnd Address to end tracing");
 	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
 		"--serial-port \tListen to a given I/O address (default: 0x3F8)");
 	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
