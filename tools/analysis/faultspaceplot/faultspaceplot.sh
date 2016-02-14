@@ -47,6 +47,7 @@ $MYSQL <<EOT > "$VARIANT"_"$BENCHMARK"-raw.csv
 	JOIN result_GenericExperimentMessage r ON r.pilot_id=g.pilot_id
 	WHERE
 		  v.variant = '$VARIANT' AND v.benchmark = '$BENCHMARK'
+	  AND r.resulttype != 'OK_MARKER'
 	  AND t.accesstype = 'R';
 EOT
 
