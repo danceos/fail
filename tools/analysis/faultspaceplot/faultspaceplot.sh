@@ -9,8 +9,16 @@ fi
 DATABASE=$1
 VARIANT=$2
 BENCHMARK=$3
-# add "-t" for more readable output
 MYSQL="mysql -B --quick $DATABASE"
+
+MYDIR=$(dirname $0)
+
+function table_exists()
+{
+	N=$(echo "SHOW TABLES LIKE '$1'" | $MYSQL $DATABASE | wc -l)
+	[ $N -gt 0 ]
+	return
+}
 
 # get data
 echo "getting faultspace data.."
@@ -44,8 +52,24 @@ EOT
 
 # compact data
 echo "compacting data.."
-fsp.compact.sh "$VARIANT"_"$BENCHMARK"-raw.csv "$VARIANT"_"$BENCHMARK"-plot.csv
+"$MYDIR"/fsp.compact.sh "$VARIANT"_"$BENCHMARK"-raw.csv "$VARIANT"_"$BENCHMARK"-plot.csv
+
+# fetch symbols if available
+if table_exists symbol; then
+	echo "getting symbol information ..."
+	$MYSQL <<EOT > "$VARIANT"_"$BENCHMARK"-symbols.csv
+	SELECT s.address, s.size, s.name
+	FROM variant v
+	JOIN symbol s ON s.variant_id = v.id
+	WHERE v.variant = '$VARIANT' AND v.benchmark = '$BENCHMARK'
+	ORDER BY s.address
+EOT
+fi
 
 # plot data
 echo "plotting.."
-fsp.plot.py "$VARIANT"_"$BENCHMARK"-plot.csv
+if [ -e "$VARIANT"_"$BENCHMARK"-symbols.csv -a $(wc -l < "$VARIANT"_"$BENCHMARK"-symbols.csv) -gt 1 ]; then
+	"$MYDIR"/fsp.plot.py "$VARIANT"_"$BENCHMARK"-plot.csv "$VARIANT"_"$BENCHMARK"-symbols.csv
+else
+	"$MYDIR"/fsp.plot.py "$VARIANT"_"$BENCHMARK"-plot.csv
+fi

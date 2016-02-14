@@ -42,7 +42,7 @@ if sys.argv[1] == '-h':
     print "DATA_FILE is a CSV-file, storing the tab-separated values"
     print "retrieved by the experiment run. USER_TAG_FILE is an optional"
     print "CSV-file which can be used to add user-specific marks to the"
-    print "plot (not implemented yet)." # TODO: be more precise here
+    print "plot." # TODO: be more precise here
     exit(0)
 
 print "Opening and processing \"" + sys.argv[1] + "\"..."
@@ -51,6 +51,17 @@ dialect = csv.Sniffer().sniff(file.read(1024))
 file.seek(0)
 reader = csv.reader(file, dialect)
 reader.next() # Move down a line to skip the header
+
+if len(sys.argv) >= 3:
+    print "Opening and processing \"" + sys.argv[2] + "\"..."
+    symbolfile = open(sys.argv[2], "r")
+    dialect = csv.Sniffer().sniff(symbolfile.read(1024))
+    symbolfile.seek(0)
+    symbolreader = csv.reader(symbolfile, dialect)
+    symbolreader.next() # Move down a line to skip the header
+    have_symbols = True
+else:
+    have_symbols = False
 
 fig = plt.figure()
 
@@ -103,6 +114,53 @@ plt.ylim(ymin, ymax)
 
 plt.ylabel('Data Memory (RAM)')
 plt.xlabel('Time (Cycles)')
+
+# show symbols
+if have_symbols:
+    # Adding 2nd y-axis for object names
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('Symbols')
+
+    # necessary for proper symbol placement
+    plt.ylim(ymin, ymax)
+
+    ticks = []
+    symbols = []
+
+    IDX_SYMBOL_ADDRESS = 0; IDX_SYMBOL_SIZE = 1; IDX_SYMBOL_NAME = 2;
+
+    for row in symbolreader:
+        # TODO: somehow plot size as well
+        address = int(row[IDX_SYMBOL_ADDRESS])
+        size = int(row[IDX_SYMBOL_SIZE])
+        if (address >= ymin) and (address <= ymax):
+            ticks.append(address)
+            symbols.append(row[IDX_SYMBOL_NAME])
+            #print "symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+        elif (address < ymin) and (address + size >= ymin):
+            ticks.append(ymin)
+            symbols.append("(" + row[IDX_SYMBOL_NAME] + ")")
+            #print "partial symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+        else:
+            #print "skipped symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+            pass
+
+    # list of interesting addresses
+    ax2.yaxis.set_ticks(ticks)
+    ax2.yaxis.grid(b=True, color='gray')
+
+    # create minor ticks centered between major tick marks
+    centered_ticks = []
+    major_locator = ax2.yaxis.get_major_locator()
+    major_locs = major_locator()
+    for i in range(1,len(major_locs)):
+        y_last,y = major_locs[i-1],major_locs[i]
+        centered_ticks.append(0.5*(y+y_last))
+    ax2.yaxis.set_ticks(centered_ticks, minor=True)
+
+    # list of corresponding symbol names
+    ax2.set_yticklabels(symbols, minor=False, rotation=0, rotation_mode='anchor')
 
 plt.show()
 #pylab.savefig('baseline.pdf', bbox_inches='tight')
