@@ -48,10 +48,20 @@ EOT
 
 	LAST_ADDR=
 	LAST_SYMBOL=
-	nm -n -C $ELF | egrep '^[0-9a-fA-F]' | while read line
+
+	# The "dummy" entry at the end makes sure the last real symbol from the
+	# nm output makes it into the database.
+	(nm -n -S -C $ELF; echo ffffffff a dummy) \
+	| egrep '^[0-9a-fA-F]' | while read line
 	do
 		ADDR=$(echo "$line"|awk '{print $1}')
-		SYMBOL=$(echo "$line"|awk '{for (i=1; i<=NF-2; i++) $i = $(i+2); NF-=2; print}')
+		SIZE=$(echo "$line"|awk '{print $2}')
+		if echo $SIZE | egrep -q '^[0-9a-fA-F]{8}'; then
+			SYMBOL=$(echo "$line"|awk '{for (i=1; i<=NF-3; i++) $i = $(i+3); NF-=3; print}')
+		else
+			SIZE=unknown
+			SYMBOL=$(echo "$line"|awk '{for (i=1; i<=NF-2; i++) $i = $(i+2); NF-=2; print}')
+		fi
 
 		if [ $LAST_ADDR ]; then
 			# only create INSERT-line, if $ADDR is new to us
@@ -60,8 +70,16 @@ EOT
 				echo "($ID, cast(0x$LAST_ADDR AS UNSIGNED), CAST(0x$ADDR AS UNSIGNED)-CAST(0x$LAST_ADDR AS UNSIGNED), '$LAST_SYMBOL');"
 			fi
 		fi
-		LAST_ADDR=$ADDR
-		LAST_SYMBOL=$SYMBOL
+
+		if [ $SIZE != unknown ]; then
+			echo "INSERT INTO $TABLE (variant_id, address, size, name) VALUES "
+			echo "($ID, cast(0x$ADDR AS UNSIGNED), CAST(0x$SIZE AS UNSIGNED), '$SYMBOL');"
+			LAST_ADDR=
+			LAST_SYMBOL=
+		else
+			LAST_ADDR=$ADDR
+			LAST_SYMBOL=$SYMBOL
+		fi
 	done
 ) | $MYSQL
 
