@@ -193,7 +193,7 @@ bool GenericExperiment::cb_start_experiment() {
 
 		l_mem_outerspace.setWatchAddress(maximal_data);
 		l_mem_outerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
-		l_mem_outerspace.setWatchWidth(0xfffffff0);
+		l_mem_outerspace.setWatchWidth(0xfffffff0 - maximal_data);
 	}
 
 	if (cmd[TRAP]) {
