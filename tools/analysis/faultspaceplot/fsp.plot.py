@@ -45,8 +45,6 @@ if sys.argv[1] == '-h':
     print "plot (not implemented yet)." # TODO: be more precise here
     exit(0)
 
-print "WARNING: This script needs a newer version of Matplotlib for axis label rotation; run this on Ubuntu 12.10 or alike."
-
 print "Opening and processing \"" + sys.argv[1] + "\"..."
 file = open(sys.argv[1], "r")
 dialect = csv.Sniffer().sniff(file.read(1024))

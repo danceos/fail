@@ -17,7 +17,7 @@ echo "getting faultspace data.."
 $MYSQL <<EOT > "$VARIANT"_"$BENCHMARK"-raw.csv
 	SELECT t.time1 - (SELECT MIN(t2.time1) FROM trace t2 WHERE t.variant_id = t2.variant_id) AS time1,
 		   t.time2 - (SELECT MIN(t2.time1) FROM trace t2 WHERE t.variant_id = t2.variant_id) AS time2,
-		   t.data_address, r.bitoffset, 1,
+		   t.data_address, r.bitoffset, r.injection_width,
 	CASE
 	  WHEN r.resulttype = 'OK_MARKER' THEN '#FFFFFF'
 	  WHEN r.resulttype = 'FAIL_MARKER' THEN '#EE0000'
