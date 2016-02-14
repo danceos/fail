@@ -106,7 +106,8 @@ for row in reader:
         pass
         #break
 
-ymin = int(ymin / 1000) * 1000
+# round down to nearest 1000
+#ymin = int(ymin / 1000) * 1000
 
 file.close()
 plt.xlim(xmin, xmax)
