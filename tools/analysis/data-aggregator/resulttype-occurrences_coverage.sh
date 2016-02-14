@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-if [ ! $# -eq 3 ]; then
-	echo "usage: $0 DATABASE VARIANT BENCHMARK" >&2
+if [ $# -ne 3 -a $# -ne 1 ]; then
+	echo "usage: $0 DATABASE [ VARIANT BENCHMARK ]" >&2
 	exit 1
 fi
 
@@ -12,6 +12,30 @@ BENCHMARK=$3
 # add "-t" for more readable output
 MYSQL="mysql -B --quick $DATABASE"
 
+if [ -z "$VARIANT" ]; then
+$MYSQL << EOT
+	SET sql_mode = 'NO_UNSIGNED_SUBTRACTION';
+	SELECT v.benchmark, v.variant, r.resulttype,
+		   SUM((t.time2-t.time1+1) * t.width)
+				/
+		   (SELECT SUM(t.time2-t.time1+1)*t.width
+			FROM result_GenericExperimentMessage r
+			INNER JOIN fspgroup g ON g.pilot_id=r.pilot_id
+			INNER JOIN trace t ON g.instr2=t.instr2
+				AND g.data_address=t.data_address
+				AND g.variant_id=t.variant_id
+			WHERE t.variant_id = v.id -- refers to parent query
+		   ) AS coverage
+	FROM result_GenericExperimentMessage r
+	INNER JOIN fspgroup g ON g.pilot_id=r.pilot_id
+	INNER JOIN trace t ON g.instr2=t.instr2
+		AND g.data_address=t.data_address
+		AND g.variant_id=t.variant_id
+	INNER JOIN variant v ON t.variant_id=v.id
+	GROUP BY v.id, r.resulttype
+	ORDER BY v.benchmark, v.variant, r.resulttype;
+EOT
+else
 $MYSQL << EOT
 	SET sql_mode = 'NO_UNSIGNED_SUBTRACTION';
 	SELECT r.resulttype,
@@ -23,9 +47,7 @@ $MYSQL << EOT
 			INNER JOIN trace t ON g.instr2=t.instr2
 				AND g.data_address=t.data_address
 				AND g.variant_id=t.variant_id
-			INNER JOIN variant v ON t.variant_id=v.id
-			WHERE v.variant="$VARIANT"
-				AND v.benchmark="$BENCHMARK"
+			WHERE t.variant_id = v.id -- refers to parent query
 		   ) AS coverage
 	FROM result_GenericExperimentMessage r
 	INNER JOIN fspgroup g ON g.pilot_id=r.pilot_id
@@ -36,5 +58,6 @@ $MYSQL << EOT
 	WHERE v.variant="$VARIANT"
 		AND v.benchmark="$BENCHMARK"
 	GROUP BY r.resulttype
-	ORDER BY r.resulttype ASC;
+	ORDER BY r.resulttype;
 EOT
+fi
