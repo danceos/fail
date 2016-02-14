@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+//#define LOCAL
 
 using namespace std;
 using namespace fail;
@@ -91,15 +92,25 @@ bool DatabaseExperiment::run()
 	while (executed_jobs < 25 || m_jc->getNumberOfUndoneJobs() > 0) {
 		m_log << "asking jobserver for parameters" << endl;
 		ExperimentData * param = this->cb_allocate_experiment_data();
+#ifndef LOCAL
 		if (!m_jc->getParam(*param)){
 			m_log << "Dying." << endl; // We were told to die.
 			simulator.terminate(1);
 		}
+#endif
 		m_current_param = param;
 
 		DatabaseCampaignMessage * fsppilot =
 			protobufFindSubmessageByTypename<DatabaseCampaignMessage>(&param->getMessage(), "DatabaseCampaignMessage");
 		assert (fsppilot != 0);
+
+#ifdef LOCAL
+		fsppilot->set_injection_instr(0);
+		fsppilot->set_injection_instr_absolute(1048677);
+		fsppilot->set_data_address(2101240);
+		fsppilot->set_data_width(1);
+		fsppilot->set_inject_bursts(true);
+#endif
 
 		unsigned  injection_instr = fsppilot->injection_instr();
 		address_t data_address = fsppilot->data_address();
@@ -196,7 +207,11 @@ bool DatabaseExperiment::run()
 
 			simulator.clearListeners(this);
 		}
+#ifndef LOCAL
 		m_jc->sendResult(*param);
+#else
+		break;
+#endif
 		this->cb_free_experiment_data(param);
 	}
 	// Explicitly terminate, or the simulator will continue to run.
