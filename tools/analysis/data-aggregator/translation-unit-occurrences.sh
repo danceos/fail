@@ -1,16 +1,23 @@
 #!/bin/bash
 set -e
 
+if [ "$1" = -t ]; then
+	FORMAT=-t
+	shift
+else
+	FORMAT=-B
+fi
+
 if [ ! $# -eq 3 ]; then
-	echo "usage: $0 DATABASE VARIANT BENCHMARK" >&2
+	echo "usage: $0 [ -t ] DATABASE VARIANT BENCHMARK" >&2
+	echo "  -t      Display output in table format (tab-separated CSV otherwise)" >&2
 	exit 1
 fi
 
 DATABASE=$1
 VARIANT=$2
 BENCHMARK=$3
-# add "-t" for more readable output
-MYSQL="mysql -B --quick $DATABASE"
+MYSQL="mysql $FORMAT $DATABASE"
 
 $MYSQL << EOT
 SELECT v.benchmark, v.variant, f.path, r.resulttype, SUM(t.time2-t.time1+1) AS occurrences

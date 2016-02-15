@@ -1,16 +1,23 @@
 #!/bin/bash
 set -e
 
+if [ "$1" = -t ]; then
+	FORMAT=-t
+	shift
+else
+	FORMAT=-B
+fi
+
 if [ $# -ne 3 -a $# -ne 1 ]; then
-	echo "usage: $0 DATABASE [ VARIANT BENCHMARK ]" >&2
+	echo "usage: $0 [ -t ] DATABASE [ VARIANT BENCHMARK ]" >&2
+	echo "  -t      Display output in table format (tab-separated CSV otherwise)" >&2
 	exit 1
 fi
 
 DATABASE=$1
 VARIANT=$2
 BENCHMARK=$3
-# add "-t" for more readable output
-MYSQL="mysql -B --quick $DATABASE"
+MYSQL="mysql $FORMAT $DATABASE"
 
 if [ -z "$VARIANT" ]; then
 $MYSQL << EOT
