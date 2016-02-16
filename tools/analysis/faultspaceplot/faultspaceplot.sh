@@ -1,8 +1,16 @@
 #!/bin/bash
 set -e
 
+if [ "$1" = -k ]; then
+	KEEPCSV=yes
+	shift
+else
+	KEEPCSV=no
+fi
+
 if [ ! $# -eq 3 ]; then
-	echo "usage: $0 DATABASE VARIANT BENCHMARK" >&2
+	echo "usage: $0 [ -k ] DATABASE VARIANT BENCHMARK" >&2
+	echo "  -k      Keep compacted plot (and symbols) CSV" >&2
 	exit 1
 fi
 
@@ -21,8 +29,9 @@ function table_exists()
 }
 
 # get data
+RAWCSV=$(mktemp)
 echo "getting faultspace data.."
-$MYSQL <<EOT > "$VARIANT"_"$BENCHMARK"-raw.csv
+$MYSQL <<EOT > $RAWCSV
 	SELECT t.time1 - (SELECT MIN(t2.time1) FROM trace t2 WHERE t.variant_id = t2.variant_id) AS time1,
 		   t.time2 - (SELECT MIN(t2.time1) FROM trace t2 WHERE t.variant_id = t2.variant_id) AS time2,
 		   t.data_address, r.bitoffset, r.injection_width,
@@ -53,12 +62,16 @@ EOT
 
 # compact data
 echo "compacting data.."
-"$MYDIR"/fsp.compact.sh "$VARIANT"_"$BENCHMARK"-raw.csv "$VARIANT"_"$BENCHMARK"-plot.csv
+COMPACTCSV=$(mktemp)
+"$MYDIR"/fsp.compact.sh $RAWCSV $COMPACTCSV
+rm $RAWCSV
 
 # fetch symbols if available
+SYMBOLCSV=
 if table_exists symbol; then
+	SYMBOLCSV=$(mktemp)
 	echo "getting symbol information ..."
-	$MYSQL <<EOT > "$VARIANT"_"$BENCHMARK"-symbols.csv
+	$MYSQL <<EOT > $SYMBOLCSV
 	SELECT s.address, s.size, s.name
 	FROM variant v
 	JOIN symbol s ON s.variant_id = v.id
@@ -69,8 +82,20 @@ fi
 
 # plot data
 echo "plotting.."
-if [ -e "$VARIANT"_"$BENCHMARK"-symbols.csv -a $(wc -l < "$VARIANT"_"$BENCHMARK"-symbols.csv) -gt 1 ]; then
-	"$MYDIR"/fsp.plot.py "$VARIANT"_"$BENCHMARK"-plot.csv "$VARIANT"_"$BENCHMARK"-symbols.csv
-else
-	"$MYDIR"/fsp.plot.py "$VARIANT"_"$BENCHMARK"-plot.csv
+if [ $KEEPCSV = yes ]; then
+	KEPT="$VARIANT"_"$BENCHMARK"-plot.csv
+	mv "$COMPACTCSV" "$KEPT"
+	COMPACTCSV=$KEPT
 fi
+if [ ! -z "$SYMBOLCSV" -a $(wc -l < $SYMBOLCSV) -gt 1 ]; then
+	if [ $KEEPCSV = yes ]; then
+		KEPT="$VARIANT"_"$BENCHMARK"-symbols.csv
+		mv "$SYMBOLCSV" "$KEPT"
+		SYMBOLCSV=$KEPT
+	fi
+	"$MYDIR"/fsp.plot.py "$COMPACTCSV" "$SYMBOLCSV"
+	[ $KEEPCSV = no ] && rm "$SYMBOLCSV"
+else
+	"$MYDIR"/fsp.plot.py "$COMPACTCSV"
+fi
+[ $KEEPCSV = no ] && rm "$COMPACTCSV"
