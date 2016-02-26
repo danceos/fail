@@ -243,6 +243,15 @@ bool GenericExperiment::cb_start_experiment() {
 }
 
 
+bool GenericExperiment::cb_before_fast_forward()
+{
+	if (enabled_e9_sol) {
+		// output may already appear *before* FI
+		simulator.addFlow(&e9_sol);
+	}
+	return true;
+}
+
 bool GenericExperiment::cb_before_resume() {
 	if (enabled_trap)
 		simulator.addListener(&l_trap);
@@ -261,10 +270,6 @@ bool GenericExperiment::cb_before_resume() {
 	for (std::set<BaseListener *>::iterator it = end_markers.begin();
 		 it != end_markers.end(); ++it) {
 		simulator.addListener(*it);
-	}
-
-	if (enabled_e9_sol) {
-		simulator.addFlow(&e9_sol);
 	}
 
 	return true; // everything OK

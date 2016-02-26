@@ -120,7 +120,7 @@ bool DatabaseExperiment::run()
 
 			m_log << "Trying to inject @ instr #" << dec << injection_instr << endl;
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 
 			if (!this->cb_before_fast_forward()) {
 				continue;
@@ -168,7 +168,7 @@ bool DatabaseExperiment::run()
 				simulator.terminate(1);
 			}
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 
 			if (fsppilot->inject_bursts()) {
 				/// INJECT BURST:
@@ -194,7 +194,7 @@ bool DatabaseExperiment::run()
 			m_log << "Resume done" << std::endl;
 			this->cb_after_resume(listener);
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 		}
 		m_jc->sendResult(*param);
 		this->cb_free_experiment_data(param);

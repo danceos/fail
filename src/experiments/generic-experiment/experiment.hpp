@@ -99,6 +99,14 @@ public:
 	virtual bool cb_start_experiment();
 
 	/**
+	 * Callback that is called before the fast forward is done. This
+	 * can be used to add additional event listeners during the fast
+	 * forward phase. If returning false, the experiment is canceled.
+	 * @return \c true on success, \c false otherwise
+	 */
+	virtual bool cb_before_fast_forward();
+
+	/**
 	 * Callback that is called before the resuming till crash has
 	 * started. This is called after the fault was injected. Here the
 	 * end listeners should be installed. Returns true on
