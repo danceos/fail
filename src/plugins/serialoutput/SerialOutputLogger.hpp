@@ -40,6 +40,11 @@ public:
 	 * Returns the output variable.
 	 */
 	std::string getOutput();
+	/**
+	 * Sets the character limit.  Does not truncate the stored data if it
+	 * already exceeds the new limit.  0 = unlimited.
+	 */
+	void setLimit(unsigned char_limit) { m_limit = char_limit; }
 };
 
 #endif // __SERIAL_OUTPUT_LOGGER_HPP__

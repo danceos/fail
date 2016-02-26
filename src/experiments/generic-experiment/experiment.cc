@@ -176,6 +176,14 @@ bool GenericExperiment::cb_start_experiment() {
 		m_log << "enabled logging on port E9 for SDC-detection" << std::endl;
 		enabled_e9_sol = true;
 		e9_file = std::string(cmd[E9_FILE].first()->arg);
+		e9_goldenrun = loadFile(e9_file);
+
+		// Limit the serial-output logger buffer to prevent overly large memory
+		// consumption in case the target system ends up, e.g., in an endless
+		// loop.  "+ 1" to be able to detect the case when the target system
+		// makes a correct output but faultily adds extra characters
+		// afterwards.
+		e9_sol.setLimit(e9_goldenrun.size() + 1);
 	}
 
 	if (cmd[WRITE_MEM_TEXT]) {
@@ -290,7 +298,6 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 		// check experiment's data for SDC
 		if (enabled_e9_sol) {
 			// compare golden run to experiment
-			std::vector<char> e9_goldenrun = loadFile(e9_file);
 			std::string e9_experiment = e9_sol.getOutput();
 			if ( ! (e9_experiment.size() == e9_goldenrun.size()
 					&& equal(e9_experiment.begin(), e9_experiment.end(), e9_goldenrun.begin())) ) {

@@ -23,6 +23,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 	bool enabled_e9_sol;
 	std::string e9_file;
 	SerialOutputLogger e9_sol;
+	std::vector<char> e9_goldenrun;
 
 	bool enabled_mem_text;
 	fail::MemAccessListener l_mem_text;
