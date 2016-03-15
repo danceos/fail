@@ -85,7 +85,7 @@ if(BUILD_GEM5)
 
   # Cleans up everything (gem5 and Fail related):
   add_custom_target(gem5-allclean
-    COMMAND @echo "Cleaning Fail* and gem5 ..."
+    COMMAND @echo "Cleaning FAIL* and gem5 ..."
     COMMAND cd "${PROJECT_BINARY_DIR}/" && make clean
     COMMAND cd "${gem5_src_dir}/" && scons -c build/ARM
     COMMAND cd "${gem5_src_dir}/" && rm -rf build/

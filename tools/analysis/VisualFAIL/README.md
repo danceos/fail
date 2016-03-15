@@ -1,9 +1,9 @@
-VisualFail*
+VisualFAIL*
 ===========
 
 Guest-system setup
 ------------------
-For analysis with VisualFail*, the guest-system ELF binary must be compiled with
+For analysis with VisualFAIL*, the guest-system ELF binary must be compiled with
 debugging information (gcc/g++/clang/clang++ compiler flag "-g").  Note that
 debugging information quality/accuracy usually decreases with higher
 optimization levels.
@@ -16,7 +16,7 @@ Database preparation
 
 Step 1 is the prerequisite to run the fault-injection campaign (you may use
 other importers as well, e.g., the RegisterImporter).  Steps 2 and 3 are
-required for VisualFail* to work.
+required for VisualFAIL* to work.
 
 Setup
 -----
@@ -25,20 +25,20 @@ database credentials and the result-table name (usually starting with
 "result...", "echo SHOW TABLES | mysql yourdatabase" on the command line should
 give you the correct table name).
 
-(In a later version of VisualFail*, we will probably add automatic loading of
+(In a later version of VisualFAIL*, we will probably add automatic loading of
 ~/.my.cnf if available.)
 
-Running and using VisualFail*
+Running and using VisualFAIL*
 -----------------------------
 ./StartVF.sh requires PHP 5.4.0 or newer and uses its simple built-in web
 server.  You can connect to it by using http://localhost:1234 in a web browser
 on the same machine.  (If you need to connect from another machine, manually run
 "php -S 0.0.0.0:1234 -t .")
 
-Alternatively, VisualFail* can be set up using a "real" web server with a recent
+Alternatively, VisualFAIL* can be set up using a "real" web server with a recent
 PHP version (5.x should suffice).
 
-Once the web server runs, you can use VisualFail*:
+Once the web server runs, you can use VisualFAIL*:
 
 - Pick a coloring (currently, only "Right margin" really makes sense), a
   benchmark and a variant from the drop-down menus.  Click "Analyze".  Wait.

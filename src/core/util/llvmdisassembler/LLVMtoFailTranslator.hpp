@@ -9,7 +9,7 @@ namespace fail {
 
 /**
  * Translates LLVM disassembler ids
- * to Fail* SAL representations.
+ * to FAIL* SAL representations.
  */
 class LLVMtoFailTranslator {
 public:
@@ -51,7 +51,7 @@ public:
 	/**
 	 * Translates a backend-specific register ID to a Fail register ID.
 	 * @param regid A backend-specific register ID.
-	 * @return A Fail* register ID, or LLVMtoFailTranslator::notfound if no
+	 * @return A FAIL* register ID, or LLVMtoFailTranslator::notfound if no
 	 *         mapping was found.
 	 */
 	const reginfo_t &  getFailRegisterID(unsigned int regid);

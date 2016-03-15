@@ -93,7 +93,7 @@ bool CoolChecksumExperiment::run()
 #endif
 
 #elif 1
-	// FIXME consider moving experiment repetition into Fail* or even the
+	// FIXME consider moving experiment repetition into FAIL* or even the
 	// SAL -- whether and how this is possible with the chosen backend is
 	// backend specific
 	for (int i = 0; i < 2000; ++i) {

@@ -4,21 +4,20 @@ Directory structure:
 
 The folders are nested as follow:
 **********************************************************************
-fail:  Fail* parent directory, containing all source & configuration files (${FAIL_DIR})
+fail:  FAIL* parent directory, containing all source & configuration files (${FAIL_DIR})
 |-cmake:  CMake-related configuration files (e.g. compiler-flags, dependencies, ...)
-|-doc:  Fail*-Framework documentation (e.g., diagrams, howtos, ...)
-|-deprecated:  temporal and old (source) files, which will probably be deleted
-|-scripts:  python/shell scripts for Fail*-compilation and experiment distribution
-|-simulators:  parent directory of simulators supported by Fail* (may still be WIP)
+|-doc:  FAIL*-Framework documentation (e.g., diagrams, howtos, ...)
+|-scripts:  python/shell scripts for FAIL*-compilation and experiment distribution
+|-simulators:  parent directory of simulators supported by FAIL* (may still be WIP)
   |-bochs:  source files of the (modified) Bochs x86 simulator backend
   |-gem5:  source files of the gem5 simulator backend
-|-debuggers:  parent directory of debuggers supported by Fail* (may still be WIP)
+|-debuggers:  parent directory of debuggers supported by FAIL* (may still be WIP)
   |-gdb:  source files related to the GNU gdb debugger
   |-t32:  source files related to the Lauterbach T32 debugger
-|-src:  C/C++/AspectC++ source files related to Fail*, experiments and plugins
-  |-core:  core source files forming the Fail* framework
+|-src:  C/C++/AspectC++ source files related to FAIL*, experiments and plugins
+  |-core:  core source files forming the FAIL* framework
     |-util:  utility classes and miscellaneous helper functions
-    |-config:  CMake configuration files, defining the Fail* components and variant
+    |-config:  CMake configuration files, defining the FAIL* components and variant
     |-sal:  source file forming the Simulator Abstraction Layer (backend-interface)
       |-bochs:  backend source files of the Bochs simulator
       |-gem5:  backend source files of the gem5 simulator
@@ -27,14 +26,14 @@ fail:  Fail* parent directory, containing all source & configuration files (${FA
       |-arm:  ARM-specific platform source files
       |-x86:  x86-specific platform source files
       |-perf:  performance-related source files (extensions); speeds up
-               Fail* <-> simulator interaction (e.g., when using breakpoints)
+               FAIL* <-> simulator interaction (e.g., when using breakpoints)
     |-cpn:  campaign- (and therefore server-)related source files
     |-efw:  experiment-framework- (and therefore client-)related source files
     |-comm:  communication related source files (these files are used by cpn and efw), incl.
              protobuf message definitions used for communication purposes
   |-experiments:  experiment code files (within a new dir) need to be located here
   |-plugins:  plugin code files (within a new dir) need to be located here
-|-tools:  Fail*-related tools, e.g., for tracing or fault-space pruning
+|-tools:  FAIL*-related tools, e.g., for tracing or fault-space pruning
 |-[build]:  recommended location of your build-tree, generated files will be placed here
 
 

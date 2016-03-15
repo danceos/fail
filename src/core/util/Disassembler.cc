@@ -15,7 +15,7 @@ namespace fail {
 
 const std::string DISASSEMBLER::FAILED = "[Disassembler] Disassemble failed.";
 
-Disassembler::Disassembler() : m_log("Fail*Disassembler", false) {  }
+Disassembler::Disassembler() : m_log("FAIL*Disassembler", false) {  }
 
 int Disassembler::init() {
 	// try to open elf file from environment variable

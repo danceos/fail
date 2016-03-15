@@ -152,7 +152,7 @@ private:
 	/**
 	 * Adds the value of the config file to the parameter list and 
 	 * parse the parameter list. This function makes use of the
-	 * CommandLine Parser from the fail* framework.
+	 * CommandLine Parser from the FAIL* framework.
 	 */
 	void parseOptions(L4SysConfig&);
 

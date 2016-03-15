@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
 
 	init_symbols();
 
-	LOG << "OpenOCD 0.7.0 for Fail* and Pandaboard initialized" << endl;
+	LOG << "OpenOCD 0.7.0 for FAIL* and Pandaboard initialized" << endl;
 
 	/* === INITIALIZATION COMPLETE => MAIN LOOP === */
 

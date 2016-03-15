@@ -53,7 +53,7 @@ public:
 	 * the subclasses.
 	 * @param trigger the triggering address of the breakpoint event
 	 * @param address_space the address space identifier for this event
-	 * @param cpu the Fail* CPU object that triggered the breakpoint
+	 * @param cpu the FAIL* CPU object that triggered the breakpoint
 	 */
 	BPEvent(address_t trigger, address_t address_space, ConcreteCPU* cpu = NULL)
 	: BaseEvent(cpu), m_TriggerInstrPtr(trigger), m_AddressSpace(address_space) { }

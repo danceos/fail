@@ -1,4 +1,4 @@
-Fail* Result Browser
+FAIL* Result Browser
 
 Requirements:
     * Python
@@ -9,7 +9,7 @@ Requirements:
 Based on Flask web microframework (Werkzeug, Jinja 2)
 and old school MySQL bindings.
 
-Connects to a Fail* result database given by a mysql config file.
+Connects to a FAIL* result database given by a mysql config file.
 
 Usage:
     ./run.py

@@ -26,7 +26,7 @@ std::ostream& operator<< (std::ostream &out, const ElfSymbol &symbol) {
 
 
 
-ElfReader::ElfReader() : m_log("Fail*Elfinfo", false) {
+ElfReader::ElfReader() : m_log("FAIL*Elfinfo", false) {
 	// try to open elf file from environment variable
 	char * elfpath = getenv("FAIL_ELF_PATH");
 	if (elfpath == NULL) {
@@ -36,7 +36,7 @@ ElfReader::ElfReader() : m_log("Fail*Elfinfo", false) {
 	}
 }
 
-ElfReader::ElfReader(const char* path) : m_log("Fail*Elfinfo", false) {
+ElfReader::ElfReader(const char* path) : m_log("FAIL*Elfinfo", false) {
 	setup(path);
 }
 

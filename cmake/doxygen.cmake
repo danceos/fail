@@ -13,14 +13,14 @@ set(FAIL_DOC_SOURCE "${FAIL_DOC_SOURCE} ${PROJECT_SOURCE_DIR}/src/plugins")
 set(FAIL_DOC_EXCLUDE_PATTERNS "*/util/pstream.h */util/optionparser/optionparser.h")
 file(MAKE_DIRECTORY ${FAIL_DOC_OUTPUT})
 # FIXME: The find command does not quote the paths to be processed by doxygen. That
-#        means, the path to your Fail* directory should not contain any blanks.
+#        means, the path to your FAIL* directory should not contain any blanks.
 
 configure_file(${PROJECT_SOURCE_DIR}/cmake/Doxyfile.in
 		${PROJECT_BINARY_DIR}/Doxyfile @ONLY}
 )
 
 ## call make doc to generate documentation
-set(line0 "[${PROJECT_NAME}] Generating Fail* documentation with Doxygen")
+set(line0 "[${PROJECT_NAME}] Generating FAIL* documentation with Doxygen")
 set(line1 "       Directories: ${FAIL_DOC_SOURCE}")
 set(line2 "       Excluded patterns: ${FAIL_DOC_EXCLUDE_PATTERNS}")
 add_custom_target(doc

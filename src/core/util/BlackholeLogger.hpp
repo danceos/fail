@@ -12,7 +12,7 @@ namespace fail {
  */
 class BlackholeLogger {
 public:
-	Logger(const std::string& description = "Fail*", bool show_time = true,
+	Logger(const std::string& description = "FAIL*", bool show_time = true,
 		   std::ostream& dest = std::cout) { }
 	void setDescription(const std::string& descr) { }
 	void showTime(bool choice) { }

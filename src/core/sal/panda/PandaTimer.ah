@@ -38,7 +38,7 @@ private:
 		return static_cast<timer_id_t>(
 			oocdw_register_timer(pev, fail::onTimerTrigger,
 				pev->getTimeout() /*timeout in microseconds*/,
-				true /*start immediately*/, "Fail*: PandaController"/*name*/));
+				true /*start immediately*/, "FAIL*: PandaController"/*name*/));
 	}
 	bool m_unregisterTimer(TimerListener* pev)
 	{

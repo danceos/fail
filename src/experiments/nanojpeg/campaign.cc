@@ -126,7 +126,7 @@ bool NanoJPEGCampaign::run()
 		// all IN registers close an equivalence class and generate experiments
 		for (Udis86Helper::UDRegisterSet::const_iterator it = in_regs.begin();
 		     it != in_regs.end(); ++it) {
-			// determine Fail* register ID and bitmask
+			// determine FAIL* register ID and bitmask
 			uint64_t access_mask;
 			fail::GPRegisterId reg = udis_helper.udisGPRToFailBochsGPR(*it, access_mask);
 			uint64_t remaining_access_mask = access_mask;
@@ -168,7 +168,7 @@ bool NanoJPEGCampaign::run()
 		// special case: empty EC!
 		for (Udis86Helper::UDRegisterSet::const_iterator it = out_regs.begin();
 		     it != out_regs.end(); ++it) {
-			// determine Fail* register ID and bitmask
+			// determine FAIL* register ID and bitmask
 			uint64_t access_mask;
 			fail::GPRegisterId reg = udis_helper.udisGPRToFailBochsGPR(*it, access_mask);
 			uint64_t remaining_access_mask = access_mask;
@@ -213,7 +213,7 @@ bool NanoJPEGCampaign::run()
 	// close all open ECs
 	for (map<GPRegisterId, std::list<std::pair<unsigned, uint64_t> > >::iterator it = reg_cascade.begin();
 	     it != reg_cascade.end(); ++it) {
-		// determine Fail* register ID and bitmask
+		// determine FAIL* register ID and bitmask
 		uint64_t access_mask = 0xffffffffULL;
 		fail::GPRegisterId reg = it->first;
 		uint64_t remaining_access_mask = access_mask;

@@ -42,7 +42,7 @@ aspect BochsListener {
 				bx_pc_system.register_timer(pev, fail::onTimerTrigger,
 				    pev->getTimeout() /*timeout in microseconds*/,
 				    false /*non-continuous*/,
-				    true /*start immediately*/, "Fail*: BochsController"/*name*/));
+				    true /*start immediately*/, "FAIL*: BochsController"/*name*/));
 		}
 		bool m_unregisterTimer(TimerListener* pev)
 		{

@@ -34,7 +34,7 @@ you to read this whole document before investigating further.
 \section{Overview}
 
 This is the user manual of the \lfs{} generic system test framework.
-The framework builds on Fail* and provides means to perform fault injection
+The framework builds on FAIL* and provides means to perform fault injection
 experiments for applications running on top of the Fiasco.OC/L4Re
 microkernel-based operating system as well as the underlying microkernel.
 
@@ -47,13 +47,13 @@ microkernel-based operating system as well as the underlying microkernel.
 \noindent \lfs{} currently works for x86/32 running in Fail/Bochs only.
 This is partly due to some issues with timing --- as soon as a valid model of
 time in the target emulator as well as an assembler/disassembler functionality
-in the Fail* framework are established, I would recommend a backend change, as
+in the FAIL* framework are established, I would recommend a backend change, as
 Bochs' reliability is very limited.
 
 \section{Framework Setup}
 
 To prepare a fault injection campaign you will first need to configure and
-build Fail* itself. This process is described in \texttt{doc/how-to-build.txt}.
+build FAIL* itself. This process is described in \texttt{doc/how-to-build.txt}.
 The following CMake flags need to be set:
 
 \begin{itemize}[itemsep=0em]
@@ -94,7 +94,7 @@ in Bochs.
 
 \section{Client Setup}
 
-Now that we have Fail* and the L4Re setup running, we can prepare our fault
+Now that we have FAIL* and the L4Re setup running, we can prepare our fault
 injection campaign. This requires three (+ one optional) steps:
 \begin{enumerate}[topsep=0em,itemsep=0em]
   \item \emph{OPTIONAL:} If we want to perform a campaign that only targets
@@ -203,7 +203,7 @@ be added to specify the host name or ip addr. of the machine running
 
 Each experiment client  processes exactly one experiment 
 and exits. To complete your campaign, you should use the \verb+client.sh+
-script in the \texttt{scripts} subdirectory of Fail*.
+script in the \texttt{scripts} subdirectory of FAIL*.
 
 
 \section{Get your results}

@@ -3,7 +3,7 @@ find_program(LLVMCONFIG NAMES llvm-config-3.4 llvm-config-3.3 llvm-config-3.2 ll
 if( NOT LLVMCONFIG )
   message(FATAL_ERROR "llvm-config not found, try installing llvm-dev llvm")
 else()
-  message(STATUS "[Fail*] LLVM Disassembler: Found llvm-config @ ${LLVMCONFIG}")
+  message(STATUS "[FAIL*] LLVM Disassembler: Found llvm-config @ ${LLVMCONFIG}")
 endif()
 
 # examine LLVM include directory

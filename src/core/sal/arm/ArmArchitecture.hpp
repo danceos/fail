@@ -30,10 +30,10 @@ typedef ArmArchitecture Architecture;
  *   simulators/gem5/src/arch/arm/miscregs.hh and
  *   simulators/gem5/src/arch/arm/intregs.hh
  * which we cannot include because they are generated (probably after we need
- * them).  As integer and "misc" register IDs overlap in gem5, and Fail* needs
+ * them).  As integer and "misc" register IDs overlap in gem5, and FAIL* needs
  * unique IDs, we split at RI_INTREGS_MAX and map to the original IDs in
  * sal/gem5/Gem5Wrapper.cc .  If more ARM backends emerge, we may need to find
- * more sophisticated backend<->Fail* register ID mappings.
+ * more sophisticated backend<->FAIL* register ID mappings.
  */
 enum GPRegIndex {
 	RI_R0,

@@ -1,5 +1,5 @@
 =========================================================================================
-Steps to run a boot image in Fail* using the Bochs simulator backend:
+Steps to run a boot image in FAIL* using the Bochs simulator backend:
 =========================================================================================
 Follow the Bochs documentation, and start your own "bochsrc" configuration file
 based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
@@ -15,17 +15,17 @@ based on the "${PREFIX}/share/doc/bochs/bochsrc-sample.txt" template (or
      - For an X11 GUI:
          config_interface: textconfig
          display_library: x
-     - For a wxWidgets GUI (does not play well with Fail*'s "restore" feature):
+     - For a wxWidgets GUI (does not play well with FAIL*'s "restore" feature):
          config_interface: wx
          display_library: wx
-     - Reduce the guest system's RAM to a minimum to reduce Fail*'s memory footprint
+     - Reduce the guest system's RAM to a minimum to reduce FAIL*'s memory footprint
        and save/restore overhead, e.g.:
          memory: guest=16, host=16
      - If you want to redirect FailBochs's output to a file using the shell's
        redirection operator '>', make sure "/dev/stdout" is not used as a target
        file for logging.  (The Debian "bochsrc" template unfortunately does this
        in two places.  It suffices to comment out these entries.)
-     - To make Fail* terminate if something unexpected happens in a larger
+     - To make FAIL* terminate if something unexpected happens in a larger
        campaign, be sure it doesn't "ask" in these cases, e.g.:
          panic: action=fatal
          error: action=fatal
@@ -63,7 +63,7 @@ An example of a DatabaseCampaign with separate experiment.
 	CONFIG_EVENT_MEMWRITE, CONFIG_EVENT_TRAP, CONFIG_SR_RESTORE and CONFIG_SR_SAVE
 	The options BUILD_BOCHS, BUILD_X86	are needed as well, but are defaults.
  3. In weather-monitor/experimentInfo.hpp set "PREREQUISITES" to 1 and build
-    Fail*/Bochs using e.g. fail/scripts/rebuild-bochs.sh (-> how-to-build.txt).
+    FAIL*/Bochs using e.g. fail/scripts/rebuild-bochs.sh (-> how-to-build.txt).
 	Upon minor changes (i.e. not e.g. to aspects), append " -" to the call to
 	the script. This will rebuild only parts that changed.
  4. Enter experiment_targets/weathermonitor and run:
@@ -76,7 +76,7 @@ An example of a DatabaseCampaign with separate experiment.
 	being VARIANT.trace
  6. Use "import-trace" (using correct -b & -v, -t is VARIANT.trace) to get the
     trace into the database and "prune-trace" to (obviously) prune the data.
- 7. Change PREREQUISITES (see 5) back to "0" and rebuild Fail*/Bochs.
+ 7. Change PREREQUISITES (see 5) back to "0" and rebuild FAIL*/Bochs.
  8. Run the "weather-monitor-server" (Don't forget -v & -b!) and "fail-client -q"
     from within experiment_targets/weathermonitor/.
 	You'll need several clients to finish the campaign.
@@ -87,7 +87,7 @@ A simple standalone experiment (without a separate campaign). To compile this
 experiment, the following steps are required:
  1. Add "hsc-simple" to ccmake's EXPERIMENTS_ACTIVATED.
  2. Enable CONFIG_EVENT_BREAKPOINTS, CONFIG_SR_RESTORE and CONFIG_SR_SAVE.
- 3. Build Fail* and Bochs, see "how-to-build.txt" for details.
+ 3. Build FAIL* and Bochs, see "how-to-build.txt" for details.
  4. Enter experiment_targets/hscsimple/, bunzip2 -k *.bz2
  5. Start the Bochs simulator by typing
       $ fail-client -q
@@ -130,7 +130,7 @@ fail-client for the next 2k experiments.
 
 The experiments can be significantly sped up by
  a) parallelization (run more FailBochs clients and
- b) a headless (and more optimized) Fail* configuration (see above).
+ b) a headless (and more optimized) FAIL* configuration (see above).
 
 
 Experiment "MHTestCampaign":
@@ -211,7 +211,7 @@ To compile this experiment, the following steps are required:
      CONFIG_EVENT_MEMREAD, CONFIG_EVENT_MEMWRITE, CONFIG_EVENT_TRAP, CONFIG_SR_RESTORE
      and CONFIG_SR_SAVE.
  6.  Enable STEP1 in fail/src/experiments/weather-monitor/experiment.cc
- 7.  Build Fail* and gem5, see "how-to-build.txt" for details.
+ 7.  Build FAIL* and gem5, see "how-to-build.txt" for details.
  8.  Start the gem5-fail-client by typing
      "../scripts/run-gem5.sh ../../experiment_targets/weathermonitor_arm/weather.elf
      weathermonitor_arm/weather.elf"
@@ -222,7 +222,7 @@ To compile this experiment, the following steps are required:
  10. Prune the trace with
      "prune-trace -d YOUR_DB -v baseline -b weather"
  11.  Enable STEP3 in fail/src/experiments/weather-monitor/experiment.cc
- 12. Build Fail* and gem5, see "how-to-build.txt" for details.
+ 12. Build FAIL* and gem5, see "how-to-build.txt" for details.
  13. Start the campaign-server
      "bin/weather-monitor-server -v baseline -b weather"
  14. Start the gem5-fail-client by typing
@@ -231,18 +231,18 @@ To compile this experiment, the following steps are required:
 =========================================================================================
 Parallelization
 =========================================================================================
-Fail* is designed to allow parallelization of experiment execution allowing to reduce
+FAIL* is designed to allow parallelization of experiment execution allowing to reduce
 the time needed to execute the experiments on a (larger) set of experiment data (aka
 input parameters for the experiment execution, e.g. instruction pointer, registers, bit
 numbers, ...). We call such "experiment data" the parameter sets. The so called "campaign"
 is responsible for managing the parameter sets (i.e., the data to be used by the experiment
 flows), inquired by the clients. As a consequence, the campaign is running on the server-
 side and the experiment flows are running on the (distributed) clients.
-First of all, the Fail* instances (and other required files, e.g. saved state) are
+First of all, the FAIL* instances (and other required files, e.g. saved state) are
 distributed to the clients. In the second step the campaign(-server) is started, preparing
 its parameter sets in order to be able to answer the requests from the clients. (Once
 there are available parameter sets, the clients can request them.) In the final step,
-the distributed Fail* clients have to be started. As soon as this setup is finished,
+the distributed FAIL* clients have to be started. As soon as this setup is finished,
 the clients request new parameter sets, execute their experiment code and return their
 results to the server (aka campaign) in an iterative way, until all paremeter sets have
 been processed successfully. If all (new) parameter sets have been distributed, the

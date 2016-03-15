@@ -1,4 +1,4 @@
-Coding Style for Fail*
+Coding Style for FAIL*
 ======================
 
 You may violate/break any of the following rules if you have a good reason to

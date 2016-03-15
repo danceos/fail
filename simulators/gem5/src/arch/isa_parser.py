@@ -584,7 +584,7 @@ class FloatRegOperand(Operand):
             return self.buildWriteCode(func)
         # (DanceOS hack begin...
         if self.ctype == 'int32_t' or self.ctype == 'int16_t':
-            print "Applying Fail* hack in %s@%s ... :-)" % \
+            print "Applying FAIL* hack in %s@%s ... :-)" % \
             (__file__, inspect.currentframe().f_lineno)
             wb = '''
             {

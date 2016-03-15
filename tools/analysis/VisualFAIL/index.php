@@ -40,7 +40,7 @@
 				</button>
 				<!--<div class="container"> -->
 				  <!--<a class="navbar-brand" href="#">Visual FAIL*</a>-->
-				  <img class="navbar-brand logo" src="images/logos/visualfaillogo_klein.png" alt="Visual Fail* logo" />
+				  <img class="navbar-brand logo" src="images/logos/visualfaillogo_klein.png" alt="Visual FAIL* logo" />
 				<!--</div>-->
 			</div>
 			<div class="container">

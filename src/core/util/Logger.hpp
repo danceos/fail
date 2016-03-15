@@ -24,7 +24,7 @@ public:
 	 * @param show_time Show a timestamp with each log entry.
 	 * @param dest Stream to log into.
 	 */
-	Logger(const std::string& description = "Fail*", bool show_time = true,
+	Logger(const std::string& description = "FAIL*", bool show_time = true,
 		   std::ostream& dest = std::cout)
 	 : m_pDest(&dest), m_description(description), m_showTime(show_time) { }
 	/**

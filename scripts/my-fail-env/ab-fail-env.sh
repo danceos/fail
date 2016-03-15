@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # ab-fail-env.sh (Adrian Böckenkamp)
-# default values for several Fail* environment variables
+# default values for several FAIL* environment variables
 #
 
 # A whitespace-separated list of hosts to rsync the experiment data to.  This
@@ -15,5 +15,5 @@ export FAIL_DISTRIBUTE_HOSTS=${FAIL_DISTRIBUTE_HOSTS:='kos plutonium'}
 export FAIL_EXPERIMENT_HOSTS=${FAIL_EXPERIMENT_HOSTS:="plutonium uran kos:6 bohrium polonium radon $(for hostnr in $(seq 100 254); do echo fiws$hostnr; done)"}
 
 # A homedir-relative directory on the distribution hosts where all necessary
-# Fail* ingredients reside (see multiple-clients.sh).
+# FAIL* ingredients reside (see multiple-clients.sh).
 export FAIL_EXPERIMENT_TARGETDIR=.fail-experiment

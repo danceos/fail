@@ -211,7 +211,7 @@ Erledigt:
     -> benenne Events um ("Listener")
     -> Erstelle neue Klassenhierarchie, die den "Informationsanteil" der "Events"
        repräsentiert. Diese kapseln dann die Informationen in den Events und
-       werden zudem intern im Fail*-Framework verwendet (genauer: kommuniziert).
+       werden zudem intern im FAIL*-Framework verwendet (genauer: kommuniziert).
 
 ==========================================================================================
 Theorie TODO

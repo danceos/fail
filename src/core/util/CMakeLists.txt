@@ -66,7 +66,7 @@ find_program(FAIL_OBJDUMP "${THE_OBJDUMP}" DOC "binutils object dump tool")
 if(${FAIL_OBJDUMP} STREQUAL FAIL_OBJDUMP-NOTFOUND)
   message(FATAL_ERROR "Cannot find objdump exeuctable (tried: ${THE_OBJDUMP}")
 else()
-  message(STATUS "[Fail*] objdump binary -> ${FAIL_OBJDUMP}")
+  message(STATUS "[FAIL*] objdump binary -> ${FAIL_OBJDUMP}")
 endif()
 mark_as_advanced(FAIL_OBJDUMP)
 

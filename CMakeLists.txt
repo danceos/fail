@@ -11,9 +11,9 @@ if(NOT ("${CMAKE_VERSION}" VERSION_LESS 3.0)) # >= 3.0?
 endif()
 ENABLE_TESTING()
 
-PROJECT(Fail*)
+PROJECT(FAIL*)
 
-set(PROJECT_VERSION "1.0.1" CACHE INTERNAL "Fail* version number" FORCE)
+set(PROJECT_VERSION "1.0.1" CACHE INTERNAL "FAIL* version number" FORCE)
 
 #### Put all resulting library files in <your_build_dir>/lib ####
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
@@ -49,7 +49,7 @@ OPTION( BUILD_X86  "Build for x86 guests?" ON)
 OPTION( BUILD_ARM  "Build for ARM guests?" OFF)
 
 # FIXME: only add simulators/ to include_directories, and include, e.g.,
-# bochs/bochs.h in Fail*. -> avoids naming conflicts (e.g., /usr/include/elf.h
+# bochs/bochs.h in FAIL*. -> avoids naming conflicts (e.g., /usr/include/elf.h
 # vs. qemu/elf.h)
 if(BUILD_BOCHS)
   ## add necessary additional header search paths.
@@ -68,7 +68,7 @@ elseif(BUILD_PANDA)
   include_directories(debuggers/openocd/src debuggers/openocd/jimtcl src/core)
 endif(BUILD_BOCHS)
 
-## Tell the linker where to find the Fail* libraries
+## Tell the linker where to find the FAIL* libraries
 link_directories("${LIBRARY_OUTPUT_PATH}")
 
 # Add "simulators"-directory to the include path. This allows

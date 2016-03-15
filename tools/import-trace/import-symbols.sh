@@ -24,7 +24,7 @@ fi
 echo "importing $VARIANT/$BENCHMARK symbols from $ELF ..."
 
 
-# get fail*'s variant_id
+# get FAIL*'s variant_id
 ID=$(echo "SELECT id FROM variant WHERE variant='$VARIANT' AND benchmark='$BENCHMARK'" | $MYSQL -N)
 if [ -z $ID ]; then
 	echo "no such variant/benchmark!" >&2

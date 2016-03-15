@@ -1,6 +1,6 @@
 # --------------------------------------------------------------
 # This script invokes the gem5 simulator. It is written to be used
-# with the Fail* framework. For further information, see
+# with the FAIL* framework. For further information, see
 # http://www.m5sim.org/Simulation_Scripts_Explained
 # This script is based on $FAIL/simulators/gem5/configs/example/fs.py
 #
@@ -33,7 +33,7 @@ Options.addFSOptions(parser) # TODO: dito
 if args:
     print "Error: script doesn't take any positional arguments"
     sys.exit(1)
-print "[Fail*] Welcome to the FULL SYSTEM simulation script for gem5!"
+print "[FAIL*] Welcome to the FULL SYSTEM simulation script for gem5!"
 
 # Sets up the low-level system parameter:
 class FailArmSystem(System):
@@ -130,10 +130,10 @@ test_sys = makeFailArmSystem(test_mem_mode, options.machine_type)
 # experiment target (e.g., the abo-simple-arm.elf file). It should
 # contain the bootload code as well.
 if options.kernel is not None:
-    print "[Fail*] Using target: " + options.kernel
+    print "[FAIL*] Using target: " + options.kernel
     test_sys.kernel = options.kernel
 else:
-	print "[Fail*] No kernel target given, exiting!"
+	print "[FAIL*] No kernel target given, exiting!"
 	sys.exit(1)
 
 test_sys.init_param = options.init_param

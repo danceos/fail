@@ -111,7 +111,7 @@ docker instance.
 
 Mailing list
 ------------
-The Fail* developers, and some of its previous and current users, can be
+The FAIL* developers, and some of its previous and current users, can be
 contacted on the
 [fail@lists.cs.tu-dortmund.de](mailto:fail@lists.cs.tu-dortmund.de)
 mailing list

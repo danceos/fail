@@ -33,7 +33,7 @@ typedef std::vector<BaseListener*>  deletelist_t;
 /**
  * \class ListenerManager
  *
- * \brief This class manages the listeners of the Fail* implementation.
+ * \brief This class manages the listeners of the FAIL* implementation.
  *
  * If a listener is triggered, the internal data structure will be updated (i.e.,
  * the listener will be removed from the so called buffer-list and added to the

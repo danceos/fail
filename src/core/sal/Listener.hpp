@@ -231,7 +231,7 @@ BP_CTOR_SCOPE:
 	 */
 	BPSingleListener(address_t ip = 0, address_t address_space = ANY_ADDR, ConcreteCPU* cpu = NULL)
 		: BPListener(address_space, cpu), m_WatchInstrPtr(ip) { }
-public: // reset scope in order to allow compiling the various other Fail* sources
+public: // reset scope in order to allow compiling the various other FAIL* sources
 	/**
 	 * Returns the instruction pointer this listener waits for.
 	 * @return the instruction pointer specified in the constructor or by

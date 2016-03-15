@@ -45,7 +45,7 @@ if(BUILD_PANDA)
 
   # ensure, elf path is set for enabling openocd to read elf symbols
   if(EXISTS $ENV{FAIL_ELF_PATH})
-    message(STATUS "[Fail*] PandaBoard ELF under test: $ENV{FAIL_ELF_PATH}")
+    message(STATUS "[FAIL*] PandaBoard ELF under test: $ENV{FAIL_ELF_PATH}")
   else()
     message(FATAL_ERROR "Please set the FAIL_ELF_PATH environment variable to the binary under test.")
   endif()

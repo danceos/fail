@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # fail-env.sh
-# default values for several Fail* environment variables
+# default values for several FAIL* environment variables
 # If you want to set your own defaults, or need a script to source from, e.g.,
 # your ~/.bashrc, please copy this file and do not edit it in-place.
 #
@@ -17,7 +17,7 @@ export FAIL_DISTRIBUTE_HOSTS=${FAIL_DISTRIBUTE_HOSTS:-"ios kos virtuos plutonium
 export FAIL_EXPERIMENT_HOSTS=${FAIL_EXPERIMENT_HOSTS:-"bigbox.informatik.uni-erlangen.de plutonium:4 uran:4 virtuos ios:32 kos:16 bohrium:12 polonium:12 radon $(for hostnr in $(seq 100 254); do echo -n fiws$hostnr\ ; done) $(for hostnr in $(seq 39 58); do echo -n cloudhost$hostnr\ ; done)"}
 
 # A homedir-relative directory on the distribution hosts where all necessary
-# Fail* ingredients reside (see multiple-clients.sh).
+# FAIL* ingredients reside (see multiple-clients.sh).
 export FAIL_EXPERIMENT_TARGETDIR=${FAIL_EXPERIMENT_TARGETDIR:-.fail-experiment}
 
 # Number of parallel build processes.  If unset, #CPUs+1.
