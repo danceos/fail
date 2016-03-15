@@ -62,11 +62,13 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle START_ADDRESS = cmd.addOption("B", "start-address", Arg::Required,
 		"-B,--start-address \tStart Address to start tracing");
 	CommandLine::option_handle STOP_ADDRESS = cmd.addOption("E", "end-address",Arg::Required,
-		"-E--end-address \tEnd Address to end tracing");
+		"-E,--end-address \tEnd Address to end tracing");
 	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
 		"--serial-port \tListen to a given I/O address (default: 0x3F8)");
 	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
 		"--serial-file \tSave the serial output to file");
+	CommandLine::option_handle E9_FILE = cmd.addOption("", "e9-file", Arg::Required,
+		"--e9-file FILE \tData logged via port 0xE9 is stored in this file");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -228,6 +230,14 @@ void  GenericTracing::parseOptions() {
 		serial_file = "";
 	}
 
+	if (cmd[E9_FILE]) {
+		e9_file = std::string(cmd[E9_FILE].first()->arg);
+		m_log << "port E9 output is written to: " << e9_file << std::endl;
+	} else {
+		e9_file = "";
+	}
+
+
 	if (m_elf != NULL) {
 		m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << start_address << std::endl;
 		m_log << "stop symbol: "  << stop_symbol  << " 0x" << std::hex << stop_address << std::endl;
@@ -287,6 +297,12 @@ bool GenericTracing::run()
 		simulator.addFlow(&sol);
 	}
 
+	SerialOutputLogger e9_sol(0xE9);
+	if (e9_file != "") {
+		simulator.addFlow(&e9_sol);
+	}
+
+
 	////////////////////////////////////////////////////////////////
 	// Step 2: Continue to the stop point
 	simulator.addListener(&l_stop_symbol);
@@ -312,6 +328,17 @@ bool GenericTracing::run()
 			m_log << "failed to write " << serial_file << endl;
 		}
 		of_serial.close();
+	}
+
+	if (e9_file != "") {
+		simulator.removeFlow(&e9_sol);
+		ofstream of_e9(e9_file.c_str(), ios::out|ios::binary);
+		if (!of_e9.fail()) {
+			of_e9 << e9_sol.getOutput();
+		} else {
+			m_log << "failed to write " << e9_file << endl;
+		}
+		of_e9.close();
 	}
 
 	simulator.clearListeners();

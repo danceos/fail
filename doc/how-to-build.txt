@@ -33,6 +33,7 @@ Required for Fail*:
    * a MySQL 5.0+ or MariaDB 5.1+ (MariaDB 5.5 recommended) server
    * doxygen
    * cmake-curses-gui
+   * python-numpy and python-matplotlib for the faultspaceplot tool
 
 
 

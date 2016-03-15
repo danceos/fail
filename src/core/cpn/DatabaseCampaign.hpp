@@ -39,6 +39,8 @@ class DatabaseCampaign : public Campaign {
 	id_map completed_pilots; // !< map: Pilot IDs -> result count
 #endif
 
+	bool m_inject_bursts; // !< inject burst faults?
+
 public:
 	DatabaseCampaign() {};
 
@@ -61,7 +63,9 @@ public:
 	 * there are less result rows, the pilot will be again sent to the clients
 	 * @return \c exptected number of results
 	 */
-	virtual int expected_number_of_results(std::string variant, std::string benchmark) { return 8;}
+	virtual int expected_number_of_results(std::string variant, std::string benchmark) {
+		return (m_inject_bursts ? 1 : 8);
+	}
 
 	/**
 	 * Callback function that can be used to add command line options

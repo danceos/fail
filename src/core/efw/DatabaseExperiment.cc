@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+//#define LOCAL
 
 using namespace std;
 using namespace fail;
@@ -25,6 +26,18 @@ using namespace google::protobuf;
 
 DatabaseExperiment::~DatabaseExperiment()  {
 	delete this->m_jc;
+}
+
+unsigned DatabaseExperiment::injectBurst(address_t data_address) {
+	unsigned value, burst_value;
+	value = m_mm.getByte(data_address);
+	burst_value = value ^ 0xff;
+	m_mm.setByte(data_address, burst_value);
+
+	m_log << "INJECTED BURST at: 0x" << hex<< setw(2) << setfill('0') << data_address
+		  << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x"
+		  << setw(2) << setfill('0') << burst_value << endl;
+	return value;
 }
 
 unsigned DatabaseExperiment::injectBitFlip(address_t data_address, unsigned bitpos){
@@ -79,21 +92,32 @@ bool DatabaseExperiment::run()
 	while (executed_jobs < 25 || m_jc->getNumberOfUndoneJobs() > 0) {
 		m_log << "asking jobserver for parameters" << endl;
 		ExperimentData * param = this->cb_allocate_experiment_data();
+#ifndef LOCAL
 		if (!m_jc->getParam(*param)){
 			m_log << "Dying." << endl; // We were told to die.
 			simulator.terminate(1);
 		}
+#endif
 		m_current_param = param;
 
 		DatabaseCampaignMessage * fsppilot =
 			protobufFindSubmessageByTypename<DatabaseCampaignMessage>(&param->getMessage(), "DatabaseCampaignMessage");
 		assert (fsppilot != 0);
 
+#ifdef LOCAL
+		fsppilot->set_injection_instr(0);
+		fsppilot->set_injection_instr_absolute(1048677);
+		fsppilot->set_data_address(2101240);
+		fsppilot->set_data_width(1);
+		fsppilot->set_inject_bursts(true);
+#endif
+
 		unsigned  injection_instr = fsppilot->injection_instr();
 		address_t data_address = fsppilot->data_address();
 		unsigned width = fsppilot->data_width();
+		unsigned injection_width = fsppilot->inject_bursts() ? 8 : 1;
 
-		for (unsigned bit_offset = 0; bit_offset < width * 8; ++bit_offset) {
+		for (unsigned bit_offset = 0; bit_offset < width * 8; bit_offset += injection_width) {
 			// 8 results in one job
 			Message *outer_result = cb_new_result(param);
 			m_current_result = outer_result;
@@ -107,7 +131,7 @@ bool DatabaseExperiment::run()
 
 			m_log << "Trying to inject @ instr #" << dec << injection_instr << endl;
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 
 			if (!this->cb_before_fast_forward()) {
 				continue;
@@ -155,10 +179,16 @@ bool DatabaseExperiment::run()
 				simulator.terminate(1);
 			}
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 
-			/// INJECT BITFLIP:
-			result->set_original_value(injectBitFlip(data_address, bit_offset));
+			if (fsppilot->inject_bursts()) {
+				/// INJECT BURST:
+				result->set_original_value(injectBurst((data_address+bit_offset/8)));
+			} else {
+				/// INJECT BITFLIP:
+				result->set_original_value(injectBitFlip(data_address, bit_offset));
+			}
+			result->set_injection_width(injection_width);
 
 			if (!this->cb_before_resume()) {
 				continue; // Continue to next experiment
@@ -175,9 +205,13 @@ bool DatabaseExperiment::run()
 			m_log << "Resume done" << std::endl;
 			this->cb_after_resume(listener);
 
-			simulator.clearListeners();
+			simulator.clearListeners(this);
 		}
+#ifndef LOCAL
 		m_jc->sendResult(*param);
+#else
+		break;
+#endif
 		this->cb_free_experiment_data(param);
 	}
 	// Explicitly terminate, or the simulator will continue to run.

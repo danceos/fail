@@ -46,6 +46,10 @@ bool DatabaseCampaign::run() {
 		cmd.addOption("p", "prune-method", Arg::Required,
 			"-p/--prune-method \tWhich import method(s) to use (default: \"%\"; use % and _ as wildcard characters)");
 
+	CommandLine::option_handle BURST =
+		cmd.addOption("","inject-bursts", Arg::None,
+			"--inject-bursts \tinject burst faults (default: single bitflips)");
+
 	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
 		exit(-1);
@@ -89,6 +93,14 @@ bool DatabaseCampaign::run() {
 	// fallback
 	if (benchmarks.size() == 0) {
 		benchmarks.push_back("%");
+	}
+
+	if (cmd[BURST]) {
+		m_inject_bursts = true;
+		log_send << "fault model: burst" << std::endl;
+	} else {
+		m_inject_bursts = false;
+		log_send << "fault model: single-bit flip" << std::endl;
 	}
 
 	if (cmd[PRUNER]) {
@@ -225,7 +237,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		}
 		pilot.set_data_address(data_address);
 		pilot.set_data_width(data_width);
-
+		pilot.set_inject_bursts(m_inject_bursts);
 
 		this->cb_send_pilot(pilot);
 

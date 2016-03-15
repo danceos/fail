@@ -1,0 +1,1 @@
+install(PROGRAMS function-occurrences.sh resulttype-occurrences.sh resulttype-occurrences_coverage.sh symbol-occurrences.sh symbol-occurrences_coverage.sh translation-unit-occurrences.sh variant-durations.sh DESTINATION bin)

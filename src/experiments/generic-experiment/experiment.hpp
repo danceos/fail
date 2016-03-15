@@ -7,6 +7,7 @@
 #include "efw/JobClient.hpp"
 #include "util/Logger.hpp"
 #include "util/ElfReader.hpp"
+#include "../plugins/serialoutput/SerialOutputLogger.hpp"
 #include <string>
 #include <stdlib.h>
 #include <map>
@@ -14,9 +15,15 @@
 
 
 class GenericExperiment : public fail::DatabaseExperiment {
-	fail::ElfReader m_elf;
+	fail::ElfReader *m_elf;
+	std::string elf_file;
 
 	std::string m_state_dir;
+
+	bool enabled_e9_sol;
+	std::string e9_file;
+	SerialOutputLogger e9_sol;
+	std::vector<char> e9_goldenrun;
 
 	bool enabled_mem_text;
 	fail::MemAccessListener l_mem_text;
@@ -51,6 +58,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 public:
 	GenericExperiment() : DatabaseExperiment("GenericExperiment"),
 						  m_state_dir("state"),
+						  e9_sol(0xE9),
 						  l_trap(fail::ANY_TRAP), l_timeout(0) {
 		enabled_mem_text = false;
 		enabled_mem_outerspace = false;
@@ -89,6 +97,14 @@ public:
 	 * @return \c true on success, \c false otherwise
 	 */
 	virtual bool cb_start_experiment();
+
+	/**
+	 * Callback that is called before the fast forward is done. This
+	 * can be used to add additional event listeners during the fast
+	 * forward phase. If returning false, the experiment is canceled.
+	 * @return \c true on success, \c false otherwise
+	 */
+	virtual bool cb_before_fast_forward();
 
 	/**
 	 * Callback that is called before the resuming till crash has

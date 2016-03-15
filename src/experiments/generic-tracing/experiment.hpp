@@ -28,6 +28,8 @@ class GenericTracing : public fail::ExperimentFlow {
 	fail::guest_address_t serial_port;
 	std::string serial_file;
 
+	std::string e9_file;
+
 	fail::Logger m_log;
 	fail::ElfReader *m_elf;
 
