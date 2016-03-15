@@ -1,6 +1,0 @@
-message TestData {
-	optional string foo = 1;
-	optional int64 input = 2;
-
-	optional int64 output = 3;
-}
