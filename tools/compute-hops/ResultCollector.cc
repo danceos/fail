@@ -17,7 +17,11 @@
 
 #include "comm/InjectionPointHopsMessage.pb.h"
 
+//#define MEASURE_MEM_USAGE
+
+#ifdef MEASURE_MEM_USAGE
 #include <proc/readproc.h>
+#endif
 
 using std::hex;
 using std::dec;
@@ -87,16 +91,16 @@ ResultCollector::addResult(std::vector<result_tuple >& res, unsigned int costs)
 				InjectionPointMessage_Hops *hop = hc.add_hops();
 				hop->set_address(it_hop->first.first);
 
-				enum InjectionPointMessage_Hops_AccessType at;
+				InjectionPointMessage::Hops::AccessType at;
 				switch (it_hop->first.second) {
 				case ACCESS_NONE:
-					at = InjectionPointMessage_Hops_AccessType_EXECUTE;
+					at = InjectionPointMessage::Hops::EXECUTE;
 					break;
 				case ACCESS_READ:
-					at = InjectionPointMessage_Hops_AccessType_READ;
+					at = InjectionPointMessage::Hops::READ;
 					break;
 				case ACCESS_WRITE:
-					at = InjectionPointMessage_Hops_AccessType_WRITE;
+					at = InjectionPointMessage::Hops::WRITE;
 					break;
 				case ACCESS_READORWRITE:
 					LOG << "ReadOrWrite memory access event not yet"
@@ -105,6 +109,9 @@ ResultCollector::addResult(std::vector<result_tuple >& res, unsigned int costs)
 					break;
 				case ACCESS_CHECKPOINT:
 					LOG << "Checkpoint not allowed after beginning of hop chain" << std::endl;
+					exit(-1);
+				default:
+					LOG << "Unknown memory-access event" << std::endl;
 					exit(-1);
 				}
 				hop->set_accesstype(at);
@@ -153,9 +160,13 @@ ResultCollector::stopTimer()
 void
 ResultCollector::setMaxMemUsage()
 {
+#ifdef MEASURE_MEM_USAGE
 	struct proc_t usage;
 	look_up_our_self(&usage);
 	m_mem_usage = usage.vsize;
+#else
+	m_mem_usage = 0;
+#endif
 }
 
 void

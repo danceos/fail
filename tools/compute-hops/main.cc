@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
 	CommandLine::option_handle ALGORITHM =
 		cmd.addOption("a", "algorithm", Arg::Required,
-			"-a,--algorithm \tHop algorithm (\"simple\"/\"smart\", default: \"none\")");
+			"-a,--algorithm \tHop algorithm (\"simple\"/\"smart\", default: \"smart\")");
 
 	CommandLine::option_handle OUTPUT_MODE =
 		cmd.addOption("m", "output-mode", Arg::Required,
