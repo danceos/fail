@@ -119,6 +119,7 @@ mailing list
 
 Publications about FAIL*
 ------------------------
+Please cite the EDCC paper if you want to refer to FAIL*:
 
  - H. Schirmeier, M. Hoffmann, C. Dietrich, M. Lenz, D. Lohmann, and O.
    Spinczyk. FAIL*: An open and versatile fault-injection framework for the
@@ -126,6 +127,10 @@ Publications about FAIL*
    of the 11th European Dependable Computing Conference (EDCC '15), pages
    245–255.  IEEE Computer Society Press, Sept. 2015.
    [PDF](http://www.danceos.org/publications/EDCC-2015-Schirmeier.pdf)
+
+ - H. Schirmeier. Efficient Fault-Injection-based Assessment of
+   Software-Implemented Hardware Fault Tolerance. Dissertation, Technische
+   Universität Dortmund, July 2016.
 
  - H. Schirmeier, M. Hoffmann, R. Kapitza, D. Lohmann, and
    O. Spinczyk. FAIL*: Towards a versatile fault-injection experiment
@@ -138,6 +143,23 @@ Publications about FAIL*
 
 Selected publications using FAIL*
 ---------------------------------
+
+- C. Borchert, H. Schirmeier, and O. Spinczyk. Generic soft-error detection and
+  correction for concurrent data structures. IEEE Transactions on Dependable
+  and Secure Computing, PP(99). IEEE Computer Society Press.  In preprint.
+
+- H. Schirmeier. Efficient Fault-Injection-based Assessment of
+  Software-Implemented Hardware Fault Tolerance. Dissertation, Technische
+  Universität Dortmund, July 2016.
+
+- M. Hoffmann. Konstruktive Zuverlässigkeit – Eine Methodik für zuverlässige
+  Systemsoftware auf unzuverlässiger Hardware. Dissertation,
+  Friedrich-Alexander-Universität Erlangen-Nürnberg, Apr. 2016.
+
+- C. Borchert and O. Spinczyk. Hardening an L4 microkernel against soft errors
+  by aspect-oriented programming and whole-program analysis. In Proceedings of
+  the 8th Workshop on Programming Languages and Operating Systems (PLOS '15),
+  pages 1–7, New York, NY, USA, Oct. 2015. ACM Press.
 
 - T. Stumpf. How to Protect the Protector?  In Proceedings of the 45th Annual
   IEEE/IFIP International Conference on Dependable Systems and Networks (DSN '15),
