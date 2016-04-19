@@ -768,6 +768,19 @@ bool EcosKernelTestExperiment::faultInjection() {
 		bool output_correct;
 		if (m_variant != "mibench") {
 			output_correct = ecos_test_passed && !ecos_test_failed;
+
+			if (m_benchmark == "coptermock") {
+				std::vector<char> serial_correct = loadFile(filename_serial(m_variant, m_benchmark));
+				if (serial_correct.size() == 0) {
+					log << "sanity check failed, golden run should have had output" << endl;
+					simulator.terminate(0);
+				}
+				std::string serial_actual = sol.getOutput();
+				if (serial_actual.size() != serial_correct.size() ||
+					!equal(serial_actual.begin(), serial_actual.end(), serial_correct.begin())) {
+					output_correct = false;
+				}
+			}
 			log << "Ecos Test " << (output_correct ? "PASS" : "FAIL") << endl;
 		} else {
 			std::vector<char> serial_correct = loadFile(filename_serial(m_variant, m_benchmark));
