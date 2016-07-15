@@ -16,7 +16,7 @@ file(MAKE_DIRECTORY ${FAIL_DOC_OUTPUT})
 #        means, the path to your Fail* directory should not contain any blanks.
 
 configure_file(${PROJECT_SOURCE_DIR}/cmake/Doxyfile.in
-		${PROJECT_BINARY_DIR}/Doxyfile @ONLY}
+		${PROJECT_BINARY_DIR}/Doxyfile @ONLY
 )
 
 ## call make doc to generate documentation
