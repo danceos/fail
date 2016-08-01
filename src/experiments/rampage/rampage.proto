@@ -19,9 +19,9 @@ message RAMpageProtoMsg {
 	// number of empty passes until we give up
 	required uint32 empty_passes = 5;
 	// local timeout (between newlines on ttyS1)
-	required uint32 local_timeout = 6;
+	required uint64 local_timeout = 6;
 	// global timeout
-	required uint32 global_timeout = 7;
+	required uint64 global_timeout = 7;
 
 	// ----------------------------------------------------
 

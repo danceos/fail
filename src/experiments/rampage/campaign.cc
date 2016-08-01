@@ -79,8 +79,8 @@ bool RAMpageCampaign::run()
 		//d->msg.set_global_timeout(1000000*60*90); // 90m
 		//d->msg.set_local_timeout(1000000*60*20); // 20m
 		//d->msg.set_global_timeout(1000000*60*120); // 120m
-		d->msg.set_local_timeout(1000000*60*30); // 30m
-		d->msg.set_global_timeout(1000000*60*120); // 120m
+		d->msg.set_local_timeout(1000000ULL*60*30); // 30m
+		d->msg.set_global_timeout(1000000ULL*60*120); // 120m
 		campaignmanager.addParam(d);
 	}
 	campaignmanager.noMoreParameters();
