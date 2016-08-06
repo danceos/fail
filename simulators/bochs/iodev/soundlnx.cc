@@ -448,7 +448,7 @@ int bx_sound_linux_c::alsa_pcm_write()
       BX_ERROR(("ALSA: short write, write %d frames", ret));
     }
     audio_bufsize -= alsa_bufsize;
-    memcpy(audio_buffer, audio_buffer+alsa_bufsize, audio_bufsize);
+    memmove(audio_buffer, audio_buffer+alsa_bufsize, audio_bufsize);
   }
   if ((audio_bufsize == 0) && (alsa_buffer != NULL)) {
     free(alsa_buffer);

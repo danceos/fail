@@ -3120,7 +3120,7 @@ void bx_hard_drive_c::init_mode_sense_single(Bit8u channel, const void* src, int
   BX_SELECTED_CONTROLLER(channel).buffer[7] = 0; // reserved
 
   // Data
-  memcpy(BX_SELECTED_CONTROLLER(channel).buffer + 8, src, size);
+  memmove(BX_SELECTED_CONTROLLER(channel).buffer + 8, src, size);
 }
 
   void BX_CPP_AttrRegparmN(1)
