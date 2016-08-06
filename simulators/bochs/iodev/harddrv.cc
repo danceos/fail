@@ -1403,24 +1403,24 @@ void bx_hard_drive_c::write(Bit32u address, Bit32u value, unsigned io_len)
                           init_mode_sense_single(channel, &BX_SELECTED_CONTROLLER(channel).buffer[8], 28);
                           BX_SELECTED_CONTROLLER(channel).buffer[8] = 0x2a;
                           BX_SELECTED_CONTROLLER(channel).buffer[9] = 0x12;
-                          BX_SELECTED_CONTROLLER(channel).buffer[10] = 0x00;
+                          BX_SELECTED_CONTROLLER(channel).buffer[10] = 0x03;
                           BX_SELECTED_CONTROLLER(channel).buffer[11] = 0x00;
-                          // Multisession, Mode 2 Form 2, Mode 2 Form 1
-                          BX_SELECTED_CONTROLLER(channel).buffer[12] = 0x70;
+                          // Multisession, Mode 2 Form 2, Mode 2 Form 1, Audio
+                          BX_SELECTED_CONTROLLER(channel).buffer[12] = 0x71;
                           BX_SELECTED_CONTROLLER(channel).buffer[13] = (3 << 5);
                           BX_SELECTED_CONTROLLER(channel).buffer[14] = (unsigned char) (1 |
                             (BX_SELECTED_DRIVE(channel).cdrom.locked ? (1 << 1) : 0) |
                             (1 << 3) |
                             (1 << 5));
                           BX_SELECTED_CONTROLLER(channel).buffer[15] = 0x00;
-                          BX_SELECTED_CONTROLLER(channel).buffer[16] = (706 >> 8) & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[17] = 706 & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[16] = ((16 * 176) >> 8) & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[17] = (16 * 176) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[18] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[19] = 2;
                           BX_SELECTED_CONTROLLER(channel).buffer[20] = (512 >> 8) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[21] = 512 & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[22] = (706 >> 8) & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[23] = 706 & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[22] = ((16 * 176) >> 8) & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[23] = (16 * 176) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[24] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[25] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[26] = 0;
@@ -1481,24 +1481,24 @@ void bx_hard_drive_c::write(Bit32u address, Bit32u value, unsigned io_len)
                           init_mode_sense_single(channel, &BX_SELECTED_CONTROLLER(channel).buffer[8], 28);
                           BX_SELECTED_CONTROLLER(channel).buffer[8] = 0x2a;
                           BX_SELECTED_CONTROLLER(channel).buffer[9] = 0x12;
-                          BX_SELECTED_CONTROLLER(channel).buffer[10] = 0x00;
+                          BX_SELECTED_CONTROLLER(channel).buffer[10] = 0x03;
                           BX_SELECTED_CONTROLLER(channel).buffer[11] = 0x00;
-                          // Multisession, Mode 2 Form 2, Mode 2 Form 1
-                          BX_SELECTED_CONTROLLER(channel).buffer[12] = 0x70;
+                          // Multisession, Mode 2 Form 2, Mode 2 Form 1, Audio
+                          BX_SELECTED_CONTROLLER(channel).buffer[12] = 0x71;
                           BX_SELECTED_CONTROLLER(channel).buffer[13] = (3 << 5);
                           BX_SELECTED_CONTROLLER(channel).buffer[14] = (unsigned char) (1 |
                             (BX_SELECTED_DRIVE(channel).cdrom.locked ? (1 << 1) : 0) |
                             (1 << 3) |
                             (1 << 5));
                           BX_SELECTED_CONTROLLER(channel).buffer[15] = 0x00;
-                          BX_SELECTED_CONTROLLER(channel).buffer[16] = (706 >> 8) & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[17] = 706 & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[16] = ((16 * 176) >> 8) & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[17] = (16 * 176) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[18] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[19] = 2;
                           BX_SELECTED_CONTROLLER(channel).buffer[20] = (512 >> 8) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[21] = 512 & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[22] = (706 >> 8) & 0xff;
-                          BX_SELECTED_CONTROLLER(channel).buffer[23] = 706 & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[22] = ((16 * 176) >> 8) & 0xff;
+                          BX_SELECTED_CONTROLLER(channel).buffer[23] = (16 * 176) & 0xff;
                           BX_SELECTED_CONTROLLER(channel).buffer[24] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[25] = 0;
                           BX_SELECTED_CONTROLLER(channel).buffer[26] = 0;
@@ -1527,13 +1527,10 @@ void bx_hard_drive_c::write(Bit32u address, Bit32u value, unsigned io_len)
                       }
                       break;
 
+                    default:
                     case 0x3: // saved values not implemented
                       atapi_cmd_error(channel, SENSE_ILLEGAL_REQUEST, ASC_SAVING_PARAMETERS_NOT_SUPPORTED, 1);
                       raise_interrupt(channel);
-                      break;
-
-                    default:
-                      BX_PANIC(("Should not get here!"));
                       break;
                   }
                 }
