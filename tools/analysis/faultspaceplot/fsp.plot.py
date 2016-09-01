@@ -67,7 +67,7 @@ fig = plt.figure()
 
 xmin = 99999999
 xmax = 0
-ymin = 99999999
+ymin = 0xffffffff
 ymax = 0
 
 line_counter = 1
