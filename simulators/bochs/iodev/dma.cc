@@ -699,6 +699,10 @@ void bx_dma_c::raise_HLDA(void)
     // wait till they're unmasked
     return;
   }
+  if (!BX_DMA_THIS s[ma_sl].chan[channel].used) {
+    //BX_PANIC(("hlda: channel %d not connected to device", channel));
+    return;
+  }
 
   //BX_DEBUG(("hlda: OK in response to DRQ(%u)", (unsigned) channel));
   phy_addr = (BX_DMA_THIS s[ma_sl].chan[channel].page_reg << 16) |
