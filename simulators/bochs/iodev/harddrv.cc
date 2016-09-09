@@ -1245,8 +1245,10 @@ void bx_hard_drive_c::write(Bit32u address, Bit32u value, unsigned io_len)
           break;
 
         case 0xa0: // PACKET
-          if (BX_SELECTED_CONTROLLER(channel).buffer_index >= PACKET_SIZE)
+          if (BX_SELECTED_CONTROLLER(channel).buffer_index >= PACKET_SIZE) {
             BX_PANIC(("IO write(0x%04x): buffer_index >= PACKET_SIZE", address));
+            return;
+          }
 
           switch (io_len) {
             case 4:
