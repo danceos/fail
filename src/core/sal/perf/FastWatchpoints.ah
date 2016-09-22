@@ -5,10 +5,6 @@
 
 #ifdef CONFIG_FAST_WATCHPOINTS
 
-#if !defined(CONFIG_EVENT_MEMREAD) && !defined(CONFIG_EVENT_MEMWRITE)
-#error Watchpoint events (i.e. memory read or write accesses) are required for fast watchpoints!
-#endif	
-
 #include "WatchpointManagerSlice.ah"    // slice class "WatchpointManagerSlice"
 #include "WatchpointControllerSlice.ah" // slice class "WatchpointControllerSlice"
 #include "../ListenerManager.hpp"
