@@ -4,6 +4,8 @@ set(SRCS
 	DatabaseCampaign.cc
 )
 
+set_source_files_properties(JobServer.cc CampaignManager.cc PROPERTIES COMPILE_FLAGS -std=c++11)
+
 find_package(MySQL REQUIRED)
 include_directories(${MYSQL_INCLUDE_DIR})
 
@@ -15,7 +17,7 @@ else(CONFIG_INJECTIONPOINT_HOPS)
 endif(CONFIG_INJECTIONPOINT_HOPS)
 
 add_library(fail-cpn ${SRCS})
-target_link_libraries(fail-cpn fail-comm fail-util ${MYSQL_LIBRARIES})
+target_link_libraries(fail-cpn fail-comm fail-util ${MYSQL_LIBRARIES} ${Boost_COROUTINE_LIBRARY} ${Boost_CONTEXT_LIBRARY})
 
 # if hop-chains need to be calculated by the server, we
 # the smarthopping module

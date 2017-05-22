@@ -1,5 +1,5 @@
 ### Add Boost and Threads
-find_package(Boost 1.42 COMPONENTS thread REQUIRED)
+find_package(Boost 1.42 COMPONENTS thread coroutine context REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 

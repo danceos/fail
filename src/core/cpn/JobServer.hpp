@@ -1,16 +1,18 @@
 #ifndef __JOB_SERVER_H__
 #define __JOB_SERVER_H__
 
-#include "Minion.hpp"
 #include "util/SynchronizedQueue.hpp"
 #include "util/SynchronizedCounter.hpp"
 #include "util/SynchronizedMap.hpp"
 #include "config/FailConfig.hpp"
+#include "comm/ExperimentData.hpp"
 #include "comm/FailControlMessage.pb.h"
 #include "comm/SocketComm.hpp"
 
 #include <list>
 #include <ctime>
+#include <memory>
+#include <string>
 
 #ifndef __puma
 #include <boost/thread.hpp>
@@ -30,14 +32,13 @@ class CommThread;
  */
 class JobServer {
 private:
+	struct impl;
+	std::shared_ptr<impl> m_d;
+
 	//! The TCP Port number
-	int m_port;
+	const unsigned short m_port;
 	//! TODO nice termination concept
 	bool m_finish;
-	//!  Campaign signaled last expirement data set
-	bool m_noMoreExps;
-	//! the maximal number of threads spawned for TCP communication
-	unsigned m_maxThreads;
 	//! the maximal timeout per communication thread
 	int m_threadtimeout;
 	//! list of spawned threads
@@ -82,18 +83,7 @@ private:
 	void sendWork(int sockfd);
 
 public:
-	JobServer(int port = SERVER_COMM_TCP_PORT) : m_port(port), m_finish(false), m_noMoreExps(false),
-		m_maxThreads(128), m_threadtimeout(0), m_undoneJobs(SERVER_OUT_QUEUE_SIZE)
-	{
-		SocketComm::init();
-		m_runid = std::time(0);
-#ifndef __puma
-		m_serverThread = new boost::thread(&JobServer::run, this); // run operator()() in a thread.
-#ifdef SERVER_PERFORMANCE_MEASURE
-		m_measureThread = new boost::thread(&JobServer::measure, this);
-#endif
-#endif
-	}
+  JobServer(const unsigned short port = SERVER_COMM_TCP_PORT);
 	~JobServer()
 	{
 		done();
@@ -130,50 +120,13 @@ public:
 	 * @return \c true if no more parameter sets available, \c false otherwise
 	 * @see setNoMoreExperiments
 	 */
-	bool noMoreExperiments() const { return m_noMoreExps; }
+	bool noMoreExperiments() const;
 
 	/**
 	 * The Campaign Controller may signal that the jobserver can stop listening
 	 * for client connections.
 	 */
-	void done() { m_finish = true; }
-};
-
-/**
- * @class CommThread
- * Implementation of the communication threads.
- * This class implements the actual communication
- * with the minions.
- */
-class CommThread {
-private:
-	int m_sock; //! Socket descriptor of the connection
-	uint32_t m_job_size;
-	JobServer& m_js; //! Calling jobserver
-
-	// FIXME: Concerns are not really separated yet ;)
-	/**
-	 * Called after minion calls for work.
-	 * Tries to deque a parameter set non blocking, and
-	 * sends it back to the requesting minion.
-	 * @param minion The minion asking for input
-	 */
-	void sendPendingExperimentData(Minion& minion);
-	/**
-	 * Called after minion offers a result message.
-	 * Evaluates the Workload ID and puts the corresponding
-	 * job result into the result queue.
-	 * @param minion The minion offering results
-	 * @param workloadID The workload id of the result message
-	 */
-	void receiveExperimentResults(Minion& minion, FailControlMessage& ctrlmsg);
-public:
-	CommThread(int sockfd, JobServer& p)
-		: m_sock(sockfd), m_job_size(1), m_js(p) { }
-	/**
-	 * The thread's entry point.
-	 */
-	void operator()();
+	void done();
 };
 
 } // end-of-namespace: fail

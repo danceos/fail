@@ -8,8 +8,8 @@
 
 #include "sal/SALInst.hpp"
 #include "comm/ExperimentData.hpp"
-#include "JobServer.hpp"
 #include "Campaign.hpp"
+#include "util/CommandLine.hpp"
 
 namespace fail {
 
@@ -19,26 +19,25 @@ namespace fail {
  * The CampaignManager allows a user-campaign access to all constant
  * simulator information and forwards single experiments to the JobServer.
  */
+class JobServer;
 class CampaignManager {
 private:
 	JobServer *m_jobserver;
 	Campaign* m_currentCampaign;
+	CommandLine::option_handle port;
 public:
-	CampaignManager() : m_jobserver(0), m_currentCampaign(0) { }
-	~CampaignManager() { delete m_jobserver; }
+	CampaignManager() : m_jobserver(0), m_currentCampaign(0)
+	{
+		fail::CommandLine &cmd = fail::CommandLine::Inst();
+		port = cmd.addOption("p", "port", Arg::Required,
+				     "-p,--port \tListening port of server; no "
+				     "value chooses port automatically");
+	}
+	~CampaignManager();
 	/**
 	 * Executes a user campaign
 	 */
-	bool runCampaign(Campaign* c)
-	{
-		if (!m_jobserver) {
-			m_jobserver = new JobServer;
-		}
-		m_currentCampaign = c;
-		bool ret = c->run();
-		m_jobserver->done();
-		return ret;
-	}
+	bool runCampaign(Campaign* c);
 	/**
 	 * Returns a const reference for acquiring constant simulator specific information.
 	 * e.g., Registernames, to ease experiment data construction.
@@ -54,21 +53,21 @@ public:
 	 * A Parameter set includes space for results.
 	 * @param exp A pointer to a ExperimentData set.
 	 */
-	void addParam(ExperimentData* exp) { m_jobserver->addParam(exp); }
+	void addParam(ExperimentData* exp);
 	/**
 	 * A user campaign can request a single result (blocking) from the queue.
 	 * @return Pointer to a parameter object with filled result data
 	 * @see addParam()
 	 */
-	ExperimentData* getDone() { return m_jobserver->getDone(); }
+	ExperimentData* getDone();
 	/**
 	 * Signal, that there will not come any further parameter sets.
 	 */
-	void noMoreParameters() { m_jobserver->setNoMoreExperiments(); }
+	void noMoreParameters();
 	 /**
 	 * User campaign has finished.
 	 */
-	void done() { m_jobserver->done(); }
+	void done();
 	/**
 	 * Wait actively, until all experiments expired.
 	 */
