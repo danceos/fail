@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 message Trace_Event_Extended {
 	// data value read/written
 	optional uint64 data = 5;

@@ -27,7 +27,7 @@ LLVMtoFailTranslator & LLVMDisassembler::getTranslator() {
 
 void LLVMDisassembler::disassemble()
 {
-	error_code ec;
+	llvm::error_code ec;
 	for (section_iterator i = object->begin_sections(),
 			 e = object->end_sections();
 		 i != e; i.increment(ec)) {

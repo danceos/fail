@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	OwningPtr<Binary> binary;
-	if (error_code ec = createBinary(file, binary)) {
+	if (llvm::error_code ec = createBinary(file, binary)) {
 		std::cerr << "Dis" << ": '" << file << "': " << ec.message() << ".\n";
 		return -1;
 	}

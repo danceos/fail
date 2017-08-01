@@ -18,7 +18,7 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 		llvm::InitializeAllTargetMCs();
 		llvm::InitializeAllDisassemblers();
 
-		if (error_code ec = createBinary(m_elf->getFilename(), binary)) {
+		if (llvm::error_code ec = createBinary(m_elf->getFilename(), binary)) {
 			LOG << m_elf->getFilename() << "': " << ec.message() << ".\n";
 			return false;
 		}

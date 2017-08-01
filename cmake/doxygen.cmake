@@ -1,5 +1,6 @@
 
 ### Setup doxygen documentation 
+include(CMakeParseArguments) # work around internal FindDoxygen bug
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
 # Using a .in file means we can use CMake to insert project settings

@@ -18,12 +18,16 @@ endif (LIBDWARF_LIBRARIES AND LIBDWARF_INCLUDE_DIRS)
 
 find_path (DWARF_INCLUDE_DIR
     NAMES
-      dwarf.h
+      libdwarf.h
     PATHS
       /usr/include
+      /usr/include/libdwarf
       /usr/local/include
+      /usr/local/include/libdwarf
       /opt/local/include
+      /opt/local/include/libdwarf
       /sw/include
+      /sw/include/libdwarf
       ENV CPATH) # PATH and INCLUDE will also work
 #find_path (LIBDW_INCLUDE_DIR
 #    NAMES

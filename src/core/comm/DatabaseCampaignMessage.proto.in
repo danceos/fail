@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 import "google/protobuf/descriptor.proto";
 extend google.protobuf.FieldOptions {
     optional bool sql_primary_key = 32382 [ default = false];

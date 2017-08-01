@@ -1,3 +1,5 @@
+syntax = "proto2";
+
 message InjectionPointMessage {
 	// Costs of the hop chain on the PandaBoard
 	// ToDo: Could be eliminated, but it is nice for evaluation

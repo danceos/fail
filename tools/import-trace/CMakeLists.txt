@@ -22,6 +22,13 @@ if (BUILD_LLVM_DISASSEMBLER)
   find_package(Boost 1.42 COMPONENTS regex REQUIRED)
   include_directories(${Boost_INCLUDE_DIRS})
   link_directories(${Boost_LIBRARY_DIRS})
+
+  # libelf and libdwarf required by ElfImporter
+  find_package(LibElf REQUIRED)
+  find_package(LibDwarf REQUIRED)
+  include_directories(${LIBELF_INCLUDE_DIRS})
+  include_directories(${LIBDWARF_INCLUDE_DIRS})
+
 endif(BUILD_LLVM_DISASSEMBLER)
 
 find_package(MySQL REQUIRED)
