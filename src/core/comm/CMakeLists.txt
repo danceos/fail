@@ -1,7 +1,5 @@
 set(SRCS
 	ExperimentData.hpp
-	SocketComm.hpp
-	SocketComm.cc
 )
 
 ## Setup desired protobuf descriptions HERE ##

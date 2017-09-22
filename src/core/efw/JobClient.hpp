@@ -7,8 +7,11 @@
 #include <unistd.h>
 #include <iostream>
 #include <deque>
+#include <memory>
 
-#include "comm/SocketComm.hpp"
+// Xlib.h #defines this, which breaks protobuf headers.
+#undef Status
+
 #include "comm/ExperimentData.hpp"
 #include "comm/FailControlMessage.pb.h"
 #include "config/FailConfig.hpp"
@@ -24,10 +27,12 @@ namespace fail {
 */
 class JobClient {
 private:
+	struct impl;
+	impl *m_d; // meh. With a managed pointer everything needs to be >= C++11.
+
 	std::string m_server;
 	int m_server_port;
-	struct hostent* m_server_ent;
-	int m_sockfd;
+
 	uint64_t m_server_runid;
 
 	WallclockTimer m_job_runtime;

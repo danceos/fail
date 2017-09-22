@@ -1,28 +1,34 @@
+#include <chrono>
+#include <random>
+#include <string>
+#include <thread>
+
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+
 #include "JobClient.hpp"
-#include "comm/SocketComm.hpp"
 
 using namespace std;
+using namespace boost::asio;
 
 namespace fail {
 
+struct JobClient::impl {
+	io_service ios;
+	ip::tcp::socket socket;
+
+	impl() : socket(ios) {}
+};
+
 JobClient::JobClient(const std::string& server, int port)
-	: m_server(server), m_server_port(port),
+	: m_d(new impl), m_server(server), m_server_port(port),
 	m_server_runid(0), // server accepts this for virgin clients
 	m_job_runtime_total(0),
 	m_job_throughput(CLIENT_JOB_INITIAL), // will be corrected after measurement
 	m_job_total(0),
 	m_connect_failed(false)
 {
-	SocketComm::init();
-	m_server_ent = gethostbyname(m_server.c_str());
-
-	cout << "JobServer: " << m_server.c_str() << endl;
-
-	if (m_server_ent == NULL) {
-		herror("[Client@gethostbyname()]");
-		// TODO: Log-level?
-		exit(1);
-	}
+	cout << "JobServer: " << server << ":" << port << endl;
 	srand(time(NULL)); // needed for random backoff (see connectToServer)
 }
 
@@ -30,6 +36,7 @@ JobClient::~JobClient()
 {
 	// Send back completed jobs to the server
 	sendResultsToServer();
+	delete m_d;
 }
 
 bool JobClient::connectToServer()
@@ -39,52 +46,40 @@ bool JobClient::connectToServer()
 		return false;
 	}
 
-	int retries = CLIENT_RETRY_COUNT;
-	while (true) {
-		// Connect to server
-		struct sockaddr_in serv_addr;
-		m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-		if (m_sockfd < 0) {
-			perror("[Client@socket()]");
-			// TODO: Log-level?
-			exit(0);
-		}
+	boost::asio::ip::tcp::resolver resolver(m_d->ios);
+	boost::asio::ip::tcp::resolver::query query(
+	    m_server, std::to_string(m_server_port));
 
-		/* Enable address reuse */
-		int on = 1;
-		setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+	// random engine for backoff.
+	std::mt19937_64 engine(time(NULL));
 
-		memset(&serv_addr, 0, sizeof(serv_addr));
-		serv_addr.sin_family = AF_INET;
-		memcpy(&serv_addr.sin_addr.s_addr, m_server_ent->h_addr, m_server_ent->h_length);
-		serv_addr.sin_port = htons(m_server_port);
-
-		if (connect(m_sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-			perror("[Client@connect()]");
-			close(m_sockfd);
-			// TODO: Log-level?
-			if (retries > 0) {
-				// Wait CLIENT_RAND_BACKOFF_TSTART to RAND_BACKOFF_TEND seconds:
-				int delay = rand() % (CLIENT_RAND_BACKOFF_TEND-CLIENT_RAND_BACKOFF_TSTART) + CLIENT_RAND_BACKOFF_TSTART;
-				cout << "[Client] Retrying to connect to server in ~" << delay << "s..." << endl;
-				// TODO: Log-level?
-				sleep(delay);
-				usleep(rand() % 1000000);
-				--retries;
-				continue;
+	for (int retries = CLIENT_RETRY_COUNT; retries > 0; --retries) {
+		for (ip::tcp::resolver::iterator end,
+		     addrs = resolver.resolve(query);
+		     addrs != end; ++addrs) {
+			boost::system::error_code error;
+			m_d->socket.connect(addrs->endpoint(), error);
+			if (!error) {
+				cout << "[Client] Connection established!"
+				     << endl;
+				return true;
 			}
-			cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT << " times); "
-			     << "I'll give it up!" << endl;
-			     // TODO: Log-level?
-			m_connect_failed = true;
-			return false; // finally: unable to connect, give it up :-(
+			perror("[Client@connect()]");
+			m_d->socket.close();
 		}
-		break; // connected! :-)
-	}
-	cout << "[Client] Connection established!" << endl;
-	// TODO: Log-level?
 
-	return true;
+		std::uniform_real_distribution<> distribution(
+		    CLIENT_RAND_BACKOFF_TSTART, CLIENT_RAND_BACKOFF_TEND);
+		const auto delay = std::chrono::duration<double>(distribution(engine));
+		cout << "[Client] Retrying to connect to server in ~" << delay.count()
+		     << "s..." << endl;
+		std::this_thread::sleep_for(delay);
+	}
+
+	cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT
+	     << " times); I'll give it up!" << endl;
+	m_connect_failed = true;
+	return false;
 }
 
 bool JobClient::getParam(ExperimentData& exp)
@@ -109,6 +104,59 @@ bool JobClient::getParam(ExperimentData& exp)
 	}
 }
 
+template <typename Socket>
+bool sendMsg(Socket &s, google::protobuf::Message &msg)
+{
+	int size = htonl(msg.ByteSize());
+	const auto msg_size = msg.ByteSize() + sizeof(size);
+	std::string buf;
+
+	if (!msg.SerializeToString(&buf))
+		return false;
+
+	boost::array<const_buffer, 2> bufs{buffer(&size, sizeof(size)),
+					   buffer(buf)};
+
+	boost::system::error_code ec;
+	const auto len = boost::asio::write(s, bufs, ec);
+	if (ec || len != msg_size) {
+		std::cerr << ec.message() << std::endl;
+		std::cerr << "Sent " << len << " instead of " << msg_size
+			  << " bytes from socket" << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
+template <typename Socket>
+bool rcvMsg(Socket &s, google::protobuf::Message &msg)
+{
+	int size;
+	std::size_t len;
+	boost::system::error_code ec;
+
+	len = boost::asio::read(s, buffer(&size, sizeof(size)), ec);
+	if (ec || len != sizeof(size)) {
+		std::cerr << ec.message() << std::endl;
+		std::cerr << "Read " << len << " instead of " << sizeof(size)
+			  << " bytes from socket" << std::endl;
+		return false;
+	}
+
+	const auto msglen = ntohl(size);
+	std::vector<char> buf(msglen);
+	len = boost::asio::read(s, buffer(buf), ec);
+	if (ec || len != sizeof(size)) {
+		std::cerr << ec.message() << std::endl;
+		std::cerr << "Read " << len << " instead of " << msglen
+			  << " bytes from socket" << std::endl;
+		return false;
+	}
+
+	return msg.ParseFromArray(buf.data(), buf.size());
+}
+
 FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp)
 {
 	FailControlMessage ctrlmsg;
@@ -127,15 +175,15 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		ctrlmsg.set_run_id(m_server_runid);
 		ctrlmsg.set_job_size(m_job_throughput); //Request for a number of jobs
 
-		if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
+		if (!sendMsg(m_d->socket, ctrlmsg)) {
+			m_d->socket.close();
 			// Failed to send message?  Retry.
-			close(m_sockfd);
 			return FailControlMessage::COME_AGAIN;
 		}
 		ctrlmsg.Clear();
-		if (!SocketComm::rcvMsg(m_sockfd, ctrlmsg)) {
+		if (!rcvMsg(m_d->socket, ctrlmsg)) {
+			m_d->socket.close();
 			// Failed to receive message?  Retry.
-			close(m_sockfd);
 			return FailControlMessage::COME_AGAIN;
 		}
 
@@ -148,7 +196,7 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 			for (i = 0; i < ctrlmsg.job_size(); i++) {
 				ExperimentData* temp_exp = new ExperimentData(exp.getMessage().New());
 
-				if (!SocketComm::rcvMsg(m_sockfd, temp_exp->getMessage())) {
+				if (!rcvMsg(m_d->socket, temp_exp->getMessage())) {
 					// looks like we won't receive more jobs now, cleanup
 					delete &temp_exp->getMessage();
 					delete temp_exp;
@@ -170,7 +218,7 @@ FailControlMessage_Command JobClient::tryToGetExperimentData(ExperimentData& exp
 		default:
 			break;
 		}
-		close(m_sockfd);
+		m_d->socket.close();
 
 		//start time measurement for throughput calculation
 		m_job_runtime.startTimer();
@@ -266,14 +314,14 @@ bool JobClient::sendResultsToServer()
 		cout << "]";
 
 		// TODO: Log-level?
-		if (!SocketComm::sendMsg(m_sockfd, ctrlmsg)) {
-			close(m_sockfd);
+		if (!sendMsg(m_d->socket, ctrlmsg)) {
+			m_d->socket.close();
 			return false;
 		}
 
 		for (i = 0; i < ctrlmsg.job_size(); i++) {
-			if (!SocketComm::sendMsg(m_sockfd, m_results.front()->getMessage())) {
-				close(m_sockfd);
+			if (!sendMsg(m_d->socket, m_results.front()->getMessage())) {
+				m_d->socket.close();
 				return false;
 			}
 			delete &m_results.front()->getMessage();
@@ -282,7 +330,7 @@ bool JobClient::sendResultsToServer()
 		}
 
 		// Close connection.
-		close(m_sockfd);
+		m_d->socket.close();
 		return true;
 	}
 	return true;

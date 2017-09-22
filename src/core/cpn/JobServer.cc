@@ -12,7 +12,6 @@
 #include <thread>
 #include <tuple>
 
-#include "comm/SocketComm.hpp"
 #include "JobServer.hpp"
 
 #ifndef __puma
@@ -83,28 +82,23 @@ static bool rcvMsg(tcp::socket &socket, google::protobuf::Message &msg,
 	boost::system::error_code ec;
 	int size;
 	size_t len = async_read(socket, buffer(&size, sizeof(size)), yield[ec]);
-	if (len != sizeof(size)) {
+	if (ec || len != sizeof(size)) {
+		std::cerr << ec.message() << std::endl;
 		std::cerr << "Read " << len << " instead of " << sizeof(size)
 			  << " bytes from socket" << std::endl;
-		return false;
-	}
-	if (ec) {
-		std::cerr << ec.message() << std::endl;
 		return false;
 	}
 	const size_t msg_size = ntohl(size);
 
 	std::vector<char> buf(msg_size);
 	len = async_read(socket, buffer(buf), yield[ec]);
-	if (len != msg_size) {
+	if (ec || len != sizeof(size)) {
+		std::cerr << ec.message() << std::endl;
 		std::cerr << "Read " << len << " instead of " << msg_size
 			  << " bytes from socket" << std::endl;
 		return false;
 	}
-	if (ec) {
-		std::cerr << ec.message() << std::endl;
-		return false;
-	}
+
 	return drop ? true : msg.ParseFromArray(buf.data(), buf.size());
 }
 
@@ -167,7 +161,6 @@ JobServer::JobServer(const unsigned short port)
     : m_d(std::make_shared<impl>()), m_port(port), m_finish(false),
       m_threadtimeout(0), m_undoneJobs(SERVER_OUT_QUEUE_SIZE)
 {
-	SocketComm::init();
 	m_runid = std::time(0);
 #ifndef __puma
 	m_serverThread = new boost::thread(&JobServer::run, this);

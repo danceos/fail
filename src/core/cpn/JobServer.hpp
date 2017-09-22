@@ -7,7 +7,6 @@
 #include "config/FailConfig.hpp"
 #include "comm/ExperimentData.hpp"
 #include "comm/FailControlMessage.pb.h"
-#include "comm/SocketComm.hpp"
 
 #include <list>
 #include <ctime>
