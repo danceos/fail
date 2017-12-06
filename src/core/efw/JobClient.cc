@@ -53,7 +53,7 @@ bool JobClient::connectToServer()
 	// random engine for backoff.
 	std::mt19937_64 engine(time(NULL));
 
-	for (int retries = CLIENT_RETRY_COUNT; retries > 0; --retries) {
+	for (int tries = CLIENT_RETRY_COUNT + 1; tries > 0; --tries) {
 		for (ip::tcp::resolver::iterator end,
 		     addrs = resolver.resolve(query);
 		     addrs != end; ++addrs) {
@@ -147,7 +147,7 @@ bool rcvMsg(Socket &s, google::protobuf::Message &msg)
 	const auto msglen = ntohl(size);
 	std::vector<char> buf(msglen);
 	len = boost::asio::read(s, buffer(buf), ec);
-	if (ec || len != sizeof(size)) {
+	if (ec || len != msglen) {
 		std::cerr << ec.message() << std::endl;
 		std::cerr << "Read " << len << " instead of " << msglen
 			  << " bytes from socket" << std::endl;

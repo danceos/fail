@@ -92,7 +92,7 @@ static bool rcvMsg(tcp::socket &socket, google::protobuf::Message &msg,
 
 	std::vector<char> buf(msg_size);
 	len = async_read(socket, buffer(buf), yield[ec]);
-	if (ec || len != sizeof(size)) {
+	if (ec || len != msg_size) {
 		std::cerr << ec.message() << std::endl;
 		std::cerr << "Read " << len << " instead of " << msg_size
 			  << " bytes from socket" << std::endl;

@@ -8,6 +8,8 @@ set(SRCS
 	DatabaseExperiment.cc
 )
 
+set_source_files_properties(JobClient.cc PROPERTIES COMPILE_FLAGS -std=c++11)
+
 add_library(fail-efw ${SRCS})
 add_dependencies(fail-efw fail-protoc)
 target_link_libraries(fail-efw fail-comm)
