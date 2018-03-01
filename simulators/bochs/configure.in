@@ -1915,9 +1915,16 @@ if test x$WX_CONFIG != xnot_found; then
       case x$WX_BASENAME in
         xwx_gtk2|xwx_gtk2u) wx_needs_gtk2=1 ;;
         *) ;;
+    x3*)  # version 3
+      ok_wx_version=1
+      wx_multi_lib=1
+      case x$WX_BASENAME in
+        xwx_gtk2|xwx_gtk2u) wx_needs_gtk2=1 ;;
+        *) ;;
       esac
       ;;
-    x[3-9]*) ok_wx_version=1 ;;  # version 3 or greater
+      esac
+      ;;
     *) ;; # who knows?
   esac
   ]
