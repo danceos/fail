@@ -2624,3 +2624,5 @@ BxEvent *x11_notify_callback (void *unused, BxEvent *event)
 }
 
 #endif /* if BX_WITH_X11 */
+
+#undef Status

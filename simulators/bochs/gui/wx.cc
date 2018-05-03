@@ -1706,3 +1706,5 @@ static Bit32u convertStringToGDKKey (const char *string)
 #endif
 
 #endif /* if BX_WITH_WX */
+
+#undef Status
