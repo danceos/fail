@@ -22,7 +22,7 @@ class TimerListener;
  */
 class QEMUController : public SimulatorController {
 public:
-	CPUX86State *m_cpuenv;
+	CPUX86State *m_cpu0env;
 
 	// Initialize the controller.
 	QEMUController();
@@ -60,7 +60,7 @@ public:
 	 */
 	void reboot() {}
 	/* internal, QEMU-specific stuff */
-	void setCPUEnv(struct CPUX86State *env) { m_cpuenv = env; }
+	void setCPUEnv(struct CPUX86State *env) { m_cpu0env = env; }
 };
 
 } // end-of-namespace: fail

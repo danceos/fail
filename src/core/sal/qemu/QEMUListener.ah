@@ -41,7 +41,7 @@ aspect QEMUListener
 		bool onAddition()
 		{
 			//std::cout << "QEMUMemWriteListener::onAddition" << std::endl;
-			if (failqemu_add_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1) != 0) {
+			if (failqemu_add_watchpoint(simulator.m_cpu0env, m_WatchAddr, m_WatchWidth, 1) != 0) {
 				std::cout << "adding watchpoint failed!" << std::endl;
 				return false;
 			}
@@ -51,7 +51,7 @@ aspect QEMUListener
 		void onDeletion()
 		{
 			//std::cout << "QEMUMemWriteListener::onDeletion" << std::endl;
-			failqemu_remove_watchpoint(simulator.m_cpuenv, m_WatchAddr, m_WatchWidth, 1);
+			failqemu_remove_watchpoint(simulator.m_cpu0env, m_WatchAddr, m_WatchWidth, 1);
 		}
 	};
 };
