@@ -109,27 +109,39 @@ int main()
 	
 	test(mm);
 
-	mm.writeToFile(filename_tmp);
+	if (!mm.writeToFile(filename_tmp)) {
+		test_failed("writing tmp file");
+	}
 	mm.clear();
-	mm.readFromFile(filename_tmp);
+	if (!mm.readFromFile(filename_tmp)) {
+		test_failed("reading tmp file");
+	}
 
 	mm.dump(cerr);
 
 	test(mm);
 
 	// intentionally omitting mm.clear() here
-	mm.readFromFile(filename_test1);
+	if (!mm.readFromFile(filename_test1)) {
+		test_failed(filename_test1);
+	}
 	test(mm);
 
 	mm.clear();
-	mm.readFromFile(filename_test1);
+	if (!mm.readFromFile(filename_test1)) {
+		test_failed(filename_test1);
+	}
 	test(mm);
 
 	mm.clear();
-	mm.readFromFile(filename_test2);
+	if (!mm.readFromFile(filename_test2)) {
+		test_failed(filename_test2);
+	}
 	test(mm);
 
 	mm.clear();
-	mm.readFromFile(filename_test3);
+	if (!mm.readFromFile(filename_test3)) {
+		test_failed(filename_test3);
+	}
 	test(mm);
 }

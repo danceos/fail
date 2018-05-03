@@ -99,6 +99,8 @@ public:
 	 * address2<tab>size2
 	 * ...
 	 * \endcode
+	 *
+	 * @return false if file could not be read
 	 */
 	bool readFromFile(char const * const filename);
 	/**
@@ -106,6 +108,8 @@ public:
 	 *
 	 * Currently all access size information is lost; the map is flattened out
 	 * to a long list of single-byte addresses.
+	 *
+	 * @return false if file could not be written
 	 */
 	bool writeToFile(char const * const filename);
 
