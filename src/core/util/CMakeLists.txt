@@ -81,7 +81,7 @@ add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
 target_link_libraries(fail-util fail-comm ${ADDITIONAL_LIBS} ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
 
-option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.3 preferred, for 3.1 and 3.2 read doc/how-to-build.txt)" OFF)
+option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.9 preferred, other versions may not work)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)

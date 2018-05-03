@@ -24,8 +24,8 @@
  * operations with a set of new virtual functions that are called downwards.
  */
 class AdvancedMemoryImporter : public MemoryImporter {
-	llvm::OwningPtr<llvm::object::Binary> binary;
-	llvm::OwningPtr<fail::LLVMDisassembler> disas;
+	llvm::object::Binary *binary = 0;
+	std::unique_ptr<fail::LLVMDisassembler> disas;
 	bool m_last_was_conditional_branch;
 	fail::guest_address_t m_ip_jump_not_taken;
 	std::vector<bool> branches_taken;

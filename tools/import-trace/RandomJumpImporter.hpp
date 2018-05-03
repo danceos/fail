@@ -8,8 +8,8 @@
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
 
 class RandomJumpImporter : public Importer {
-	llvm::OwningPtr<llvm::object::Binary> binary;
-	llvm::OwningPtr<fail::LLVMDisassembler> disas;
+	llvm::object::Binary *binary = 0;
+	std::unique_ptr<fail::LLVMDisassembler> disas;
 
 	fail::CommandLine::option_handle FROM, TO;
 

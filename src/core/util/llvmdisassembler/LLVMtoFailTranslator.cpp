@@ -43,20 +43,18 @@ void LLVMtoFailTranslator::setRegisterContent(ConcreteCPU & cpu, const reginfo_t
 }
 
 LLVMtoFailTranslator* LLVMtoFailTranslator::createFromBinary(const std::string elf_path) {
-	llvm_shutdown_obj Y;
+	//llvm_shutdown_obj Y;
 	llvm::InitializeAllTargetInfos();
 	llvm::InitializeAllTargetMCs();
 	llvm::InitializeAllDisassemblers();
 
-	OwningPtr<Binary> binary;
-	llvm::error_code ret = createBinary(elf_path, binary);
-	assert (ret == 0);
-	(void) ret; // unused in release builds
-	assert (binary.get() != NULL);
+	Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(elf_path);
+	assert (BinaryOrErr);
+	Binary *binary = BinaryOrErr.get().getBinary();
 
 	#ifndef __puma
-	LLVMDisassembler disas(dyn_cast<ObjectFile>(binary.get()));
-	return &disas.getTranslator();
+	LLVMDisassembler disas(dyn_cast<ObjectFile>(binary));
+	return disas.getTranslator();
 	#else
 	return 0;
 	#endif

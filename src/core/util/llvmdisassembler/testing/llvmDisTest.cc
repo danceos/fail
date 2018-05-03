@@ -1,3 +1,4 @@
+#include "llvm/Support/raw_os_ostream.h"
 #include "../LLVMDisassembler.hpp"
 
 using namespace llvm;
@@ -22,13 +23,16 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	OwningPtr<Binary> binary;
-	if (llvm::error_code ec = createBinary(file, binary)) {
-		std::cerr << "Dis" << ": '" << file << "': " << ec.message() << ".\n";
+	Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(file);
+	if (!BinaryOrErr) {
+		std::cerr << "Dis: '" << file << "': ";
+		raw_os_ostream OS(std::cerr);
+		logAllUnhandledErrors(BinaryOrErr.takeError(), OS, "");
 		return -1;
 	}
+	Binary *binary = BinaryOrErr.get().getBinary();
 
-	ObjectFile *obj = dyn_cast<ObjectFile>(binary.get());
+	ObjectFile *obj = dyn_cast<ObjectFile>(binary);
 
 	LLVMDisassembler disas(obj);
 	disas.disassemble();
@@ -40,26 +44,27 @@ int main(int argc, char* argv[]) {
 	const MCRegisterInfo &reg_info = disas.getRegisterInfo();
 
 	std::cout << std::endl << "Number of Registers: " << reg_info.getNumRegs() << std::endl;
-	//	for(unsigned int i = 0; i < reg_info.getNumRegs(); ++i){
-	//	  std::cout << i << " - " <<  reg_info.getName(i) << std::endl;
-	//	}
-	fail::LLVMtoFailTranslator & ltof =	 disas.getTranslator() ;
+	for (unsigned int i = 0; i < reg_info.getNumRegs(); ++i) {
+		std::cout << i << "=" << reg_info.getName(i) << " ";
+	}
+	std::cout << std::endl;
+	fail::LLVMtoFailTranslator *ltof = disas.getTranslator();
 
-	for(itr = instr_map.begin(); itr != instr_map.end(); ++itr){
+	for (itr = instr_map.begin(); itr != instr_map.end(); ++itr){
 		const LLVMDisassembler::Instr &instr = (*itr).second;
 		std::cout << std::hex << (*itr).first << " | "	<< instr.opcode << std::endl;
 		std::cout << std::dec << "USES: ";
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_uses.begin();
 			 it != instr.reg_uses.end(); ++it) {
-			std::cout << reg_info.getName(*it) <<"(" << *it << ") ";
-			std::cout << "Fail: " << ltof.getFailRegisterId(*it) << " ";
+			std::cout << reg_info.getName(*it)
+				<< "(" << *it << "->" << ltof->getFailRegisterId(*it) << ") ";
 		}
-		std::cout << std::endl;
 
-		std::cout << "DEFS: ";
+		std::cout << " |  DEFS: ";
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_defs.begin();
 			 it != instr.reg_defs.end(); ++it) {
-			std::cout << reg_info.getName(*it) << "(" << *it << ") ";
+			std::cout << reg_info.getName(*it)
+				<< "(" << *it << "->" << ltof->getFailRegisterId(*it) << ") ";
 		}
 
 		if (instr.conditional_branch) {

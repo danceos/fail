@@ -27,8 +27,8 @@
 	into the database.
 */
 class ElfImporter : public Importer {
-	llvm::OwningPtr<llvm::object::Binary> binary;
-	llvm::OwningPtr<fail::LLVMDisassembler> disas;
+	std::unique_ptr<llvm::object::Binary> binary;
+	std::unique_ptr<fail::LLVMDisassembler> disas;
 
 	fail::CommandLine::option_handle OBJDUMP;
 	fail::CommandLine::option_handle SOURCECODE;

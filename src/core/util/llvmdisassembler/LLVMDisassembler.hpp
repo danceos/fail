@@ -5,13 +5,17 @@
 #include <vector>
 #include <map>
 #include <limits.h>
+#include <memory> // unique_ptr
 
 #include "llvm/Object/ObjectFile.h"
 
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/MC/MCDisassembler.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -24,8 +28,6 @@
 #include "llvm/ADT/StringExtras.h"
 
 #include "llvm/Support/Casting.h"
-
-#include "llvm/ADT/OwningPtr.h"
 
 #include "LLVMtoFailTranslator.hpp"
 #include "LLVMtoFailBochs.hpp"
@@ -55,13 +57,13 @@ private:
 	std::string triple;
 	std::string MCPU;
 	std::string FeaturesStr;
-	llvm::OwningPtr<llvm::MCSubtargetInfo> subtargetinfo;
-	llvm::OwningPtr<const llvm::MCDisassembler> disas;
-	llvm::OwningPtr<const llvm::MCInstrInfo> instr_info;
-	llvm::OwningPtr<const llvm::MCRegisterInfo> register_info;
-	llvm::OwningPtr<InstrMap> instrs;
+	std::unique_ptr<const llvm::MCSubtargetInfo> subtargetinfo;
+	std::unique_ptr<const llvm::MCDisassembler> disas;
+	std::unique_ptr<const llvm::MCInstrInfo> instr_info;
+	std::unique_ptr<const llvm::MCRegisterInfo> register_info;
+	std::unique_ptr<InstrMap> instrs;
 
-	fail::LLVMtoFailTranslator * ltofail;
+	fail::LLVMtoFailTranslator *ltofail;
 
 
 	static std::string GetTriple(const llvm::object::ObjectFile *Obj) {
@@ -84,41 +86,56 @@ private:
 		return 0;
 	}
 
-	static bool error(llvm::error_code ec) {
+	static bool error(std::error_code ec) {
 		if (!ec) return false;
 
-		std::cerr << "DIS" << ": error reading file: " << ec.message() << ".\n";
+		std::cerr << "DIS error: " << ec.message() << ".\n";
 		return true;
 	}
-
-	class StringRefMemoryObject : public llvm::MemoryObject {
-		virtual void anchor();
-		llvm::StringRef Bytes;
-	public:
-		StringRefMemoryObject(llvm::StringRef bytes) : Bytes(bytes) {}
-
-		uint64_t getBase() const { return 0; }
-		uint64_t getExtent() const { return Bytes.size(); }
-
-		int readByte(uint64_t Addr, uint8_t *Byte) const {
-			if (Addr >= getExtent())
-				return -1;
-			*Byte = Bytes[Addr];
-			return 0;
-		}
-	};
-
-
 
 public:
 	LLVMDisassembler(const llvm::object::ObjectFile *object) : ltofail(0)  {
 		this->object = object;
 		this->triple = GetTriple(object);
 		this->target = GetTarget(triple);
-		this->subtargetinfo.reset(target->createMCSubtargetInfo(triple, MCPU, FeaturesStr));
-		this->disas.reset(target->createMCDisassembler(*subtargetinfo));
-		this->instr_info.reset(target->createMCInstrInfo());
-		this->register_info.reset(target->createMCRegInfo(triple));
+
+		std::unique_ptr<const llvm::MCRegisterInfo> MRI(target->createMCRegInfo(triple));
+		if (!MRI) {
+			std::cerr << "DIS error: no register info for target " << triple << "\n";
+			return;
+		}                                             
+
+		std::unique_ptr<const llvm::MCAsmInfo> MAI(target->createMCAsmInfo(*MRI, triple));
+		if (!MAI) {
+			std::cerr << "DIS error: no assembly info for target " << triple << "\n";
+			return;
+		}
+
+		std::unique_ptr<const llvm::MCSubtargetInfo> STI(
+				target->createMCSubtargetInfo(triple, MCPU, FeaturesStr));
+		if (!STI) {
+			std::cerr << "DIS error: no subtarget info for target " << triple << "\n";
+			return;
+		}
+		std::unique_ptr<const llvm::MCInstrInfo> MII(target->createMCInstrInfo());
+		if (!MII) {
+			std::cerr << "DIS error: no instruction info for target " << triple << "\n";
+			return;
+		}
+		std::unique_ptr<const llvm::MCObjectFileInfo> MOFI(new llvm::MCObjectFileInfo);
+		// Set up the MCContext for creating symbols and MCExpr's.
+		llvm::MCContext Ctx(MAI.get(), MRI.get(), MOFI.get());
+
+		this->subtargetinfo = std::move(STI);
+		std::unique_ptr<llvm::MCDisassembler> DisAsm(
+				target->createMCDisassembler(*subtargetinfo, Ctx));
+		if (!DisAsm) {
+			std::cerr << "DIS error: no disassembler for target " << triple << "\n";
+			return;
+		}
+		this->disas = std::move(DisAsm);
+		this->instr_info = std::move(MII);
+		this->register_info = std::move(MRI);
 
 		this->instrs.reset(new InstrMap());
 	}
@@ -126,14 +143,13 @@ public:
 	~LLVMDisassembler() { delete ltofail; };
 
 	InstrMap &getInstrMap() { return *instrs; };
-	const llvm::MCRegisterInfo &getRegisterInfo() { return *register_info;}
-	fail::LLVMtoFailTranslator & getTranslator() ;
+	const llvm::MCRegisterInfo& getRegisterInfo() { return *register_info; }
+	fail::LLVMtoFailTranslator *getTranslator() ;
 
-	const std::string & GetTriple() const { return triple; };
+	const std::string& GetTriple() const { return triple; };
 
 	void disassemble();
 };
-
 
 }
 #endif // __LLVMDISASSEMBLER_HPP__

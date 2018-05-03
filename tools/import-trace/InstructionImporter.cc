@@ -18,14 +18,20 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 		llvm::InitializeAllTargetMCs();
 		llvm::InitializeAllDisassemblers();
 
-		if (llvm::error_code ec = createBinary(m_elf->getFilename(), binary)) {
-			LOG << m_elf->getFilename() << "': " << ec.message() << ".\n";
+		Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(m_elf->getFilename());
+		if (!BinaryOrErr) {
+			std::string Buf;
+			raw_string_ostream OS(Buf);
+			logAllUnhandledErrors(std::move(BinaryOrErr.takeError()), OS, "");
+			OS.flush();
+			LOG << m_elf->getFilename() << "': " << Buf << ".\n";
 			return false;
 		}
+		binary = &(*BinaryOrErr.get().getBinary());
 
 // necessary due to an AspectC++ bug triggered by LLVM 3.3's dyn_cast()
 #ifndef __puma
-		ObjectFile *obj = llvm::dyn_cast<ObjectFile>(binary.get());
+		ObjectFile *obj = llvm::dyn_cast<ObjectFile>(binary);
 		disas.reset(new LLVMDisassembler(obj));
 #endif
 		disas->disassemble();

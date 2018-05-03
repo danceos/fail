@@ -6,8 +6,8 @@
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
 
 class InstructionImporter : public Importer {
-	llvm::OwningPtr<llvm::object::Binary> binary;
-	llvm::OwningPtr<fail::LLVMDisassembler> disas;
+	llvm::object::Binary *binary = 0;
+	std::unique_ptr<fail::LLVMDisassembler> disas;
 
 protected:
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,

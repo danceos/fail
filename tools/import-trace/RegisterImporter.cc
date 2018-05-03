@@ -133,19 +133,27 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		llvm::InitializeAllTargetMCs();
 		llvm::InitializeAllDisassemblers();
 
-		if (llvm::error_code ec = createBinary(m_elf->getFilename(), binary)) {
-			LOG << m_elf->getFilename() << "': " << ec.message() << ".\n";
+		Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(m_elf->getFilename());
+		if (!BinaryOrErr) {
+			std::string Buf;
+			raw_string_ostream OS(Buf);
+			logAllUnhandledErrors(std::move(BinaryOrErr.takeError()), OS, "");
+			OS.flush();
+			LOG << m_elf->getFilename() << "': " << Buf << ".\n";
 			return false;
 		}
+		binary = BinaryOrErr.get().getBinary();
 
 // necessary due to an AspectC++ bug triggered by LLVM 3.3's dyn_cast()
 #ifndef __puma
-		ObjectFile *obj = dyn_cast<ObjectFile>(binary.get());
+		ObjectFile *obj = dyn_cast<ObjectFile>(binary);
 		disas.reset(new LLVMDisassembler(obj));
 #endif
 		disas->disassemble();
 		LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 		LOG << "instructions disassembled: " << instr_map.size() << " Triple: " << disas->GetTriple() <<  std::endl;
+
+		m_ltof = disas->getTranslator() ;
 	}
 
 	// instruction pointer is read + written at each instruction
@@ -165,12 +173,10 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
 	//const MCRegisterInfo &reg_info = disas->getRegisterInfo();
 
-	fail::LLVMtoFailTranslator & ltof = disas->getTranslator() ;
-
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_uses.begin();
 		 it != opcode.reg_uses.end(); ++it) {
-		const LLVMtoFailTranslator::reginfo_t &info = ltof.getFailRegisterID(*it);
-		if (&info == &ltof.notfound) {
+		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterID(*it);
+		if (&info == &m_ltof->notfound) {
 			LOG << "Could not find a mapping for LLVM input register #" << std::dec << *it
 			    << " at IP " << std::hex << ev.ip()
 			    << ", skipping" << std::endl;
@@ -189,8 +195,8 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_defs.begin();
 		 it != opcode.reg_defs.end(); ++it) {
-		const LLVMtoFailTranslator::reginfo_t &info = ltof.getFailRegisterID(*it);
-		if (&info == &ltof.notfound) {
+		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterID(*it);
+		if (&info == &m_ltof->notfound) {
 			LOG << "Could not find a mapping for LLVM output register #" << std::dec << *it
 			    << " at IP " << std::hex << ev.ip()
 			    << ", skipping" << std::endl;

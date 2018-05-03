@@ -11,6 +11,7 @@
 #include "util/AliasedRegistry.hpp"
 
 #ifdef BUILD_LLVM_DISASSEMBLER
+#include "llvm/Support/ManagedStatic.h"
 #include "InstructionImporter.hpp"
 #include "RegisterImporter.hpp"
 #include "RandomJumpImporter.hpp"
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
 	registry.add(&fti);
 
 #ifdef BUILD_LLVM_DISASSEMBLER
+	llvm::llvm_shutdown_obj Y;
 	RegisterImporter reg;
 	registry.add(&reg);
 	RandomJumpImporter rjump;

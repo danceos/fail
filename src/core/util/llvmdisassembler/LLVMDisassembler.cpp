@@ -5,8 +5,8 @@ using namespace llvm;
 using namespace llvm::object;
 
 
-LLVMtoFailTranslator & LLVMDisassembler::getTranslator() {
-	if ( ltofail == 0 ) {
+LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
+	if (ltofail == 0) {
 		std::cout << "ArchType: " << llvm::Triple::getArchTypeName(	 llvm::Triple::ArchType(object->getArch())	) << std::endl;
 
 		switch ( llvm::Triple::ArchType(object->getArch()) ) {
@@ -22,42 +22,44 @@ LLVMtoFailTranslator & LLVMDisassembler::getTranslator() {
 			exit(1);
 		}
 	}
-	return *ltofail;
+	return ltofail;
 }
 
 void LLVMDisassembler::disassemble()
 {
-	llvm::error_code ec;
-	for (section_iterator i = object->begin_sections(),
-			 e = object->end_sections();
-		 i != e; i.increment(ec)) {
-		if (error(ec)) break;
-		bool text;
-		if (error(i->isText(text))) break;
+	std::error_code ec;
+	for (section_iterator i = object->section_begin(),
+			 e = object->section_end(); i != e; ++i) {
+		bool text = i->isText();
 		if (!text) continue;
 
-		uint64_t SectionAddr;
-		if (error(i->getAddress(SectionAddr))) break;
-
-		uint64_t SectionLength;
-		if (error(i->getSize(SectionLength))) break;
+		uint64_t SectionAddr = i->getAddress();
+		// FIXME uint64_t SectionLength = i->getSize();
 
 		// Make a list of all the symbols in this section.
 		std::vector<std::pair<uint64_t, StringRef> > Symbols;
-		for (symbol_iterator si = object->begin_symbols(),
-				 se = object->end_symbols();
-			 si != se; si.increment(ec)) {
-			bool contains;
+		for (const SymbolRef &symbol : object->symbols()) {
 			StringRef Name;
 
-			if (!error(i->containsSymbol(*si, contains)) && contains) {
-				uint64_t Address;
-				if (error(si->getAddress(Address))) break;
-				Address -= SectionAddr;
-
-				if (error(si->getName(Name))) break;
-				Symbols.push_back(std::make_pair(Address, Name));
+			if (!i->containsSymbol(symbol)) {
+				continue;
 			}
+
+			uint64_t Address;
+			Expected<uint64_t> AddrOrErr = symbol.getAddress();
+			if (!AddrOrErr) {
+				// FIXME fail
+				continue;
+			}
+			Address = *AddrOrErr - SectionAddr;
+
+			Expected<StringRef> NameOrErr = symbol.getName();
+			if (!NameOrErr) {
+				// FIXME fail
+				continue;
+			}
+
+			Symbols.push_back(std::make_pair(Address, *NameOrErr));
 		}
 
 		// Sort the symbols by address, just in case they didn't come in that way.
@@ -71,13 +73,14 @@ void LLVMDisassembler::disassemble()
 		if (Symbols.empty())
 			Symbols.push_back(std::make_pair(0, name));
 
-		StringRef Bytes;
-		if (error(i->getContents(Bytes))) break;
-		StringRefMemoryObject memoryObject(Bytes);
+		StringRef BytesStr;
+		if (error(i->getContents(BytesStr))) break;
+		ArrayRef<uint8_t> Bytes(reinterpret_cast<const uint8_t *>(BytesStr.data()),
+			BytesStr.size());
+
 		uint64_t Size;
 		uint64_t Index;
-		uint64_t SectSize;
-		if (error(i->getSize(SectSize))) break;
+		uint64_t SectSize = i->getSize();
 
 		// Disassemble symbol by symbol.
 		for (unsigned si = 0, se = Symbols.size(); si != se; ++si) {
@@ -100,7 +103,7 @@ void LLVMDisassembler::disassemble()
 			for (Index = Start; Index < End; Index += Size) {
 				MCInst Inst;
 
-				if (disas->getInstruction(Inst, Size, memoryObject, Index,
+				if (disas->getInstruction(Inst, Size, Bytes.slice(Index), Index,
 										  nulls(), nulls()) == MCDisassembler::Success) {
 					const MCInstrDesc &desc = this->instr_info->get(Inst.getOpcode());
 					//			Inst.dump();
@@ -148,7 +151,4 @@ void LLVMDisassembler::disassemble()
 			}
 		}
 	}
-
 }
-
-void LLVMDisassembler::StringRefMemoryObject::anchor() {}
