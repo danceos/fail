@@ -1,6 +1,5 @@
 #!/bin/bash
 
-MUST_FILTER=1
 source $(dirname $0)/fail-analysis-common.inc.sh
 
 $MYSQL << EOT
@@ -12,4 +11,6 @@ FROM trace t
 JOIN variant v
 	ON t.variant_id = v.id
 WHERE $FILTER
+GROUP BY v.id
+ORDER BY v.benchmark, v.variant
 EOT
