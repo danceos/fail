@@ -4,17 +4,16 @@ Additional libraries/packages/tools needed for FAIL*:
 
 Required for FAIL*:
 **********************************************************************
+ - build-essential (e.g. g++)
  - libmysqlclient-dev or libmariadbclient-dev
- - libprotobuf-dev
+ - protobuf-compiler libprotobuf-dev
  - libpcl1-dev
- - libboost-thread-dev libboost-system-dev libboost-regex-dev
- - libdwarf-dev
- - libelf-dev
- - protobuf-compiler
- - cmake >=2.8.2 (2.8.11 preferred)
+ - libboost-thread-dev libboost-system-dev libboost-regex-dev libboost-coroutine-dev libboost-context-dev
+ - libdwarf-dev libelf-dev
+ - cmake >=2.8.2
  - libfontconfig1-dev
  - zlib1g-dev
- - binutils-dev, on newer systems libiberty-dev
+ - binutils-dev libiberty-dev
  - AspectC++ (ag++, ac++):
    * AspectC++ 1.1 or 1.2 as well as the clang-based >1.2 versions are known to
      work and can be obtained from <http://www.aspectc.org>.  Make sure you use
@@ -24,7 +23,7 @@ Required for FAIL*:
      "-D__NO_MATH_INLINES -D__STRICT_ANSI__" or "--c_compiler clang++" (the
      latter requires the clang++ compiler).
  - optional:
-   * LLVM 3.9 (needed for several importers in tools/import-trace)
+   * LLVM 3.9 (needed for several importers in tools/import-trace): llvm-3.9-dev
      -  built with "make REQUIRES_RTTI=1" (the Debian/Ubuntu packages already
         come built this way)
      -  details below
@@ -38,8 +37,10 @@ Required for FAIL*:
 Required for the Bochs simulator backend:
 **********************************************************************
  - libpthread
- - Probably more, depending on, e.g., the GUI you configure (X11 ->
-   libsdl1.2-dev, wx -> libgtk2.0-dev libwxgtk2.8-dev libwxbase2.8-dev)
+ - Probably more, depending on, e.g., the GUI you configure
+   (bochs_configure_params in the cmake configuration):
+   SDL/X11 (--with-sdl;--with-x11) -> libsdl1.2-dev
+   wx (--with-wx) -> libgtk2.0-dev libwxgtk3.0-dev libwxbase3.0-dev
 
 Required for the gem5 simulator backend:
 **********************************************************************
