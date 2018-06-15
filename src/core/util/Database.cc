@@ -145,8 +145,8 @@ bool Database::create_variants_table()
 {
 	if (!query("CREATE TABLE IF NOT EXISTS variant ("
 		"      id int(11) NOT NULL AUTO_INCREMENT,"
-		"      variant varchar(255) NOT NULL,"
-		"      benchmark varchar(255) NOT NULL,"
+		"      variant varchar(100) NOT NULL,"
+		"      benchmark varchar(100) NOT NULL,"
 		"      PRIMARY KEY (id),"
 		"UNIQUE KEY variant (variant,benchmark)) ENGINE=MyISAM")) {
 		return false;
@@ -244,7 +244,7 @@ int Database::get_fspmethod_id(const std::string &method)
 {
 	if (!query("CREATE TABLE IF NOT EXISTS fspmethod ("
 		  "	 id int(11) NOT NULL AUTO_INCREMENT,"
-		  "	 method varchar(255) NOT NULL,"
+		  "	 method varchar(100) NOT NULL,"
 		  "	 PRIMARY KEY (id), UNIQUE KEY method (method)) ENGINE=MyISAM")) {
 		return 0;
 	}
