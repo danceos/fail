@@ -5,10 +5,10 @@ require('CONFIGURATION.php');
 set_time_limit(60*10);
 
 //Datenbankverbindung aufbauen
-$verbindung = mysql_connect ($host,$username, $password)
+$db = mysqli_connect ($host,$username, $password)
 					or die ("MySQL connection failed.");
 
-mysql_select_db($database) or die ("Cannot select database '$database'.");
+mysqli_select_db($db, $database) or die ("Cannot select database '$database'.");
 
 // identify command
 switch ($_GET['cmd']) {
@@ -24,7 +24,7 @@ switch ($_GET['cmd']) {
 	case "dechex"			: echo json_encode(dechex($_GET['dec']));break;
 }
 
-mysql_close($verbindung);
+mysqli_close($db);
 
 function dbTest()
 {
@@ -33,7 +33,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM objdump;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle objdump nicht gefunden <br>');
@@ -42,7 +42,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM fulltrace;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle fulltrace nicht gefunden <br>');
@@ -51,7 +51,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM dbg_filename;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_filename nicht gefunden <br>');
@@ -60,7 +60,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM dbg_mapping;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_mapping nicht gefunden <br>');
@@ -70,7 +70,7 @@ function dbTest()
 /*
 	$abfrage = "SELECT 1 FROM dbg_methods;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_methods nicht gefunden <br>');
@@ -80,7 +80,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM dbg_source;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_source nicht gefunden <br>');
@@ -90,7 +90,7 @@ function dbTest()
 /*
 	$abfrage = "SELECT 1 FROM dbg_stacktrace;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_stacktrace nicht gefunden <br>');
@@ -99,7 +99,7 @@ function dbTest()
 
 	$abfrage = "SELECT 1 FROM dbg_variables;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	if (!$ergebnis) {
 		echo json_encode('Tabelle dbg_variables nicht gefunden <br>');
@@ -114,9 +114,9 @@ function getBinarys()
 
 	$abfrage = "SELECT benchmark FROM variant;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		array_push($binarys, $row->benchmark);
 	}
 
@@ -131,9 +131,9 @@ function getVariants()
 
 	$abfrage = "SELECT id, variant FROM variant WHERE benchmark = '" . $_GET['datei'] ."';";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		$variants[$row->id] = $row->variant;
 	}
 
@@ -175,9 +175,9 @@ function getSourceFiles()
 
 	$abfrage = "SELECT file_id, path FROM dbg_filename WHERE variant_id = '" . $_GET['variant_id']. "';";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		$sourceFiles[$row->file_id] = $row->path;
 	}
 
@@ -192,10 +192,10 @@ function asmCode()
 
 	$abfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id'] ."' ORDER BY instr_address;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	$content = $content;
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		$content .= dechex($row->instr_address) . '<br>';
 	}
 	echo json_encode($content);
@@ -240,7 +240,7 @@ function getAsmCode()
 
 	$asmAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id'] ."' ORDER BY instr_address;";
 
-	$asmcode = mysql_query($asmAbfrage);
+	$asmcode = mysqli_query($GLOBALS['db'], $asmAbfrage);
 
 	getResulttypes($resulttypes);
 
@@ -255,7 +255,7 @@ function getAsmCode()
 		$content .= $temp;
 	}
 	$content .= ' >';
-	while ($row = mysql_fetch_object($asmcode)) {
+	while ($row = mysqli_fetch_object($asmcode)) {
 		if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 			$line = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
@@ -284,20 +284,20 @@ function getHighlevelCode()
 	getResulttypes($resulttypes);
 
 	$kleinsteAdresseAbfrage = "SELECT MIN(instr_address) AS instr_address FROM objdump WHERE variant_id = " . $_GET['variant_id'];
-	$kleinsteAdresseErgebnis = mysql_query($kleinsteAdresseAbfrage) or trigger_error($kleinsteAdresseAbfrage, E_USER_NOTICE);
-	$kleinsteAdresse = mysql_fetch_object($kleinsteAdresseErgebnis);
+	$kleinsteAdresseErgebnis = mysqli_query($GLOBALS['db'], $kleinsteAdresseAbfrage) or trigger_error($kleinsteAdresseAbfrage, E_USER_NOTICE);
+	$kleinsteAdresse = mysqli_fetch_object($kleinsteAdresseErgebnis);
 
 	$highlevelCodeAbfrage = "SELECT linenumber, line FROM dbg_source WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id']. "' ORDER BY linenumber;";
 	$mappingAbfrage = "SELECT linenumber, instr_absolute, line_range_size FROM dbg_mapping WHERE variant_id = '" . $_GET['variant_id']. "' AND file_id = '" . $_GET['file_id'] . "' AND instr_absolute >= '" . $kleinsteAdresse->instr_address . "' ORDER BY instr_absolute;";
 
-	$highlevelCode = mysql_query($highlevelCodeAbfrage);
-	$mappingInfo = mysql_query($mappingAbfrage);
+	$highlevelCode = mysqli_query($GLOBALS['db'], $highlevelCodeAbfrage);
+	$mappingInfo = mysqli_query($GLOBALS['db'], $mappingAbfrage);
 
 	$fehlerdaten = resultsDB($_GET['variant_id'], $_GET['version'], $resulttypes);
 
 	// retrieve mapping of linenumber -> array of [start-address;end-address) ranges
 	$mappingRanges = array();
-	while (($row = mysql_fetch_object($mappingInfo))) {
+	while (($row = mysqli_fetch_object($mappingInfo))) {
 		if (!isset($mappingRanges[$row->linenumber])) {
 			$mappingRanges[$row->linenumber] = array();
 		}
@@ -318,8 +318,8 @@ function getHighlevelCode()
 		foreach ($value as $index => $ranges) {
 			// was ">" instead of ">=" before
 			$InstrMappingAbfrage = "SELECT instr_address, disassemble FROM objdump WHERE variant_id = '" . $_GET['variant_id']. "' AND instr_address >= '" . $ranges[0] . "' AND instr_address < '" . $ranges[1] . "' ORDER BY instr_address;";
-			$mappingErgebnis = mysql_query($InstrMappingAbfrage);
-			while ($row = mysql_fetch_object($mappingErgebnis)) {
+			$mappingErgebnis = mysqli_query($GLOBALS['db'], $InstrMappingAbfrage);
+			while ($row = mysqli_fetch_object($mappingErgebnis)) {
 				if (array_key_exists($row->instr_address,$fehlerdaten['Daten'])) {
 					$newline = '<span data-address="' . dechex($row->instr_address) . '" class="hasFehler" ';
 
@@ -344,7 +344,7 @@ function getHighlevelCode()
 		}
 	}
 
-	while ($row = mysql_fetch_object($highlevelCode)) {
+	while ($row = mysqli_fetch_object($highlevelCode)) {
 		// FIXME id unique?
 		$content .= '<span data-line="' . $row->linenumber . '" class="sourcecode">' . $row->linenumber . ' : ' . $row->line . '</span><br>';
 		if (array_key_exists($row->linenumber, $mapping)) {
@@ -367,9 +367,9 @@ function getResulttypes(&$resulttypes)
 {
 	$abfrage = "SELECT resulttype FROM " . $GLOBALS['result_table'] . " GROUP BY resulttype;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		//echo $row->resulttype;
 		array_push($resulttypes, $row->resulttype);
 	}
@@ -381,9 +381,9 @@ function getResulttypesOUT()
 
 	$abfrage = "SELECT resulttype FROM " . $GLOBALS['result_table'] . " GROUP BY resulttype;";
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		//echo $row->resulttype;
 		array_push($resulttypes, $row->resulttype);
 	}
@@ -446,7 +446,7 @@ function askDBFehler($variant_id, $resulttypes, $version)
 
 	//echo $abfrage;
 
-	$ergebnis = mysql_query($abfrage);
+	$ergebnis = mysqli_query($GLOBALS['db'], $abfrage);
 
 	return $ergebnis;
 }
@@ -464,10 +464,11 @@ function resultsDB($variant_id, $version, $resulttypes)
 	$results = array();
 
 	// We find the fields number
-	$numfields=mysql_num_fields($ergebnis);
+	$numfields=mysqli_num_fields($ergebnis);
 
 	for ($i=0; $i < $numfields; $i++) {
-		$fieldname[$i]=mysql_field_name($ergebnis, $i);
+		$fieldInfo = mysqli_fetch_field_direct($ergebnis, $i);
+		$fieldname[$i] = $fieldInfo->name;
 	}
 
 	for ($i=2; $i < $numfields; $i++) {
@@ -475,15 +476,16 @@ function resultsDB($variant_id, $version, $resulttypes)
 	}
 
 	$maxFehler = 0;
-	while ($row = mysql_fetch_object($ergebnis)) {
+	while ($row = mysqli_fetch_object($ergebnis)) {
 		if ($version != 'latestip') {
 			if ($row->instr_absolute != NULL) {
 				$results["Daten"][$row->instr_absolute] = array();
 				for ($i = 2; $i < $numfields ; $i++) {
-					$results["Daten"][$row->instr_absolute][$fieldname[$i]] = $row->$fieldname[$i];
+					$fn = $fieldname[$i];
+					$results["Daten"][$row->instr_absolute][$fn] = $row->$fn;
 
-					if ($row->$fieldname[$i] > $results["max"][$fieldname[$i]]) {
-						$results["max"][$fieldname[$i]] = $row->$fieldname[$i];
+					if ($row->$fn > $results["max"][$fn]) {
+						$results["max"][$fn] = $row->$fn;
 					}
 				}
 			}
@@ -491,10 +493,11 @@ function resultsDB($variant_id, $version, $resulttypes)
 			if ($row->latest_ip != NULL) {
 				$results["Daten"][$row->latest_ip] = array();
 				for ($i = 0 ; $i < $numfields ; $i++) {
-					$results["Daten"][$row->latest_ip][$fieldname[$i]] = $row->$fieldname[$i];
+					$fn = $fieldname[$i];
+					$results["Daten"][$row->latest_ip][$fn] = $row->$fn;
 
-					if ($row->$fieldname[$i] > $results["max"][$fieldname[$i]]) {
-						$results["max"][$fieldname[$i]] = $row->$fieldname[$i];
+					if ($row->$fn > $results["max"][$fn]) {
+						$results["max"][$fn] = $row->$fn;
 					}
 				}
 			}
