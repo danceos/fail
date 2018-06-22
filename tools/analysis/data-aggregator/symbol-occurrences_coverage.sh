@@ -22,5 +22,6 @@ INNER JOIN fspgroup g ON t.variant_id = g.variant_id AND t.data_address = g.data
 INNER JOIN result_GenericExperimentMessage r ON r.pilot_id = g.pilot_id
 WHERE $FILTER
 GROUP BY v.id, s.name, r.resulttype
-ORDER BY v.benchmark, v.variant, s.name, r.resulttype;
+ORDER BY v.benchmark, v.variant, s.name, CONCAT(r.resulttype)
+;
 EOT

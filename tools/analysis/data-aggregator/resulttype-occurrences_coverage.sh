@@ -30,5 +30,6 @@ INNER JOIN variant v
 	ON t.variant_id = v.id
 WHERE $FILTER
 GROUP BY v.id, r.resulttype
-ORDER BY v.benchmark, v.variant, r.resulttype;
+ORDER BY v.benchmark, v.variant, CONCAT(r.resulttype)
+;
 EOT

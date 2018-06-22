@@ -34,3 +34,4 @@ if [ -n "$BENCHMARK" ]; then
 		FILTER="$FILTER AND v.variant = '$VARIANT'"
 	fi
 fi
+FILTER="($FILTER)"

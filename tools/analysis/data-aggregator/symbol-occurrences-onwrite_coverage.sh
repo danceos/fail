@@ -45,5 +45,6 @@ JOIN result_GenericExperimentMessage r
 	ON r.pilot_id = g.pilot_id
 WHERE $FILTER
 GROUP BY v.id, s.name, r.resulttype
-ORDER BY v.benchmark, v.variant, s.name, r.resulttype;
+ORDER BY v.benchmark, v.variant, s.name, CONCAT(r.resulttype)
+;
 EOT

@@ -22,6 +22,6 @@ JOIN result_GenericExperimentMessage r
 	ON r.pilot_id = g.pilot_id
 WHERE $FILTER
 GROUP BY v.id, f.file_id, r.resulttype
-ORDER BY v.benchmark, v.variant, f.path, r.resulttype
+ORDER BY v.benchmark, v.variant, f.path, CONCAT(r.resulttype)
 ;
 EOT
