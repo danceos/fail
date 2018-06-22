@@ -29,6 +29,7 @@ JOIN fspgroup g
 	ON t.variant_id = g.variant_id
 	AND t.data_address = g.data_address
 	AND t.instr2 = g.instr2
+	AND g.fspmethod_id = (SELECT id FROM fspmethod WHERE method = 'basic')
 JOIN result_GenericExperimentMessage r
 	ON r.pilot_id = g.pilot_id
 WHERE $FILTER

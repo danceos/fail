@@ -11,6 +11,7 @@ SELECT v.benchmark, v.variant, r.resulttype,
 	FROM result_GenericExperimentMessage r
 	INNER JOIN fspgroup g
 		ON g.pilot_id = r.pilot_id
+		AND g.fspmethod_id = (SELECT id FROM fspmethod WHERE method = 'basic')
 	INNER JOIN trace t
 		ON g.instr2 = t.instr2
 		AND g.data_address = t.data_address
@@ -20,6 +21,7 @@ SELECT v.benchmark, v.variant, r.resulttype,
 FROM result_GenericExperimentMessage r
 INNER JOIN fspgroup g
 	ON g.pilot_id = r.pilot_id
+	AND g.fspmethod_id = (SELECT id FROM fspmethod WHERE method = 'basic')
 INNER JOIN trace t
 	ON g.instr2 = t.instr2
 	AND g.data_address = t.data_address
