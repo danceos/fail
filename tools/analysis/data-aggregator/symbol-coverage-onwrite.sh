@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO implement show_description
+
 source $(dirname $0)/fail-analysis-common.inc.sh
 
 $MYSQL << EOT

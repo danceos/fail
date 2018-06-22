@@ -8,6 +8,9 @@ corrupted, and completely disregards storage duration (e.g. time between write
 and subsequent read).  The metric is calculated from the results of a normal
 "inject-on-read" campaign, only using the FI results from memory accesses that
 directly follow a "write" access.
+
+Only works if write equivalence classes are also imported into the database
+(i.e. import-trace is not run with --no-write-ecs).
 EOT
 }
 source $(dirname $0)/fail-analysis-common.inc.sh
