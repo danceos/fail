@@ -57,6 +57,10 @@ bool JobClient::connectToServer()
 		for (ip::tcp::resolver::iterator end,
 		     addrs = resolver.resolve(query);
 		     addrs != end; ++addrs) {
+			// server listens on IPv4 endpoint only, skip IPv6 endpoints
+			if (!addrs->endpoint().address().is_v4()) {
+				continue;
+			}
 			boost::system::error_code error;
 			m_d->socket.connect(addrs->endpoint(), error);
 			if (!error) {
