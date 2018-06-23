@@ -3,8 +3,10 @@ fail-analysis-common.inc.sh
 function-occurrences-onwrite.sh
 function-occurrences.sh
 global-coverage-onwrite.sh
+global-coverage-sampling.sh
 global-coverage.sh
 global-occurrences-onwrite.sh
+global-occurrences-sampling.sh
 global-occurrences.sh
 symbol-coverage-onwrite.sh
 symbol-coverage.sh
