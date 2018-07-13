@@ -60,6 +60,13 @@ $MYSQL <<EOT > $RAWCSV
 	  AND t.accesstype = 'R';
 EOT
 
+# sanity check
+if [ $(wc -l < $RAWCSV) -le 1 ]; then
+	rm "$RAWCSV"
+	echo "no result data found for variant/benchmark $VARIANT/$BENCHMARK." >&2
+	exit 1
+fi
+
 # compact data
 echo "compacting data.."
 COMPACTCSV=$(mktemp)
