@@ -95,8 +95,12 @@ void  GenericTracing::parseOptions() {
 
 	if (cmd[START_SYMBOL] && m_elf != NULL) {
 		start_symbol = cmd[START_SYMBOL].first()->arg;
-		assert(m_elf->getSymbol(start_symbol).isValid());
-		start_address = m_elf->getSymbol(start_symbol).getAddress();
+		const ElfSymbol& symbol = m_elf->getSymbol(start_symbol);
+		if (!symbol.isValid()) {
+			m_log << "Start symbol '" << start_symbol << "' not found." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		start_address = symbol.getAddress();
 	} else if (cmd[START_ADDRESS]) {
 		start_address = strtoul(cmd[START_ADDRESS].first()->arg, NULL, 16);
 	} else if (m_elf == NULL) {
@@ -104,14 +108,22 @@ void  GenericTracing::parseOptions() {
 		exit(EXIT_FAILURE);
 	} else {
 		start_symbol = "main";
-		assert(m_elf->getSymbol(start_symbol).isValid());
-		start_address = m_elf->getSymbol(start_symbol).getAddress();
+		const ElfSymbol& symbol = m_elf->getSymbol(start_symbol);
+		if (!symbol.isValid()) {
+			m_log << "Start symbol '" << start_symbol << "' not found." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		start_address = symbol.getAddress();
 	}
 
 	if (cmd[STOP_SYMBOL] && m_elf != NULL) {
 		stop_symbol = std::string(cmd[STOP_SYMBOL].first()->arg);
-		assert(m_elf->getSymbol(stop_symbol).isValid());
-		stop_address = m_elf->getSymbol(stop_symbol).getAddress();
+		const ElfSymbol& symbol = m_elf->getSymbol(stop_symbol);
+		if (!symbol.isValid()) {
+			m_log << "Stop symbol '" << start_symbol << "' not found." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		stop_address = symbol.getAddress();
 	} else if (cmd[STOP_ADDRESS]) {
 		stop_address = strtoul(cmd[STOP_ADDRESS].first()->arg, NULL, 16);
 	} else {
@@ -148,8 +160,11 @@ void  GenericTracing::parseOptions() {
 		option::Option *opt = cmd[MEM_SYMBOL].first();
 
 		while (opt != 0) {
-			const ElfSymbol &symbol = m_elf->getSymbol(opt->arg);
-			assert(symbol.isValid());
+			const ElfSymbol& symbol = m_elf->getSymbol(opt->arg);
+			if (!symbol.isValid()) {
+				m_log << "Symbol '" << start_symbol << "' not found." << std::endl;
+				exit(EXIT_FAILURE);
+			}
 
 			m_log << "Adding '" << opt->arg << "' == 0x" << std::hex << symbol.getAddress()
 				  << "+" << std::dec << symbol.getSize() << " to trace map" << std::endl;
