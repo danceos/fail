@@ -3,11 +3,11 @@
 
 #include <string>
 #include <ostream>
-#include "sal/SALConfig.hpp" // for ADDR_INV
-#include "Logger.hpp"
-#include "elfinfo/elfinfo.h"
 #include <vector>
 #include <map>
+#include <elf.h>
+#include "sal/SALConfig.hpp" // for ADDR_INV
+#include "Logger.hpp"
 #include "Demangler.hpp"
 
 namespace fail {
@@ -28,19 +28,19 @@ class ElfSymbol {
 
 	ElfSymbol(const std::string & name = ELF::NOTFOUND, guest_address_t addr = ADDR_INV,
 		size_t size = -1, int type = UNDEF, int symbol_type = 0)
-		: name(name), address(addr), size(size), m_type(type), m_symbol_type(symbol_type) {};
+		: name(name), address(addr), size(size), m_type(type), m_symbol_type(symbol_type) {}
 
-	const std::string& getName() const { return name; };
-	std::string getDemangledName() const { return Demangler::demangle(name); };
-	guest_address_t getAddress() const { return address; };
-	size_t getSize() const { return size; };
-	guest_address_t getStart() const { return getAddress(); }; // alias
-	guest_address_t getEnd() const { return address + size; };
-	int getSymbolType() const { return m_symbol_type; };
+	const std::string& getName() const { return name; }
+	std::string getDemangledName() const { return Demangler::demangle(name); }
+	guest_address_t getAddress() const { return address; }
+	size_t getSize() const { return size; }
+	guest_address_t getStart() const { return getAddress(); } // alias
+	guest_address_t getEnd() const { return address + size; }
+	int getSymbolType() const { return m_symbol_type; }
 
-	bool isSection() const { return m_type == SECTION; };
-	bool isSymbol()  const { return m_type == SYMBOL; };
-	bool isValid()   const { return name != ELF::NOTFOUND; };
+	bool isSection() const { return m_type == SECTION; }
+	bool isSymbol()  const { return m_type == SYMBOL; }
+	bool isValid()   const { return name != ELF::NOTFOUND; }
 
 	bool operator==(const std::string& rhs) const {
 		if (rhs == name) {
@@ -157,10 +157,16 @@ public:
 private:
 	Logger m_log;
 	std::string m_filename;
+	int m_elfclass;
 
 	void setup(const char*);
-	int process_symboltable(int sect_num, FILE* fp);
-	int process_section(Elf32_Shdr *sect_hdr, char* sect_name_buff);
+	bool process_symboltable(FILE *fp, Elf64_Ehdr const *ehdr, int sect_num);
+	int process_section(Elf64_Shdr *sect_hdr, char *sect_name_buff);
+
+	// Returns true if it finds a valid ELF header.  Stores ELFCLASS32 or 64 in m_elfclass.
+	bool read_ELF_file_header(FILE *fp, Elf64_Ehdr *ehdr);
+	// Returns true if it finds a valid ELF section header.
+	bool read_ELF_section_header(FILE *fp, Elf64_Ehdr const *filehdr, int sect_num, Elf64_Shdr *sect_hdr);
 
 	container_t m_symboltable;
 	container_t m_sectiontable;

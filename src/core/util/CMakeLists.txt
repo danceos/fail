@@ -13,8 +13,6 @@ set(SRCS
  Disassembler.cc
  DwarfReader.cc
  DwarfReader.hpp
- elfinfo/elfinfo.cc
- elfinfo/elfinfo.h
  gzstream/gzstream.C
  gzstream/gzstream.h
  Logger.cc
