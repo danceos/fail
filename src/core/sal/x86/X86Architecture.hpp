@@ -69,6 +69,9 @@ enum SegmentRegisterId { RID_CS = RID_LAST_FLAGS_ID, RID_DS, RID_ES, RID_FS,
  */
 enum ControlRegisterId { RID_CR0 = RID_LAST_SEGMENT_ID, RID_CR1, RID_CR2, RID_CR3, RID_CR4 };
 
+// TODO FPU stuff (FSW, FCW, FTW; FPR0-7; MMX0-7; XMM0-15; MXCSR)
+// TODO GDTR, LDTR, IDTR, TR6+7, DR0-7, TR, MSR*
+
 } // end-of-namespace: fail
 
 #endif // __X86_ARCHITECTURE_HPP__
