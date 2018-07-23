@@ -104,6 +104,11 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 		llvm::InitializeAllTargetMCs();
 		llvm::InitializeAllDisassemblers();
 
+		if (!m_elf) {
+			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
+			return false;
+		}
+
 		Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(m_elf->getFilename());
 		if (!BinaryOrErr) {
 			std::string Buf;

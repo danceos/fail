@@ -94,7 +94,7 @@ bool ElfImporter::create_database()
 bool ElfImporter::copy_to_database(ProtoIStream &ps)
 {
 	if (!m_elf) {
-		LOG << "please give an elf binary as parameter (-e/--elf)" << std::endl;
+		LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
 		return false;
 	}
 
