@@ -57,14 +57,14 @@ int main(int argc, char* argv[]) {
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_uses.begin();
 			 it != instr.reg_uses.end(); ++it) {
 			std::cout << reg_info.getName(*it)
-				<< "(" << *it << "->" << ltof->getFailRegisterId(*it) << ") ";
+				<< "(" << *it << "->" << ltof->getFailRegisterID(*it) << ") ";
 		}
 
 		std::cout << " |  DEFS: ";
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_defs.begin();
 			 it != instr.reg_defs.end(); ++it) {
 			std::cout << reg_info.getName(*it)
-				<< "(" << *it << "->" << ltof->getFailRegisterId(*it) << ") ";
+				<< "(" << *it << "->" << ltof->getFailRegisterID(*it) << ") ";
 		}
 
 		if (instr.conditional_branch) {

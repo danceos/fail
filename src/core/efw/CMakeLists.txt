@@ -14,6 +14,9 @@ add_library(fail-efw ${SRCS})
 add_dependencies(fail-efw fail-protoc)
 target_link_libraries(fail-efw fail-comm)
 target_link_libraries(fail-efw fail-util) # WallclockTimer
+if (BUILD_LLVM_DISASSEMBLER)
+  target_link_libraries(fail-efw fail-llvmdisassembler)
+endif()
 
 find_package(LibPCL REQUIRED)
 include_directories(${LIBPCL_INCLUDE_DIRS})

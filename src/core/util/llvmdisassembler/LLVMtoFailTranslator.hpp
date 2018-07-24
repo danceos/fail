@@ -51,21 +51,29 @@ public:
 	/**
 	 * Translates a backend-specific register ID to a Fail register ID.
 	 * @param regid A backend-specific register ID.
-	 * @return A FAIL* register ID, or LLVMtoFailTranslator::notfound if no
-	 *         mapping was found.
+	 * @return A FAIL* register-info struct, or LLVMtoFailTranslator::notfound
+	 *         if no mapping was found.
 	 */
-	const reginfo_t &  getFailRegisterID(unsigned int regid);
+	const reginfo_t &  getFailRegisterInfo(unsigned int regid);
 
-	regdata_t getRegisterContent(ConcreteCPU & cpu, const reginfo_t & reg);
-	void setRegisterContent(ConcreteCPU & cpu, const reginfo_t &reg, regdata_t value);
+	static regdata_t getRegisterContent(ConcreteCPU & cpu, const reginfo_t & reg);
+	static void setRegisterContent(ConcreteCPU & cpu, const reginfo_t &reg, regdata_t value);
 	regdata_t getRegisterContent(ConcreteCPU & cpu, unsigned int llvmid) {
-		return getRegisterContent(cpu, getFailRegisterID(llvmid));
+		return getRegisterContent(cpu, getFailRegisterInfo(llvmid));
 	}
 	void setRegisterContent(ConcreteCPU & cpu, unsigned int llvmid, regdata_t value) {
-		setRegisterContent(cpu, getFailRegisterID(llvmid), value);
+		setRegisterContent(cpu, getFailRegisterInfo(llvmid), value);
 	}
 
-	int getFailRegisterId(unsigned int regid) { return this->getFailRegisterID(regid).id; };
+	/**
+	 * Translates a backend-specific register ID to a Fail register ID.
+	 * @param regid A backend-specific register ID.
+	 * @return A FAIL* register ID.  May do funny things if regid does not exist.
+	 */
+	int getFailRegisterID(unsigned int regid) { return this->getFailRegisterInfo(regid).id; };
+
+	int getMaxFailRegisterID();
+	fail::address_t getMaxDataAddress() { reginfo_t r(getMaxFailRegisterID() + 1); return r.toDataAddress() - 1; }
 
 	reginfo_t notfound;
 

@@ -180,7 +180,7 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_uses.begin();
 		 it != opcode.reg_uses.end(); ++it) {
-		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterID(*it);
+		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterInfo(*it);
 		if (&info == &m_ltof->notfound) {
 			LOG << "Could not find a mapping for LLVM input register #" << std::dec << *it
 			    << " at IP " << std::hex << ev.ip()
@@ -200,7 +200,7 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_defs.begin();
 		 it != opcode.reg_defs.end(); ++it) {
-		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterID(*it);
+		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterInfo(*it);
 		if (&info == &m_ltof->notfound) {
 			LOG << "Could not find a mapping for LLVM output register #" << std::dec << *it
 			    << " at IP " << std::hex << ev.ip()

@@ -1,17 +1,23 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include <stdlib.h>
+
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
+
 #include "sal/SALConfig.hpp"
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
 #include "efw/DatabaseExperiment.hpp"
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/message.h>
 #include "comm/DatabaseCampaignMessage.pb.h"
-#include <string>
-#include <vector>
+
+#ifdef BUILD_LLVM_DISASSEMBLER
+#  include "util/llvmdisassembler/LLVMtoFailTranslator.hpp"
+#endif
 
 //#define LOCAL
 
@@ -28,29 +34,99 @@ DatabaseExperiment::~DatabaseExperiment()  {
 	delete this->m_jc;
 }
 
-unsigned DatabaseExperiment::injectBurst(address_t data_address) {
-	unsigned value, burst_value;
-	value = m_mm.getByte(data_address);
-	burst_value = value ^ 0xff;
-	m_mm.setByte(data_address, burst_value);
+void DatabaseExperiment::redecodeCurrentInstruction() {
+	/* Flush Instruction Caches and Prefetch queue */
+	BX_CPU_C *cpu_context = simulator.getCPUContext();
+	cpu_context->invalidate_prefetch_q();
+	cpu_context->iCache.flushICacheEntries();
 
-	m_log << "INJECTED BURST at: 0x" << hex<< setw(2) << setfill('0') << data_address
-		  << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x"
-		  << setw(2) << setfill('0') << burst_value << endl;
-	return value;
+	guest_address_t pc = simulator.getCPU(0).getInstructionPointer();
+	bxInstruction_c *currInstr = simulator.getCurrentInstruction();
+
+	m_log << "REDECODE INSTRUCTION @ IP 0x" << std::hex << pc << endl;
+
+	guest_address_t eipBiased = pc + cpu_context->eipPageBias;
+	Bit8u instr_plain[15];
+
+	MemoryManager& mm = simulator.getMemoryManager();
+	for (unsigned i = 0; i < sizeof(instr_plain); ++i) {
+		if (!mm.isMapped(pc + i)) {
+			m_log << "REDECODE: 0x" << std::hex << pc+i << "UNMAPPED" << endl;
+			// TODO: error?
+			return;
+		}
+	}
+
+	mm.getBytes(pc, sizeof(instr_plain), instr_plain);
+
+	guest_address_t remainingInPage = cpu_context->eipPageWindowSize - eipBiased;
+	int ret;
+#if BX_SUPPORT_X86_64
+	if (cpu_context->cpu_mode == BX_MODE_LONG_64)
+		ret = cpu_context->fetchDecode64(instr_plain, currInstr, remainingInPage);
+	else
+#endif
+		ret = cpu_context->fetchDecode32(instr_plain, currInstr, remainingInPage);
+	if (ret < 0) {
+		// handle instrumentation callback inside boundaryFetch
+		cpu_context->boundaryFetch(instr_plain, remainingInPage, currInstr);
+	}
 }
 
-unsigned DatabaseExperiment::injectBitFlip(address_t data_address, unsigned bitpos){
-	unsigned int value, injectedval;
+unsigned DatabaseExperiment::injectFault(
+	address_t data_address, unsigned bitpos, bool inject_burst,
+	bool inject_registers, bool force_registers) {
+	unsigned value, injected_value;
 
-	value = m_mm.getByte(data_address);
-	injectedval = value ^ (1 << bitpos);
-	m_mm.setByte(data_address, injectedval);
+	/* First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() */
+	if (data_address < (128 << 4) && inject_registers) {
+#ifdef BUILD_LLVM_DISASSEMBLER
+		// register FI
+		LLVMtoFailTranslator::reginfo_t reginfo =
+			LLVMtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
 
-	m_log << "INJECTION at: 0x" << hex<< setw(2) << setfill('0') << data_address
-		  << " value: 0x" << setw(2) << setfill('0') << value << " -> 0x"
-		  << setw(2) << setfill('0') << (unsigned) m_mm.getByte(data_address) << endl;
+		value = LLVMtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
+		if (inject_burst) {
+			injected_value = value ^ 0xff;
+			m_log << "INJECTING BURST at: REGISTER " << dec << reginfo.id
+				<< " bitpos " << (reginfo.offset + bitpos) << endl;
+		} else {
+			injected_value = value ^ (1 << bitpos);
+			m_log << "INJECTING BIT-FLIP at: REGISTER " << dec << reginfo.id
+				<< " bitpos " << (reginfo.offset + bitpos) << endl;
+		}
+		LLVMtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
+		if (reginfo.id == RID_PC) {
+			// FIXME move this into the Bochs backend
+			m_log << "Redecode current instruction" << endl;
+			redecodeCurrentInstruction();
+		}
+#else
+		m_log << "ERROR: Not compiled with LLVM.  Enable BUILD_LLVM_DISASSEMBLER at buildtime." << endl;
+		simulator.terminate(1);
+#endif
+	} else if (!force_registers) {
+		// memory FI
+		value = m_mm.getByte(data_address);
 
+		if (inject_burst) {
+			injected_value = value ^ 0xff;
+			m_log << "INJECTING BURST at: MEM 0x"
+				<< hex << setw(2) << setfill('0') << data_address << endl;
+		} else {
+			injected_value = value ^ (1 << bitpos);
+			m_log << "INJECTING BIT-FLIP (" << dec << bitpos << ") at: MEM 0x"
+				<< hex << setw(2) << setfill('0') << data_address << endl;
+		}
+		m_mm.setByte(data_address, injected_value);
+
+	} else {
+		m_log << "WARNING: Skipping injection, data address 0x"
+			<< hex << data_address << " out of range." << endl;
+		return 0;
+	}
+	m_log << " value: 0x" << setw(2) << setfill('0') << value
+		<<       " -> 0x" << setw(2) << setfill('0') << injected_value << endl;
 	return value;
 }
 
@@ -181,13 +257,12 @@ bool DatabaseExperiment::run()
 
 			simulator.clearListeners(this);
 
-			if (fsppilot->inject_bursts()) {
-				/// INJECT BURST:
-				result->set_original_value(injectBurst((data_address+bit_offset/8)));
-			} else {
-				/// INJECT BITFLIP:
-				result->set_original_value(injectBitFlip(data_address, bit_offset));
-			}
+			// inject fault (single-bit flip or burst)
+			result->set_original_value(
+				injectFault(data_address + bit_offset / 8, bit_offset % 8,
+					fsppilot->inject_bursts(),
+					fsppilot->register_injection_mode() != fsppilot->OFF,
+					fsppilot->register_injection_mode() == fsppilot->FORCE));
 			result->set_injection_width(injection_width);
 
 			if (!this->cb_before_resume()) {

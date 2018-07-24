@@ -40,6 +40,7 @@ class DatabaseCampaign : public Campaign {
 #endif
 
 	bool m_inject_bursts; // !< inject burst faults?
+	DatabaseCampaignMessage::RegisterInjectionMode m_register_injection_mode; // !< inject into registers? OFF, ON, AUTO (= use registers if address is small)
 
 public:
 	DatabaseCampaign() {};

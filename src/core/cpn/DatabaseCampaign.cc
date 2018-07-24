@@ -21,7 +21,7 @@ static Logger log_send("DatabaseCampaign");
 bool DatabaseCampaign::run() {
 	CommandLine &cmd = CommandLine::Inst();
 
-	cmd.addOption("", "", Arg::None, "USAGE: fail-server [options...]\n\n");
+	cmd.addOption("", "", Arg::None, "USAGE: fail-server [options...]\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	Database::cmdline_setup();
@@ -49,6 +49,12 @@ bool DatabaseCampaign::run() {
 	CommandLine::option_handle BURST =
 		cmd.addOption("","inject-bursts", Arg::None,
 			"--inject-bursts \tinject burst faults (default: single bitflips)");
+	CommandLine::option_handle REGISTERS =
+		cmd.addOption("","inject-registers", Arg::None,
+			"--inject-registers \tinject into ISA registers (default: memory)");
+	CommandLine::option_handle REGISTERS_FORCE =
+		cmd.addOption("","force-inject-registers", Arg::None,
+			"--force-inject-registers \tinject into ISA registers only, ignore high addresses");
 
 	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
@@ -101,6 +107,17 @@ bool DatabaseCampaign::run() {
 	} else {
 		m_inject_bursts = false;
 		log_send << "fault model: single-bit flip" << std::endl;
+	}
+
+	if (cmd[REGISTERS] && !cmd[REGISTERS_FORCE]) {
+		m_register_injection_mode = DatabaseCampaignMessage::AUTO;
+		log_send << "register injection: auto" << std::endl;
+	} else if (cmd[REGISTERS_FORCE]) {
+		m_register_injection_mode = DatabaseCampaignMessage::FORCE;
+		log_send << "register injection: on" << std::endl;
+	} else {
+		m_register_injection_mode = DatabaseCampaignMessage::OFF;
+		log_send << "register injection: off" << std::endl;
 	}
 
 	if (cmd[PRUNER]) {
@@ -238,6 +255,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		pilot.set_data_address(data_address);
 		pilot.set_data_width(data_width);
 		pilot.set_inject_bursts(m_inject_bursts);
+		pilot.set_register_injection_mode(m_register_injection_mode);
 
 		this->cb_send_pilot(pilot);
 

@@ -14,8 +14,8 @@ class ExperimentData;
 class DatabaseExperiment : public fail::ExperimentFlow {
 	fail::JobClient *m_jc;
 
-	unsigned injectBitFlip(fail::address_t data_address, unsigned bitpos);
-	unsigned injectBurst(fail::address_t data_address);
+	unsigned injectFault(address_t data_address, unsigned bitpos, bool inject_burst,
+		bool inject_registers, bool force_registers);
 
 	/**
 	   The current experiment data as returned by the job client. This
@@ -144,6 +144,9 @@ protected:
 	 *
 	 */
 	virtual void cb_after_resume(fail::BaseListener *) = 0;
+
+private:
+	void redecodeCurrentInstruction();
 };
 
 }
