@@ -74,7 +74,7 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 			LOG << m_elf->getFilename() << "': " << Buf << ".\n";
 			return false;
 		}
-		binary = &(*BinaryOrErr.get().getBinary());
+		binary = BinaryOrErr.get().getBinary();
 
 // necessary due to an AspectC++ bug triggered by LLVM 3.3's dyn_cast()
 #ifndef __puma
