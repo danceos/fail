@@ -4,6 +4,14 @@ using namespace fail;
 using namespace llvm;
 using namespace llvm::object;
 
+// In LLVM 3.9, llvm::Triple::getArchTypeName() returns const char*, since LLVM
+// 4.0 it returns StringRef.  This overload catches the latter case.
+__attribute__((unused))
+static std::ostream& operator<<(std::ostream& stream, const llvm::StringRef& s)
+{
+	stream << s.str();
+	return stream;
+}
 
 LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
 	if (ltofail == 0) {

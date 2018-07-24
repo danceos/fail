@@ -23,7 +23,9 @@ Required for FAIL*:
      "-D__NO_MATH_INLINES -D__STRICT_ANSI__" or "--c_compiler clang++" (the
      latter requires the clang++ compiler).
  - optional:
-   * LLVM 3.9 (needed for several importers in tools/import-trace): llvm-3.9-dev
+   * LLVM 3.9, 4.0, 5.0, or 6.0 (needed for several importers in
+     tools/import-trace): llvm-3.9-dev, llvm-4.0-dev, llvm-5.0-dev or
+     llvm-6.0-dev
      -  built with "make REQUIRES_RTTI=1" (the Debian/Ubuntu packages already
         come built this way)
      -  details below
@@ -289,8 +291,9 @@ Database backend setup: MySQL / MariaDB
 Building LLVM from sources
 =========================================================================================
 If your Linux distribution does not provide a library package for LLVM 3.9 or
-newer, and you need LLVM support in FAIL*, you may need to build LLVM from the
-sources and install it, e.g., locally in your home.
+newer (the following steps work for LLVM 3.9), and you need LLVM support in
+FAIL*, you may need to build LLVM from the sources and install it, e.g.,
+locally in your home.
 
  1. Download the source tarball of LLVM 3.9 from http://llvm.org (or use the git
     repository http://llvm.org/git/llvm.git and checkout release_39)

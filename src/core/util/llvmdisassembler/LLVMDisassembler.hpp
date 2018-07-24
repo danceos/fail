@@ -23,7 +23,6 @@
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/MemoryObject.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/ADT/StringExtras.h"
 
