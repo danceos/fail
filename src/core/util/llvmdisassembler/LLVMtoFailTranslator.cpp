@@ -12,7 +12,7 @@ const LLVMtoFailTranslator::reginfo_t &	 LLVMtoFailTranslator::getFailRegisterIn
 	if ( it != llvm_to_fail_map.end() ) {// found
 		return (*it).second;
 	} else { // not found
-		std::cout << "Fail ID for LLVM Register id " << std::dec << regid << " not found :(" << std::endl;
+		//std::cout << "Fail ID for LLVM Register id " << std::dec << regid << " not found :(" << std::endl;
 		//exit(EXIT_FAILURE);
 		return notfound;
 	}

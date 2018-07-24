@@ -5,6 +5,19 @@ using namespace llvm;
 using namespace llvm::object;
 using namespace fail;
 
+bool show_mapping(fail::LLVMtoFailTranslator *ltof, const MCRegisterInfo &reg_info, unsigned llvmid)
+{
+	const LLVMtoFailTranslator::reginfo_t& failreg = ltof->getFailRegisterInfo(llvmid);
+	std::cout << reg_info.getName(llvmid) << "(" << std::dec << llvmid << "->";
+	if (&failreg != &ltof->notfound) {
+		std::cout << failreg.id;
+	} else {
+		std::cout << "NOTFOUND!";
+	}
+	std::cout << ") ";
+	return &failreg != &ltof->notfound;
+}
+
 int main(int argc, char* argv[]) {
 	llvm_shutdown_obj Y;  // Call llvm_shutdown() on exit.
 	// Initialize targets and assembly printers/parsers.
@@ -56,15 +69,13 @@ int main(int argc, char* argv[]) {
 		std::cout << std::dec << "USES: ";
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_uses.begin();
 			 it != instr.reg_uses.end(); ++it) {
-			std::cout << reg_info.getName(*it)
-				<< "(" << *it << "->" << ltof->getFailRegisterID(*it) << ") ";
+			show_mapping(ltof, reg_info, *it);
 		}
 
 		std::cout << " |  DEFS: ";
 		for (std::vector<uint16_t>::const_iterator it = instr.reg_defs.begin();
 			 it != instr.reg_defs.end(); ++it) {
-			std::cout << reg_info.getName(*it)
-				<< "(" << *it << "->" << ltof->getFailRegisterID(*it) << ") ";
+			show_mapping(ltof, reg_info, *it);
 		}
 
 		if (instr.conditional_branch) {
