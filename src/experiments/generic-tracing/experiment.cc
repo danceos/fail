@@ -33,20 +33,20 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	CommandLine::option_handle ELF_FILE = cmd.addOption("", "elf-file", Arg::Required,
-		"--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
+		"--elf-file FILE \tELF binary file (default: $FAIL_ELF_PATH)");
 	CommandLine::option_handle START_SYMBOL = cmd.addOption("s", "start-symbol", Arg::Required,
-		"-s,--start-symbol \tELF symbol to start tracing (default: main)");
+		"-s,--start-symbol SYMBOL \tELF symbol to start tracing (default: main)");
 	CommandLine::option_handle STOP_SYMBOL	= cmd.addOption("e", "end-symbol", Arg::Required,
-		"-e,--end-symbol \tELF symbol to end tracing");
+		"-e,--end-symbol SYMBOL \tELF symbol to end tracing");
 	// only there for backwards compatibility; remove at some point
 	CommandLine::option_handle SAVE_SYMBOL	= cmd.addOption("S", "save-symbol", Arg::Required,
-		"-S,--save-symbol \tELF symbol to save the state of the machine "
+		"-S,--save-symbol SYMBOL \tELF symbol to save the state of the machine "
 		"(exists for backward compatibility, must be identical to --start-symbol if used)\n");
 	CommandLine::option_handle STATE_FILE	= cmd.addOption("f", "state-file", Arg::Required,
-		"-f,--state-file \tFile/dir to save the state to (default: state). "
+		"-f,--state-file FILE \tFile/dir to save the state to (default: state). "
 		"Use /dev/null if no state is required");
 	CommandLine::option_handle TRACE_FILE	= cmd.addOption("t", "trace-file", Arg::Required,
-		"-t,--trace-file \tFile to save the execution trace to (default: trace.pb)\n");
+		"-t,--trace-file FILE \tFile to save the execution trace to (default: trace.pb)\n");
 
 	CommandLine::option_handle RESTORE = cmd.addOption("", "restore", Arg::None,
 		"--restore \tRestore to the saved state of the machine immediately after saving (default: off). "
@@ -55,20 +55,21 @@ void  GenericTracing::parseOptions() {
 	CommandLine::option_handle FULL_TRACE = cmd.addOption("", "full-trace", Arg::None,
 		"--full-trace \tDo a full trace (more data, default: off)");
 	CommandLine::option_handle MEM_SYMBOL	= cmd.addOption("m", "memory-symbol", Arg::Required,
-		"-m,--memory-symbol \tELF symbol(s) to trace accesses (default: all mem read/writes are traced)");
+		"-m,--memory-symbol SYMBOL \tELF symbol to trace accesses to "
+		"(default: all mem read/writes are traced; may be used more than once)");
 	CommandLine::option_handle MEM_REGION	= cmd.addOption("M", "memory-region", Arg::Required,
-		"-M,--memory-region \trestrict memory region which is traced"
+		"-M,--memory-region R \trestrict memory region which is traced"
 		" (Possible formats: 0x<address>, 0x<address>:0x<address>, 0x<address>:<length>)");
 	CommandLine::option_handle START_ADDRESS = cmd.addOption("B", "start-address", Arg::Required,
-		"-B,--start-address \tStart Address to start tracing");
+		"-B,--start-address ADDRESS \tStart Address to start tracing");
 	CommandLine::option_handle STOP_ADDRESS = cmd.addOption("E", "end-address",Arg::Required,
-		"-E,--end-address \tEnd Address to end tracing");
-	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
-		"--serial-port \tListen to a given I/O address (default: 0x3F8)");
+		"-E,--end-address ADDRESS \tEnd Address to end tracing");
 	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
-		"--serial-file \tSave the serial output to file");
+		"--serial-file FILE \tSave the serial output to file");
+	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
+		"--serial-port PORT \tI/O port to expect output on (default: 0x3f8, i.e. x86's serial COM1)");
 	CommandLine::option_handle E9_FILE = cmd.addOption("", "e9-file", Arg::Required,
-		"--e9-file FILE \tData logged via port 0xE9 is stored in this file");
+		"--e9-file FILE \tShorthand for --serial-file FILE --serial-port 0xe9");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -233,23 +234,20 @@ void  GenericTracing::parseOptions() {
 			m_log << "Couldn't parse " << opt->arg << std::endl;
 			exit(-1);
 		}
-		m_log << "serial port: " << serial_port << std::endl;
+		m_log << "serial port: 0x" << std::hex << serial_port << std::endl;
 	} else {
-		serial_port = 0x3F8;
+		serial_port = 0x3f8;
 	}
 
 	if (cmd[SERIAL_FILE]) {
 		serial_file = std::string(cmd[SERIAL_FILE].first()->arg);
 		m_log << "serial file: " << serial_file << std::endl;
-	} else {
-		serial_file = "";
 	}
 
 	if (cmd[E9_FILE]) {
-		e9_file = std::string(cmd[E9_FILE].first()->arg);
-		m_log << "port E9 output is written to: " << e9_file << std::endl;
-	} else {
-		e9_file = "";
+		serial_file = std::string(cmd[E9_FILE].first()->arg);
+		serial_port = 0xe9;
+		m_log << "port E9 output is written to: " << serial_file << std::endl;
 	}
 
 
@@ -312,12 +310,6 @@ bool GenericTracing::run()
 		simulator.addFlow(&sol);
 	}
 
-	SerialOutputLogger e9_sol(0xE9);
-	if (e9_file != "") {
-		simulator.addFlow(&e9_sol);
-	}
-
-
 	////////////////////////////////////////////////////////////////
 	// Step 2: Continue to the stop point
 	simulator.addListener(&l_stop_symbol);
@@ -343,17 +335,6 @@ bool GenericTracing::run()
 			m_log << "failed to write " << serial_file << endl;
 		}
 		of_serial.close();
-	}
-
-	if (e9_file != "") {
-		simulator.removeFlow(&e9_sol);
-		ofstream of_e9(e9_file.c_str(), ios::out|ios::binary);
-		if (!of_e9.fail()) {
-			of_e9 << e9_sol.getOutput();
-		} else {
-			m_log << "failed to write " << e9_file << endl;
-		}
-		of_e9.close();
 	}
 
 	simulator.clearListeners();

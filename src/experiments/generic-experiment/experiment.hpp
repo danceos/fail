@@ -20,10 +20,10 @@ class GenericExperiment : public fail::DatabaseExperiment {
 
 	std::string m_state_dir;
 
-	bool enabled_e9_sol;
-	std::string e9_file;
-	SerialOutputLogger e9_sol;
-	std::vector<char> e9_goldenrun;
+	fail::guest_address_t serial_port;
+	SerialOutputLogger sol;
+	bool serial_enabled;
+	std::string serial_goldenrun;
 
 	bool enabled_mem_text;
 	fail::MemAccessListener l_mem_text;
@@ -58,7 +58,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 public:
 	GenericExperiment() : DatabaseExperiment("GenericExperiment"),
 						  m_state_dir("state"),
-						  e9_sol(0xE9),
+						  sol(0),
 						  l_trap(fail::ANY_TRAP), l_timeout(0) {
 		enabled_mem_text = false;
 		enabled_mem_outerspace = false;

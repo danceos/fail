@@ -42,21 +42,18 @@ google::protobuf::Message* GenericExperiment::cb_new_result(ExperimentData* data
     return result;
 }
 
-std::vector<char> loadFile(std::string filename)
+std::string loadFile(std::string filename)
 {
-	std::vector<char> data;
-	FILE *f = fopen(filename.c_str(), "rb");
-	if (!f) {
+	std::string data;
+	std::ifstream in(filename, std::ios::in | std::ios::binary);
+	if (!in) {
 		return data;
 	}
-	fseek(f, 0, SEEK_END);
-	long len = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	if (len > 0) {
-		data.resize(len);
-		fread(&data[0], len, 1, f);
-	}
-	fclose(f);
+	in.seekg(0, std::ios::end);
+	data.resize(in.tellg());
+	in.seekg(0, std::ios::beg);
+	in.read(&data[0], data.size());
+	in.close();
 	return data;
 }
 
@@ -112,8 +109,12 @@ bool GenericExperiment::cb_start_experiment() {
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
 													   "--timeout \t Experiment Timeout in uS");
 
+	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
+		"--serial-file FILE \tGolden-run serial output recording to check against");
+	CommandLine::option_handle SERIAL_PORT = cmd.addOption("", "serial-port", Arg::Required,
+		"--serial-port PORT \tI/O port to expect output on (default: 0x3f8, i.e. x86's serial COM1)");
 	CommandLine::option_handle E9_FILE = cmd.addOption("", "e9-file", Arg::Required,
-													  "--e9-file FILE \t data logged via port 0xE9 in golden run");
+		"--e9-file FILE \tShorthand for --serial-file FILE --serial-port 0xe9");
 
 
 	std::map<std::string, CommandLine::option_handle> option_handles;
@@ -172,18 +173,43 @@ bool GenericExperiment::cb_start_experiment() {
 		}
 	}
 
+	if (cmd[SERIAL_PORT]) {
+		option::Option *opt = cmd[SERIAL_PORT].first();
+		char *endptr;
+		serial_port = strtoul(opt->arg, &endptr, 16);
+		if (endptr == opt->arg) {
+			m_log << "Couldn't parse " << opt->arg << std::endl;
+			exit(-1);
+		}
+		m_log << "serial port: 0x" << std::hex << serial_port << std::endl;
+	} else {
+		serial_port = 0x3f8;
+	}
+
+	std::string serial_file;
+	if (cmd[SERIAL_FILE]) {
+		serial_file = std::string(cmd[SERIAL_FILE].first()->arg);
+		serial_enabled = true;
+		m_log << "serial file: " << serial_file << std::endl;
+	}
+
 	if (cmd[E9_FILE]) {
-		m_log << "enabled logging on port E9 for SDC-detection" << std::endl;
-		enabled_e9_sol = true;
-		e9_file = std::string(cmd[E9_FILE].first()->arg);
-		e9_goldenrun = loadFile(e9_file);
+		serial_file = std::string(cmd[E9_FILE].first()->arg);
+		serial_port = 0xe9;
+		serial_enabled = true;
+		m_log << "port E9 output is monitored and compared to: " << serial_file << std::endl;
+	}
+
+	if (serial_enabled) {
+		serial_goldenrun = loadFile(serial_file);
+		sol.setPort(serial_port);
 
 		// Limit the serial-output logger buffer to prevent overly large memory
 		// consumption in case the target system ends up, e.g., in an endless
 		// loop.  "+ 1" to be able to detect the case when the target system
 		// makes a correct output but faultily adds extra characters
 		// afterwards.
-		e9_sol.setLimit(e9_goldenrun.size() + 1);
+		sol.setLimit(serial_goldenrun.size() + 1);
 	}
 
 	if (cmd[WRITE_MEM_TEXT]) {
@@ -245,9 +271,9 @@ bool GenericExperiment::cb_start_experiment() {
 
 bool GenericExperiment::cb_before_fast_forward()
 {
-	if (enabled_e9_sol) {
+	if (serial_enabled) {
 		// output may already appear *before* FI
-		simulator.addFlow(&e9_sol);
+		simulator.addFlow(&sol);
 	}
 	return true;
 }
@@ -301,11 +327,11 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 		handleEvent(*result, result->OK_MARKER, symbol->getAddress());
 
 		// check experiment's data for SDC
-		if (enabled_e9_sol) {
+		if (serial_enabled) {
 			// compare golden run to experiment
-			std::string e9_experiment = e9_sol.getOutput();
-			if ( ! (e9_experiment.size() == e9_goldenrun.size()
-					&& equal(e9_experiment.begin(), e9_experiment.end(), e9_goldenrun.begin())) ) {
+			std::string serial_experiment = sol.getOutput();
+			if ( ! (serial_experiment.size() == serial_goldenrun.size()
+					&& equal(serial_experiment.begin(), serial_experiment.end(), serial_goldenrun.begin())) ) {
 				handleEvent(*result, result->SDC, 0);
 			}
 		}
@@ -338,9 +364,9 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 		handleEvent(*result, result->UNKNOWN, 0);
 	}
 
-	// remove and reset 0xE9 logger even if this run was not "OK"
-	if (enabled_e9_sol) {
-		simulator.removeFlow(&e9_sol);
-		e9_sol.resetOutput();
+	// remove and reset serial logger even if this run was not "OK"
+	if (serial_enabled) {
+		simulator.removeFlow(&sol);
+		sol.resetOutput();
 	}
 }

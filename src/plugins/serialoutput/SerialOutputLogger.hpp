@@ -41,6 +41,11 @@ public:
 	 */
 	std::string getOutput();
 	/**
+	 * Re-sets the port.  Will not work properly if the plugin is already
+	 * running.
+	 */
+	void setPort(unsigned port) { m_port = port; }
+	/**
 	 * Sets the character limit.  Does not truncate the stored data if it
 	 * already exceeds the new limit.  0 = unlimited.
 	 */
