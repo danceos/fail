@@ -121,7 +121,7 @@ void  GenericTracing::parseOptions() {
 		stop_symbol = std::string(cmd[STOP_SYMBOL].first()->arg);
 		const ElfSymbol& symbol = m_elf->getSymbol(stop_symbol);
 		if (!symbol.isValid()) {
-			m_log << "Stop symbol '" << start_symbol << "' not found." << std::endl;
+			m_log << "Stop symbol '" << stop_symbol << "' not found." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		stop_address = symbol.getAddress();
