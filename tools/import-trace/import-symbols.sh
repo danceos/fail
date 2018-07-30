@@ -49,6 +49,8 @@ EOT
 	LAST_ADDR=
 	LAST_SYMBOL=
 
+	LAST_INSERTED_ADDR=
+
 	# The "dummy" entry at the end makes sure the last real symbol from the
 	# nm output makes it into the database.
 	(nm -n -S -C $ELF; echo ffffffff a dummy) \
@@ -65,17 +67,21 @@ EOT
 
 		if [ $LAST_ADDR ]; then
 			# only create INSERT-line, if $ADDR is new to us
-			if [ ! $ADDR = $LAST_ADDR ]; then
+			if [ $LAST_ADDR != "$LAST_INSERTED_ADDR" ]; then
 				echo "INSERT INTO $TABLE (variant_id, address, size, name) VALUES "
 				echo "($ID, cast(0x$LAST_ADDR AS UNSIGNED), CAST(0x$ADDR AS UNSIGNED)-CAST(0x$LAST_ADDR AS UNSIGNED), '$LAST_SYMBOL');"
+				LAST_INSERTED_ADDR=$LAST_ADDR
 			fi
 		fi
 
 		if [ $SIZE != unknown ]; then
-			echo "INSERT INTO $TABLE (variant_id, address, size, name) VALUES "
-			echo "($ID, cast(0x$ADDR AS UNSIGNED), CAST(0x$SIZE AS UNSIGNED), '$SYMBOL');"
-			LAST_ADDR=
-			LAST_SYMBOL=
+			if [ $ADDR != "$LAST_INSERTED_ADDR" ]; then
+				echo "INSERT INTO $TABLE (variant_id, address, size, name) VALUES "
+				echo "($ID, cast(0x$ADDR AS UNSIGNED), CAST(0x$SIZE AS UNSIGNED), '$SYMBOL');"
+				LAST_ADDR=
+				LAST_SYMBOL=
+				LAST_INSERTED_ADDR=$ADDR
+			fi
 		else
 			LAST_ADDR=$ADDR
 			LAST_SYMBOL=$SYMBOL
