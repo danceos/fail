@@ -24,6 +24,15 @@ class RegisterImporter : public Importer {
 	std::set<unsigned> m_register_ids;
 	unsigned m_ip_register_id;
 
+	// Data structures for recording failed LLVM -> FAIL* register mappings,
+	// including occurrence counts in the trace (to give an estimate on the
+	// impact) and instruction addresses (for debugging purposes).
+	struct RegNotFound {
+		uint64_t count = 0;
+		std::set<fail::guest_address_t> address;
+	};
+	std::map<fail::LLVMDisassembler::register_t, RegNotFound> m_regnotfound;
+
 public:
 	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false),
 						 do_split_registers(true), m_ip_register_id(0) {}
@@ -41,6 +50,8 @@ protected:
 		/* ignore on purpose */
 		return true;
 	}
+
+	virtual bool trace_end_reached();
 
 	virtual void open_unused_ec_intervals() {
 		/* empty, Memory Map has a different meaning in this importer */

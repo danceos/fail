@@ -182,9 +182,9 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		 it != opcode.reg_uses.end(); ++it) {
 		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterInfo(*it);
 		if (&info == &m_ltof->notfound) {
-			LOG << "Could not find a mapping for LLVM input register #" << std::dec << *it
-			    << " at IP " << std::hex << ev.ip()
-			    << ", skipping" << std::endl;
+			// record failed translation, report later
+			m_regnotfound[*it].count++;
+			m_regnotfound[*it].address.insert(ev.ip());
 			continue;
 		}
 
@@ -202,9 +202,9 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		 it != opcode.reg_defs.end(); ++it) {
 		const LLVMtoFailTranslator::reginfo_t &info = m_ltof->getFailRegisterInfo(*it);
 		if (&info == &m_ltof->notfound) {
-			LOG << "Could not find a mapping for LLVM output register #" << std::dec << *it
-			    << " at IP " << std::hex << ev.ip()
-			    << ", skipping" << std::endl;
+			// record failed translation, report later
+			m_regnotfound[*it].count++;
+			m_regnotfound[*it].address.insert(ev.ip());
 			continue;
 		}
 
@@ -215,6 +215,33 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 
 		if (!addRegisterTrace(curtime, instr, ev, info, 'W'))
 			return false;
+	}
+
+	return true;
+}
+
+bool RegisterImporter::trace_end_reached()
+{
+	// report failed LLVM -> FAIL* register mappings, if any
+	if (m_regnotfound.empty()) {
+		return true;
+	}
+
+	LOG << "WARNING: Some LLVM -> FAIL* register mappings failed during import, these will not be injected into:" << std::endl;
+	for (auto it = m_regnotfound.cbegin(); it != m_regnotfound.cend(); ++it) {
+		const LLVMDisassembler::register_t id = it->first;
+		const RegNotFound& rnf = it->second;
+		LOG << "LLVM register " << std::dec << id
+			<< " \"" << disas->getRegisterInfo().getName(id) << "\": "
+			<< "seen " << rnf.count << " times in the trace" << std::endl;
+		std::ostream& o = LOG << "   corresponding instruction addresses in ELF binary: " << std::hex;
+		for (auto addr_it = rnf.address.cbegin(); addr_it != rnf.address.cend(); ++addr_it) {
+			if (addr_it != rnf.address.cbegin()) {
+				o << ", ";
+			}
+			o << "0x" << *addr_it;
+		}
+		o << std::endl;
 	}
 
 	return true;

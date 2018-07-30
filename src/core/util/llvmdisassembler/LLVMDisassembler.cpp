@@ -15,8 +15,6 @@ static std::ostream& operator<<(std::ostream& stream, const llvm::StringRef& s)
 
 LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
 	if (ltofail == 0) {
-		std::cout << "ArchType: " << llvm::Triple::getArchTypeName(	 llvm::Triple::ArchType(object->getArch())	) << std::endl;
-
 		switch ( llvm::Triple::ArchType(object->getArch()) ) {
 		case llvm::Triple::x86:
 		case llvm::Triple::x86_64:
@@ -26,7 +24,9 @@ LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
 			ltofail = new LLVMtoFailGem5(this);
 			break;
 		default:
-			std::cout << " not supported :(";
+			std::cerr << "ArchType "
+				<< llvm::Triple::getArchTypeName(llvm::Triple::ArchType(object->getArch()))
+				<< " not supported\n";
 			exit(1);
 		}
 	}
