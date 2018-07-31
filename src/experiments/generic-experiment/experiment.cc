@@ -60,7 +60,8 @@ std::string loadFile(std::string filename)
 void handleEvent(GenericExperimentMessage_Result& result,
 				 GenericExperimentMessage_Result_ResultType restype,
 				 unsigned int details) {
-    cout << "Result details: " << restype << " "<< details << endl;
+    cout << "Result details: "
+		<< dec << restype << " " << hex << "0x" << details << endl;
     result.set_resulttype(restype);
     result.set_details(details);
 }
