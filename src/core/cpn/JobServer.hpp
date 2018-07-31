@@ -51,8 +51,8 @@ private:
 	//! unique server run ID
 	uint64_t m_runid;
 
+	volatile uint64_t m_DoneCount = 0; //! the number of finished jobs
 #ifdef SERVER_PERFORMANCE_MEASURE
-	static volatile unsigned m_DoneCount; //! the number of finished jobs
 #ifndef __puma
 	boost::thread* m_measureThread; //! the performance measurement thread
 #endif
