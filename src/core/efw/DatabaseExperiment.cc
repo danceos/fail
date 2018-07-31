@@ -125,8 +125,9 @@ unsigned DatabaseExperiment::injectFault(
 			<< hex << data_address << " out of range." << endl;
 		return 0;
 	}
-	m_log << " value: 0x" << setw(2) << setfill('0') << value
-		<<       " -> 0x" << setw(2) << setfill('0') << injected_value << endl;
+	m_log << hex << setw(2) << setfill('0')
+		<< " value: 0x" << value
+		<<     " -> 0x" << injected_value << endl;
 	return value;
 }
 
