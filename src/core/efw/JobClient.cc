@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 
+#include <boost/optional.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
@@ -16,6 +17,7 @@ namespace fail {
 struct JobClient::impl {
 	io_service ios;
 	ip::tcp::socket socket;
+	boost::optional<ip::tcp::endpoint> endpoint;
 
 	impl() : socket(ios) {}
 };
@@ -46,31 +48,40 @@ bool JobClient::connectToServer()
 		return false;
 	}
 
-	boost::asio::ip::tcp::resolver resolver(m_d->ios);
-	boost::asio::ip::tcp::resolver::query query(
-	    m_server, std::to_string(m_server_port));
-
 	// random engine for backoff.
 	std::mt19937_64 engine(time(NULL));
 
 	for (int tries = CLIENT_RETRY_COUNT + 1; tries > 0; --tries) {
-		for (ip::tcp::resolver::iterator end,
-		     addrs = resolver.resolve(query);
-		     addrs != end; ++addrs) {
-			// server listens on IPv4 endpoint only, skip IPv6 endpoints
-			if (!addrs->endpoint().address().is_v4()) {
+		// resolve endpoint lazily
+		if (!m_d->endpoint) {
+			boost::asio::ip::tcp::resolver resolver(m_d->ios);
+			boost::asio::ip::tcp::resolver::query query(
+				m_server, std::to_string(m_server_port));
+
+			for (ip::tcp::resolver::iterator end,
+				 addrs = resolver.resolve(query);
+				 addrs != end; ++addrs) {
+				// server listens on IPv4 endpoint only, skip IPv6 endpoints
+				if (addrs->endpoint().address().is_v4()) {
+					m_d->endpoint = addrs->endpoint();
+					break;
+				}
+			}
+
+			if (!m_d->endpoint) {
+				cerr << "[Client] Failed to resolve " << m_server << endl;
 				continue;
 			}
-			boost::system::error_code error;
-			m_d->socket.connect(addrs->endpoint(), error);
-			if (!error) {
-				cout << "[Client] Connection established!"
-				     << endl;
-				return true;
-			}
-			perror("[Client@connect()]");
-			m_d->socket.close();
 		}
+
+		boost::system::error_code error;
+		m_d->socket.connect(*m_d->endpoint, error);
+		if (!error) {
+			cout << "[Client] Connection established!" << endl;
+			return true;
+		}
+		perror("[Client@connect()]");
+		m_d->socket.close();
 
 		std::uniform_real_distribution<> distribution(
 		    CLIENT_RAND_BACKOFF_TSTART, CLIENT_RAND_BACKOFF_TEND);
