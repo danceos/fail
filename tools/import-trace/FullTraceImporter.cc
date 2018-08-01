@@ -64,7 +64,14 @@ bool FullTraceImporter::add_trace_event(margin_info_t &begin, margin_info_t &end
 	std::stringstream sql;
 	sql << "(" << m_variant_id << "," << end.dyninstr << "," << end.ip << ")";
 
-	return db->insert_multiple("INSERT INTO fulltrace (variant_id, instr, instr_absolute) VALUES ", sql.str().c_str());
+	bool ret =
+		db->insert_multiple("INSERT INTO fulltrace (variant_id, instr, instr_absolute) VALUES ", sql.str().c_str());
+	m_row_count++;
+	if (m_row_count % 10000 == 0 && ret) {
+		LOG << "Inserted " << std::dec << m_row_count << " trace events into the database" << std::endl;
+	}
+
+	return ret;
 }
 
 bool FullTraceImporter::trace_end_reached() {
