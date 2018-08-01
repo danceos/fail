@@ -83,12 +83,14 @@ bool JobClient::connectToServer()
 		perror("[Client@connect()]");
 		m_d->socket.close();
 
-		std::uniform_real_distribution<> distribution(
-		    CLIENT_RAND_BACKOFF_TSTART, CLIENT_RAND_BACKOFF_TEND);
-		const auto delay = std::chrono::duration<double>(distribution(engine));
-		cout << "[Client] Retrying to connect to server in ~" << delay.count()
-		     << "s..." << endl;
-		std::this_thread::sleep_for(delay);
+		if (tries > 1) {
+			std::uniform_real_distribution<> distribution(
+				CLIENT_RAND_BACKOFF_TSTART, CLIENT_RAND_BACKOFF_TEND);
+			const auto delay = std::chrono::duration<double>(distribution(engine));
+			cout << "[Client] Retrying to connect to server in ~" << delay.count()
+				 << "s..." << endl;
+			std::this_thread::sleep_for(delay);
+		}
 	}
 
 	cout << "[Client] Unable to reconnect (tried " << CLIENT_RETRY_COUNT
