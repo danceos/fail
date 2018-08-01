@@ -98,27 +98,27 @@ void GenericExperiment::parseSymbols(const std::string &args, std::set<fail::Bas
 
 bool GenericExperiment::cb_start_experiment() {
 	CommandLine &cmd = CommandLine::Inst();
-	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n\n");
+	cmd.addOption("", "", Arg::None, "USAGE: fail-client -Wf,[option] -Wf,[option] ... <BochsOptions...>\n");
 	CommandLine::option_handle HELP = cmd.addOption("h", "help", Arg::None, "-h,--help \tPrint usage and exit");
 
 	CommandLine::option_handle ELF_FILE = cmd.addOption("", "elf-file", Arg::Required,
-														 "--elf-file \tELF Binary File (default: $FAIL_ELF_PATH)");
+		"--elf-file FILE \tELF-binary file (default: $FAIL_ELF_PATH)");
 
 	CommandLine::option_handle STATE_DIR = cmd.addOption("", "state-dir", Arg::Required,
-														 "--state-dir \t Path to the state directory");
+		"--state-dir DIR \tPath to the state directory");
 
 	// catch any trap
 	CommandLine::option_handle TRAP = cmd.addOption("", "trap", Arg::None,
-														 "--trap \tCatch Traps");
+		"--trap \tCatch traps");
 	CommandLine::option_handle WRITE_MEM_TEXT = cmd.addOption("", "catch-write-textsegment", Arg::None,
-													"--catch-write-textsegment \tCatch writes to the text segment");
+		"--catch-write-textsegment \tCatch writes to the text segment");
 
 	CommandLine::option_handle WRITE_MEM_OUTERSPACE
 		= cmd.addOption("", "catch-write-outerspace", Arg::None,
-						"--catch-write-outerspace \tCatch writes to the outerspace");
+		"--catch-write-outerspace \tCatch writes to the outerspace");
 
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
-													   "--timeout \t Experiment Timeout in uS");
+		"--timeout TIME \tExperiment timeout in uS");
 
 	CommandLine::option_handle SERIAL_FILE = cmd.addOption("", "serial-file", Arg::Required,
 		"--serial-file FILE \tGolden-run serial output recording to check against");
@@ -133,7 +133,7 @@ bool GenericExperiment::cb_start_experiment() {
 		 it != end_marker_groups.end(); ++it) {
 		CommandLine::option_handle handle =
 			cmd.addOption("", it->first, Arg::Required,
-						  "--" + it->first + " \tList of symbols (comma separated; will abort if not found, unless prefixed with '?')");
+				"--" + it->first + " S1,S2,... \tSymbol list (prefix non-essential symbols with '?')");
 		option_handles[it->first] = handle;
 	}
 
