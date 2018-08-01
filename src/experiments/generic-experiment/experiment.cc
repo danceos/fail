@@ -71,10 +71,20 @@ void GenericExperiment::parseSymbols(const std::string &args, std::set<fail::Bas
 	std::stringstream ss(args);
 	std::string item;
 	while (std::getline(ss, item, ',')) {
+		bool is_optional = false;
+		if (item.length() > 0 && item[0] == '?') {
+			item.erase(item.begin());
+			is_optional = true;
+		}
 		const ElfSymbol * symbol = &(m_elf->getSymbol(item));
 		if (!symbol->isValid()) {
-			m_log << "ELF Symbol not found: " << item << endl;
-			simulator.terminate(1);
+			if (is_optional) {
+				m_log << "ELF Symbol not found, ignoring: " << item << endl;
+				continue;
+			} else {
+				m_log << "ELF Symbol not found, aborting: " << item << endl;
+				simulator.terminate(1);
+			}
 		}
 		m_log << "Adding symbol " << item <<  " at 0x" << hex << symbol->getAddress() << endl;
 		BPSingleListener *l = new BPSingleListener(symbol->getAddress());
@@ -123,7 +133,7 @@ bool GenericExperiment::cb_start_experiment() {
 		 it != end_marker_groups.end(); ++it) {
 		CommandLine::option_handle handle =
 			cmd.addOption("", it->first, Arg::Required,
-						  "--" + it->first + " \tList of symbols (comma separated)");
+						  "--" + it->first + " \tList of symbols (comma separated; will abort if not found, unless prefixed with '?')");
 		option_handles[it->first] = handle;
 	}
 
