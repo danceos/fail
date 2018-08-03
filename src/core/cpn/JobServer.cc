@@ -276,9 +276,9 @@ void CommThread::print_progress(const enum ProgressType type,
 				const uint32_t w_id, const uint32_t count)
 {
 	using namespace std::chrono;
-	const auto now = system_clock::now();
+	const auto now = steady_clock::now();
 	const auto delay = milliseconds{500};
-	static system_clock::time_point last = system_clock::now() - delay;
+	static steady_clock::time_point last = steady_clock::now() - delay;
 
 	if (last + delay > now) {
 		return;
