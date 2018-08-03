@@ -16,6 +16,7 @@
 #ifndef __puma
 #include <boost/thread.hpp>
 #endif
+#include <boost/optional.hpp>
 
 namespace fail {
 
@@ -52,6 +53,7 @@ private:
 	uint64_t m_runid;
 
 	volatile uint64_t m_DoneCount = 0; //! the number of finished jobs
+	boost::optional<uint64_t> m_TotalCount; //! the total number of jobs to be expected
 #ifdef SERVER_PERFORMANCE_MEASURE
 #ifndef __puma
 	boost::thread* m_measureThread; //! the performance measurement thread
@@ -114,6 +116,15 @@ public:
 	 * distribution.
 	 */
 	void setNoMoreExperiments();
+	/**
+	 * Can optionally be used to tell the JobServer how many jobs to expect in
+	 * total.  This count is used for progress reporting.  Make sure you also
+	 * call skipJobs() if some of these early-on announced jobs will not be
+	 * sent after all (e.g. because the campaign already found results for them
+	 * in the database).
+	 */
+	void setTotalCount(uint64_t count) { m_TotalCount = count; }
+	void skipJobs(uint64_t count) { ++m_DoneCount; /* FIXME assume atomic */ }
 	/**
 	 * Checks whether there are no more experiment parameter sets.
 	 * @return \c true if no more parameter sets available, \c false otherwise

@@ -42,5 +42,15 @@ void CampaignManager::noMoreParameters()
 	m_jobserver->setNoMoreExperiments();
 }
 
+void CampaignManager::setTotalCount(uint64_t count)
+{
+	m_jobserver->setTotalCount(count);
+}
+
+void CampaignManager::skipJobs(uint64_t count)
+{
+	m_jobserver->skipJobs(count);
+}
+
 void CampaignManager::done() { m_jobserver->done(); }
 } // end-of-namespace: fail

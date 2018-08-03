@@ -276,9 +276,9 @@ void CommThread::print_progress(const enum ProgressType type,
 				const uint32_t w_id, const uint32_t count)
 {
 	using namespace std::chrono;
-	static system_clock::time_point last;
 	const auto now = system_clock::now();
 	const auto delay = milliseconds{500};
+	static system_clock::time_point last = system_clock::now() - delay;
 
 	if (last + delay > now) {
 		return;
@@ -297,6 +297,19 @@ void CommThread::print_progress(const enum ProgressType type,
 		<< std::setw(6) << m_js.m_runningJobs.Size() << " run/"
 		<< std::setw(6) << donecount_cur << " tot/ ("
 		<< std::setw(6) << std::setprecision(1) << std::fixed << rate << "/s)  ";
+	if (m_js.m_TotalCount) {
+		float percentage = (float) donecount_cur / *m_js.m_TotalCount * 100.0;
+		std::cout << std::setw(4) << std::setprecision(1) << std::fixed << percentage << "%";
+		if (rate > 0) {
+			float ETA_s = std::max(.0f, (*m_js.m_TotalCount - donecount_cur) / rate);
+			std::cout << " (ETA " << std::dec
+				<< std::setw(2) << std::setfill('0') <<  ((int64_t)ETA_s / (60*60)) << ':'
+				<< std::setw(2) << std::setfill('0') << (((int64_t)ETA_s / 60) % 60) << ':'
+				<< std::setw(2) << std::setfill('0') <<  ((int64_t)ETA_s % 60)
+				<< std::setfill(' ') << ')';
+		}
+		std::cout << "   ";
+	}
 	const char *sep;
 	if (type == ProgressType::Send) {
 		sep = " >";

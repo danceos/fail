@@ -64,6 +64,15 @@ public:
 	 * Signal, that there will not come any further parameter sets.
 	 */
 	void noMoreParameters();
+	/**
+	 * Can optionally be used to tell the JobServer how many jobs to expect in
+	 * total.  This count is used for progress reporting.  Make sure you also
+	 * call skipJobs() if some of these early-on announced jobs will not be
+	 * sent after all (e.g. because the campaign already found results for them
+	 * in the database).
+	 */
+	void setTotalCount(uint64_t count);
+	void skipJobs(uint64_t count);
 	 /**
 	 * User campaign has finished.
 	 */

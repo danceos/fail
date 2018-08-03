@@ -215,6 +215,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	log_send << "Found " << experiment_count << " jobs in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
+	campaignmanager.setTotalCount(experiment_count);
 
 	// abstraction of injection point:
 	// must not be initialized in loop, because hop chain calculator would lose
@@ -229,6 +230,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned pilot_id        = strtoul(row[0], NULL, 10);
 		if (existing_results_for_pilot(pilot_id) == expected_results) {
 			skipped_pilots++;
+			campaignmanager.skipJobs(1);
 			continue;
 		}
 
