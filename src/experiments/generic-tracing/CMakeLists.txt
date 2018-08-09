@@ -15,4 +15,4 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(fail-${EXPERIMENT_NAME} ${PROTO_SRCS} ${PROTO_HDRS} ${MY_CAMPAIGN_SRCS})
 
 add_dependencies(fail-${EXPERIMENT_NAME} fail-comm)
-target_link_libraries(fail-${EXPERIMENT_NAME} fail-tracing fail-comm)
+target_link_libraries(fail-${EXPERIMENT_NAME} fail-tracing fail-serialoutput fail-comm)
