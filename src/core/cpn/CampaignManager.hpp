@@ -29,8 +29,8 @@ public:
 	CampaignManager() : m_jobserver(0), m_currentCampaign(0)
 	{
 		fail::CommandLine &cmd = fail::CommandLine::Inst();
-		port = cmd.addOption("p", "port", Arg::Required,
-				     "-p,--port \tListening port of server; no "
+		port = cmd.addOption("", "port", Arg::Required,
+				     "--port \tListening port of server; no "
 				     "value chooses port automatically");
 	}
 	~CampaignManager();
