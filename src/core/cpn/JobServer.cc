@@ -454,7 +454,6 @@ void CommThread::sendPendingExperimentData(yield_context yield)
 		// Currently we have no workload (even the running-job-queue is empty!), but
 		// the campaign is not over yet. Minion can try again later.
 		ctrlmsg.set_command(FailControlMessage::COME_AGAIN);
-		cout << "--[Server] No workload, come again..."  <<  endl;
 	} else {
 		// No work & Camapaign is done. Go away.
 		ctrlmsg.set_command(FailControlMessage::DIE);
