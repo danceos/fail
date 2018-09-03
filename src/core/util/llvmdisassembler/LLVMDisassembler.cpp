@@ -114,16 +114,16 @@ void LLVMDisassembler::disassemble()
 				if (disas->getInstruction(Inst, Size, Bytes.slice(Index), Index,
 										  nulls(), nulls()) == MCDisassembler::Success) {
 					const MCInstrDesc &desc = this->instr_info->get(Inst.getOpcode());
-					//			Inst.dump();
-					Instr instr_info;
-					instr_info.opcode = Inst.getOpcode();
-					instr_info.length = Size;
-					instr_info.address = SectionAddr + Index;
-					instr_info.conditional_branch = desc.isConditionalBranch();
+
+					Instr instr;
+					instr.opcode = Inst.getOpcode();
+					instr.length = Size;
+					instr.address = SectionAddr + Index;
+					instr.conditional_branch = desc.isConditionalBranch();
 
 					assert( Size > 0 && "zero size instruction disassembled" );
 
-					unsigned int  pos = 0;
+					unsigned int pos = 0;
 					for (MCInst::iterator it = Inst.begin(); it != Inst.end(); ++it) {
 
 						if (it->isValid() && it->isReg()
@@ -131,9 +131,9 @@ void LLVMDisassembler::disassemble()
 							// Distinguish between input and
 							// output register operands
 							if (pos < desc.getNumDefs())
-								instr_info.reg_defs.push_back(it->getReg());
+								instr.reg_defs.push_back(it->getReg());
 							else
-								instr_info.reg_uses.push_back(it->getReg());
+								instr.reg_uses.push_back(it->getReg());
 						}
 						pos ++;
 					}
@@ -141,17 +141,17 @@ void LLVMDisassembler::disassemble()
 					for (unsigned int i = 0; i < desc.getNumImplicitUses(); i++) {
 						if (ptr[i] == 0) // NOREG
 							continue;
-						instr_info.reg_uses.push_back(ptr[i]);
+						instr.reg_uses.push_back(ptr[i]);
 					}
 					ptr = desc.getImplicitDefs();
-					for (unsigned int i = 0; i < desc.getNumImplicitDefs(); i++) {
+					for (unsigned i = 0; i < desc.getNumImplicitDefs(); i++) {
 						if (ptr[i] == 0) // NOREG
 							continue;
-						instr_info.reg_defs.push_back(ptr[i]);
+						instr.reg_defs.push_back(ptr[i]);
 					}
 
 					// Insert the instruction info into the instr map
-					(*instrs)[instr_info.address] = instr_info;
+					(*instrs)[instr.address] = instr;
 				} else {
 					if (Size == 0)
 						Size = 1; // skip illegible bytes
