@@ -21,7 +21,8 @@ namespace fail {
 enum RegisterType {
 	RT_NONE, //!< no classification
 	RT_GP,   //!< general purpose
-	RT_FP,   //!< floating point register
+	RT_FPU,  //!< FPU register
+	RT_VECTOR,  //!< vector-unit register
 	RT_IP,   //!< program counter / instruction pointer
 	RT_ST,   //!< status register
 	RT_CONTROL, //!< control registers

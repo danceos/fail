@@ -67,9 +67,39 @@ enum SegmentRegisterId { RID_CS = RID_LAST_FLAGS_ID, RID_DS, RID_ES, RID_FS,
  * \enum ControlRegisterId
  * Symbolic identifier to access the control register.
  */
-enum ControlRegisterId { RID_CR0 = RID_LAST_SEGMENT_ID, RID_CR1, RID_CR2, RID_CR3, RID_CR4 };
+enum ControlRegisterId { RID_CR0 = RID_LAST_SEGMENT_ID, RID_CR1, RID_CR2, RID_CR3, RID_CR4, RID_LAST_CR_ID };
 
-// TODO FPU stuff (FSW, FCW, FTW; FPR0-7; MMX0-7; XMM0-15; MXCSR)
+/**
+ * \enum FPURegisterId
+ * Symbolic identifier to access FPU registers.
+ */
+enum FPURegisterId {
+	RID_FSW = RID_LAST_CR_ID, RID_FCW, RID_FTW,
+	/* FPRi_LO is fraction (64 bit), FPRi_HI is exponent (16 bit), total 80 bits */
+	RID_FPR0_LO, RID_FPR0_HI, RID_FPR1_LO, RID_FPR1_HI, RID_FPR2_LO, RID_FPR2_HI, RID_FPR3_LO, RID_FPR3_HI,
+	RID_FPR4_LO, RID_FPR4_HI, RID_FPR5_LO, RID_FPR5_HI, RID_FPR6_LO, RID_FPR6_HI, RID_FPR7_LO, RID_FPR7_HI,
+	/* MMXi = RID_FPRi_LO */
+	RID_MMX0 = RID_FPR0_LO, RID_MMX1 = RID_FPR1_LO, RID_MMX2 = RID_FPR2_LO, RID_MMX3 = RID_FPR3_LO,
+	RID_MMX4 = RID_FPR4_LO, RID_MMX5 = RID_FPR5_LO, RID_MMX6 = RID_FPR6_LO, RID_MMX7 = RID_FPR7_LO,
+	RID_MMXDUMMY = RID_FPR7_HI, RID_LAST_FP_ID
+};
+
+/**
+ * \enum VectorRegisterId
+ * Symbolic identifier to access vector-unit registers (SSE, AVX, ...).
+ */
+enum VectorRegisterId {
+	/* low / high 64 bits */
+	RID_XMM0_LO = RID_LAST_FP_ID, RID_XMM0_HI, RID_XMM1_LO, RID_XMM1_HI, RID_XMM2_LO, RID_XMM2_HI, RID_XMM3_LO, RID_XMM3_HI,
+	RID_XMM4_LO, RID_XMM4_HI, RID_XMM5_LO, RID_XMM5_HI, RID_XMM6_LO, RID_XMM6_HI, RID_XMM7_LO, RID_XMM7_HI,
+#ifdef SIM_SUPPORT_64
+	RID_XMM8_LO, RID_XMM8_HI, RID_XMM9_LO, RID_XMM9_HI, RID_XMM10_LO, RID_XMM10_HI, RID_XMM11_LO, RID_XMM11_HI,
+	RID_XMM12_LO, RID_XMM12_HI, RID_XMM13_LO, RID_XMM13_HI, RID_XMM14_LO, RID_XMM14_HI, RID_XMM15_LO, RID_XMM15_HI,
+#endif
+	RID_MXCSR, /* MXCSR_MASK? */
+	RID_LAST_VECTOR_ID
+};
+
 // TODO GDTR, LDTR, IDTR, TR6+7, DR0-7, TR, MSR*
 
 } // end-of-namespace: fail

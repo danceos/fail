@@ -41,6 +41,75 @@ regdata_t BochsCPU::getRegisterContent(const Register* reg) const
 	case RID_SS:
 		// untested
 		return static_cast<regdata_t>(BX_CPU(m_Id)->sregs[BX_SEG_REG_SS].selector.value);
+
+	// FPU
+	case RID_FSW:
+		return BX_CPU(m_Id)->the_i387.swd;
+	case RID_FCW:
+		return BX_CPU(m_Id)->the_i387.cwd;
+	case RID_FTW:
+		return BX_CPU(m_Id)->the_i387.twd;
+	case RID_FPR0_LO:
+	case RID_FPR1_LO:
+	case RID_FPR2_LO:
+	case RID_FPR3_LO:
+	case RID_FPR4_LO:
+	case RID_FPR5_LO:
+	case RID_FPR6_LO:
+	case RID_FPR7_LO:
+		return BX_CPU(m_Id)->the_i387.st_space[(reg->getId() - RID_FPR0_LO) / 2].fraction;
+	case RID_FPR0_HI:
+	case RID_FPR1_HI:
+	case RID_FPR2_HI:
+	case RID_FPR3_HI:
+	case RID_FPR4_HI:
+	case RID_FPR5_HI:
+	case RID_FPR6_HI:
+	case RID_FPR7_HI:
+		return BX_CPU(m_Id)->the_i387.st_space[(reg->getId() - RID_FPR0_HI) / 2].exp;
+
+	// vector units
+	case RID_XMM0_LO:
+	case RID_XMM1_LO:
+	case RID_XMM2_LO:
+	case RID_XMM3_LO:
+	case RID_XMM4_LO:
+	case RID_XMM5_LO:
+	case RID_XMM6_LO:
+	case RID_XMM7_LO:
+#ifdef SIM_SUPPORT_64
+	case RID_XMM8_LO:
+	case RID_XMM9_LO:
+	case RID_XMM10_LO:
+	case RID_XMM11_LO:
+	case RID_XMM12_LO:
+	case RID_XMM13_LO:
+	case RID_XMM14_LO:
+	case RID_XMM15_LO:
+#endif
+		return BX_CPU(m_Id)->xmm[(reg->getId() - RID_XMM0_LO) / 2].xmm_s64[0];
+	case RID_XMM0_HI:
+	case RID_XMM1_HI:
+	case RID_XMM2_HI:
+	case RID_XMM3_HI:
+	case RID_XMM4_HI:
+	case RID_XMM5_HI:
+	case RID_XMM6_HI:
+	case RID_XMM7_HI:
+#ifdef SIM_SUPPORT_64
+	case RID_XMM8_HI:
+	case RID_XMM9_HI:
+	case RID_XMM10_HI:
+	case RID_XMM11_HI:
+	case RID_XMM12_HI:
+	case RID_XMM13_HI:
+	case RID_XMM14_HI:
+	case RID_XMM15_HI:
+#endif
+		return BX_CPU(m_Id)->xmm[(reg->getId() - RID_XMM0_HI) / 2].xmm_s64[1];
+	case RID_MXCSR:
+		return BX_CPU(m_Id)->mxcsr.mxcsr;
+
 #ifdef SIM_SUPPORT_64
 	case RID_PC: // program counter
 		return static_cast<regdata_t>(BX_CPU(m_Id)->gen_reg[BX_64BIT_REG_RIP].rrx);
@@ -114,6 +183,82 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_SS], value);
 		break;
 	#endif
+
+	// FPU
+	case RID_FSW:
+		BX_CPU(m_Id)->the_i387.swd = value;
+		break;
+	case RID_FCW:
+		BX_CPU(m_Id)->the_i387.cwd = value;
+		break;
+	case RID_FTW:
+		BX_CPU(m_Id)->the_i387.twd = value;
+		break;
+	case RID_FPR0_LO:
+	case RID_FPR1_LO:
+	case RID_FPR2_LO:
+	case RID_FPR3_LO:
+	case RID_FPR4_LO:
+	case RID_FPR5_LO:
+	case RID_FPR6_LO:
+	case RID_FPR7_LO:
+		BX_CPU(m_Id)->the_i387.st_space[(reg->getId() - RID_FPR0_LO) / 2].fraction = value;
+		break;
+	case RID_FPR0_HI:
+	case RID_FPR1_HI:
+	case RID_FPR2_HI:
+	case RID_FPR3_HI:
+	case RID_FPR4_HI:
+	case RID_FPR5_HI:
+	case RID_FPR6_HI:
+	case RID_FPR7_HI:
+		BX_CPU(m_Id)->the_i387.st_space[(reg->getId() - RID_FPR0_HI) / 2].exp = value;
+		break;
+
+	// vector units
+	case RID_XMM0_LO:
+	case RID_XMM1_LO:
+	case RID_XMM2_LO:
+	case RID_XMM3_LO:
+	case RID_XMM4_LO:
+	case RID_XMM5_LO:
+	case RID_XMM6_LO:
+	case RID_XMM7_LO:
+#ifdef SIM_SUPPORT_64
+	case RID_XMM8_LO:
+	case RID_XMM9_LO:
+	case RID_XMM10_LO:
+	case RID_XMM11_LO:
+	case RID_XMM12_LO:
+	case RID_XMM13_LO:
+	case RID_XMM14_LO:
+	case RID_XMM15_LO:
+#endif
+		BX_CPU(m_Id)->xmm[(reg->getId() - RID_XMM0_LO) / 2].xmm_s64[0] = value;
+		break;
+	case RID_XMM0_HI:
+	case RID_XMM1_HI:
+	case RID_XMM2_HI:
+	case RID_XMM3_HI:
+	case RID_XMM4_HI:
+	case RID_XMM5_HI:
+	case RID_XMM6_HI:
+	case RID_XMM7_HI:
+#ifdef SIM_SUPPORT_64
+	case RID_XMM8_HI:
+	case RID_XMM9_HI:
+	case RID_XMM10_HI:
+	case RID_XMM11_HI:
+	case RID_XMM12_HI:
+	case RID_XMM13_HI:
+	case RID_XMM14_HI:
+	case RID_XMM15_HI:
+#endif
+		BX_CPU(m_Id)->xmm[(reg->getId() - RID_XMM0_HI) / 2].xmm_s64[1] = value;
+		break;
+	case RID_MXCSR:
+		BX_CPU(m_Id)->mxcsr.mxcsr = value;
+		break;
 
 #ifdef SIM_SUPPORT_64
 	case RID_PC: // program counter

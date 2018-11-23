@@ -84,6 +84,54 @@ X86Architecture::X86Architecture()
 	pSSReg->setName("SS");
 	m_addRegister(pSSReg, RT_SEGMENT);
 
+	// FPU registers
+	Register *fpureg;
+	fpureg = new Register(RID_FSW, 16);
+	fpureg->setName("FSW");
+	m_addRegister(fpureg, RT_FPU);
+	fpureg = new Register(RID_FCW, 16);
+	fpureg->setName("FCW");
+	m_addRegister(fpureg, RT_FPU);
+	fpureg = new Register(RID_FTW, 16);
+	fpureg->setName("FTW");
+	m_addRegister(fpureg, RT_FPU);
+	std::stringstream ss;
+	for (int i = 0; i < 8; ++i) {
+		fpureg = new Register(RID_FPR0_LO + i * 2, 64);
+		ss.str("");
+		ss << "FPR" << i << "_LO";
+		fpureg->setName(ss.str());
+		m_addRegister(fpureg, RT_FPU);
+
+		fpureg = new Register(RID_FPR0_HI + i * 2, 16);
+		ss.str("");
+		ss << "FPR" << i << "_HI";
+		fpureg->setName(ss.str());
+		m_addRegister(fpureg, RT_FPU);
+	}
+
+	// XMM registers (SSE)
+	fpureg = new Register(RID_MXCSR, 16); // in fact MXCSR has 32 bits, but only 0-15 are defined as of SSE3
+	fpureg->setName("MXCSR");
+	m_addRegister(fpureg, RT_VECTOR);
+#ifdef SIM_SUPPORT_64
+	for (int i = 0; i < 16; ++i) {
+#else
+	for (int i = 0; i < 8; ++i) {
+#endif
+		fpureg = new Register(RID_XMM0_LO + i * 2, 64);
+		ss.str("");
+		ss << "XMM" << i << "_LO";
+		fpureg->setName(ss.str());
+		m_addRegister(fpureg, RT_VECTOR);
+
+		fpureg = new Register(RID_XMM0_HI + i * 2, 64);
+		ss.str("");
+		ss << "XMM" << i << "_HI";
+		fpureg->setName(ss.str());
+		m_addRegister(fpureg, RT_VECTOR);
+	}
+
 	// Registers used for extended tracing:
 	size_t ids[] = {RID_CAX, RID_CBX, RID_CCX, RID_CDX, RID_CSI, RID_CDI, RID_CSP, RID_CBP, RID_FLAGS};
 	for (size_t i = 0; i < sizeof(ids)/sizeof(*ids); ++i) {

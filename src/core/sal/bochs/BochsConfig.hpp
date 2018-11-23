@@ -14,11 +14,9 @@ namespace fail {
 
 typedef bx_address guest_address_t; //!< the guest memory address type
 typedef Bit8u*     host_address_t;  //!< the host memory address type
-#if BX_SUPPORT_X86_64
-typedef Bit64u     register_data_t; //!< register data type (64 bit)
-#else
-typedef Bit32u     register_data_t; //!< register data type (32 bit)
-#endif
+//! register data type (64 bit, regardless of BX_SUPPORT_X86_64: FPU and vector
+//! registers are that size or larger also for 32-bit machines)
+typedef Bit64u     register_data_t;
 typedef int        timer_t;         //!< type of timer IDs
 
 // 'Publish' 64 bit ability (if enabled in Bochs):
