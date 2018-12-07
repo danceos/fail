@@ -24,9 +24,9 @@ typedef X86Architecture Architecture;
 
 /**
  * \enum GPRegisterId
- * Symbolic identifier to access the x86 general purpose register
- * (within the corresponding GP set). This enumeration is extended
- * in case the activated simulator has 64 bit ability.
+ * Symbolic identifiers to access the x86 general purpose registers (within the
+ * corresponding GP set). This enumeration is extended in case the activated
+ * simulator has 64 bit ability.
  */
 enum GPRegisterId {
  #ifdef SIM_SUPPORT_64 // 64 bit register IDs:
@@ -58,20 +58,20 @@ enum FlagsRegisterId { RID_FLAGS = RID_LAST_PC_ID, RID_LAST_FLAGS_ID };
 
 /**
  * \enum SegmentRegisterId
- * Symbolic identifier to access the segment register.
+ * Symbolic identifiers to access the segment registers.
  */
 enum SegmentRegisterId { RID_CS = RID_LAST_FLAGS_ID, RID_DS, RID_ES, RID_FS,
 	RID_GS, RID_SS, RID_LAST_SEGMENT_ID};
 
 /**
  * \enum ControlRegisterId
- * Symbolic identifier to access the control register.
+ * Symbolic identifiers to access the control registers.
  */
 enum ControlRegisterId { RID_CR0 = RID_LAST_SEGMENT_ID, RID_CR1, RID_CR2, RID_CR3, RID_CR4, RID_LAST_CR_ID };
 
 /**
  * \enum FPURegisterId
- * Symbolic identifier to access FPU registers.
+ * Symbolic identifiers to access FPU registers.
  */
 enum FPURegisterId {
 	RID_FSW = RID_LAST_CR_ID, RID_FCW, RID_FTW,
@@ -86,7 +86,7 @@ enum FPURegisterId {
 
 /**
  * \enum VectorRegisterId
- * Symbolic identifier to access vector-unit registers (SSE, AVX, ...).
+ * Symbolic identifiers to access vector-unit registers (SSE, AVX, ...).
  */
 enum VectorRegisterId {
 	/* low / high 64 bits */
