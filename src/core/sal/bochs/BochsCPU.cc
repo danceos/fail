@@ -59,7 +59,6 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 {
 	assert(reg != NULL && "FATAL ERROR: reg-ptr cannot be NULL!");
 
-	regdata_t* pData;
 	switch (reg->getId()) {
 	case RID_FLAGS: // EFLAGS/RFLAGS
 	  #ifdef SIM_SUPPORT_64
@@ -73,66 +72,65 @@ void BochsCPU::setRegisterContent(const Register* reg, regdata_t value)
 		BX_CPU(m_Id)->writeEFlags(value, 0xffffffff);
 	  #endif
 		BX_CPU(m_Id)->force_flags();
-		return;
+		break;
 	#ifndef __puma
 	case RID_CR0:
 		// untested
 		BX_CPU(m_Id)->SetCR0(value);
-		return;
+		break;
 	case RID_CR2:
 		// untested
 		BX_CPU(m_Id)->cr2 = value;
-		return;
+		break;
 	case RID_CR3:
 		BX_CPU(m_Id)->SetCR3(value);
-		return;
+		break;
 	case RID_CR4:
 		// untested
 		BX_CPU(m_Id)->SetCR4(value);
-		return;
+		break;
 	case RID_CS:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_CS], value);
-		return;
+		break;
 	case RID_DS:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_DS], value);
-		return;
+		break;
 	case RID_ES:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_ES], value);
-		return;
+		break;
 	case RID_FS:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_FS], value);
-		return;
+		break;
 	case RID_GS:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_GS], value);
-		return;
+		break;
 	case RID_SS:
 		// untested
 		BX_CPU(m_Id)->load_seg_reg(&BX_CPU(m_Id)->sregs[BX_SEG_REG_SS], value);
-		return;
+		break;
 	#endif
 
 #ifdef SIM_SUPPORT_64
 	case RID_PC: // program counter
-		pData = &(BX_CPU(m_Id)->gen_reg[BX_64BIT_REG_RIP].rrx);
+		BX_CPU(m_Id)->gen_reg[BX_64BIT_REG_RIP].rrx = value;
 		break;
 	default: // 64 bit general purpose registers
-		pData = &(BX_CPU(m_Id)->gen_reg[reg->getId()].rrx);
+		BX_CPU(m_Id)->gen_reg[reg->getId()].rrx = value;
 		break;
 #else // 32 bit mode
 	case RID_PC: // program counter
-		pData = &(BX_CPU(m_Id)->gen_reg[BX_32BIT_REG_EIP].dword.erx);
+		BX_CPU(m_Id)->gen_reg[BX_32BIT_REG_EIP].dword.erx = value;
 		break;
 	default: // 32 bit general purpose registers
-		pData = &(BX_CPU(m_Id)->gen_reg[reg->getId()].dword.erx);
+		BX_CPU(m_Id)->gen_reg[reg->getId()].dword.erx = value;
 		break;
 #endif // SIM_SUPPORT_64
 	}
-	*pData = value;
 }
 
 } // end-of-namespace: fail
