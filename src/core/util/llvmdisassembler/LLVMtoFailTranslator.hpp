@@ -38,7 +38,15 @@ public:
 		}
 
 		reginfo_t(int id=-1, regwidth_t width = 32, byte_t offs = 0)
-			: id(id), width(width), mask((regwidth_t)((((long long)1 << width) - 1) << offs)), offset(offs) {};
+			: id(id), width(width), mask((((regdata_t) 1 << width) - 1) << offs), offset(offs)
+		{
+			if (width >= sizeof(regdata_t) * 8) { // all ones, (1 << width) == 0!
+				mask = -1;
+			}
+#if 0
+			std::cerr << "constructing reginfo_t: " << std::dec << id << " " << width << " " << ((int)offs) << std::hex << " 0x" << mask << std::endl;
+#endif
+		}
 	};
 protected:
 
