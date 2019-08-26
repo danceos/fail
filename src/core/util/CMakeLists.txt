@@ -81,12 +81,22 @@ endif(CONFIG_INJECTIONPOINT_HOPS)
 
 add_library(fail-util ${SRCS})
 add_dependencies(fail-util fail-comm)
-target_link_libraries(fail-util fail-comm ${ADDITIONAL_LIBS} ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
+target_link_libraries(fail-util fail-comm fail-sal ${ADDITIONAL_LIBS} ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
+
+option(BUILD_CAPSTONE_DISASSEMBLER "Build the Capstone-based disassembler (Capstone 4.0.1 required, higher versions may not work)" OFF)
+if (BUILD_CAPSTONE_DISASSEMBLER)
+  add_subdirectory(capstonedisassembler)
+endif (BUILD_CAPSTONE_DISASSEMBLER)
 
 option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.9, 4.0, 5.0 or 6.0 preferred, other versions may not work)" OFF)
 if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)
+
+if (BUILD_CAPSTONE_DISASSEMBLER AND BUILD_LLVM_DISASSEMBLER)
+  message(FATAL_ERROR "BUILD_CAPSTONE_DISASSEMBLER and BUILD_LLVM_DISASSEMBLER can't be on at the same time!")
+endif (BUILD_CAPSTONE_DISASSEMBLER AND BUILD_LLVM_DISASSEMBLER)
+
 ### Tests
 add_executable(memorymap-test testing/memorymap-test.cc)
 target_link_libraries(memorymap-test fail-util)
