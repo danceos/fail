@@ -6,14 +6,16 @@ if("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
   cmake_policy(SET CMP0017 NEW)
 endif("${CMAKE_VERSION}" VERSION_GREATER 2.8.3)
 if(NOT ("${CMAKE_VERSION}" VERSION_LESS 3.0)) # >= 3.0?
-  # don't overwrite PROJECT_VERSION when calling PROJECT()
-  cmake_policy(SET CMP0048 OLD)
+  # overwrite PROJECT_VERSION when calling PROJECT()
+  cmake_policy(SET CMP0048 NEW)
+
+  PROJECT(FAIL* VERSION 1.0.1)
+else()
+  PROJECT(FAIL*)
+  set(PROJECT_VERSION "1.0.1" CACHE INTERNAL "FAIL* version number" FORCE)
 endif()
+
 ENABLE_TESTING()
-
-PROJECT(FAIL*)
-
-set(PROJECT_VERSION "1.0.1" CACHE INTERNAL "FAIL* version number" FORCE)
 
 #### Put all resulting library files in <your_build_dir>/lib ####
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
