@@ -424,7 +424,7 @@ void BX_CPU_C::TLB_invlpg(bx_address laddr)
 {
   invalidate_prefetch_q();
 
-  BX_DEBUG(("TLB_invlpg(0x"FMT_ADDRX"): invalidate TLB entry", laddr));
+  BX_DEBUG(("TLB_invlpg(0x" FMT_ADDRX "): invalidate TLB entry", laddr));
 
 #if BX_CPU_LEVEL >= 5
   bx_bool large = 0;

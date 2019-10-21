@@ -185,7 +185,7 @@ inc_one:
   }
   else {
     // access outside limits of physical memory, ignore
-    BX_DEBUG(("Write outside the limits of physical memory (0x"FMT_PHY_ADDRX") (ignore)", a20addr));
+    BX_DEBUG(("Write outside the limits of physical memory (0x" FMT_PHY_ADDRX ") (ignore)", a20addr));
   }
 }
 

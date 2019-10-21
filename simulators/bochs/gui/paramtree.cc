@@ -292,7 +292,7 @@ bx_shadow_num_c::bx_shadow_num_c(bx_param_c *parent,
   val.p64bit = ptr_to_real_val;
   if (base == BASE_HEX) {
     this->base = base;
-    this->text_format = "0x"FMT_LL"x";
+    this->text_format = "0x" FMT_LL "x";
   }
 }
 
@@ -311,7 +311,7 @@ bx_shadow_num_c::bx_shadow_num_c(bx_param_c *parent,
   val.p64bit = (Bit64s*) ptr_to_real_val;
   if (base == BASE_HEX) {
     this->base = base;
-    this->text_format = "0x"FMT_LL"x";
+    this->text_format = "0x" FMT_LL "x";
   }
 }
 

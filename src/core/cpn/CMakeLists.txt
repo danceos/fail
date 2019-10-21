@@ -4,8 +4,6 @@ set(SRCS
 	DatabaseCampaign.cc
 )
 
-set_source_files_properties(JobServer.cc CampaignManager.cc PROPERTIES COMPILE_FLAGS -std=c++14)
-
 find_package(MySQL REQUIRED)
 include_directories(${MYSQL_INCLUDE_DIR})
 

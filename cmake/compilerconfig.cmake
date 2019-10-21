@@ -1,3 +1,10 @@
+#### C++14 ####
+# We need at least C++11, as some library headers begin to require it.  C++14
+# has already aged sufficiently to mandate it here.
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 ##### Verbose make ####
 option( VERBOSE_MAKE "Verbose Makefile output" OFF) # defaults to OFF
 	set(CMAKE_VERBOSE_MAKEFILE ${VERBOSE_MAKE})
