@@ -5,7 +5,7 @@ set(SRCS
 )
 
 find_package(MySQL REQUIRED)
-include_directories(${MYSQL_INCLUDE_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MYSQL_CFLAGS}")
 
 # only compile concrete implementation of InjectionPoint
 if(CONFIG_INJECTIONPOINT_HOPS)

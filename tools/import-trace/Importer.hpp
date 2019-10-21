@@ -1,7 +1,7 @@
 #ifndef __IMPORTER_H__
 #define __IMPORTER_H__
 
-#include <mysql/mysql.h>
+#include <mysql.h>
 #include <map>
 #include <sstream>
 #include "util/ProtoStream.hpp"

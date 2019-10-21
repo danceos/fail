@@ -32,7 +32,7 @@ if (BUILD_LLVM_DISASSEMBLER)
 endif(BUILD_LLVM_DISASSEMBLER)
 
 find_package(MySQL REQUIRED)
-include_directories(${MYSQL_INCLUDE_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MYSQL_CFLAGS}")
 
 add_executable(import-trace main.cc ${SRCS})
 

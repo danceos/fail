@@ -57,6 +57,10 @@ find_package(LibDwarf REQUIRED)
 include_directories(${LIBELF_INCLUDE_DIRS})
 include_directories(${LIBDWARF_INCLUDE_DIRS})
 
+# Database.hpp
+find_package(MySQL REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MYSQL_CFLAGS}")
+
 # objdump required by Diassembler.cc
 
 set(THE_OBJDUMP "${ARCH_TOOL_PREFIX}objdump")
