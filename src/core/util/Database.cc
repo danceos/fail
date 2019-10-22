@@ -20,7 +20,7 @@ Database::Database(const std::string &username, const std::string &host, const s
 #endif
 	CommandLine &cmd = CommandLine::Inst();
 
-	std::string db_conf_file = "~/.my.cnf";
+	std::string db_conf_file = std::string(getenv("HOME")) + "/.my.cnf";
 	if (cmd[DBDEFAULTS].count()) {
 		db_conf_file = cmd[DBDEFAULTS].first()->arg;
 	}
