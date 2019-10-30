@@ -15,9 +15,11 @@ using std::endl;
 #include "BasicPruner.hpp"
 #include "FESamplingPruner.hpp"
 #include "SamplingPruner.hpp"
+#include "BasicBlockPruner.hpp"
+#include "CallRegionPruner.hpp"
 
 int main(int argc, char *argv[]) {
-	std::string username, hostname, database;
+	std::string username, hostname, database, trace_file;
 
 	// register possible Pruners
 	AliasedRegistry registry;
@@ -29,6 +31,10 @@ int main(int argc, char *argv[]) {
 	registry.add(&fesamplingpruner);
 	SamplingPruner samplingpruner;
 	registry.add(&samplingpruner);
+	BasicBlockPruner basicblockpruner;
+	registry.add(&basicblockpruner);
+	CallRegionPruner callregionpruner;
+	registry.add(&callregionpruner);
 
 	std::string pruners = registry.getPrimeAliasesCSV();
 
@@ -68,6 +74,9 @@ int main(int argc, char *argv[]) {
 	CommandLine::option_handle INCREMENTAL =
 		cmd.addOption("", "incremental", Arg::None,
 			"--incremental \tTell the pruner to work incrementally (if supported)");
+	CommandLine::option_handle TRACE_FILE =
+		cmd.addOption("t", "trace-file", Arg::Required,
+			"-t/--trace-file \tFile to load the execution trace from\n");
 
 	if (!cmd.parse()) {
 		std::cerr << "Error parsing arguments." << std::endl;
@@ -155,7 +164,15 @@ int main(int argc, char *argv[]) {
 			benchmarks_exclude.push_back(std::string(o->arg));
 		}
 	}
-
+	
+	if (cmd[TRACE_FILE]) {
+		trace_file = std::string(cmd[TRACE_FILE].first()->arg);
+	} else {
+		trace_file = "trace.pb";
+	}
+	
+	pruner->set_traceFile(trace_file);
+	
 	// fallback
 	if (benchmarks.size() == 0) {
 		benchmarks.push_back("%");

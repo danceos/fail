@@ -3,6 +3,8 @@ set(SRCS
   BasicPruner.cc
   FESamplingPruner.cc
   SamplingPruner.cc
+  BasicBlockPruner.cc
+  CallRegionPruner.cc
 )
 
 find_package(MySQL REQUIRED)

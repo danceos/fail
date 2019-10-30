@@ -11,10 +11,11 @@ protected:
 	int m_method_id;
 	fail::Database *db;
 	std::vector<fail::Database::Variant> m_variants;
-	std::string m_variants_sql;
+	std::string m_variants_sql, trace_file;
 
 public:
 	void set_db(fail::Database *db) { this->db = db; }
+	void set_traceFile(std::string trace_file) { this->trace_file = trace_file; }
 
 	bool init(
 		const std::vector<std::string>& variants,
@@ -43,6 +44,8 @@ public:
 	 * is incapable of working in the desired mode.
 	 */
 	virtual bool set_incremental(bool incremental) { return !incremental; }
+
+    virtual ~Pruner() {}
 };
 
 #endif
