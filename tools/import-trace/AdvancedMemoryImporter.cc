@@ -2,8 +2,10 @@
 #include <sstream>
 #include "AdvancedMemoryImporter.hpp"
 
+#ifdef BUILD_LLVM_DISASSEMBLER
 using namespace llvm;
 using namespace llvm::object;
+#endif
 using namespace fail;
 
 static fail::Logger LOG("AdvancedMemoryImporter");
@@ -98,6 +100,35 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 	// (delayed) trace entries
 	insert_delayed_entries(false);
 
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	if (!isDisassembled) {
+		if (!m_elf) {
+			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
+			return false;
+		}
+
+		disas.reset(new CapstoneDisassembler(m_elf));
+
+		disas->disassemble();
+		CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+		LOG << "instructions disassembled: " << std::dec << instr_map.size() << std::endl;
+#if 0
+		for (CapstoneDisassembler::InstrMap::const_iterator it = instr_map.begin();
+			it != instr_map.end(); ++it) {
+			LOG << "DIS " << std::hex << it->second.address << " " << (int) it->second.length << std::endl;
+		}
+#endif
+	}
+
+	const CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+	const CapstoneDisassembler::InstrMap::const_iterator it = instr_map.find(ev.ip());
+	if (it == instr_map.end()) {
+		LOG << "WARNING: CapstoneDisassembler hasn't disassembled instruction at 0x"
+			<< ev.ip() << " -- are you using Capstone < 4.0?" << std::endl;
+		return true; // probably weird things will happen now
+	}
+	const CapstoneDisassembler::Instr &opcode = it->second;
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	if (!binary) {
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
@@ -144,6 +175,7 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 		return true; // probably weird things will happen now
 	}
 	const LLVMDisassembler::Instr &opcode = it->second;
+#endif
 
 	/* Now we've got the opcode and know whether it's a conditional branch.  If
 	 * it is, the next IP event will tell us whether it was taken or not. */
@@ -161,8 +193,13 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 bool AdvancedMemoryImporter::handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
 	Trace_Event &ev)
 {
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	const CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+	const CapstoneDisassembler::Instr &opcode = instr_map.at(ev.ip());
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
+#endif
 	DelayedTraceEntry entry = { curtime, instr, ev, opcode.opcode, (unsigned) branches_taken.size() };
 	delayed_entries.push_back(entry);
 

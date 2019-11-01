@@ -3,8 +3,10 @@
 #include "InstructionImporter.hpp"
 #include "util/Logger.hpp"
 
+#ifdef BUILD_LLVM_DISASSEMBLER
 using namespace llvm;
 using namespace llvm::object;
+#endif
 using namespace fail;
 
 
@@ -12,6 +14,28 @@ static Logger LOG("InstructionImporter");
 
 bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
 										  Trace_Event &ev) {
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	if (!isDisassembled) {
+		if (!m_elf) {
+			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
+			return false;
+		}
+
+		disas.reset(new CapstoneDisassembler(m_elf));
+
+		disas->disassemble();
+		CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+		LOG << "instructions disassembled: " << instr_map.size() << std::endl;
+		isDisassembled = true;
+	}
+	const CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+	if (instr_map.find(ev.ip()) == instr_map.end()) {
+		LOG << "Could not find instruction for IP " << std::hex << ev.ip()
+			<< ", skipping" << std::endl;
+		return true;
+	}
+	const CapstoneDisassembler::Instr &opcode = instr_map.at(ev.ip());
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	if (!binary) {
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
@@ -46,6 +70,7 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
+#endif
 
 	address_t from = ev.ip(), to = ev.ip() + opcode.length;
 
