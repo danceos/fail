@@ -15,7 +15,9 @@
 #include "efw/DatabaseExperiment.hpp"
 #include "comm/DatabaseCampaignMessage.pb.h"
 
-#ifdef BUILD_LLVM_DISASSEMBLER
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+#  include "util/capstonedisassembler/CapstoneToFailTranslator.hpp"
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 #  include "util/llvmdisassembler/LLVMtoFailTranslator.hpp"
 #endif
 
@@ -80,12 +82,17 @@ unsigned DatabaseExperiment::injectFault(
 
 	/* First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() */
 	if (data_address < (128 << 4) && inject_registers) {
-#ifdef BUILD_LLVM_DISASSEMBLER
+#if defined(BUILD_LLVM_DISASSEMBLER) || defined(BUILD_CAPSTONE_DISASSEMBLER)
+#if defined(BUILD_LLVM_DISASSEMBLER)
+		typedef LLVMtoFailTranslator XtoFailTranslator;
+#elif defined(BUILD_CAPSTONE_DISASSEMBLER)
+		typedef CapstoneToFailTranslator XtoFailTranslator;
+#endif
 		// register FI
-		LLVMtoFailTranslator::reginfo_t reginfo =
-			LLVMtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
+		XtoFailTranslator::reginfo_t reginfo =
+			XtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
 
-		value = LLVMtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
+		value = XtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
 		if (inject_burst) {
 			injected_value = value ^ 0xff;
 			m_log << "INJECTING BURST at: REGISTER " << dec << reginfo.id
@@ -95,14 +102,14 @@ unsigned DatabaseExperiment::injectFault(
 			m_log << "INJECTING BIT-FLIP at: REGISTER " << dec << reginfo.id
 				<< " bitpos " << (reginfo.offset + bitpos) << endl;
 		}
-		LLVMtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
+		XtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
 		if (reginfo.id == RID_PC) {
 			// FIXME move this into the Bochs backend
 			m_log << "Redecode current instruction" << endl;
 			redecodeCurrentInstruction();
 		}
 #else
-		m_log << "ERROR: Not compiled with LLVM.  Enable BUILD_LLVM_DISASSEMBLER at buildtime." << endl;
+		m_log << "ERROR: Not compiled with LLVM or Capstone.  Enable BUILD_LLVM_DISASSEMBLER OR BUILD_CAPSTONE_DISASSEMBLER at buildtime." << endl;
 		simulator.terminate(1);
 #endif
 	} else if (!force_registers) {
