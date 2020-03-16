@@ -28,8 +28,8 @@ CapstoneToFailTranslator *CapstoneDisassembler::getTranslator() {
 	return ctofail;
 }
 
-std::map<uint64_t, uint64_t> CapstoneDisassembler::get_symtab_map(uint32_t sect_size) {
-	// Make a list of all the symbols in this section.
+std::map<uint64_t, uint64_t> CapstoneDisassembler::get_symtab_map(uint64_t sect_addr, uint64_t sect_size) {
+	// Make a list of all the symbols (virtual address, size) in this section.
 	std::vector<std::pair<uint64_t, uint64_t> > symbols;
 	for (ElfReader::container_t::const_iterator it = m_elf->sym_begin(); it != m_elf->sym_end(); ++it) {
 
@@ -46,25 +46,35 @@ std::map<uint64_t, uint64_t> CapstoneDisassembler::get_symtab_map(uint32_t sect_
 	// Sort the symbols by address, just in case they didn't come in that way.
 	std::sort(symbols.begin(), symbols.end());
 
-	std::map<uint64_t, uint64_t> symtab_map;
+	std::map<uint64_t, uint64_t> symtab_map; // start (virtual address), size
 	uint64_t start;
-	uint64_t end; // exclusive
+	uint64_t size;
 	for (unsigned si = 0, se = symbols.size(); si != se; ++si) {
 		start = symbols[si].first;
-		if (symbols[si].second == 0) {
-			// The end is either the size of the section or the beginning of the next symbol.
+		size = symbols[si].second;
+		// only admit symbols that start within this section
+		if (start < sect_addr || sect_addr + sect_size <= start) {
+			continue;
+		}
+		if (size == 0) {
+			// The end is either the end of the section or the beginning of the next symbol.
 			if (si == se - 1)
-				end = sect_size;
-				// Make sure this symbol takes up space.
+				// Last symbol? Span until section end.
+				size = sect_addr + sect_size - start;
 			else if (symbols[si + 1].first != start)
-				end = symbols[si + 1].first;
+				// There is distance to the next symbol? Cover it.
+				size = symbols[si + 1].first - start;
 			else
 				// This symbol has the same address as the next symbol. Skip it.
 				continue;
 
-			symbols[si].second = end - start;
+			symbols[si].second = size;
 		}
-		symtab_map[symbols[si].first] = symbols[si].second;
+		// limit the symbol size to within this section
+		if (start + size > sect_addr + sect_size) {
+			size = sect_addr + sect_size - start;
+		}
+		symtab_map[symbols[si].first] = size;
 	}
 #if 0
 	for (std::map<uint64_t, uint64_t>::iterator it=symtab_map.begin(); it!=symtab_map.end(); ++it)
@@ -113,12 +123,10 @@ int CapstoneDisassembler::disassemble_section(Elf_Data *data, Elf32_Shdr *shdr32
 	for (std::map<uint64_t, uint64_t>::iterator it=symtab_map.begin(); it!=symtab_map.end(); ++it) {
 
 		if (m_elf->m_elfclass == ELFCLASS32) {
-			count = cs_disasm(handle,
-							  (uint8_t *) ((uint64_t) data->d_buf + (uint64_t) it->first - (uint64_t) shdr32->sh_addr),
+			count = cs_disasm(handle, (uint8_t *) data->d_buf + it->first - shdr32->sh_addr,
 							  it->second, it->first, 0, &insn);
 		} else {
-			count = cs_disasm(handle,
-							  (uint8_t *) ((uint64_t) data->d_buf + (uint64_t) it->first - (uint64_t) shdr64->sh_addr),
+			count = cs_disasm(handle, (uint8_t *) data->d_buf + it->first - shdr64->sh_addr,
 							  it->second, it->first, 0, &insn);
 		}
 
@@ -274,9 +282,9 @@ void CapstoneDisassembler::disassemble() {
 	}
 	std::map<uint64_t, uint64_t> symtab_map;
 	if (m_elf->m_elfclass == ELFCLASS32) {
-		symtab_map = get_symtab_map(shdr32->sh_size);
+		symtab_map = get_symtab_map(shdr32->sh_addr, shdr32->sh_size);
 	} else if (m_elf->m_elfclass == ELFCLASS64) {
-		symtab_map = get_symtab_map(shdr64->sh_size);
+		symtab_map = get_symtab_map(shdr64->sh_addr, shdr64->sh_size);
 	}
 
 	disassemble_section(data, shdr32, shdr64, symtab_map);

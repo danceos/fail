@@ -76,7 +76,7 @@ public:
 
 private:
 	int disassemble_section(Elf_Data *data, Elf32_Shdr *shdr, Elf64_Shdr *shdr64, std::map<uint64_t, uint64_t> symtab_map);
-	std::map<uint64_t, uint64_t> get_symtab_map(uint32_t sect_size);
+	std::map<uint64_t, uint64_t> get_symtab_map(uint64_t sect_addr, uint64_t sect_size);
 };
 
 }
