@@ -1,4 +1,4 @@
-find_program(LLVMCONFIG NAMES llvm-config-6.0 llvm-config-5.0 llvm-config-4.0 llvm-config-3.9 llvm-config)
+find_program(LLVMCONFIG NAMES llvm-config-8 llvm-config-7 llvm-config-6.0 llvm-config-5.0 llvm-config-4.0 llvm-config-3.9 llvm-config)
 
 if( NOT LLVMCONFIG )
   message(FATAL_ERROR "llvm-config not found, try installing llvm-dev llvm")
