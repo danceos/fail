@@ -23,6 +23,16 @@ Required for FAIL*:
      "-D__NO_MATH_INLINES -D__STRICT_ANSI__" or "--c_compiler clang++" (the
      latter requires the clang++ compiler).
  - optional:
+   * the Capstone disassembler library, version 4.0 or newer
+     - Capstone is highly recommended over using LLVM, which provides
+       incomplete def/use information for many opcodes.
+     - Note that Debian's/Ubuntu's libcapstone-dev 4.0.1+really+3.0.5 does not
+       suffice.  As of this writing, you need to build/install the Capstone
+       library yourself on these distributions.
+     - If the build system cannot automatically locate the Capstone library,
+       manually set CAPSTONE_INCLUDE_DIR and CAPSTONE_LIBRARY in the cmake
+       configuration.  Consider using the static libcapstone.a library instead
+       of the .so variant.
    * LLVM 3.9, 4.0, 5.0, or 6.0 (needed for several importers in
      tools/import-trace): llvm-3.9-dev, llvm-4.0-dev, llvm-5.0-dev or
      llvm-6.0-dev
