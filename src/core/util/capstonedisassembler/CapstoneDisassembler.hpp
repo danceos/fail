@@ -14,7 +14,6 @@
 #include "CapstoneToFailBochs.hpp"
 #include "CapstoneToFailGem5.hpp"
 
-#include <capstone/capstone.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <libelf.h>

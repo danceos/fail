@@ -1,3 +1,8 @@
+#include <capstone/capstone.h>
+#if CS_MAKE_VERSION(CS_API_MAJOR, CS_API_MINOR) < CS_MAKE_VERSION(4, 0)
+#  error Need libcapstone >= 4.0
+#endif
+
 #include "CapstoneDisassembler.hpp"
 
 using namespace fail;
