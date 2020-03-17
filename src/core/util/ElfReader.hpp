@@ -81,6 +81,8 @@ public:
 	typedef container_t::const_iterator symbol_iterator;
 	typedef container_t::const_iterator section_iterator;
 
+	int m_machine;
+	int m_elfclass;
 
 	/**
 	 * Constructor.
@@ -157,7 +159,6 @@ public:
 private:
 	Logger m_log;
 	std::string m_filename;
-	int m_elfclass;
 
 	void setup(const char*);
 	bool process_symboltable(FILE *fp, Elf64_Ehdr const *ehdr, int sect_num);

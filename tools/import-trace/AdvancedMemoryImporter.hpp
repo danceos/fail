@@ -5,7 +5,11 @@
 #include <deque>
 #include "MemoryImporter.hpp"
 
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+#include "util/capstonedisassembler/CapstoneDisassembler.hpp"
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
+#endif
 
 /**
  * A MemoryImporter that additionally imports Relyzer-style conditional branch
@@ -24,8 +28,13 @@
  * operations with a set of new virtual functions that are called downwards.
  */
 class AdvancedMemoryImporter : public MemoryImporter {
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	bool isDisassembled = false;
+	std::unique_ptr<fail::CapstoneDisassembler> disas;
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	llvm::object::Binary *binary = 0;
 	std::unique_ptr<fail::LLVMDisassembler> disas;
+#endif
 	bool m_last_was_conditional_branch;
 	fail::guest_address_t m_ip_jump_not_taken;
 	std::vector<bool> branches_taken;

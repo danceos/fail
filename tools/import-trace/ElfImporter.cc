@@ -9,9 +9,10 @@
 #include <boost/algorithm/string.hpp>
 #endif
 
-
+#ifdef BUILD_LLVM_DISASSEMBLER
 using namespace llvm;
 using namespace llvm::object;
+#endif
 using namespace fail;
 using namespace std;
 

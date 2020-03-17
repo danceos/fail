@@ -17,6 +17,9 @@ target_link_libraries(fail-efw fail-util) # WallclockTimer
 if (BUILD_LLVM_DISASSEMBLER)
   target_link_libraries(fail-efw fail-llvmdisassembler)
 endif()
+if (BUILD_CAPSTONE_DISASSEMBLER)
+	target_link_libraries(fail-efw fail-capstonedisassembler)
+endif()
 
 find_package(LibPCL REQUIRED)
 include_directories(${LIBPCL_INCLUDE_DIRS})

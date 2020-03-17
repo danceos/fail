@@ -5,11 +5,20 @@
 #include "util/CommandLine.hpp"
 #include "Importer.hpp"
 
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+#include "util/capstonedisassembler/CapstoneDisassembler.hpp"
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
+#endif
 
 class RandomJumpImporter : public Importer {
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	bool binary = false;
+	std::unique_ptr<fail::CapstoneDisassembler> disas;
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	llvm::object::Binary *binary = 0;
 	std::unique_ptr<fail::LLVMDisassembler> disas;
+#endif
 
 	fail::CommandLine::option_handle FROM, TO;
 

@@ -97,7 +97,7 @@ void ElfReader::setup(const char* path) {
 			printf("Error: wrong Section to read\n");
 		} else {
 			process_section(&sec_hdr, buff);
-        }
+		}
 	}
 
 	free(buff);
@@ -218,6 +218,7 @@ bool ElfReader::read_ELF_file_header(FILE *fp, Elf64_Ehdr *filehdr)
 		return false;
 	}
 
+	m_machine = filehdr32.e_machine;
 	m_elfclass = filehdr32.e_ident[EI_CLASS];
 	if (m_elfclass == ELFCLASS32) {
 		Elf32to64_Ehdr(&filehdr32, filehdr);

@@ -3,8 +3,10 @@
 #include "util/Logger.hpp"
 #include "RandomJumpImporter.hpp"
 
+#ifdef BUILD_LLVM_DISASSEMBLER
 using namespace llvm;
 using namespace llvm::object;
+#endif
 using namespace fail;
 using namespace std;
 
@@ -60,6 +62,22 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 			return false;
 		}
 
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+		disas.reset(new CapstoneDisassembler(m_elf));
+
+		disas->disassemble();
+		CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
+		LOG << "instructions disassembled: " << instr_map.size() <<  std::endl;
+
+		/* Collect all addresses we want to jump to */
+		for (CapstoneDisassembler::InstrMap::const_iterator instr = instr_map.begin();
+			 instr != instr_map.end(); ++instr) {
+			if (m_mm_to && m_mm_to->isMatching(instr->first)) {
+				m_jump_to_addresses.push_back(instr->first);
+			}
+		}
+		binary = true;
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 		/* Disassemble the binary if necessary */
 		llvm::InitializeAllTargetInfos();
 		llvm::InitializeAllTargetMCs();
@@ -92,6 +110,7 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 				m_jump_to_addresses.push_back(instr->first);
 			}
 		}
+#endif
 		LOG << "we will jump to " << m_jump_to_addresses.size() << " addresses" << endl;
 	}
 

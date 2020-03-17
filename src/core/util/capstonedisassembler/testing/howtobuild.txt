@@ -1,0 +1,4 @@
+g++ -m32 bubble.cc -o x86
+g++ -m64 bubble.cc -o x86_64
+arm-none-eabi-g++ -mcpu=cortex-m3 bubble.cc -o armm3
+arm-none-eabi-g++ -mcpu=arm9 bubble.cc -o arm9

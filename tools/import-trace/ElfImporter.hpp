@@ -7,7 +7,13 @@
 #include "libelf.h"
 
 #include "Importer.hpp"
+
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+#include "util/capstonedisassembler/CapstoneDisassembler.hpp"
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 #include "util/llvmdisassembler/LLVMDisassembler.hpp"
+#endif
+
 #include "util/CommandLine.hpp"
 #include "util/DwarfReader.hpp"
 
@@ -27,8 +33,11 @@
 	into the database.
 */
 class ElfImporter : public Importer {
-	std::unique_ptr<llvm::object::Binary> binary;
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+	std::unique_ptr<fail::CapstoneDisassembler> disas;
+#elif defined(BUILD_LLVM_DISASSEMBLER)
 	std::unique_ptr<fail::LLVMDisassembler> disas;
+#endif
 
 	fail::CommandLine::option_handle OBJDUMP;
 	fail::CommandLine::option_handle SOURCECODE;

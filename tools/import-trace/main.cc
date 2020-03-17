@@ -10,12 +10,14 @@
 #include "FullTraceImporter.hpp"
 #include "util/AliasedRegistry.hpp"
 
+#if defined(BUILD_LLVM_DISASSEMBLER) || defined(BUILD_CAPSTONE_DISASSEMBLER)
 #ifdef BUILD_LLVM_DISASSEMBLER
 #include "llvm/Support/ManagedStatic.h"
-#include "InstructionImporter.hpp"
-#include "RegisterImporter.hpp"
+#endif
 #include "RandomJumpImporter.hpp"
 #include "AdvancedMemoryImporter.hpp"
+#include "InstructionImporter.hpp"
+#include "RegisterImporter.hpp"
 #include "ElfImporter.hpp"
 #endif
 
@@ -67,18 +69,20 @@ int main(int argc, char *argv[]) {
 	FullTraceImporter fti;
 	registry.add(&fti);
 
+#if defined(BUILD_LLVM_DISASSEMBLER) || defined(BUILD_CAPSTONE_DISASSEMBLER)
 #ifdef BUILD_LLVM_DISASSEMBLER
 	llvm::llvm_shutdown_obj Y;
-	RegisterImporter reg;
-	registry.add(&reg);
-	RandomJumpImporter rjump;
-	registry.add(&rjump);
+#endif
 	AdvancedMemoryImporter adv;
 	registry.add(&adv);
-	ElfImporter elf;
-	registry.add(&elf);
+	RandomJumpImporter rjump;
+	registry.add(&rjump);
 	InstructionImporter instr;
 	registry.add(&instr);
+	RegisterImporter reg;
+	registry.add(&reg);
+	ElfImporter elf;
+	registry.add(&elf);
 #endif
 	std::string importers = registry.getPrimeAliasesCSV();
 
