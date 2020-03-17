@@ -41,6 +41,9 @@ be manipulated.
 Building FAIL*
 --------------
 
+**Note:** The Docker images are currently out of date; at the moment, FAIL*
+needs to be built and installed manually.
+
 Since FAIL* is a complex research project with many dependencies,
 which are listed in `doc/how-to-build.txt`, we provide several
 [Docker.io](http://www.docker.com) images that contain all
@@ -144,9 +147,21 @@ Please cite the EDCC paper if you want to refer to FAIL*:
 Selected publications using FAIL*
 ---------------------------------
 
+- O. Pusz, D. Kiechle, C. Dietrich, D. Lohmann.  Program-Structure–Guided
+  Approximation of Large Fault Spaces. In Proceedings of the 24th IEEE Pacific
+  Rim International Symposium on Dependable Computing (PRDC '19). IEEE Computer
+  Society Press, Dec. 2019.
+
+- C. Borchert. Aspect-Oriented Technology for Dependable Operating Systems.
+  Dissertation, Technische Universität Dortmund, May 2017.
+
 - C. Borchert, H. Schirmeier, and O. Spinczyk. Generic soft-error detection and
   correction for concurrent data structures. IEEE Transactions on Dependable
-  and Secure Computing, PP(99). IEEE Computer Society Press.  In preprint.
+  and Secure Computing, 14(1):22–36, Jan. 2017.
+
+- C. Dietrich, M. Hoffmann, and D. Lohmann. Global optimization of
+  fixed-priority real-time systems by RTOS-aware control-flow analysis. ACM
+  Transactions on Embedded Computing Systems (TECS), 16(2):1–25, Jan. 2017.
 
 - H. Schirmeier. Efficient Fault-Injection-based Assessment of
   Software-Implemented Hardware Fault Tolerance. Dissertation, Technische
