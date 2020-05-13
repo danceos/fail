@@ -62,6 +62,10 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 			return false;
 		}
 
+		if (!m_elf) {
+			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
+			return false;
+		}
 #if defined(BUILD_CAPSTONE_DISASSEMBLER)
 		disas.reset(new CapstoneDisassembler(m_elf));
 
