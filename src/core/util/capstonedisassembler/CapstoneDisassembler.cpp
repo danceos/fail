@@ -33,6 +33,7 @@ std::map<uint64_t, uint64_t> CapstoneDisassembler::get_symtab_map(uint64_t sect_
 	std::vector<std::pair<uint64_t, uint64_t> > symbols;
 	for (ElfReader::container_t::const_iterator it = m_elf->sym_begin(); it != m_elf->sym_end(); ++it) {
 
+//		std::cout << it->getSymbolType() << " " << it->getName() << " (" << it->getDemangledName() << ") " << std::hex << it->getAddress() << " " << std::dec << it->getSize() << "\n";
 		if (it->getSymbolType() != 2 /*SST_FUNC*/) {
 		if (it->getSymbolType() != STT_FUNC && it->getSymbolType() != STT_NOTYPE) {
 			continue;
@@ -147,10 +148,10 @@ int CapstoneDisassembler::disassemble_section(Elf_Data *data, Elf32_Shdr *shdr32
 				// Print assembly
 #if 0
 				printf("%s\t%s\n", insn[j].mnemonic, insn[j].op_str);
-				printf("Opcode: %x\t Adress: %lx\t Size: %d\n", opcode, insn[j].address, insn[j].size);
+				printf("Opcode: %x\t Address: %lx\t Size: %d\n", opcode, insn[j].address, insn[j].size);
 #endif
 				// Print all registers accessed by this instruction.
-				if (cs_regs_access(handle, &insn[j], regs_read, &read_count, regs_write, &write_count) == 0) {
+				if (cs_regs_access(handle, &insn[j], regs_read, &read_count, regs_write, &write_count) == CS_ERR_OK) {
 					Instr instr;
 					instr.opcode = opcode;
 					instr.length = insn[j].size;
