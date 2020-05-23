@@ -77,11 +77,23 @@ void DatabaseExperiment::redecodeCurrentInstruction() {
 
 unsigned DatabaseExperiment::injectFault(
 	address_t data_address, unsigned bitpos, bool inject_burst,
-	bool inject_registers, bool force_registers) {
+	bool inject_registers, bool force_registers, bool randomjump) {
 	unsigned value, injected_value;
 
+	if (randomjump) {
+		// interpret data_address as new value for the IP, i.e. jump there
+		address_t current_PC = simulator.getCPU(0).getInstructionPointer();
+		address_t new_PC     = data_address;
+		m_log << "jump from 0x" << hex << current_PC << " to 0x" << new_PC << std::endl;
+		simulator.getCPU(0).setRegisterContent(simulator.getCPU(0).getRegister(RID_PC), new_PC);
+		redecodeCurrentInstruction();
+
+		// set program counter
+		value = current_PC;
+		injected_value = new_PC;
+
 	/* First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() */
-	if (data_address < (128 << 4) && inject_registers) {
+	} else if (data_address < (128 << 4) && inject_registers) {
 #if defined(BUILD_LLVM_DISASSEMBLER) || defined(BUILD_CAPSTONE_DISASSEMBLER)
 #if defined(BUILD_LLVM_DISASSEMBLER)
 		typedef LLVMtoFailTranslator XtoFailTranslator;
@@ -199,7 +211,8 @@ bool DatabaseExperiment::run()
 		unsigned  injection_instr = fsppilot->injection_instr();
 		address_t data_address = fsppilot->data_address();
 		unsigned width = fsppilot->data_width();
-		unsigned injection_width = fsppilot->inject_bursts() ? 8 : 1;
+		unsigned injection_width =
+			(fsppilot->inject_bursts() || fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP) ? 8 : 1;
 
 		for (unsigned bit_offset = 0; bit_offset < width * 8; bit_offset += injection_width) {
 			// 8 results in one job
@@ -270,7 +283,8 @@ bool DatabaseExperiment::run()
 				injectFault(data_address + bit_offset / 8, bit_offset % 8,
 					fsppilot->inject_bursts(),
 					fsppilot->register_injection_mode() != fsppilot->OFF,
-					fsppilot->register_injection_mode() == fsppilot->FORCE));
+					fsppilot->register_injection_mode() == fsppilot->FORCE,
+					fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP));
 			result->set_injection_width(injection_width);
 
 			if (!this->cb_before_resume()) {

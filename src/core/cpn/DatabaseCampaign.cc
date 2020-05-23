@@ -55,6 +55,9 @@ bool DatabaseCampaign::run() {
 	CommandLine::option_handle REGISTERS_FORCE =
 		cmd.addOption("","force-inject-registers", Arg::None,
 			"--force-inject-registers \tinject into ISA registers only, ignore high addresses");
+	CommandLine::option_handle REGISTERS_RANDOMJUMP =
+		cmd.addOption("","inject-randomjumps", Arg::None,
+			"--inject-randomjumps \tinject random jumps (interpret data_address as jump target, as prepared by RandomJumpImporter)");
 
 	if (!cmd.parse()) {
 		log_send << "Error parsing arguments." << std::endl;
@@ -115,6 +118,9 @@ bool DatabaseCampaign::run() {
 	} else if (cmd[REGISTERS_FORCE]) {
 		m_register_injection_mode = DatabaseCampaignMessage::FORCE;
 		log_send << "register injection: on" << std::endl;
+	} else if (cmd[REGISTERS_RANDOMJUMP]) {
+		m_register_injection_mode = DatabaseCampaignMessage::RANDOMJUMP;
+		log_send << "register injection: randomjump" << std::endl;
 	} else {
 		m_register_injection_mode = DatabaseCampaignMessage::OFF;
 		log_send << "register injection: off" << std::endl;

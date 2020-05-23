@@ -27,6 +27,7 @@ message DatabaseCampaignMessage {
         OFF = 0;
         AUTO = 1;
         FORCE = 2;
+        RANDOMJUMP = 3;
     }
     optional RegisterInjectionMode register_injection_mode = 12 [default = OFF];
 }
