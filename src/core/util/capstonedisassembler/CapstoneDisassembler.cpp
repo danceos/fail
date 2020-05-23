@@ -135,8 +135,10 @@ int CapstoneDisassembler::disassemble_section(Elf_Data *data, Elf32_Shdr *shdr32
 			for (j = 0; j < count; j++) {
 				unsigned int opcode = 0;
 				if (m_elf->m_machine == EM_386 || m_elf->m_machine == EM_X86_64) {
-					opcode = (insn[j].detail->x86.opcode[3] << 24) | (insn[j].detail->x86.opcode[2] << 16) |
-					  (insn[j].detail->x86.opcode[1] << 8) | insn[j].detail->x86.opcode[0];
+					if (insn[j].detail) { // NULL if insn is broken
+						opcode = (insn[j].detail->x86.opcode[3] << 24) | (insn[j].detail->x86.opcode[2] << 16) |
+						  (insn[j].detail->x86.opcode[1] << 8) | insn[j].detail->x86.opcode[0];
+					}
 				} else if (m_elf->m_machine == EM_ARM) {
 					// placeholder
 					opcode = 0;
