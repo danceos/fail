@@ -34,7 +34,6 @@ std::map<uint64_t, uint64_t> CapstoneDisassembler::get_symtab_map(uint64_t sect_
 	for (ElfReader::container_t::const_iterator it = m_elf->sym_begin(); it != m_elf->sym_end(); ++it) {
 
 //		std::cout << it->getSymbolType() << " " << it->getName() << " (" << it->getDemangledName() << ") " << std::hex << it->getAddress() << " " << std::dec << it->getSize() << "\n";
-		if (it->getSymbolType() != 2 /*SST_FUNC*/) {
 		if (it->getSymbolType() != STT_FUNC && it->getSymbolType() != STT_NOTYPE) {
 			continue;
 		}
