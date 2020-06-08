@@ -10,7 +10,11 @@
 		#error Active config currently not supported!
 	#endif
 #elif defined BUILD_QEMU
-	#include "qemu/QEMUConfig.hpp"
+	#if defined BUILD_X86
+		#include "qemu/QEMUx86CPU.hpp"
+	#else
+		#error Active config currently not supported!
+	#endif
 #elif defined BUILD_T32
 	#include "t32/T32Config.hpp"
 	#if defined BUILD_ARM
