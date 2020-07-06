@@ -226,7 +226,7 @@ bool RegisterImporter::trace_end_reached()
 		const RegNotFound& rnf = it->second;
 		LOG << "Capstone register " << std::dec << id
 			/* << " \"" << disas->getRegisterInfo().getName(id) << "\": " */
-			<< "seen " << rnf.count << " times in the trace" << std::endl;
+			<< " seen " << rnf.count << " times in the trace" << std::endl;
 		std::ostream& o = LOG << "   corresponding instruction addresses in ELF binary: " << std::hex;
 		for (auto addr_it = rnf.address.cbegin(); addr_it != rnf.address.cend(); ++addr_it) {
 			if (addr_it != rnf.address.cbegin()) {
