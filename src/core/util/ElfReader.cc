@@ -2,6 +2,7 @@
 #include "sal/SALConfig.hpp"
 #include <stdio.h>
 #include <cstdlib>
+#include <cstring> // memcpy, cstring
 #include <algorithm>
 #include "Demangler.hpp"
 
