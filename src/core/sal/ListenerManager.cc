@@ -156,7 +156,7 @@ void ListenerManager::remove(ExperimentFlow* flow)
 		// ... need to be pushed into m_DeleteList, as we're currently
 		// iterating over m_FireList in triggerActiveListeners() and cannot modify it
 		if (flow == 0 || (*it)->getParent() == flow) {
-			(*it)->onDeletion();
+			// Note: onDeletion was previously called within makeActive()
 			m_DeleteList.push_back(*it);
 		}
 	}
@@ -209,6 +209,9 @@ void ListenerManager::makeActive(BaseListener* pLi)
 	if (pLi->getCounter() > 0)
 		return;
 	pLi->resetCounter();
+
+	pLi->onDeletion();
+
 	// Remove the index of the listener from the performance buffer-list:
 	pLi->getPerformanceBuffer()->remove(pLi->getLocation());
 	// Move the listener object from the buffer-list to the fire-list:
