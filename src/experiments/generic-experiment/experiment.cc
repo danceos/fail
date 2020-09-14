@@ -249,7 +249,16 @@ bool GenericExperiment::cb_start_experiment() {
 	if (cmd[STATE_DIR]) {
 		std::string value(cmd[STATE_DIR].first()->arg);
 		m_state_dir = value;
-		m_log << "Set state dir to " << value << endl;
+		m_log << "Set state dir (from cmdline) to " << value << endl;
+	} else {
+		char *state_dir = getenv("FAIL_STATE_DIR");
+		if (state_dir == NULL) {
+			m_log << "ERROR: no FAIL_STATE_DIR set or --state-dir given. exiting!" << std::endl;
+			exit(1);
+		} else {
+			m_state_dir = std::string(state_dir);
+			m_log << "Set state dir (from enviroment) to " << m_state_dir << endl;
+		}
 	}
 
 	if (cmd[TIMEOUT]) {
