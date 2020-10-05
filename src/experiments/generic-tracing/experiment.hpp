@@ -24,6 +24,7 @@ class GenericTracing : public fail::ExperimentFlow {
 
 	bool restore;
 	bool full_trace;
+	bool check_bounds;
 
 	fail::guest_address_t serial_port;
 	std::string serial_file;
