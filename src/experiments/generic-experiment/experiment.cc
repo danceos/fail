@@ -17,6 +17,8 @@
 #include "sal/bochs/BochsListener.hpp"
 #include <string>
 #include <vector>
+#include <stdexcept>
+#include <limits>
 
 #include "campaign.hpp"
 #include "generic-experiment.pb.h"
@@ -117,6 +119,10 @@ bool GenericExperiment::cb_start_experiment() {
 		= cmd.addOption("", "catch-write-outerspace", Arg::None,
 		"--catch-write-outerspace \tCatch writes to the outerspace");
 
+    CommandLine::option_handle WRITE_MEM_LOWERSPACE
+		= cmd.addOption("", "catch-write-lowerspace", Arg::None,
+		"--catch-write-lowerspace \tCatch writes to the lowerspace");
+
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
 		"--timeout TIME \tExperiment timeout in uS");
 
@@ -166,24 +172,6 @@ bool GenericExperiment::cb_start_experiment() {
 		exit(1);
 	}
 
-	address_t minimal_ip = INT_MAX; // Every address is lower
-	address_t maximal_ip = 0;
-	address_t minimal_data = 0x100000; // 1 Mbyte
-	address_t maximal_data = 0;
-
-	for (ElfReader::section_iterator it = m_elf->sec_begin();
-		 it != m_elf->sec_end(); ++it) {
-		const ElfSymbol &symbol = *it;
-		std::string prefix(".text");
-		if (symbol.getName().compare(0, prefix.size(), prefix) == 0) {
-			minimal_ip = std::min(minimal_ip, symbol.getStart());
-			maximal_ip = std::max(maximal_ip, symbol.getEnd());
-		} else {
-			minimal_data = std::min(minimal_data, symbol.getStart());
-			maximal_data = std::max(maximal_data, symbol.getEnd());
-		}
-	}
-
 	if (cmd[SERIAL_PORT]) {
 		option::Option *opt = cmd[SERIAL_PORT].first();
 		char *endptr;
@@ -223,22 +211,41 @@ bool GenericExperiment::cb_start_experiment() {
 		sol.setLimit(serial_goldenrun.size() + 1);
 	}
 
-	if (cmd[WRITE_MEM_TEXT]) {
-		m_log << "Catch writes to text segment from " << hex << minimal_ip << " to " << maximal_ip << std::endl;
-		enabled_mem_text = true;
 
-		l_mem_text.setWatchAddress(minimal_ip);
+	if (cmd[WRITE_MEM_TEXT]) {
+		enabled_mem_text = true;
+		auto bounds = m_elf->getTextSegmentBounds();
+		m_log << "Catch writes to text segment from "
+			  << hex << bounds.first << " to " << bounds.second << std::endl;
+
+		l_mem_text.setWatchAddress(bounds.first);
+		l_mem_text.setWatchWidth(bounds.second - bounds.first);
 		l_mem_text.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
-		l_mem_text.setWatchWidth(maximal_ip - minimal_ip);
 	}
 
+
 	if (cmd[WRITE_MEM_OUTERSPACE]) {
-		m_log << "Catch writes to outerspace from " << hex << " from " << maximal_data << std::endl;
 		enabled_mem_outerspace = true;
 
-		l_mem_outerspace.setWatchAddress(maximal_data);
+		auto bounds = m_elf->getValidAddressBounds();
+		m_log << "Catch writes to upper outerspace from " << hex << bounds.second << std::endl;
+
+		l_mem_outerspace.setWatchAddress(bounds.second);
+		l_mem_outerspace.setWatchWidth(numeric_limits<guest_address_t>::max() - bounds.second);
 		l_mem_outerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
-		l_mem_outerspace.setWatchWidth(0xfffffff0 - maximal_data);
+	}
+
+	if (cmd[WRITE_MEM_LOWERSPACE]) {
+		enabled_mem_lowerspace = true;
+
+		auto bounds = m_elf->getValidAddressBounds();
+		m_log << "Catch writes to lower outer-space below " << hex << bounds.first << std::endl;
+
+		// FIXME: this might not work if your benchmark uses any devices mapped below the actual ELF
+		// however, this is not the case for RISC-V and consequently, it is ignored here.
+		l_mem_lowerspace.setWatchAddress(numeric_limits<guest_address_t>::min());
+		l_mem_lowerspace.setWatchWidth(bounds.first - numeric_limits<guest_address_t>::min());
+		l_mem_lowerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
 	}
 
 	if (cmd[TRAP]) {
@@ -309,6 +316,10 @@ bool GenericExperiment::cb_before_resume() {
 		std::cout << "enabled mem outerspace " << endl;
 		simulator.addListener(&l_mem_outerspace);
 	}
+	if (enabled_mem_lowerspace) {
+		std::cout << "enabled mem lowerspace "	<< endl;
+		simulator.addListener(&l_mem_lowerspace);
+	}
 
 	if (enabled_timeout)
 		simulator.addListener(&l_timeout);
@@ -321,6 +332,8 @@ bool GenericExperiment::cb_before_resume() {
 	return true; // everything OK
 }
 
+
+
 void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 	GenericExperimentMessage_Result * result = static_cast<GenericExperimentMessage_Result *>(this->get_current_result());
 
@@ -331,18 +344,43 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 		handleEvent(*result, result->TIMEOUT, m_Timeout);
 	}  else if (event == &l_trap) {
 		handleEvent(*result, result->TRAP, l_trap.getTriggerNumber());
-	} else if (event == &l_mem_text) {
+	}
+	////////////////////////////////////////////////////////////////
+	// Memory Access Listeners
+	////////////////////////////////////////////////////////////////
+#define LOG_MEM_LISTENER(l) " @ 0x"									\
+		<< std::hex << (l).getTriggerAddress()							\
+		<< " access type trigger: "										\
+		<< ((l).getTriggerAccessType() == MemAccessEvent::MEM_READ ?"R":"W")
+	// FIXME: Add after memory types are introduced
+	// << " memory type watched: " << l_mem_lowerspace.getWatchMemoryType()
+	// << " memory type trigger: " << l_mem_lowerspace.getMemoryType()
+	// << " data accessed: " << (l).getAccessedData()
+
+	else if (event == &l_mem_text) {
+		m_log << "memory text-write triggered"
+			  << LOG_MEM_LISTENER(l_mem_text)
+			  << std::endl;
 		handleEvent(*result, result->WRITE_TEXTSEGMENT,
 					l_mem_text.getTriggerAddress());
-
 	} else if (event == &l_mem_outerspace){
+		m_log << "memory upper outerspace triggered"
+			  << LOG_MEM_LISTENER(l_mem_outerspace)
+			  << std::endl;
 		handleEvent(*result, result->WRITE_OUTERSPACE,
 					l_mem_outerspace.getTriggerAddress());
-
-		//////////////////////////////////////////////////
-		// End Marker Groups
-		//////////////////////////////////////////////////
-	} else if (OK_marker.find(event) != OK_marker.end()) {
+	} else if (event == &l_mem_lowerspace) {
+		m_log << "memory lower outerspace triggered"
+			  << LOG_MEM_LISTENER(l_mem_lowerspace)
+			<< std::endl;
+		handleEvent(*result, result->WRITE_LOWERSPACE,
+					l_mem_lowerspace.getTriggerAddress());
+	}
+#undef LOG_MEM_LISTENER
+	//////////////////////////////////////////////////
+	// End Marker Groups
+	//////////////////////////////////////////////////
+	else if (OK_marker.find(event) != OK_marker.end()) {
 		const ElfSymbol *symbol = listener_to_symbol[event];
 		handleEvent(*result, result->OK_MARKER, symbol->getAddress());
 

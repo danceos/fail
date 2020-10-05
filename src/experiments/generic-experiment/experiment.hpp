@@ -31,6 +31,9 @@ class GenericExperiment : public fail::DatabaseExperiment {
 	bool enabled_mem_outerspace;
 	fail::MemAccessListener l_mem_outerspace;
 
+	bool enabled_mem_lowerspace;
+	fail::MemAccessListener l_mem_lowerspace;
+
 	bool enabled_trap;
 	fail::TrapListener l_trap;
 
@@ -62,6 +65,7 @@ public:
 						  l_trap(fail::ANY_TRAP), l_timeout(0) {
 		enabled_mem_text = false;
 		enabled_mem_outerspace = false;
+		enabled_mem_lowerspace = false;
 		enabled_trap = false;
 		enabled_timeout = false;
 
