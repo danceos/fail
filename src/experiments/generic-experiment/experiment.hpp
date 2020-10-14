@@ -26,7 +26,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 	std::string serial_goldenrun;
 
 	bool enabled_mem_text;
-	fail::MemAccessListener l_mem_text;
+	fail::MemWriteListener l_mem_text;
 
 	bool enabled_mem_outerspace;
 	fail::MemAccessListener l_mem_outerspace;
