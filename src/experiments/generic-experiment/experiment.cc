@@ -220,7 +220,6 @@ bool GenericExperiment::cb_start_experiment() {
 
 		l_mem_text.setWatchAddress(bounds.first);
 		l_mem_text.setWatchWidth(bounds.second - bounds.first);
-		l_mem_text.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
 	}
 
 
@@ -232,7 +231,6 @@ bool GenericExperiment::cb_start_experiment() {
 
 		l_mem_outerspace.setWatchAddress(bounds.second);
 		l_mem_outerspace.setWatchWidth(numeric_limits<guest_address_t>::max() - bounds.second);
-		l_mem_outerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
 	}
 
 	if (cmd[WRITE_MEM_LOWERSPACE]) {
@@ -245,7 +243,6 @@ bool GenericExperiment::cb_start_experiment() {
 		// however, this is not the case for RISC-V and consequently, it is ignored here.
 		l_mem_lowerspace.setWatchAddress(numeric_limits<guest_address_t>::min());
 		l_mem_lowerspace.setWatchWidth(bounds.first - numeric_limits<guest_address_t>::min());
-		l_mem_lowerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
 	}
 
 	if (cmd[TRAP]) {
