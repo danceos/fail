@@ -4,10 +4,12 @@
 #include <mysql.h>
 #include <map>
 #include <sstream>
+#include <vector>
 #include "util/ProtoStream.hpp"
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/Architecture.hpp"
+#include "sal/FaultSpace.hpp"
 #include "util/Database.hpp"
 #include "util/MemoryMap.hpp"
 #include "comm/TracePlugin.pb.h"
@@ -16,20 +18,34 @@
 class Importer : public fail::AliasedRegisterable {
 public:
 	typedef unsigned instruction_count_t; //!< not big enough for some benchmarks
-	struct margin_info_t { instruction_count_t dyninstr; fail::guest_address_t ip; fail::simtime_t time; };
-	struct access_info_t { char access_type; fail::guest_address_t data_address; int data_width; };
+    enum class access_t {
+        READ, WRITE
+    };
+	struct margin_info_t {
+        instruction_count_t dyninstr;
+        fail::guest_address_t ip;
+        fail::simtime_t time;
+        uint8_t mask;
+        bool synthetic;
+        margin_info_t(instruction_count_t dyninstr, fail::guest_address_t ip, fail::simtime_t time, uint8_t mask, bool synthetic = false):
+            dyninstr(dyninstr), ip(ip), time(time), mask(mask), synthetic(synthetic) { }
+        margin_info_t(const margin_info_t& other, uint8_t mask, bool synthetic = false):
+            dyninstr(other.dyninstr), ip(other.ip), time(other.time), mask(mask), synthetic(other.synthetic) { }
+    };
 
 protected:
 	int m_variant_id;
 	fail::ElfReader *m_elf;
 	fail::MemoryMap *m_mm;
-	char m_faultspace_rightmargin;
+    access_t m_faultspace_rightmargin;
 	bool m_sanitychecks;
 	bool m_import_write_ecs;
 	bool m_extended_trace;
 	fail::Database *db;
 	fail::Architecture m_arch;
+    fail::FaultSpace m_fsp;
 	fail::UniformRegisterSet *m_extended_trace_regs;
+    memory_type_t m_memtype;
 
 	/* How many rows were inserted into the database */
 	unsigned m_row_count;
@@ -41,26 +57,18 @@ protected:
 	   (maps injection data address =>
 	   dyn. instruction count / time information for equivalence class
 	   left margin) */
-	typedef std::map<fail::address_t, margin_info_t> AddrLastaccessMap;
+    using element = fail::util::fsp::element;
+
+	typedef std::map<element, std::vector<margin_info_t>> AddrLastaccessMap;
 	AddrLastaccessMap m_open_ecs;
 
-	margin_info_t getOpenEC(fail::address_t data_address) {
-		margin_info_t ec = m_open_ecs[data_address];
-		// defaulting to 0 is not such a good idea, memory reads at the
-		// beginning of the trace would get an unnaturally high weight:
-		if (ec.time == 0) {
-			ec.time = m_time_trace_start;
-		}
-		return ec;
-	}
-
-	void newOpenEC(fail::address_t data_address, fail::simtime_t time, instruction_count_t dyninstr,
-				   fail::guest_address_t ip) {
-		m_open_ecs[data_address].dyninstr = dyninstr;
-		m_open_ecs[data_address].time     = time;
-		// FIXME: This should be the next IP, not the current, or?
-		m_open_ecs[data_address].ip       = ip;
-	}
+    std::vector<margin_info_t> getLeftMargins(const element& fsp_elem,
+            fail::simtime_t time, instruction_count_t dyninstr,
+            fail::guest_address_t ip, uint8_t mask);
+	void addLeftMargin(const element& fsp_elem,
+                   fail::simtime_t time, instruction_count_t dyninstr,
+				   fail::guest_address_t ip,
+                   uint8_t mask);
 
 
 	fail::guest_address_t m_last_ip;
@@ -88,18 +96,30 @@ protected:
 	 * columns specified by database_insert_columns().
 	 */
 	virtual bool database_insert_data(Trace_Event &ev, std::stringstream& value_sql, unsigned num_columns, bool is_fake) { return true; }
-	/**
-	 * Use this variant if passing through the IP/MEM event does not make any
-	 * sense for your Importer implementation.
-	 */
-	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
-								 access_info_t &event, bool is_fake = false);
-	/**
-	 * Use this variant for passing through the IP/MEM event your Importer
-	 * received.
-	 */
-	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
-								 Trace_Event &event, bool is_fake = false);
+
+
+    /**
+     * To be called from your importer implementation to add fault space elements to the database.
+     * This function should be used over using the legacy add_trace_event functions directly.
+     */
+    virtual bool add_faultspace_elements(fail::simtime_t curtime, instruction_count_t instr,
+                                          std::vector<std::unique_ptr<fail::util::fsp::element>> elements,
+                                          uint8_t mask,
+                                          access_t type,
+                                          Trace_Event& origin
+                                          );
+
+    /**
+     * Add a singular fault space element with the given margins to the database.
+     * This is usually called from add_fault_space_elements, but can optionally be called
+     * directly to avoid automatic margin generation.
+     */
+	virtual bool add_faultspace_event(margin_info_t &begin, margin_info_t &end,
+								 std::unique_ptr<fail::util::fsp::element> elem,
+                                 access_t type,
+                                 Trace_Event& origin,
+                                 bool known_outcome = false
+                                 );
 	virtual void open_unused_ec_intervals();
 	virtual bool close_ec_intervals();
 
@@ -119,9 +139,9 @@ protected:
 	 */
 	bool sanitycheck(std::string check_name, std::string fail_msg, std::string sql);
 public:
-	Importer() : m_variant_id(0), m_elf(NULL), m_mm(NULL), m_faultspace_rightmargin('W'),
+	Importer() : m_variant_id(0), m_elf(NULL), m_mm(NULL), m_faultspace_rightmargin(),
 		m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), db(NULL),
-		m_extended_trace_regs(NULL), m_row_count(0), m_time_trace_start(0),
+		m_extended_trace_regs(NULL), m_memtype(fail::ANY_MEMORY), m_row_count(0), m_time_trace_start(0),
 		m_last_ip(0), m_last_instr(0), m_last_time(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
@@ -138,10 +158,11 @@ public:
 	void set_elf(fail::ElfReader *elf) { m_elf = elf; }
 
 	void set_memorymap(fail::MemoryMap *mm) { m_mm = mm; }
-	void set_faultspace_rightmargin(char accesstype) { m_faultspace_rightmargin = accesstype; }
+	void set_faultspace_rightmargin(access_t accesstype) { m_faultspace_rightmargin = accesstype; }
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
 	void set_import_write_ecs(bool enabled) { m_import_write_ecs = enabled; }
 	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
+    void set_memory_type(memory_type_t type) { m_memtype = type; }
 };
 
 #endif

@@ -63,6 +63,8 @@ public:
 	 * @return a pointer to the retrieved register set (if found), \c NULL otherwise
 	 */
 	UniformRegisterSet* getRegisterSetOfType(RegisterType t) const;
+
+    virtual ~CPUArchitecture() { }
 protected:
 	std::vector<Register*> m_Registers; //!< the total (!) register set
 	/// a set of register subsets (each set has its own type)
@@ -74,6 +76,13 @@ protected:
 	 * @see getType()
 	 */
 	void m_addRegister(Register* reg, RegisterType type = RT_NONE);
+    /**
+     * Adds a new register to multiple sets
+     * @param reg a pointer to the register object to be added
+     * @param types the subset in which the register should be added
+     * @see getType()
+     */
+    void m_addRegister(Register* reg, std::vector<RegisterType> types);
 };
 
 } // end-of-namespace: fail

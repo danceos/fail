@@ -18,6 +18,7 @@ typedef Bit8u*     host_address_t;  //!< the host memory address type
 //! registers are that size or larger also for 32-bit machines)
 typedef Bit64u     register_data_t;
 typedef int        timer_t;         //!< type of timer IDs
+typedef uint8_t    byte_t;          //!< 8 bit type for memory access (read or write)
 
 // 'Publish' 64 bit ability (if enabled in Bochs):
 #if BX_SUPPORT_X86_64

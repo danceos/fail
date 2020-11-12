@@ -82,12 +82,15 @@ bool TracingPlugin::run()
 
 			if (m_os)
 				*m_os << hex << "[Tracing] MEM "
+                      << "(type=" << ev_mem.getMemoryType() << ") "
 					  << ((ev_mem.getTriggerAccessType() &
 						   MemAccessEvent::MEM_READ) ? "R " : "W ")
-					  << addr << " width " << width << " IP " << ip << "\n";
+					  << addr << " width " << dec << width << " IP " << ip
+                     << " data: " << ev_mem.getAccessedData() << "\n";
 			if (m_protoStreamFile) {
 				Trace_Event e;
 				e.set_ip(ip);
+                e.set_memtype(ev_mem.getMemoryType());
 				e.set_memaddr(addr);
 				e.set_width(width);
 				e.set_accesstype(
@@ -106,13 +109,7 @@ bool TracingPlugin::run()
 				   the case of a memory event */
 				if (m_full_trace) {
 					Trace_Event_Extended &ext = *e.mutable_trace_ext();
-					// Read the accessed data
-					if (width > 8) {
-						width = 8;
-					}
-					uint64_t data = 0;
-					mm.getBytes(addr, width, &data);
-					ext.set_data(data);
+					ext.set_data(ev_mem.getAccessedData());
 
 					for (UniformRegisterSet::iterator it = extended_trace_regs->begin();
 						it != extended_trace_regs->end(); ++it) {

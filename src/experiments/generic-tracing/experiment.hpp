@@ -25,6 +25,8 @@ class GenericTracing : public fail::ExperimentFlow {
 	bool restore;
 	bool full_trace;
 
+    bool sanity_check;
+
 	fail::guest_address_t serial_port;
 	std::string serial_file;
 
@@ -36,7 +38,7 @@ public:
 	bool run();
 
 	GenericTracing() : restore(false),
-		full_trace(false), m_log("GenericTracing", false) {}
+		full_trace(false), sanity_check(false), m_log("GenericTracing", false) {}
 };
 
 #endif // __TRACING_TEST_HPP__

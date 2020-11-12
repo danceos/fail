@@ -4,15 +4,6 @@ using namespace fail;
 using namespace llvm;
 using namespace llvm::object;
 
-// In LLVM 3.9, llvm::Triple::getArchTypeName() returns const char*, since LLVM
-// 4.0 it returns StringRef.  This overload catches the latter case.
-__attribute__((unused))
-static std::ostream& operator<<(std::ostream& stream, const llvm::StringRef& s)
-{
-	stream << s.str();
-	return stream;
-}
-
 LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
 	if (ltofail == 0) {
 		switch ( llvm::Triple::ArchType(object->getArch()) ) {
@@ -23,9 +14,13 @@ LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
 		case llvm::Triple::arm:
 			ltofail = new LLVMtoFailGem5(this);
 			break;
+		case llvm::Triple::riscv32:
+        case llvm::Triple::riscv64:
+			ltofail = new LLVMtoFailSailRiscv(this);
+			break;
 		default:
 			std::cerr << "ArchType "
-				<< llvm::Triple::getArchTypeName(llvm::Triple::ArchType(object->getArch()))
+				<< llvm::Triple::getArchTypeName(llvm::Triple::ArchType(object->getArch())).str()
 				<< " not supported\n";
 			exit(1);
 		}
@@ -73,18 +68,24 @@ void LLVMDisassembler::disassemble()
 		// Sort the symbols by address, just in case they didn't come in that way.
 		array_pod_sort(Symbols.begin(), Symbols.end());
 
-		StringRef name;
-		if (error(i->getName(name))) break;
+
+        llvm::Expected<StringRef> maybeName = i->getName();
+        if(auto err = maybeName.takeError()) {
+            std::cerr << "couldn't get section name for section @ " << std::hex << SectionAddr << " -> skipping!" << std::endl;
+            break;
+        }
+        // safe here, potential error is handled.
+        auto& name = *maybeName;
 
 		// If the section has no symbols just insert a dummy one and disassemble
 		// the whole section.
 		if (Symbols.empty())
 			Symbols.push_back(std::make_pair(0, name));
 
-		StringRef BytesStr;
-		if (error(i->getContents(BytesStr))) break;
-		ArrayRef<uint8_t> Bytes(reinterpret_cast<const uint8_t *>(BytesStr.data()),
-			BytesStr.size());
+		Expected<StringRef> BytesStr = i->getContents();
+		if (BytesStr.takeError()) break;
+		ArrayRef<uint8_t> Bytes(reinterpret_cast<const uint8_t *>(BytesStr->data()),
+			BytesStr->size());
 
 		uint64_t Size;
 		uint64_t Index;
@@ -112,7 +113,7 @@ void LLVMDisassembler::disassemble()
 				MCInst Inst;
 
 				if (disas->getInstruction(Inst, Size, Bytes.slice(Index), Index,
-										  nulls(), nulls()) == MCDisassembler::Success) {
+										  nulls()) == MCDisassembler::Success) {
 					const MCInstrDesc &desc = this->instr_info->get(Inst.getOpcode());
 
 					Instr instr;

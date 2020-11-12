@@ -13,13 +13,13 @@ class RegisterImporter : public Importer {
 	std::unique_ptr<fail::LLVMDisassembler> disas;
 	fail::LLVMtoFailTranslator *m_ltof = 0;
 
-	bool addRegisterTrace(fail::simtime_t curtime, instruction_count_t instr,
-						  Trace_Event &ev,
-						  const fail::LLVMtoFailTranslator::reginfo_t &info,
-						  char access_type);
+    bool addRegisterTrace(fail::simtime_t curtime, instruction_count_t instr,
+            Trace_Event &ev,
+            size_t register_id,
+            access_t type);
 
-	fail::CommandLine::option_handle NO_GP, FLAGS, IP, NO_SPLIT;
-	bool do_gp, do_flags, do_ip, do_split_registers;
+	fail::CommandLine::option_handle NO_GP, FLAGS, IP, INJECT_TAG;
+	bool do_gp, do_flags, do_ip, do_inject_tags, do_inject_regs;
 
 	std::set<unsigned> m_register_ids;
 	unsigned m_ip_register_id;
@@ -35,7 +35,8 @@ class RegisterImporter : public Importer {
 
 public:
 	RegisterImporter() : Importer(), do_gp(true), do_flags(false), do_ip(false),
-						 do_split_registers(true), m_ip_register_id(0) {}
+                         do_inject_tags(false), do_inject_regs(false),
+						 m_ip_register_id(0) {}
 	/**
 	 * Callback function that can be used to add command line options
 	 * to the cmd interface

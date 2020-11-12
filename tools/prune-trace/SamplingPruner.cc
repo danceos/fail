@@ -16,7 +16,7 @@ struct WeightedPilot {
 	uint32_t id;
 	uint32_t instr2;
 	uint32_t instr2_absolute;
-	uint32_t data_address;
+	uint64_t data_address;
 	uint32_t weight;
 
 	typedef uint64_t size_type;
@@ -177,7 +177,7 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		<< m_samplesize << " fault-space coordinates ..." << endl;
 
 	ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, "
-		<< "injection_instr_absolute, data_address, data_width, fspmethod_id) VALUES ";
+		<< "injection_instr_absolute, data_address, data_mask, fspmethod_id) VALUES ";
 	std::string insert_sql(ss.str());
 	ss.str("");
 
@@ -191,9 +191,10 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		if (!m_use_known_results && p.weight == 1) {
 			// no need to special-case existing pilots (incremental mode), as
 			// their initial weight is supposed to be at least 1
+            // FIXME: this is untested for data_mask
 			ss << "(0," << variant.id << "," << p.instr2 << "," << p.instr2
 				<< "," << p.instr2_absolute << "," << p.data_address
-				<< ",1," << m_method_id << ")";
+				<< ",255," << m_method_id << ")";
 			db->insert_multiple(insert_sql.c_str(), ss.str().c_str());
 			ss.str("");
 			++num_fsppilot_entries;

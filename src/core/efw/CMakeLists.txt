@@ -8,9 +8,11 @@ set(SRCS
 	DatabaseExperiment.cc
 )
 
-set_source_files_properties(JobClient.cc PROPERTIES COMPILE_FLAGS -std=c++11)
-
 add_library(fail-efw ${SRCS})
+if(BUILD_SAIL)
+    ## require c++ 17 for this library
+    target_compile_features(fail-efw PUBLIC cxx_std_17)
+endif(BUILD_SAIL)
 add_dependencies(fail-efw fail-protoc)
 target_link_libraries(fail-efw fail-comm)
 target_link_libraries(fail-efw fail-util) # WallclockTimer

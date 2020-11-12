@@ -49,9 +49,9 @@ def execute(options, args, bochsrc, statedir):
     print "executing: " + command
     p = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT)
     reconnect = 0
-    while p.poll() is None:
+    while True:
         line = p.stdout.readline()
-        if line is None:
+        if not line:
             break
         if "Connection refused" in line:
             reconnect += 1

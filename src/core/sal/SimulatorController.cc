@@ -5,7 +5,6 @@
 #include "util/CommandLine.hpp"
 
 namespace fail {
-
 // External reference declared in SALInst.hpp
 ConcreteSimulatorController simulator;
 
@@ -83,14 +82,16 @@ void SimulatorController::onBreakpoint(ConcreteCPU* cpu, address_t instrPtr, add
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len,
-	bool is_write, address_t instrPtr)
+void SimulatorController::onMemoryAccess(ConcreteCPU* cpu,
+        address_t addr, memory_type_t type, size_t len,
+        uint64_t data,
+        bool is_write, address_t instrPtr)
 {
 	MemAccessEvent::access_type_t accesstype =
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
 
-	MemAccessEvent tmp(addr, len, instrPtr, accesstype, cpu);
+	MemAccessEvent tmp(addr, type, data, len, instrPtr, accesstype, cpu);
 	ListenerManager::iterator it = m_LstList.begin();
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
@@ -101,6 +102,8 @@ void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_
 			continue; // skip listener activation
 		}
 		ev->setTriggerAddress(addr);
+        ev->setMemoryType(type);
+        ev->setAccessedData(data);
 		ev->setTriggerWidth(len);
 		ev->setTriggerInstructionPointer(instrPtr);
 		ev->setTriggerAccessType(accesstype);

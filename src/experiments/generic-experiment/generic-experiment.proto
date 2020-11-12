@@ -25,8 +25,9 @@ message GenericExperimentMessage {
             TRAP    = 9;
             WRITE_TEXTSEGMENT = 10;
             WRITE_OUTERSPACE  = 11;
+            WRITE_LOWERSPACE  = 12;
 
-            SDC = 12;
+            SDC = 13;
 
             UNKNOWN = 100;
 		}

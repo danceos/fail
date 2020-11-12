@@ -2,6 +2,7 @@
 #include <iostream>
 #include "util/Logger.hpp"
 #include "RandomJumpImporter.hpp"
+#include <stdexcept>
 
 using namespace llvm;
 using namespace llvm::object;
@@ -114,10 +115,8 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 		if (to_addr == ev.ip())
 			continue;
 
-		margin_info_t margin;
-		margin.time = curtime;
-		margin.dyninstr = instr; // !< The current instruction
-		margin.ip = ev.ip();
+        // FIXME: not tested.
+		margin_info_t margin(instr,ev.ip(),curtime,0xFF);
 
 		// we now have an interval-terminating R/W event to the memaddr
 		// we're currently looking at; the EC is defined by
@@ -128,10 +127,14 @@ bool RandomJumpImporter::handle_ip_event(fail::simtime_t curtime, instruction_co
 		ev.set_accesstype(ev.READ); // instruction fetch is always a read
 		ev.set_memaddr(to_addr);
 		ev.set_width(4); // FIXME arbitrary, use Instr.length instead?
+#warning RandomJumpImporter is currently non-functional.
+        throw std::runtime_error("not implemented.");
+#if 0
 		if (!add_trace_event(margin, margin, ev)) {
 			LOG << "add_trace_event failed" << std::endl;
 			return false;
 		}
+#endif
 	}
 
 	return true;

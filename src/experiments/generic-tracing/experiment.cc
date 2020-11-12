@@ -7,6 +7,8 @@
 #include "experiment.hpp"
 #include "util/CommandLine.hpp"
 #include "util/gzstream/gzstream.h"
+#include <limits>
+#include <stdexcept>
 
 // You need to have the tracing plugin enabled for this
 #include "../plugins/tracing/TracingPlugin.hpp"
@@ -70,6 +72,8 @@ void  GenericTracing::parseOptions() {
 		"--serial-port PORT \tI/O port to expect output on (default: 0x3f8, i.e. x86's serial COM1)");
 	CommandLine::option_handle E9_FILE = cmd.addOption("", "e9-file", Arg::Required,
 		"--e9-file FILE \tShorthand for --serial-file FILE --serial-port 0xe9");
+    CommandLine::option_handle SANITY_CHECK = cmd.addOption("", "sanity-check", Arg::None,
+            "--sanity-check \tWhether or not to enable outerspace and text segment checkers which are used in the experiment stage during tracing. If these trip, something is wrong with your architecture implementation.");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -250,6 +254,11 @@ void  GenericTracing::parseOptions() {
 		m_log << "port E9 output is written to: " << serial_file << std::endl;
 	}
 
+    if(cmd[SANITY_CHECK]) {
+        this->sanity_check = true;
+        m_log << "enabled sanity check" << std::endl;
+    }
+
 
 	if (m_elf != NULL) {
 		m_log << "start/save symbol: " << start_symbol << " 0x" << std::hex << start_address << std::endl;
@@ -267,6 +276,63 @@ void  GenericTracing::parseOptions() {
 bool GenericTracing::run()
 {
 	parseOptions();
+
+	fail::MemAccessListener l_mem_text;
+	fail::MemAccessListener l_mem_outerspace;
+    fail::MemAccessListener l_mem_lowerspace;
+
+    if(sanity_check) {
+        using std::numeric_limits;
+
+        address_t minimal_ip = numeric_limits<address_t>::max(); // Every address is lower
+        address_t maximal_ip = numeric_limits<address_t>::min();
+        bool found_executable_segment = false;
+
+        for (auto it = m_elf->seg_begin(); it != m_elf->seg_end(); ++it) {
+            if(it->isExecutable()) {
+               if(found_executable_segment)  {
+                    std::cerr << "warning: found multiple executable segments in ELF, we will only detect writes to the first executable segment!"  << std::endl;
+                    continue;
+               }
+               found_executable_segment = true;
+               minimal_ip = it->getStart();
+               maximal_ip = it->getEnd();
+            }
+        }
+
+        address_t elf_min = m_elf->getMinimumAddress();
+        address_t elf_max = m_elf->getMaximumAddress();
+
+        if(!found_executable_segment) {
+            throw std::runtime_error("ELF file has no executable segment. aborting!\n") ;
+        }
+
+        l_mem_text.setWatchAddress(minimal_ip);
+        l_mem_text.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
+        l_mem_text.setWatchWidth(maximal_ip - minimal_ip);
+
+        l_mem_outerspace.setWatchAddress(elf_max);
+        l_mem_outerspace.setWatchWidth(numeric_limits<address_t>::max() - elf_max);
+        l_mem_outerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
+        // FIXME: we can only watch RAM, since the tag address space is compressed and uses
+        // a different addressing scheme for CHERI-RISC-V.
+        l_mem_lowerspace.setWatchMemoryType(memory_type::ram);
+
+        // FIXME: this might not work if your benchmark uses any devices mapped below the actual ELF
+        // however, this is not the case for RISC-V and consequently, it is ignored here.
+        l_mem_lowerspace.setWatchAddress(numeric_limits<address_t>::min());
+        l_mem_lowerspace.setWatchWidth(elf_min - numeric_limits<address_t>::min());
+        l_mem_lowerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
+        // FIXME: we can only watch RAM, since the tag address space is compressed and uses
+        // a different addressing scheme for CHERI-RISC-V.
+        l_mem_lowerspace.setWatchMemoryType(memory_type::ram);
+
+        m_log << "sanity check: watch .text (" << std::hex << std::showbase
+            << minimal_ip << " -> " << maximal_ip  << ")" << std::endl;
+        m_log << "sanity check: watch .data (> " << elf_max << ")" << std::endl;
+        m_log << "sanity check: watch .data (< " << elf_min << ")" << std::endl << std::dec << std::noshowbase;
+    }
+
 
 	BPSingleListener l_start_symbol(start_address);
 	BPSingleListener l_stop_symbol(stop_address);
@@ -311,10 +377,41 @@ bool GenericTracing::run()
 	}
 
 	////////////////////////////////////////////////////////////////
-	// Step 2: Continue to the stop point
-	simulator.addListener(&l_stop_symbol);
-	simulator.resume();
+	// Step 2: Continue to the stop point (and/or watch for unexpected events)
+    if(sanity_check) {
+        simulator.addListener(&l_mem_text);
+        simulator.addListener(&l_mem_outerspace);
+        simulator.addListener(&l_mem_lowerspace);
+    }
 
+	simulator.addListener(&l_stop_symbol);
+    fail::BaseListener* listener = simulator.resume();
+
+    if(sanity_check && listener == &l_mem_text) {
+        m_log << "sanity check: .text write detected. aborting!" << std::endl
+            << "invalid access at: 0x"  << std::hex << l_mem_text.getTriggerAddress() << std::endl;
+        return false;
+    }
+    if(sanity_check && listener == &l_mem_outerspace) {
+        m_log << "sanity check: write outside above valid elf detected. aborting!" << std::endl
+            << " invalid access at: 0x" << std::hex << l_mem_outerspace.getTriggerAddress()
+            << " memory type watched: " << l_mem_outerspace.getWatchMemoryType()
+            << " memory type trigger: " << l_mem_outerspace.getMemoryType()
+            << " access type trigger: " << (l_mem_outerspace.getTriggerAccessType() == MemAccessEvent::MEM_READ ? "R" : "W")
+            << " data accessed: " << l_mem_outerspace.getAccessedData()
+            << std::endl;
+        return false;
+    }
+    if(sanity_check && listener == &l_mem_lowerspace) {
+        m_log << "sanity check: write outside below valid elf detected. aborting!" << std::endl
+            << " invalid access at: 0x" << std::hex << l_mem_lowerspace.getTriggerAddress()
+            << " memory type watched: " << l_mem_lowerspace.getWatchMemoryType()
+            << " memory type trigger: " << l_mem_lowerspace.getMemoryType()
+            << " access type trigger: " << (l_mem_lowerspace.getTriggerAccessType() == MemAccessEvent::MEM_READ ? "R" : "W")
+            << " data accessed: " << l_mem_lowerspace.getAccessedData()
+            << std::endl;
+        return false;
+    }
 	////////////////////////////////////////////////////////////////
 	// Step 3: tear down the tracing
 

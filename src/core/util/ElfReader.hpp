@@ -9,12 +9,38 @@
 #include "sal/SALConfig.hpp" // for ADDR_INV
 #include "Logger.hpp"
 #include "Demangler.hpp"
+#include <string.h>
+#include <cassert>
 
 namespace fail {
 
 struct ELF {
 	static const std::string NOTFOUND;
 };
+
+class ElfSegment {
+    private:
+        guest_address_t m_paddress;
+        guest_address_t m_vaddress;
+        size_t m_size;
+        unsigned m_flags;
+
+    public:
+        ElfSegment(Elf64_Phdr const * hdr): m_paddress(hdr->p_paddr), m_vaddress(hdr->p_vaddr), m_size(hdr->p_memsz), m_flags(hdr->p_flags) { }
+
+        bool isReadable() const { return m_flags & PF_R; }
+        bool isWriteable() const { return m_flags & PF_W; }
+        bool isExecutable() const { return m_flags & PF_X; }
+        guest_address_t getStart() const { assert(m_paddress == m_vaddress); return m_paddress; }
+        guest_address_t getEnd() const { assert(m_paddress == m_vaddress); return m_paddress + m_size; }
+        guest_address_t getSize() const { assert(m_paddress == m_vaddress); return m_size; }
+        friend std::ostream& operator << (std::ostream&,const ElfSegment&);
+};
+inline std::ostream& operator<< (std::ostream &out, const ElfSegment &s) {
+            return out << std::hex << std::showbase
+                << "Elf Segment @ physical: " << s.m_paddress << " virtual: " << s.m_vaddress << " size: " << s.m_size << " (" << (s.isReadable() ? "R": " ") << (s.isWriteable() ? "W" : " ") << (s.isExecutable() ? "X" : " ") << ")"
+                << std::dec << std::noshowbase;
+        }
 
 class ElfSymbol {
 	std::string name;
@@ -80,6 +106,9 @@ public:
 	typedef std::vector<entry_t> container_t;
 	typedef container_t::const_iterator symbol_iterator;
 	typedef container_t::const_iterator section_iterator;
+    typedef ElfSegment seg_entry_t;
+    typedef std::vector<seg_entry_t> seg_container_t;
+    typedef seg_container_t::const_iterator segment_iterator;
 
 
 	/**
@@ -107,8 +136,15 @@ public:
 
 	/**
 	 * Print the list of all available sections.
+     * FIXME: This prints sections _AND_ segments by default, it should be fixed once
+     *        all usages have been evaluated.
 	 */
 	void printSections();
+
+    /**
+     * Print List of all available segments
+     */
+    void printSegments();
 
 	/**
 	 * Get symbol by address
@@ -152,6 +188,22 @@ public:
 	container_t::const_iterator sec_begin() { return m_sectiontable.begin(); }
 	container_t::const_iterator sec_end() { return m_sectiontable.end(); }
 
+
+
+    /**
+     * Get segment iterator. Dereferences to an ElfSymbol
+     * @return iterator
+     */
+    seg_container_t::const_iterator seg_begin() { return m_segmenttable.begin(); }
+    seg_container_t::const_iterator seg_end() { return m_segmenttable.end(); }
+
+    /**
+     * Return minimal and maximal valid address in ELF, this uses the ELF segment headers
+     * and assumes that there are no holes in the ELFs memory layout.
+     */
+    guest_address_t getMinimumAddress();
+    guest_address_t getMaximumAddress();
+
 	const std::string & getFilename() { return m_filename; }
 
 private:
@@ -162,17 +214,22 @@ private:
 	void setup(const char*);
 	bool process_symboltable(FILE *fp, Elf64_Ehdr const *ehdr, int sect_num);
 	int process_section(Elf64_Shdr *sect_hdr, char *sect_name_buff);
+    void process_segment(Elf64_Phdr *seg_hdr);
 
 	// Returns true if it finds a valid ELF header.  Stores ELFCLASS32 or 64 in m_elfclass.
 	bool read_ELF_file_header(FILE *fp, Elf64_Ehdr *ehdr);
 	// Returns true if it finds a valid ELF section header.
 	bool read_ELF_section_header(FILE *fp, Elf64_Ehdr const *filehdr, int sect_num, Elf64_Shdr *sect_hdr);
+    // Return true if it finds a valid ELF program header
+    bool read_ELF_segment_header(FILE* fp, Elf64_Ehdr const *filehdr, unsigned seg_num, Elf64_Phdr* seg_hdr);
 
 	container_t m_symboltable;
 	container_t m_sectiontable;
+    seg_container_t m_segmenttable;
 
 	guest_address_t getAddress(const std::string& name);
 	std::string getName(guest_address_t address);
+
 };
 
 } // end-of-namespace fail

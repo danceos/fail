@@ -44,6 +44,14 @@ namespace fail {
 typedef PandaController ConcreteSimulatorController; //!< concrete simulator (type)
 }
 
+#elif defined BUILD_SAIL
+
+#include "sail/simulator.hpp"
+
+namespace fail {
+typedef SailSimulator ConcreteSimulatorController; //!< concrete simulator (type)
+}
+
 
 #else
 #error SAL Instance not defined

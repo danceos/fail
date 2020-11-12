@@ -17,6 +17,8 @@
 #include "sal/bochs/BochsListener.hpp"
 #include <string>
 #include <vector>
+#include <stdexcept>
+#include <limits>
 
 #include "campaign.hpp"
 #include "generic-experiment.pb.h"
@@ -117,6 +119,10 @@ bool GenericExperiment::cb_start_experiment() {
 		= cmd.addOption("", "catch-write-outerspace", Arg::None,
 		"--catch-write-outerspace \tCatch writes to the outerspace");
 
+    CommandLine::option_handle WRITE_MEM_LOWERSPACE
+		= cmd.addOption("", "catch-write-lowerspace", Arg::None,
+		"--catch-write-lowerspace \tCatch writes to the lowerspace");
+
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
 		"--timeout TIME \tExperiment timeout in uS");
 
@@ -166,23 +172,31 @@ bool GenericExperiment::cb_start_experiment() {
 		exit(1);
 	}
 
-	address_t minimal_ip = INT_MAX; // Every address is lower
-	address_t maximal_ip = 0;
-	address_t minimal_data = 0x100000; // 1 Mbyte
-	address_t maximal_data = 0;
+    using std::numeric_limits;
 
-	for (ElfReader::section_iterator it = m_elf->sec_begin();
-		 it != m_elf->sec_end(); ++it) {
-		const ElfSymbol &symbol = *it;
-		std::string prefix(".text");
-		if (symbol.getName().compare(0, prefix.size(), prefix) == 0) {
-			minimal_ip = std::min(minimal_ip, symbol.getStart());
-			maximal_ip = std::max(maximal_ip, symbol.getEnd());
-		} else {
-			minimal_data = std::min(minimal_data, symbol.getStart());
-			maximal_data = std::max(maximal_data, symbol.getEnd());
-		}
-	}
+    address_t minimal_ip = numeric_limits<address_t>::max(); // Every address is lower
+    address_t maximal_ip = numeric_limits<address_t>::min();
+    bool found_executable_segment = false;
+
+    for (auto it = m_elf->seg_begin(); it != m_elf->seg_end(); ++it) {
+        if(it->isExecutable()) {
+            if(found_executable_segment)  {
+                std::cerr << "warning: found multiple executable segments in ELF, we will only detect writes to the first executable segment!"  << std::endl;
+                continue;
+            }
+            found_executable_segment = true;
+            minimal_ip = it->getStart();
+            maximal_ip = it->getEnd();
+        }
+    }
+
+    address_t elf_min = m_elf->getMinimumAddress();
+    address_t elf_max = m_elf->getMaximumAddress();
+
+    if(!found_executable_segment) {
+        throw std::runtime_error("ELF file has no executable segment. aborting!\n") ;
+    }
+
 
 	if (cmd[SERIAL_PORT]) {
 		option::Option *opt = cmd[SERIAL_PORT].first();
@@ -228,18 +242,32 @@ bool GenericExperiment::cb_start_experiment() {
 		enabled_mem_text = true;
 
 		l_mem_text.setWatchAddress(minimal_ip);
-		l_mem_text.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
 		l_mem_text.setWatchWidth(maximal_ip - minimal_ip);
+        l_mem_text.setWatchMemoryType(memory_type::ram);
 	}
 
 	if (cmd[WRITE_MEM_OUTERSPACE]) {
-		m_log << "Catch writes to outerspace from " << hex << " from " << maximal_data << std::endl;
+		m_log << "Catch writes to outerspace from " << hex << elf_max << std::endl;
 		enabled_mem_outerspace = true;
 
-		l_mem_outerspace.setWatchAddress(maximal_data);
-		l_mem_outerspace.setTriggerAccessType(MemAccessEvent::MEM_WRITE);
-		l_mem_outerspace.setWatchWidth(0xfffffff0 - maximal_data);
+        l_mem_outerspace.setWatchAddress(elf_max);
+        l_mem_outerspace.setWatchWidth(numeric_limits<address_t>::max() - elf_max);
+        // FIXME: we can only watch RAM, since the tag address space is compressed and uses
+        // a different addressing scheme for CHERI-RISC-V.
+        l_mem_lowerspace.setWatchMemoryType(memory_type::ram);
 	}
+
+    if (cmd[WRITE_MEM_LOWERSPACE]) {
+        enabled_mem_lowerspace = true;
+		m_log << "Catch writes to lowerspace below " << hex << elf_min << std::endl;
+        // FIXME: this might not work if your benchmark uses any devices mapped below the actual ELF
+        // however, this is not the case for RISC-V and consequently, it is ignored here.
+        l_mem_lowerspace.setWatchAddress(numeric_limits<address_t>::min());
+        l_mem_lowerspace.setWatchWidth(elf_min - numeric_limits<address_t>::min());
+        // FIXME: we can only watch RAM, since the tag address space is compressed and uses
+        // a different addressing scheme for CHERI-RISC-V.
+        l_mem_lowerspace.setWatchMemoryType(memory_type::ram);
+    }
 
 	if (cmd[TRAP]) {
 		m_log << "Catch all traps" << endl;
@@ -250,7 +278,16 @@ bool GenericExperiment::cb_start_experiment() {
 		std::string value(cmd[STATE_DIR].first()->arg);
 		m_state_dir = value;
 		m_log << "Set state dir to " << value << endl;
-	}
+	} else {
+		char *state_dir = getenv("FAIL_STATE_DIR");
+		if (state_dir == NULL) {
+            m_log << "ERROR: no FAIL_STATE_DIR set or --state-dir given. exiting!" << std::endl;
+            exit(1);
+		} else {
+            m_state_dir = std::string(state_dir);
+            m_log << "Set state dir to " << m_state_dir << endl;
+		}
+    }
 
 	if (cmd[TIMEOUT]) {
 		std::string value(cmd[TIMEOUT].first()->arg);
@@ -300,6 +337,10 @@ bool GenericExperiment::cb_before_resume() {
 		std::cout << "enabled mem outerspace " << endl;
 		simulator.addListener(&l_mem_outerspace);
 	}
+    if (enabled_mem_lowerspace) {
+        std::cout << "enabled mem lowerspace "  << endl;
+        simulator.addListener(&l_mem_lowerspace);
+    }
 
 	if (enabled_timeout)
 		simulator.addListener(&l_timeout);
@@ -327,9 +368,25 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 					l_mem_text.getTriggerAddress());
 
 	} else if (event == &l_mem_outerspace){
+        std::cout << "memory outer-space triggered"
+            << " @ 0x" << std::hex << l_mem_outerspace.getTriggerAddress()
+            << " memory type watched: " << l_mem_outerspace.getWatchMemoryType()
+            << " memory type trigger: " << l_mem_outerspace.getMemoryType()
+            << " access type trigger: " << (l_mem_outerspace.getTriggerAccessType() == MemAccessEvent::MEM_READ ? "R" : "W")
+            << " data accessed: " << l_mem_outerspace.getAccessedData()
+            << std::endl;
 		handleEvent(*result, result->WRITE_OUTERSPACE,
 					l_mem_outerspace.getTriggerAddress());
-
+    } else if (event == &l_mem_lowerspace) {
+        std::cout << "memory lower-space triggered" 
+            << " @ 0x" << std::hex << l_mem_lowerspace.getTriggerAddress()
+            << " memory type watched: " << l_mem_lowerspace.getWatchMemoryType()
+            << " memory type trigger: " << l_mem_lowerspace.getMemoryType()
+            << " access type trigger: " << (l_mem_lowerspace.getTriggerAccessType() == MemAccessEvent::MEM_READ ? "R" : "W")
+            << " data accessed: " << l_mem_lowerspace.getAccessedData()
+            << std::endl;
+        handleEvent(*result, result->WRITE_LOWERSPACE,
+                    l_mem_lowerspace.getTriggerAddress());
 		//////////////////////////////////////////////////
 		// End Marker Groups
 		//////////////////////////////////////////////////

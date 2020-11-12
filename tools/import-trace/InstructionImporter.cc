@@ -47,44 +47,13 @@ bool InstructionImporter::handle_ip_event(fail::simtime_t curtime, instruction_c
 	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
 
-	address_t from = ev.ip(), to = ev.ip() + opcode.length;
+	address_t from = ev.ip(), to = ev.ip() + std::ceil(opcode.length/8.0);
+    assert(std::ceil(opcode.length/8.0) == std::floor(opcode.length/8.0) && "Instruction importer can't handle instruction length which don't have byte aligned length");
 
-	// Iterate over all accessed bytes
-	for (address_t data_address = from; data_address < to; ++data_address) {
-		// skip events outside a possibly supplied memory map
-		if (m_mm && !m_mm->isMatching(data_address)) {
-			continue;
-		}
-		margin_info_t left_margin = getOpenEC(data_address);
-		margin_info_t right_margin;
-		right_margin.time = curtime;
-		right_margin.dyninstr = instr; // !< The current instruction
-		right_margin.ip = ev.ip();
-
-		// skip zero-sized intervals: these can occur when an instruction
-		// accesses a memory location more than once (e.g., INC, CMPXCHG)
-		if (left_margin.dyninstr > right_margin.dyninstr) {
-			continue;
-		}
-
-		// we now have an interval-terminating R/W event to the memaddr
-		// we're currently looking at; the EC is defined by
-		// data_address, dynamic instruction start/end, the absolute PC at
-		// the end, and time start/end
-
-		// pass through potentially available extended trace information
-		ev.set_accesstype(ev.READ); // instruction fetch is always a read
-		ev.set_memaddr(data_address);
-		ev.set_width(1); // exactly one byte
-		if (!add_trace_event(left_margin, right_margin, ev)) {
-			LOG << "add_trace_event failed" << std::endl;
-			return false;
-		}
-
-		// next interval must start at next instruction; the aforementioned
-		// skipping mechanism wouldn't work otherwise
-		newOpenEC(data_address, curtime + 1, instr + 1, ev.ip());
-	}
-
-	return true;
+    auto filter = [this] (address_t a) -> bool { return !(this->m_mm && !this->m_mm->isMatching(a)); };
+    auto area = dynamic_cast<memory_area*>(m_fsp.get_area("memory0").get());
+    assert(area != nullptr && "InstructionImporter failed to get a MemoryArea from the fault space description");
+    access_t acc = ev.accesstype() == ev.READ ? access_t::READ : access_t::WRITE;
+    auto elems = area->encode<address_t>(from, to, filter);
+    return add_faultspace_elements(curtime, instr, std::move(elems), 0xFF, acc, ev);
 }

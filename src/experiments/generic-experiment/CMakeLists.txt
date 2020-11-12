@@ -33,5 +33,9 @@ target_link_libraries(fail-${EXPERIMENT_NAME} ${PROTOBUF_LIBRARY} fail-sal fail-
 
 ## This is the example's campaign server distributing experiment parameters
 add_executable(${EXPERIMENT_NAME}-server main.cc)
+if(BUILD_SAIL)
+target_link_libraries(${EXPERIMENT_NAME}-server -Wl,--start-group fail-${EXPERIMENT_NAME} fail-sal libsail-emu libsail-softfloat fail-util fail-cpn fail-comm ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} ${MYSQL_LIBRARIES} -Wl,--end-group)
+else()
 target_link_libraries(${EXPERIMENT_NAME}-server -Wl,--start-group fail-${EXPERIMENT_NAME} fail-sal fail-util fail-cpn fail-comm ${PROTOBUF_LIBRARY} ${Boost_THREAD_LIBRARY} ${MYSQL_LIBRARIES} -Wl,--end-group)
+endif()
 install(TARGETS ${EXPERIMENT_NAME}-server RUNTIME DESTINATION bin)

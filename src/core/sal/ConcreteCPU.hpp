@@ -21,6 +21,8 @@
 #elif defined BUILD_PANDA
 	#include "panda/PandaConfig.hpp"
 	#include "panda/PandaArmCPU.hpp"
+#elif defined BUILD_SAIL
+#include "sail/arch_config.hpp"
 #else
 	#error SAL Config Target not defined
 #endif

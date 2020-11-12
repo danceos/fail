@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "Demangler.hpp"
+#include <limits.h>
 
 namespace fail {
 
@@ -63,6 +64,16 @@ void ElfReader::setup(const char* path) {
 		<< (m_elfclass == ELFCLASS32 ? "32-bit" : "64-bit")
 		<< " ELF file: " << path << std::endl;
 
+    // Parse ELF segments
+    Elf64_Phdr seg_hdr;
+    for(unsigned i = 0; i < ehdr.e_phnum; ++i) {
+        if(!read_ELF_segment_header(fp, &ehdr, i, &seg_hdr)) {
+            m_log << "Invalid segment header at index " << i << std::endl;
+            continue;
+        }
+        process_segment(&seg_hdr);
+    }
+
 	// Parse symbol table and generate internal map
 	for (int i = 0; i < num_hdrs; ++i) {
 		if (!read_ELF_section_header(fp, &ehdr, i, &sec_hdr)) {
@@ -112,6 +123,10 @@ int ElfReader::process_section(Elf64_Shdr *sect_hdr, char *sect_name_buff) {
 	m_sectiontable.push_back( ElfSymbol(sect_name_buff+idx, sect_hdr->sh_addr, sect_hdr->sh_size, ElfSymbol::SECTION)  );
 
 	return 0;
+}
+
+void ElfReader::process_segment(Elf64_Phdr *seg_hdr) {
+    m_segmenttable.emplace_back(seg_hdr);
 }
 
 static void Elf32to64_Sym(Elf32_Sym const *src, Elf64_Sym *dest)
@@ -279,6 +294,41 @@ bool ElfReader::read_ELF_section_header(FILE *fp, Elf64_Ehdr const *filehdr, int
 	return true;
 }
 
+static void Elf32to64_Phdr(Elf32_Phdr const *src, Elf64_Phdr *dest) {
+    dest->p_type = src->p_type;
+    dest->p_offset = src->p_offset;
+    dest->p_vaddr = src->p_vaddr;
+    dest->p_paddr = src->p_paddr;
+    dest->p_filesz = src->p_filesz;
+    dest->p_memsz = src->p_memsz;
+    dest->p_flags = src->p_flags;
+    dest->p_align = src->p_align;
+}
+
+bool ElfReader::read_ELF_segment_header(FILE* fp, Elf64_Ehdr const * filehdr, unsigned segment, Elf64_Phdr * seg_hdr) {
+    if(filehdr->e_phnum < segment) return false;
+    off_t phdr_offset = filehdr->e_phoff;
+    phdr_offset += filehdr->e_phentsize*segment;
+    fseek(fp, phdr_offset, SEEK_SET);
+    if(m_elfclass == ELFCLASS32) {
+        Elf32_Phdr seg_hdr32;
+        if(!fread(&seg_hdr32, sizeof(seg_hdr32), 1, fp)){
+            return false;
+        }
+        Elf32to64_Phdr(&seg_hdr32,seg_hdr);
+    } else {
+        if(!fread(seg_hdr, sizeof(*seg_hdr), 1, fp)) {
+            return false;
+        }
+    }
+    // FIXME: this does not handle the PT_PHDR segment type where the program header is actually located somewhere
+    //        else.
+    if(seg_hdr->p_type != PT_LOAD) {
+        return false;
+    }
+    return true;
+}
+
 const ElfSymbol& ElfReader::getSymbol(guest_address_t address) {
 	for (container_t::const_iterator it = m_symboltable.begin(); it !=m_symboltable.end(); ++it) {
 		if (it->contains(address)) {
@@ -353,6 +403,32 @@ void ElfReader::printSections() {
 	for (container_t::const_iterator it = m_sectiontable.begin(); it !=m_sectiontable.end(); ++it) {
 		m_log  << "0x"  << it->getAddress() << "\t" << it->getName().c_str() << "\t" << it->getSize() << std::endl;
 	}
+}
+
+void ElfReader::printSegments() {
+    for(auto it = m_segmenttable.begin(); it != m_segmenttable.end(); ++it) {
+        m_log << *it << std::endl;
+    }
+}
+
+guest_address_t ElfReader::getMinimumAddress() {
+    using std::numeric_limits;
+    guest_address_t min = numeric_limits<guest_address_t>::max();
+    for(const auto& seg: m_segmenttable) {
+        min = std::min(min, seg.getStart());
+    }
+    assert(min != numeric_limits<guest_address_t>::max() && "invalid minimum ELF address, either the segment header are invalid or the ELF will take no space in memory.");
+    return min;
+}
+
+guest_address_t ElfReader::getMaximumAddress() {
+    using std::numeric_limits;
+    guest_address_t max = numeric_limits<guest_address_t>::min();
+    for(const auto& seg: m_segmenttable) {
+        max = std::max(max, seg.getEnd());
+    }
+    assert(max != numeric_limits<guest_address_t>::min() && "invalid maximum ELF address, either the segment header are invalid or the ELF will take no space in memory.");
+    return max;
 }
 
 } // end-of-namespace fail

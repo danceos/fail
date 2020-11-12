@@ -60,15 +60,6 @@ public:
 	virtual bool run_variant(fail::Database::Variant);
 
 	/**
-	 * How many results have to are expected from each fsppilot. If
-	 * there are less result rows, the pilot will be again sent to the clients
-	 * @return \c exptected number of results
-	 */
-	virtual int expected_number_of_results(std::string variant, std::string benchmark) {
-		return (m_inject_bursts ? 1 : 8);
-	}
-
-	/**
 	 * Callback function that can be used to add command line options
 	 * to the campaign
 	 */

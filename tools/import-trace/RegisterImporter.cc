@@ -1,7 +1,9 @@
 #include <sstream>
 #include <iostream>
+#include <map>
 #include "RegisterImporter.hpp"
 #include "util/Logger.hpp"
+#include "sal/sail/registers.hpp"
 
 using namespace llvm;
 using namespace llvm::object;
@@ -23,8 +25,6 @@ bool RegisterImporter::cb_commandline_init() {
 		"--flags \tRegisterImporter: inject flags register");
 	IP    = cmd.addOption("", "ip", Arg::None,
 		"--ip \tRegisterImporter: inject instruction pointer");
-	NO_SPLIT = cmd.addOption("", "do-not-split", Arg::None,
-		 "--do-not-split \tRegisterImporter: Do not split the registers into one byte chunks");
 
 	return true;
 }
@@ -32,63 +32,41 @@ bool RegisterImporter::cb_commandline_init() {
 
 bool RegisterImporter::addRegisterTrace(simtime_t curtime, instruction_count_t instr,
 										Trace_Event &ev,
-										const LLVMtoFailTranslator::reginfo_t &info,
-										char access_type) {
-	address_t from, to;
-	int chunk_width;
-	if (do_split_registers) {
-		/* If we want to split the registers into one byte chunks (to
-		   enable proper pruning, we use a one byte window register,
-		   to determine beginning and end address */
-		LLVMtoFailTranslator::reginfo_t one_byte_window = info;
-		one_byte_window.width = 8;
-		from = one_byte_window.toDataAddress();
-		to   = one_byte_window.toDataAddress() + info.width / 8;
-		chunk_width = 1; // One byte chunks
-	} else {
-		/* We trace whole registers */
-		from = info.toDataAddress();
-		to = from + 1; /* exactly one trace event per register access*/
-		chunk_width = (info.width / 8);
-	}
+                                        size_t register_id,
+										Importer::access_t type) {
+    if(m_mm && m_mm->isMatching(ev.ip())) return true;
 
-	// Iterate over all accessed bytes
-	for (address_t data_address = from; data_address < to; ++data_address) {
-		// skip events outside a possibly supplied memory map
-		if (m_mm && !m_mm->isMatching(ev.ip())) {
-			continue;
-		}
-		margin_info_t left_margin = getOpenEC(data_address);
-		margin_info_t right_margin;
-		right_margin.time = curtime;
-		right_margin.dyninstr = instr; // !< The current instruction
-		right_margin.ip = ev.ip();
+    auto area = dynamic_cast<register_area*>(m_fsp.get_area("register").get());
+    assert(area != nullptr && "RegisterImporter failed to get a RegisterArea from the fault space description");
 
-		// skip zero-sized intervals: these can occur when an instruction
-		// accesses a memory location more than once (e.g., INC, CMPXCHG)
-		if (left_margin.dyninstr > right_margin.dyninstr) {
-			continue;
-		}
+    std::map<uint8_t, std::vector<std::unique_ptr<util::fsp::element>>> mask_to_elems;
+    if(do_inject_regs) {
+        mask_to_elems = area->encode(register_id);
+    }
+#ifndef __acweaving
+    if(do_inject_tags) {
+        // FIXME: this is highly specific to the Sail architecture
+        // where typeof(get_arch()) == typeof(get_state())
+#ifdef BUILD_RISCV_CHERI
+        auto cpu = dynamic_cast<ConcreteCPU&>(m_arch);
+        auto tag_register = cpu.get_tag_reg();
+        size_t index = tag_register.get_index(register_id);
+        unsigned byte = index / 8;
+        unsigned mask = (1u << (index - byte*8));
+        mask_to_elems[mask].push_back(area->encode(tag_register.getId(),byte));
 
-		// we now have an interval-terminating R/W event to the memaddr
-		// we're currently looking at; the EC is defined by
-		// data_address, dynamic instruction start/end, the absolute PC at
-		// the end, and time start/end
-
-		// pass through potentially available extended trace information
-		ev.set_width(chunk_width);
-		ev.set_memaddr(data_address);
-		ev.set_accesstype(access_type == 'R' ? ev.READ : ev.WRITE);
-		if (!add_trace_event(left_margin, right_margin, ev)) {
-			LOG << "add_trace_event failed" << std::endl;
-			return false;
-		}
-
-		// next interval must start at next instruction; the aforementioned
-		// skipping mechanism wouldn't work otherwise
-		newOpenEC(data_address, curtime + 1, instr + 1, ev.ip());
-	}
-	return true;
+        LOG << "injecting tag bit @ idx " << index
+            <<" in tag register (name=" << tag_register.getName() << ",id=" << tag_register.getId() << ")"
+            << " (byte="<< byte << ",mask="<< mask << ")"
+            << std::endl;
+#endif
+    }
+#endif
+    for(auto& p: mask_to_elems) {
+        bool succ = add_faultspace_elements(curtime, instr, std::move(p.second), p.first, type, ev);
+        if(!succ) return false;
+    }
+    return true;
 }
 
 
@@ -105,7 +83,8 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		do_gp = !cmd[NO_GP];
 		do_flags = cmd[FLAGS];
 		do_ip = cmd[IP];
-		do_split_registers = !cmd[NO_SPLIT];
+        do_inject_tags = (m_memtype == fail::memory_type::tag) || (m_memtype == fail::ANY_MEMORY);
+        do_inject_regs = (m_memtype == fail::memory_type::ram) || (m_memtype == fail::ANY_MEMORY);
 
 		// retrieve register IDs for general-purpose and flags register(s) for
 		// the configured architecture
@@ -156,16 +135,15 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 #endif
 		disas->disassemble();
 		LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
-		LOG << "instructions disassembled: " << instr_map.size() << " Triple: " << disas->GetTriple() <<  std::endl;
+		LOG << "instructions disassembled: " << std::dec << instr_map.size() << " Triple: " << disas->GetTriple() <<  std::endl;
 
 		m_ltof = disas->getTranslator() ;
 	}
 
 	// instruction pointer is read + written at each instruction
-	const LLVMtoFailTranslator::reginfo_t info_pc(m_ip_register_id);
 	if (do_ip &&
-		(!addRegisterTrace(curtime, instr, ev, info_pc, 'R') ||
-		 !addRegisterTrace(curtime, instr, ev, info_pc, 'W'))) {
+		(!addRegisterTrace(curtime, instr, ev, m_ip_register_id, access_t::READ) ||
+		 !addRegisterTrace(curtime, instr, ev, m_ip_register_id, access_t::WRITE))) {
 		return false;
 	}
 
@@ -176,7 +154,9 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		return true;
 	}
 	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
-	//const MCRegisterInfo &reg_info = disas->getRegisterInfo();
+    //const MCRegisterInfo &reg_info = disas->getRegisterInfo();
+		LOG << "working on instruction @ IP " << std::hex << ev.ip()
+		 << std::endl;
 
 	for (std::vector<LLVMDisassembler::register_t>::const_iterator it = opcode.reg_uses.begin();
 		 it != opcode.reg_uses.end(); ++it) {
@@ -192,8 +172,12 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 		if (m_register_ids.find(info.id) == m_register_ids.end()) {
 			continue;
 		}
+        LOG << std::hex << std::showbase
+            << "[IP=" << ev.ip() << "] "
+            << "use: " << disas->getRegisterInfo().getName(*it)
+            << std::dec << std::noshowbase << std::endl;
 
-		if (!addRegisterTrace(curtime, instr, ev, info, 'R')) {
+		if (!addRegisterTrace(curtime, instr, ev, info.id, access_t::READ)) {
 			return false;
 		}
 	}
@@ -213,7 +197,12 @@ bool RegisterImporter::handle_ip_event(fail::simtime_t curtime, instruction_coun
 			continue;
 		}
 
-		if (!addRegisterTrace(curtime, instr, ev, info, 'W'))
+        LOG << std::hex << std::showbase
+            << "[IP=" << ev.ip() << "] "
+            << "def: " << disas->getRegisterInfo().getName(*it)
+            << std::dec << std::noshowbase << std::endl;
+
+		if (!addRegisterTrace(curtime, instr, ev, info.id, access_t::WRITE))
 			return false;
 	}
 

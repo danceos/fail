@@ -17,6 +17,8 @@ ResultSet& PerfVectorWatchpoints::gather(MemAccessEvent* pData)
 			// Update trigger data:
 			pmal->setTriggerInstructionPointer(pData->getTriggerInstructionPointer());
 			pmal->setTriggerAddress(pData->getTriggerAddress());
+            pmal->setMemoryType(pData->getMemoryType());
+            pmal->setAccessedData(pData->getAccessedData());
 			pmal->setTriggerWidth(pData->getTriggerWidth());
 			pmal->setTriggerAccessType(pData->getTriggerAccessType());
 			pmal->setTriggerCPU(pData->getTriggerCPU());

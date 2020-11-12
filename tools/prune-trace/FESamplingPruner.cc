@@ -18,7 +18,7 @@ struct Pilot {
 	uint32_t instr2_absolute;
 	uint32_t id;
 	};
-	uint32_t data_address;
+	uint64_t data_address;
 
 	typedef uint64_t size_type;
 	size_type size() const { return duration; }
@@ -164,7 +164,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			Pilot p = pop.remove(pos);
 			ss << "(0," << variant.id << "," << p.instr2 << "," << p.instr2
 				<< "," << p.instr2_absolute << "," << p.data_address
-				<< ",1," << m_method_id << ")";
+				<< ",8," << m_method_id << ")";
 			db->insert_multiple(insert_sql.c_str(), ss.str().c_str());
 			ss.str("");
 		}

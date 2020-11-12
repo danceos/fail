@@ -17,6 +17,8 @@ endif()
 
 ENABLE_TESTING()
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #### Put all resulting library files in <your_build_dir>/lib ####
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
@@ -43,13 +45,18 @@ include(doxygen)
 
 #### Backend selection ####
 OPTION( BUILD_BOCHS  "Build Bochs Variant?" ON)
+OPTION( BUILD_SAIL   "Build Sail Variant" OFF)
 OPTION( BUILD_GEM5   "Build gem5 Variant?" OFF)
 OPTION( BUILD_QEMU   "Build QEMU Variant?" OFF)
 OPTION( BUILD_T32    "Build Lauterbach Trace32 Variant?" OFF)
 OPTION( BUILD_PANDA  "Build Pandaboard ES + Flyswatter2 Variant?" OFF)
 
-OPTION( BUILD_X86  "Build for x86 guests?" ON)
-OPTION( BUILD_ARM  "Build for ARM guests?" OFF)
+OPTION( BUILD_X86   "Build for x86 guests?" ON)
+OPTION( BUILD_ARM   "Build for ARM guests?" OFF)
+OPTION( BUILD_RISCV_CHERI "Build for CHERI enabled RISC-V guests?" OFF)
+OPTION( BUILD_RISCV "Build for RISC-V guests?" OFF)
+
+OPTION( BUILD_64BIT "Build RISCV or CHERI RISC-V with 64-bit support" OFF)
 
 # FIXME: only add simulators/ to include_directories, and include, e.g.,
 # bochs/bochs.h in FAIL*. -> avoids naming conflicts (e.g., /usr/include/elf.h
@@ -69,6 +76,8 @@ elseif(BUILD_T32)
   add_subdirectory(scripts/t32cmm)
 elseif(BUILD_PANDA)
   include_directories(debuggers/openocd/src debuggers/openocd/jimtcl src/core)
+elseif(BUILD_SAIL)
+    include_directories(simulators/sail/riscv/c_emulator)
 endif(BUILD_BOCHS)
 
 ## Tell the linker where to find the FAIL* libraries
@@ -84,10 +93,11 @@ add_subdirectory(tools)
 add_subdirectory(src)
 
 
-#### Backend-related build system stuff
+#### Backend-related build system stuff [cmake/{name}.cmake]
 include(bochs)
 include(gem5)
 include(qemu)
 include(t32)
 include(panda)
+include(sail)
 

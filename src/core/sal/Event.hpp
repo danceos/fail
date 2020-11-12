@@ -93,7 +93,12 @@ public:
 private:
 	//! Specific physical guest system *memory* address that actually triggered the event.
 	address_t m_TriggerAddr;
-	//! Width of the memory access (# bytes).
+    //! Specific memory type in which this access occured.
+    memory_type_t m_MemType;
+    //! The data that was accessed in this event.
+    uint64_t m_Data;
+
+	//! Width of the memory access (# bits).
 	size_t m_TriggerWidth;
 	//! Address of the \b instruction that caused the memory access.
 	address_t m_TriggerIP;
@@ -106,7 +111,7 @@ public:
 	 * \c setTriggerInstructionPointer(ANY_ADDR) and setTriggerCPU(NULL).
 	 */
 	MemAccessEvent()
-		: m_TriggerAddr(ANY_ADDR), m_TriggerWidth(0),
+		: m_TriggerAddr(ANY_ADDR), m_MemType(ANY_MEMORY), m_Data(), m_TriggerWidth(0),
 		  m_TriggerIP(ANY_ADDR), m_AccessType(MEM_UNKNOWN) { }
 	/**
 	 * Creates a new \c MemAccessEvent and initializes the provided values.
@@ -116,9 +121,9 @@ public:
 	 * @param type the type of memory access (r, w, rw)
 	 * @param cpu the CPU that triggered the event
 	 */
-	MemAccessEvent(address_t triggerAddr, size_t width, address_t triggerIP, access_type_t type,
+	MemAccessEvent(address_t triggerAddr, memory_type_t memtype, uint64_t data, size_t width, address_t triggerIP, access_type_t type,
 				   ConcreteCPU* cpu = NULL)
-		: BaseEvent(cpu), m_TriggerAddr(triggerAddr), m_TriggerWidth(width),
+		: BaseEvent(cpu), m_TriggerAddr(triggerAddr), m_MemType(memtype),m_Data(data), m_TriggerWidth(width),
 		  m_TriggerIP(triggerIP), m_AccessType(type) { }
 	/**
 	 * Returns the specific memory address that actually triggered the event.
@@ -131,6 +136,28 @@ public:
 	 * @param addr the new triggering address
 	 */
 	void setTriggerAddress(address_t addr) { m_TriggerAddr = addr; }
+    /**
+     * Returns the type of memory which actually triggered the event.
+     * @return A memory_type_t which corresponds to the memory which triggered the event.
+     */
+    memory_type_t getMemoryType() const { return m_MemType; }
+    /**
+     * Set the specific memory type which triggered the event.
+	 * Should not be used by experiment code.
+	 * @param type the new memory type.
+     */
+    void setMemoryType(memory_type_t type) { m_MemType = type; }
+    /**
+     * Returns the data at the memory location that was accessed if it is available.
+     * @return The value of the accessed memory location .
+     */
+    uint64_t getAccessedData() const { return m_Data; }
+    /**
+     * Set the data, which was accessed during the memory event.
+	 * Should not be used by experiment code.
+	 * @param data The data to be saved.
+     */
+    void setAccessedData(uint64_t data) { m_Data = data; }
 	/**
 	 * Returns the specific number of bytes read or written at \c getTriggerAddress().
 	 * @return the width of the memory access

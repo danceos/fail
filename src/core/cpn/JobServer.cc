@@ -14,7 +14,9 @@
 
 #include "JobServer.hpp"
 
+
 #ifndef __puma
+#define BOOST_COROUTINES_NO_DEPRECATION_WARNING
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
 

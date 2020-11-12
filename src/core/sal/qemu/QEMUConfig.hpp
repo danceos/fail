@@ -17,6 +17,7 @@ typedef uint64_t guest_address_t; //!< the guest memory address type
 typedef unsigned char* host_address_t;  //!< the host memory address type
 typedef uint64_t register_data_t; //!< register data type (64 bit)
 typedef QEMUTimer* timer_t;         //!< type of timer IDs
+typedef uint8_t byte_t;
 
 } // end-of-namespace: fail
 

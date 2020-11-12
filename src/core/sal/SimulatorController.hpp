@@ -79,14 +79,16 @@ public:
 	 * Memory access handler (read/write).
 	 * @param cpu the CPU that accessed the memory
 	 * @param addr the accessed memory address
-	 * @param len the length of the accessed memory
+     * @param type The type of memory that was accessed.
+	 * @param len the length in bit of the accessed memory
+     * @param data The data which is stored at the memory location which was accessed. At most 8 bytes are supported, passed in the form of a concatenated 64 bit integer.
 	 * @param is_write \c true if memory is written, \c false if read
 	 * @param instrPtr the address of the instruction causing the memory
 	 *        access
 	 *
 	 * FIXME: should instrPtr be part of this interface?
 	 */
-	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len, bool is_write, address_t instrPtr);
+	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, memory_type_t type, size_t len, uint64_t data, bool is_write, address_t instrPtr);
 	/**
 	 * Interrupt handler.
 	 * @param cpu the CPU that caused the interrupt

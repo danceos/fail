@@ -21,6 +21,7 @@ typedef uint64_t  guest_address_t;
 typedef void*     host_address_t;  //!< the host memory address type
 typedef uint64_t  register_data_t; //!< register data type (gem5 always uses 64 bit for registers)
 typedef int       timer_t;         //!< type of timer IDs
+typedef uint8_t          byte_t;      //!< 8 bit type for memory access (read or write)
 
 } // end-of-namespace: fail
 

@@ -175,12 +175,14 @@ void DatabaseCampaign::collect_result_thread() {
 
 	ExperimentData *res;
 
+    unsigned long long total_recieved = 0;
 	while ((res = static_cast<ExperimentData *>(campaignmanager.getDone()))) {
 		db_connect.insert_row(&res->getMessage());
+        total_recieved++;
 		delete res;
 	}
 
-	log_recv << "Results complete, updating DB statistics ..." << std::endl;
+	log_recv << "recieved " << total_recieved << " completed pilots, updating DB statistics ..." << std::endl;
 	std::stringstream ss;
 	ss << "ANALYZE TABLE " << db_connect.result_table();
 	if (!db_recv->query(ss.str().c_str())) {
@@ -196,10 +198,10 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
 	unsigned long experiment_count;
 	std::stringstream ss;
-	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
+	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_mask, t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
 	   << " JOIN trace t"
-	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
+	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2 AND t.mask = p.data_mask"
 	   << " WHERE p.fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
 	   << "	  AND p.variant_id = " << variant.id
 	   << " ORDER BY t.instr1"; // Smart-Hopping needs this ordering
@@ -223,22 +225,24 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	// calculating at trace instruction zero
 	ConcreteInjectionPoint ip;
 
-	unsigned expected_results = expected_number_of_results(variant.variant, variant.benchmark);
-
 	unsigned sent_pilots = 0, skipped_pilots = 0;
+    unsigned long long expected_injections = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = strtoul(row[0], NULL, 10);
+		unsigned injection_instr = strtoul(row[1], NULL, 10);
+		uint64_t data_address    = strtoul(row[3], NULL, 10);
+		unsigned data_mask       = strtoul(row[4], NULL, 10);
+		unsigned instr1          = strtoul(row[5], NULL, 10);
+		unsigned instr2          = strtoul(row[6], NULL, 10);
+
+        unsigned expected_results = m_inject_bursts ? 1 : __builtin_popcount(data_mask);
 		if (existing_results_for_pilot(pilot_id) == expected_results) {
 			skipped_pilots++;
 			campaignmanager.skipJobs(1);
 			continue;
 		}
+        expected_injections += expected_results - existing_results_for_pilot(pilot_id);
 
-		unsigned injection_instr = strtoul(row[1], NULL, 10);
-		unsigned data_address    = strtoul(row[3], NULL, 10);
-		unsigned data_width      = strtoul(row[4], NULL, 10);
-		unsigned instr1          = strtoul(row[5], NULL, 10);
-		unsigned instr2          = strtoul(row[6], NULL, 10);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
@@ -255,7 +259,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
-		pilot.set_data_width(data_width);
+		pilot.set_data_mask(data_mask);
 		pilot.set_inject_bursts(m_inject_bursts);
 		pilot.set_register_injection_mode(m_register_injection_mode);
 
@@ -265,6 +269,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 		}
 	}
+    log_send << "expecting " << expected_injections << " injections to take place." << std::endl;
 
 	if (*mysql_error(db->getHandle())) {
 		log_send << "MYSQL ERROR: " << mysql_error(db->getHandle()) << std::endl;

@@ -7,6 +7,8 @@
 #include "util/Logger.hpp"
 #include <string>
 #include <stdlib.h>
+#include <stdint.h>
+#include "sal/FaultSpace.hpp"
 
 namespace fail {
 class ExperimentData;
@@ -14,7 +16,7 @@ class ExperimentData;
 class DatabaseExperiment : public fail::ExperimentFlow {
 	fail::JobClient *m_jc;
 
-	unsigned injectFault(address_t data_address, unsigned bitpos, bool inject_burst,
+	unsigned injectFault(fail::util::fsp::address_t data_address, address_t ip, unsigned bitpos, uint8_t mask, bool inject_burst,
 		bool inject_registers, bool force_registers);
 
 	/**
@@ -46,6 +48,7 @@ public:
 protected:
 	fail::Logger m_log;
 	fail::MemoryManager& m_mm;
+    fail::FaultSpace m_fsp;
 
 	/** Returns the currently running experiment message as returned
 	 * by the job client

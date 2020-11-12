@@ -12,4 +12,8 @@
 #include "arm/ArmArchitecture.hpp"
 #endif
 
+#ifdef BUILD_SAIL
+#include "sail/arch_config.hpp"
+#endif
+
 #endif

@@ -125,6 +125,10 @@ int main(int argc, char *argv[]) {
 		cmd.addOption("", "extended-trace", Arg::None,
 			"--extended-trace \tImport extended trace information if available");
 
+    CommandLine::option_handle MEMORY_TYPE =
+        cmd.addOption("", "memory-type", Arg::Required,
+            "--memory-type\t Only import memory access trace events with the specified type. default: ANY_MEMORY");
+
 	// variant 1: care (synthetic Rs)
 	// variant 2: don't care (synthetic Ws)
 	CommandLine::option_handle FAULTSPACE_RIGHTMARGIN =
@@ -231,18 +235,26 @@ int main(int argc, char *argv[]) {
 	}
 	importer->set_memorymap(memorymap);
 
+    if (cmd[MEMORY_TYPE]) {
+        int arg = std::atoi(cmd[MEMORY_TYPE].first()->arg);
+        memory_type_t type = static_cast<memory_type_t>(arg);
+        importer->set_memory_type(type);
+
+    }
+
+    using access_t = Importer::access_t;
 	if (cmd[FAULTSPACE_RIGHTMARGIN]) {
 		std::string rightmargin(cmd[FAULTSPACE_RIGHTMARGIN].first()->arg);
 		if (rightmargin == "W") {
-			importer->set_faultspace_rightmargin('W');
+			importer->set_faultspace_rightmargin(access_t::WRITE);
 		} else if (rightmargin == "R") {
-			importer->set_faultspace_rightmargin('R');
+			importer->set_faultspace_rightmargin(access_t::READ);
 		} else {
 			LOG << "unknown memory access type '" << rightmargin << "', using default" << endl;
-			importer->set_faultspace_rightmargin('W');
+			importer->set_faultspace_rightmargin(access_t::WRITE);
 		}
 	} else {
-		importer->set_faultspace_rightmargin('W');
+		importer->set_faultspace_rightmargin(access_t::WRITE);
 	}
 
 	importer->set_sanitychecks(cmd[ENABLE_SANITYCHECKS]);

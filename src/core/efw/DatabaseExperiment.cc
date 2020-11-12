@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <bitset>
 
 #include <stdlib.h>
 
@@ -12,6 +13,7 @@
 #include "sal/SALConfig.hpp"
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
+#include "sal/FaultSpace.hpp"
 #include "efw/DatabaseExperiment.hpp"
 #include "comm/DatabaseCampaignMessage.pb.h"
 
@@ -35,6 +37,7 @@ DatabaseExperiment::~DatabaseExperiment()  {
 }
 
 void DatabaseExperiment::redecodeCurrentInstruction() {
+	#if defined BUILD_BOCHS
 	/* Flush Instruction Caches and Prefetch queue */
 	BX_CPU_C *cpu_context = simulator.getCPUContext();
 	cpu_context->invalidate_prefetch_q();
@@ -71,64 +74,94 @@ void DatabaseExperiment::redecodeCurrentInstruction() {
 		// handle instrumentation callback inside boundaryFetch
 		cpu_context->boundaryFetch(instr_plain, remainingInPage, currInstr);
 	}
+#endif
 }
 
 unsigned DatabaseExperiment::injectFault(
-	address_t data_address, unsigned bitpos, bool inject_burst,
-	bool inject_registers, bool force_registers) {
-	unsigned value, injected_value;
+        util::fsp::address_t data_address, address_t ip,
+        unsigned bitpos, uint8_t mask,
+        bool inject_burst,
+        bool inject_registers, bool force_registers) {
 
-	/* First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() */
-	if (data_address < (128 << 4) && inject_registers) {
-#ifdef BUILD_LLVM_DISASSEMBLER
-		// register FI
-		LLVMtoFailTranslator::reginfo_t reginfo =
-			LLVMtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
+    using namespace util;
 
-		value = LLVMtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
-		if (inject_burst) {
-			injected_value = value ^ 0xff;
-			m_log << "INJECTING BURST at: REGISTER " << dec << reginfo.id
-				<< " bitpos " << (reginfo.offset + bitpos) << endl;
-		} else {
-			injected_value = value ^ (1 << bitpos);
-			m_log << "INJECTING BIT-FLIP at: REGISTER " << dec << reginfo.id
-				<< " bitpos " << (reginfo.offset + bitpos) << endl;
-		}
-		LLVMtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
-		if (reginfo.id == RID_PC) {
-			// FIXME move this into the Bochs backend
-			m_log << "Redecode current instruction" << endl;
-			redecodeCurrentInstruction();
-		}
-#else
-		m_log << "ERROR: Not compiled with LLVM.  Enable BUILD_LLVM_DISASSEMBLER at buildtime." << endl;
-		simulator.terminate(1);
-#endif
-	} else if (!force_registers) {
-		// memory FI
-		value = m_mm.getByte(data_address);
+    std::unique_ptr<fsp::element> target = m_fsp.decode(data_address);
 
-		if (inject_burst) {
-			injected_value = value ^ 0xff;
-			m_log << "INJECTING BURST at: MEM 0x"
-				<< hex << setw(2) << setfill('0') << data_address << endl;
-		} else {
-			injected_value = value ^ (1 << bitpos);
-			m_log << "INJECTING BIT-FLIP (" << dec << bitpos << ") at: MEM 0x"
-				<< hex << setw(2) << setfill('0') << data_address << endl;
-		}
-		m_mm.setByte(data_address, injected_value);
+    std::function<unsigned(unsigned)> injector;
+    if(inject_burst) {
+        m_log << "INJECTING BURST " << endl;
+        injector = [mask] (unsigned val) -> unsigned {
+            return val ^ (mask & 0xFF);
+        };
+    } else {
+        m_log << "INJECTING BITFLIP (bitpos = " << bitpos << ") " << endl;
+        // using mask here, should be unneeded due to the early abort in run()
+        // do it anyway for safety's sake.
+        injector = [bitpos,mask] (unsigned val) -> unsigned {
+           return val ^ (mask & (1 << bitpos));
+        };
+    }
+    injector_result result = target->inject(injector);
 
-	} else {
-		m_log << "WARNING: Skipping injection, data address 0x"
-			<< hex << data_address << " out of range." << endl;
-		return 0;
-	}
-	m_log << hex << setw(2) << setfill('0')
-		<< " value: 0x" << value
-		<<     " -> 0x" << injected_value << endl;
-	return value;
+    m_log << hex << setw(2) << setfill('0')
+        << std::showbase
+        << "\tIP: " << ip << endl
+        << "\tFAULT SITE: FSP " << data_address
+        << " -> AREA " << target->get_area()->get_name() << " @ " << target->get_offset() << endl
+        << "\telement: " << *target << endl
+        << "\tvalue: 0x" << (int)result.original
+        <<     " -> 0x" << (int)result.injected << endl;
+	return result.original;
+
+	//[> First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() <]
+	//if (data_address < (128 << 4) && inject_registers) {
+//#ifdef BUILD_LLVM_DISASSEMBLER
+		//// register FI
+		//LLVMtoFailTranslator::reginfo_t reginfo =
+			//LLVMtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
+
+		//value = LLVMtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
+		//if (inject_burst) {
+			//injected_value = value ^ 0xff;
+			//m_log << "INJECTING BURST at: REGISTER " << dec << reginfo.id
+				//<< " bitpos " << (reginfo.offset + bitpos) << endl;
+		//} else {
+			//injected_value = value ^ (1 << bitpos);
+			//m_log << "INJECTING BIT-FLIP at: REGISTER " << dec << reginfo.id
+				//<< " bitpos " << (reginfo.offset + bitpos) << endl;
+		//}
+		//LLVMtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
+		//#if defined BUILD_BOCHS
+		//if (reginfo.id == RID_PC) {
+			//// FIXME move this into the Bochs backend
+			//m_log << "Redecode current instruction" << endl;
+			//redecodeCurrentInstruction();
+		//}
+		//#endif
+//#else
+		//m_log << "ERROR: Not compiled with LLVM.  Enable BUILD_LLVM_DISASSEMBLER at buildtime." << endl;
+		//simulator.terminate(1);
+//#endif
+	//} else if (!force_registers) {
+		//// memory FI
+		//value = m_mm.getByte(data_address);
+
+		//if (inject_burst) {
+			//injected_value = value ^ 0xff;
+			//m_log << "INJECTING BURST at: MEM 0x"
+				//<< hex << setw(2) << setfill('0') << data_address << endl;
+		//} else {
+			//injected_value = value ^ (1 << bitpos);
+			//m_log << "INJECTING BIT-FLIP (" << dec << bitpos << ") at: MEM 0x"
+				//<< hex << setw(2) << setfill('0') << data_address << endl;
+		//}
+		//m_mm.setByte(data_address, injected_value);
+
+	//} else {
+		//m_log << "WARNING: Skipping injection, data address 0x"
+			//<< hex << data_address << " out of range." << endl;
+		//return 0;
+	//}
 }
 
 template<class T>
@@ -165,8 +198,11 @@ bool DatabaseExperiment::run()
 	}
 
 	unsigned executed_jobs = 0;
-
-	while (executed_jobs < 25 || m_jc->getNumberOfUndoneJobs() > 0) {
+	unsigned max_executed_jobs = 25;
+	#ifdef BUILD_SAIL
+		max_executed_jobs = UINT_MAX; // Sail emulators dont leak memory, they dont have to be restarted
+	#endif
+	while (executed_jobs < max_executed_jobs || m_jc->getNumberOfUndoneJobs() > 0) {
 		m_log << "asking jobserver for parameters" << endl;
 		ExperimentData * param = this->cb_allocate_experiment_data();
 #ifndef LOCAL
@@ -190,11 +226,30 @@ bool DatabaseExperiment::run()
 #endif
 
 		unsigned  injection_instr = fsppilot->injection_instr();
-		address_t data_address = fsppilot->data_address();
-		unsigned width = fsppilot->data_width();
+
+        fail::util::fsp::address_t data_address = fsppilot->data_address();
+
+        unsigned unchecked_mask = fsppilot->data_mask();
+        assert(unchecked_mask <=255 && "mask covers more than 8 bit, this is unsupported!");
+        uint8_t mask = static_cast<uint8_t>(unchecked_mask);
 		unsigned injection_width = fsppilot->inject_bursts() ? 8 : 1;
 
-		for (unsigned bit_offset = 0; bit_offset < width * 8; bit_offset += injection_width) {
+        m_log << std::hex << std::showbase
+            << " fsp: " << data_address
+            << " mask: " << std::bitset<8>(mask)
+            << std::dec
+            << " injection_width: " << injection_width << std::endl;
+
+		for (unsigned bit_offset = 0; bit_offset < 8; bit_offset += injection_width) {
+            // if the mask is zero at this bit offset, this bit shall not be injected.
+            bool allowed_mask = mask & (1 << bit_offset);
+            // additionally, always inject once for bursts.
+            // this first bit might be unset otherwise and thus,
+            // this address will never be injected otherwise.
+            if(!(allowed_mask || fsppilot->inject_bursts())) {
+                continue;
+            }
+
 			// 8 results in one job
 			Message *outer_result = cb_new_result(param);
 			m_current_result = outer_result;
@@ -260,7 +315,7 @@ bool DatabaseExperiment::run()
 
 			// inject fault (single-bit flip or burst)
 			result->set_original_value(
-				injectFault(data_address + bit_offset / 8, bit_offset % 8,
+				injectFault(data_address, injection_instr_absolute, bit_offset, mask,
 					fsppilot->inject_bursts(),
 					fsppilot->register_injection_mode() != fsppilot->OFF,
 					fsppilot->register_injection_mode() == fsppilot->FORCE));

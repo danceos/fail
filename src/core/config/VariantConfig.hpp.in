@@ -7,9 +7,13 @@
 #cmakedefine BUILD_T32
 #cmakedefine BUILD_PANDA
 #cmakedefine T32_MOCK_API
+#cmakedefine BUILD_SAIL
+#cmakedefine BUILD_RISCV
+#cmakedefine BUILD_RISCV_CHERI
 
 #cmakedefine BUILD_X86
 #cmakedefine BUILD_ARM
+#cmakedefine BUILD_64BIT
 
 #cmakedefine BUILD_LLVM_DISASSEMBLER
 

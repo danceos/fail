@@ -56,6 +56,8 @@ public:
 	 * @return \c true if sucessfully removed, \c false otherwise (not found)
 	 */
 	bool removeSuppressedInterrupt(unsigned interruptNum);
+
+    virtual ~CPUState() { }
 protected:
 	std::vector<unsigned> m_SuppressedInterrupts;
 };

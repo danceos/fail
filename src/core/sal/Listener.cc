@@ -52,9 +52,13 @@ bool MemAccessListener::isMatching(const MemAccessEvent* pEv) const
 	if (!(m_WatchType & pEv->getTriggerAccessType())) {
 		return false;
 	} else if (m_WatchAddr != ANY_ADDR
-	           && (m_WatchAddr >= pEv->getTriggerAddress() + pEv->getTriggerWidth()
+	           && (m_WatchAddr >= pEv->getTriggerAddress() + pEv->getTriggerWidth()/8
 	           || m_WatchAddr + m_WatchWidth <= pEv->getTriggerAddress())) {
+        // FIXME:  getTriggerWidth()  is # bits of accessed and we need to compare if the accessed _address_ is within this watchpoints range bytewise.
+        // Ideally one would distinguish between width of address range watched and width of access within an address, but since getTriggerWidth is used very rarely its easier to convert from bits to bytes here.
 		return false;
+    } else if (m_WatchMemType != ANY_MEMORY && m_WatchMemType != pEv->getMemoryType()) {
+        return false;
 	} else if (m_CPU != NULL && m_CPU != pEv->getTriggerCPU()) {
 		return false;
 	}

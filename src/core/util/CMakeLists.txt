@@ -80,6 +80,7 @@ if(CONFIG_INJECTIONPOINT_HOPS)
 endif(CONFIG_INJECTIONPOINT_HOPS)
 
 add_library(fail-util ${SRCS})
+target_compile_options(fail-util INTERFACE "-fno-new-ttp-matching")
 add_dependencies(fail-util fail-comm)
 target_link_libraries(fail-util fail-comm ${ADDITIONAL_LIBS} ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${LibIberty_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBDWARF_LIBRARIES} ${LIBELF_LIBRARIES})
 
@@ -87,6 +88,7 @@ option(BUILD_LLVM_DISASSEMBLER "Build the LLVM-based disassembler (LLVM 3.9, 4.0
 if (BUILD_LLVM_DISASSEMBLER)
   add_subdirectory(llvmdisassembler)
 endif (BUILD_LLVM_DISASSEMBLER)
+
 ### Tests
 add_executable(memorymap-test testing/memorymap-test.cc)
 target_link_libraries(memorymap-test fail-util)

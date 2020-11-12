@@ -13,16 +13,15 @@ Database *db;
 bool FullTraceImporter::handle_ip_event(simtime_t curtime, instruction_count_t instr,
 					Trace_Event &ev) {
 
-	margin_info_t right_margin;
-	right_margin.time = curtime;
-	right_margin.dyninstr = instr; // !< The current instruction
-	right_margin.ip = ev.ip();
+    // FIXME: this probably doesn't work with bit based margins.
+#warning FIXME: this probably doesn't work with bit based margins.
+	margin_info_t right_margin(instr,ev.ip(),curtime,0xFF);
 
 	// pass through potentially available extended trace information
-	if (!add_trace_event(right_margin, right_margin, ev)) {
-		LOG << "add_trace_event failed" << std::endl;
-		return false;
-	}
+    if (!add_trace_event(right_margin, right_margin, ev)) {
+        LOG << "add_trace_event failed" << std::endl;
+        return false;
+    }
 
 	return true;
 }

@@ -12,7 +12,6 @@
 #include "ConcreteCPU.hpp"
 #include "perf/BufferInterface.hpp"
 #include "util/ElfReader.hpp"
-
 #include "config/FailConfig.hpp"
 
 namespace fail {
@@ -315,6 +314,8 @@ class MemAccessListener : public BaseListener {
 protected:
 	//! Specific physical guest system address to watch, or ANY_ADDR.
 	address_t m_WatchAddr;
+    //! Specific memory type to watch (e.g. Tag memory), or ANY_MEMORY.
+    memory_type_t m_WatchMemType;
 	//! Width of the memory area being watched (# bytes).
 	size_t m_WatchWidth;
 	/**
@@ -326,15 +327,15 @@ protected:
 WP_CTOR_SCOPE:
 	MemAccessListener(MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
-		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchWidth(1), m_WatchType(type) { }
-	MemAccessListener(address_t addr,
+		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchMemType(ANY_MEMORY), m_WatchWidth(1), m_WatchType(type), m_Data() { }
+	MemAccessListener(address_t addr, memory_type_t memtype = ANY_MEMORY,
 	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
-		: BaseListener(cpu), m_WatchAddr(addr), m_WatchWidth(1), m_WatchType(type) { }
-	MemAccessListener(const ElfSymbol &symbol,
+		: BaseListener(cpu), m_WatchAddr(addr), m_WatchMemType(memtype), m_WatchWidth(1), m_WatchType(type), m_Data() { }
+	MemAccessListener(const ElfSymbol &symbol, memory_type_t memtype = ANY_MEMORY,
 	                  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
-		: BaseListener(cpu), m_WatchAddr(symbol.getAddress()), m_WatchWidth(symbol.getSize()), m_WatchType(type) { }
+        : BaseListener(cpu), m_WatchAddr(symbol.getAddress()), m_WatchMemType(memtype), m_WatchWidth(symbol.getSize()), m_WatchType(type) , m_Data() { }
 public:
 	/**
 	 * Returns the physical memory address to be observed.
@@ -344,6 +345,14 @@ public:
 	 * Sets the physical memory address to be observed.  (Wildcard: ANY_ADDR)
 	 */
 	void setWatchAddress(address_t addr) { m_WatchAddr = addr; }
+	/**
+	 * Returns the memory type to be observed.
+	 */
+	memory_type_t getWatchMemoryType() const { return m_WatchMemType; }
+	/**
+	 * Sets the memory type to be observed.  (Wildcard: ANY_MEMORY)
+	 */
+	void setWatchMemoryType(memory_type_t type) { m_WatchMemType = type; }
 	/**
 	 * Returns the width of the memory area being watched.
 	 */
@@ -370,6 +379,33 @@ public:
 	 * listener.  Should not be used by experiment code.
 	 */
 	void setTriggerAddress(address_t addr) { m_Data.setTriggerAddress(addr); }
+    /**
+     * Returns the type of memory which actually triggered the event.
+     * @return A memory_type_t which corresponds to the memory which triggered the event.
+     */
+    memory_type_t getMemoryType() const { return m_Data.getMemoryType(); }
+    /**
+     * Set the specific memory type which triggered the event.
+	 * Should not be used by experiment code.
+	 * @param type the new memory type.
+     */
+    void setMemoryType(memory_type_t type) { m_Data.setMemoryType(type); }
+    /**
+     * Returns the data at the memory location that was accessed if it is available.
+     * @return A uint64_t which contains at most 8 bytes of the accessed data.
+     */
+    uint64_t getAccessedData() const { return m_Data.getAccessedData(); }
+    /**
+     * Set the data, which was accessed during the memory event.
+     * This data is copied into this class.
+	 * Should not be used by experiment code.
+	 * @param type the new memory type.
+     */
+    void setAccessedData(uint64_t data) { m_Data.setAccessedData(data); }
+	/**
+	 * Returns the specific number of bytes read or written at \c getTriggerAddress().
+	 * @return the width of the memory access
+	 */
 	/**
 	 * Returns the width (in bytes) of the memory access that triggered this
 	 * listener.
@@ -425,8 +461,8 @@ class MemReadListener : public MemAccessListener {
 WPREAD_CTOR_SCOPE:
 	MemReadListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
-	MemReadListener(address_t addr, ConcreteCPU* cpu = NULL)
-		: MemAccessListener(addr, MemAccessEvent::MEM_READ, cpu) { }
+	MemReadListener(address_t addr, memory_type_t type = ANY_MEMORY, ConcreteCPU* cpu = NULL)
+		: MemAccessListener(addr, type, MemAccessEvent::MEM_READ, cpu) { }
 };
 
 #ifdef CONFIG_EVENT_MEMWRITE
@@ -442,8 +478,8 @@ class MemWriteListener : public MemAccessListener {
 WPWRITE_CTOR_SCOPE:
 	MemWriteListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_WRITE, cpu) { }
-	MemWriteListener(address_t addr, ConcreteCPU* cpu = NULL)
-		: MemAccessListener(addr, MemAccessEvent::MEM_WRITE, cpu) { }
+	MemWriteListener(address_t addr, memory_type_t type = ANY_MEMORY, ConcreteCPU* cpu = NULL)
+		: MemAccessListener(addr, type, MemAccessEvent::MEM_WRITE, cpu) { }
 };
 
 #if defined CONFIG_EVENT_INTERRUPT || defined CONFIG_EVENT_TRAP

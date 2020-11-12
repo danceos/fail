@@ -31,6 +31,7 @@
 #include "LLVMtoFailTranslator.hpp"
 #include "LLVMtoFailBochs.hpp"
 #include "LLVMtoFailGem5.hpp"
+#include "LLVMtoFailSailRiscv.hpp"
 
 namespace fail {
 
@@ -69,6 +70,7 @@ private:
 		llvm::Triple TT("unknown-unknown-unknown");
 		TT.setArch(llvm::Triple::ArchType(Obj->getArch()));
 		std::string TripleName = TT.str();
+		std::cout << "TripleName: " << TripleName << std::endl;
 		return TripleName;
 	}
 
@@ -82,6 +84,7 @@ private:
 
 		std::cerr << "error: unable to get target for '" << TripleName
 				  << std::endl;
+		std::cout << "Error: " << Error << std::endl;
 		return 0;
 	}
 
@@ -98,20 +101,27 @@ public:
 		this->triple = GetTriple(object);
 		this->target = GetTarget(triple);
 
-		std::unique_ptr<const llvm::MCRegisterInfo> MRI(target->createMCRegInfo(triple));
+		// Package up features to be passed to target/subtarget
+  		llvm::SubtargetFeatures Features = object->getFeatures();
+		if (this->triple.rfind("riscv", 0) == 0) {
+			Features.AddFeature("+M");
+		}
+
+        llvm::MCTargetOptions options;
+		std::unique_ptr<const llvm::MCRegisterInfo> MRI(target->createMCRegInfo(triple, options));
 		if (!MRI) {
 			std::cerr << "DIS error: no register info for target " << triple << "\n";
 			return;
-		}                                             
+		}
 
-		std::unique_ptr<const llvm::MCAsmInfo> MAI(target->createMCAsmInfo(*MRI, triple));
+		std::unique_ptr<const llvm::MCAsmInfo> MAI(target->createMCAsmInfo(*MRI, triple, options));
 		if (!MAI) {
 			std::cerr << "DIS error: no assembly info for target " << triple << "\n";
 			return;
 		}
 
 		std::unique_ptr<const llvm::MCSubtargetInfo> STI(
-				target->createMCSubtargetInfo(triple, MCPU, FeaturesStr));
+				target->createMCSubtargetInfo(triple, MCPU, Features.getString()));
 		if (!STI) {
 			std::cerr << "DIS error: no subtarget info for target " << triple << "\n";
 			return;
@@ -146,6 +156,7 @@ public:
 	fail::LLVMtoFailTranslator *getTranslator() ;
 
 	const std::string& GetTriple() const { return triple; };
+    const std::string GetSubtargetFeatures() const { return object->getFeatures().getString(); }
 
 	void disassemble();
 };

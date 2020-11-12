@@ -25,6 +25,8 @@ message Trace_Event {
 	// and for target backends capable of timing-accurate execution
 	optional int64 time_delta = 6;
 	optional uint64 memaddr = 2;
+    // back-end specific notion of the type of memory accessed (e.g. tag memory, dram)
+    optional uint64 memtype = 7;
 	optional uint32 width = 3;
 	enum AccessType {
 		READ = 1;

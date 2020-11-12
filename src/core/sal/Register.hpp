@@ -28,7 +28,8 @@ enum RegisterType {
 	RT_CONTROL, //!< control registers
 	RT_SEGMENT, //!< segmentation registers
 
-	RT_TRACE //!< registers to be recorded in an extended trace
+	RT_TRACE, //!< registers to be recorded in an extended trace
+    RT_ARCH_SPECIFIC // !< registers which are architecture specific (can't be injected but must be saved)
 };
 
 /**
