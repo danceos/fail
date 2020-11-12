@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo @sail_build_CC@ @sail_build_CFLAGS@ $*
+exec @sail_build_CC@ @sail_build_CFLAGS@ $*

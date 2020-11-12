@@ -1,0 +1,74 @@
+#include "../registers.hpp"
+
+#define CSR(CLS) SAIL_DECLARE_REG(CLS, RT_CONTROL)
+
+namespace fail {
+    CSR(minstret);
+    CSR(misa);
+    CSR(mstatus);
+    CSR(mip);
+    CSR(mie);
+    CSR(mideleg);
+    CSR(medeleg);
+    CSR(mtvec);
+    CSR(mepc);
+    CSR(mtval);
+    CSR(mscratch);
+    CSR(mcycle);
+    CSR(mtime);
+    CSR(mvendorid);
+    CSR(mimpid);
+    CSR(marchid);
+    CSR(mhartid);
+    CSR(sscratch);
+    CSR(sepc);
+    CSR(stval);
+    CSR(tselect);
+    CSR(pmpaddr0);
+    CSR(pmpaddr1);
+    CSR(pmpaddr2);
+    CSR(pmpaddr3);
+    CSR(pmpaddr4);
+    CSR(pmpaddr5);
+    CSR(pmpaddr6);
+    CSR(pmpaddr7);
+    CSR(pmpaddr8);
+    CSR(pmpaddr9);
+    CSR(pmpaddr10);
+    CSR(pmpaddr11);
+    CSR(pmpaddr12);
+    CSR(pmpaddr13);
+    CSR(pmpaddr14);
+    CSR(pmpaddr15);
+    CSR(uscratch);
+    CSR(uepc);
+    CSR(utval);
+    CSR(mtimecmp);
+    CSR(satp);
+    CSR(mcounteren);
+    CSR(scounteren);
+    CSR(mcause);
+    CSR(sedeleg);
+    CSR(sideleg);
+    CSR(stvec);
+    CSR(scause);
+    CSR(pmp0cfg);
+    CSR(pmp1cfg);
+    CSR(pmp2cfg);
+    CSR(pmp3cfg);
+    CSR(pmp4cfg);
+    CSR(pmp5cfg);
+    CSR(pmp6cfg);
+    CSR(pmp7cfg);
+    CSR(pmp8cfg);
+    CSR(pmp9cfg);
+    CSR(pmp10cfg);
+    CSR(pmp11cfg);
+    CSR(pmp12cfg);
+    CSR(pmp13cfg);
+    CSR(pmp14cfg);
+    CSR(pmp15cfg);
+    CSR(utvec);
+    CSR(ucause);
+
+}
