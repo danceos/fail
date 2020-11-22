@@ -13,7 +13,7 @@ include(FindCapstone)
 
 add_library(fail-capstonedisassembler ${SRCS})
 
-target_link_libraries(fail-capstonedisassembler ${CAPSTONE_LIBRARY})
+target_link_libraries(fail-capstonedisassembler fail-sal ${CAPSTONE_LIBRARY})
 include_directories(${CAPSTONE_INCLUDE_DIR})
 
 ### Tests
