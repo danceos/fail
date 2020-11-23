@@ -756,7 +756,7 @@ bool EcosKernelTestExperiment::faultInjection() {
 		result->set_latest_ip(simulator.getCPU(0).getInstructionPointer());
 
 		// record error_corrected regardless of result
-                if ( (addr_errors_corrected != ADDR_INV) && mm.isMapped(addr_errors_corrected) ) {
+		if ( (addr_errors_corrected != ADDR_INV) && mm.isMapped(addr_errors_corrected) ) {
 			int32_t error_corrected = mm.getByte(addr_errors_corrected);
 			result->set_error_corrected(error_corrected ? result->TRUE : result->FALSE);
 		} else {
