@@ -78,11 +78,11 @@ namespace fail {
 		 */
 		MYSQL * getHandle() const { return handle; }
 		/**
-		 * Do a small database query. If get_result is set to false
-		 * (MYSQL_RES *)0 or (MYSQL_RES *)1 is given back to indicate
-		 * the result of the query. If the result should be fetched
-		 * a pointer is returned. This pointer is valid until the next
-		 * call to this->query(stmt, true)
+		 * Do a small database query. A return value of (MYSQL_RES *)0
+		 * indicates a query failure. If get_result is set to false, a return
+		 * value of (MYSQL_RES *)1 indicates success; if get_result is true, a
+		 * MySQL result handle is returned.  This handle is valid until the
+		 * next call to this->query(stmt, true)
 		 */
 		MYSQL_RES *query(char const *query, bool get_result = false);
 		/**
