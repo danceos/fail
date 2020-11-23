@@ -213,11 +213,17 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	/* Get the number of unfinished experiments */
 	MYSQL_RES *count = db->query(("SELECT COUNT(*) " + sql_body).c_str(), true);
+	if (!count) {
+		exit(1);
+	}
 	MYSQL_ROW row = mysql_fetch_row(count);
 	experiment_count = strtoul(row[0], NULL, 10);
 
 
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
+	if (!pilots) {
+		exit(1);
+	}
 
 	log_send << "Found " << experiment_count << " jobs in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
@@ -312,6 +318,9 @@ void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &var
 	    << "   AND fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
 	    << " GROUP BY pilot_id ";
 	MYSQL_RES *ids = db->query_stream(sql.str().c_str());
+	if (!ids) {
+		exit(1);
+	}
 	MYSQL_ROW row;
 	unsigned rowcount = 0;
 	while ((row = mysql_fetch_row(ids)) != 0) {
