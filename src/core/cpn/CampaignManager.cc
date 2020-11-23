@@ -47,6 +47,11 @@ void CampaignManager::setTotalCount(uint64_t count)
 	m_jobserver->setTotalCount(count);
 }
 
+void CampaignManager::increaseTotalCount(uint64_t count)
+{
+	m_jobserver->increaseTotalCount(count);
+}
+
 void CampaignManager::skipJobs(uint64_t count)
 {
 	m_jobserver->skipJobs(count);

@@ -124,6 +124,7 @@ public:
 	 * in the database).
 	 */
 	void setTotalCount(uint64_t count) { m_TotalCount = count; }
+	void increaseTotalCount(uint64_t count) { m_TotalCount = m_TotalCount.value_or(0) + count; }
 	void skipJobs(uint64_t count) { ++m_DoneCount; /* FIXME assume atomic */ }
 	/**
 	 * Checks whether there are no more experiment parameter sets.

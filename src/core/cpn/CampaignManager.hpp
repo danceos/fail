@@ -72,6 +72,7 @@ public:
 	 * in the database).
 	 */
 	void setTotalCount(uint64_t count);
+	void increaseTotalCount(uint64_t count);
 	void skipJobs(uint64_t count);
 	 /**
 	 * User campaign has finished.

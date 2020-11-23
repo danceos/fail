@@ -221,7 +221,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 	log_send << "Found " << experiment_count << " jobs in database. ("
 			 << variant.variant << "/" << variant.benchmark << ")" << std::endl;
-	campaignmanager.setTotalCount(experiment_count);
+	campaignmanager.increaseTotalCount(experiment_count);
 
 	// abstraction of injection point:
 	// must not be initialized in loop, because hop chain calculator would lose
