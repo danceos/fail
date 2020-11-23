@@ -273,7 +273,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 
 		this->cb_send_pilot(pilot);
 
-		if ((++sent_pilots) % 1000 == 0) {
+		if ((++sent_pilots) % 10000 == 0) {
 			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 		}
 	}
