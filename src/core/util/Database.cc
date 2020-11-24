@@ -294,7 +294,7 @@ void Database::cmdline_setup() {
 								  "-h/--hostname \tMYSQL Hostname (default: taken from ~/.my.cnf)");
 	USERNAME	  = cmd.addOption("u", "username", Arg::Required,
 								  "-u/--username \tMYSQL Username (default: taken from ~/.my.cnf, or your current user)");
-	DBDEFAULTS	  = cmd.addOption("", "database-option--file", Arg::Required,
+	DBDEFAULTS	  = cmd.addOption("", "database-option-file", Arg::Required,
 								  "--database-option-file \toverride MySQL ~/.my.cnf option file (prepend with './' for files in the CWD)\n");
 
 	// should be called before any threads are spawned
