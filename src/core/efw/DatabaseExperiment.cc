@@ -154,7 +154,7 @@ template<class T>
 T * protobufFindSubmessageByTypename(Message *msg, const std::string &name) {
 	T * submessage = 0;
 	const Descriptor *msg_type = msg->GetDescriptor();
-	const Message::Reflection *ref = msg->GetReflection();
+	const Reflection *ref = msg->GetReflection();
 	const Descriptor *database_desc =
 		DescriptorPool::generated_pool()->FindMessageTypeByName(name);
 	assert(database_desc != 0);
