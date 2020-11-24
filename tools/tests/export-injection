@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+
+import subprocess
+import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("variant_id")
+args = parser.parse_args()
+
+SELECT = f"""select t.instr1, t.instr2, (t.time2-t.time1+1), t.data_address, r.bitoffset, r.resulttype 
+from trace t
+join variant v
+    on t.variant_id = v.id
+join fspgroup g
+    on  t.variant_id = g.variant_id
+    and t.instr2 = g.instr2
+    and t.data_address = g.data_address
+join fsppilot p
+    on  t.variant_id = p.variant_id
+    and g.fspmethod_id = p.fspmethod_id
+    and g.pilot_id = p.id
+left outer join result_GenericExperimentMessage r
+    on r.pilot_id = p.id
+where t.variant_id={args.variant_id}
+  and g.fspmethod_id = (select id from fspmethod where method = "basic")
+;"""
+
+proc = subprocess.Popen(["mysql", "-N"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, encoding="utf-8")
+
+proc.stdin.write(SELECT)
+proc.stdin.close()
+classes = set()
+insert = []
+for line in proc.stdout.readlines():
+    index,resulttype = line.strip().rsplit("\t",1)
+    index = index.replace("\t", ",")
+    classes.add(resulttype)
+
+    insert.append(f"({index}, '{resulttype}')")
+
+classes = ",".join([repr(x) for x in classes])
+
+print("DROP TABLE IF EXISTS injection;")
+print(f"""CREATE TABLE injection (
+         `instr1` int(10) unsigned NOT NULL,
+         `instr2` int(10) unsigned NOT NULL,
+         `duration` int(10) unsigned NOT NULL,
+         `data_address` int(10) unsigned NOT NULL,
+         `bitoffset` int(10) unsigned NOT NULL,
+         `resulttype` enum({classes}) NOT NULL,
+         PRIMARY KEY (`data_address`,`instr2`,`bitoffset`)
+        );
+""")
+
+print("INSERT INTO injection VALUES")
+print(",".join(insert))
+print(";")

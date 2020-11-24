@@ -1,0 +1,24 @@
+memory = {
+  ram = memory.ram
+  len = 16777216
+  allocated = 16777216
+  used_blocks = 5
+  mapping = {
+    blk0 = 0
+    blk1 = 1
+    blk2 = 4
+    blk3 = 4294967295
+    blk4 = 4294967295
+    blk5 = 4294967295
+    blk6 = 4294967295
+    blk7 = 4294967295
+    blk8 = 4294967295
+    blk9 = 4294967295
+    blk10 = 4294967295
+    blk11 = 4294967295
+    blk12 = 4294967295
+    blk13 = 4294967295
+    blk14 = 3
+    blk15 = 2
+  }
+}

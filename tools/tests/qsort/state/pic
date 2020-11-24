@@ -1,0 +1,40 @@
+pic = {
+  master = {
+    interrupt_offset = 0x08
+    auto_eoi = 0x00
+    imr = 0xb8
+    isr = 0x00
+    irr = 0x01
+    read_reg_select = 0
+    irq = 0x00
+    lowest_priority = 0x07
+    INT = true
+    IRQ_in = 0x01
+    in_init = false
+    requires_4 = true
+    byte_expected = 4
+    special_mask = false
+    polled = false
+    rotate_on_autoeoi = false
+    edge_level = 0x00
+  }
+  slave = {
+    interrupt_offset = 0x70
+    auto_eoi = 0x00
+    imr = 0x8f
+    isr = 0x00
+    irr = 0x00
+    read_reg_select = 0
+    irq = 0x00
+    lowest_priority = 0x07
+    INT = false
+    IRQ_in = 0x00
+    in_init = false
+    requires_4 = true
+    byte_expected = 4
+    special_mask = false
+    polled = false
+    rotate_on_autoeoi = false
+    edge_level = 0x00
+  }
+}

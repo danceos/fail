@@ -1,0 +1,87 @@
+floppy = {
+  data_rate = 2
+  command = {
+    0 = 0x00
+    1 = 0x00
+    2 = 0x00
+    3 = 0x00
+    4 = 0x00
+    5 = 0x00
+    6 = 0x00
+    7 = 0x28
+    8 = 0xe5
+    9 = 0x03
+  }
+  command_index = 0
+  command_size = 0
+  command_complete = true
+  pending_command = 0xfe
+  multi_track = false
+  pending_irq = false
+  reset_sensei = 0
+  format_count = 229
+  format_fillbyte = 0x03
+  result = {
+    0 = 0x86
+    1 = 0x4b
+    2 = 0x56
+    3 = 0x00
+    4 = 0x00
+    5 = 0xfc
+    6 = 0x10
+    7 = 0x20
+    8 = 0x00
+    9 = 0x00
+  }
+  result_index = 0
+  result_size = 0
+  DOR = 0x00
+  TDR = 0x00
+  TC = true
+  main_status_reg = 0x00
+  status_reg0 = 0x00
+  status_reg1 = 0x00
+  status_reg2 = 0x00
+  status_reg3 = 0x00
+  floppy_buffer_index = 0
+  lock = false
+  SRT = 0x00
+  HUT = 0x00
+  HLT = 0x00
+  config = 0x00
+  pretrk = 0
+  perp_mode = 0
+  buffer = floppy.buffer
+  drive0 = {
+    cylinder = 0
+    head = 0
+    sector = 0
+    eot = 0
+    media_present = false
+    DIR = 0x80
+  }
+  drive1 = {
+    cylinder = 0
+    head = 0
+    sector = 0
+    eot = 0
+    media_present = false
+    DIR = 0x80
+  }
+  drive2 = {
+    cylinder = 0
+    head = 0
+    sector = 0
+    eot = 0
+    media_present = false
+    DIR = 0x80
+  }
+  drive3 = {
+    cylinder = 0
+    head = 0
+    sector = 0
+    eot = 0
+    media_present = false
+    DIR = 0x80
+  }
+}

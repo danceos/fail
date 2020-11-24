@@ -1,0 +1,8 @@
+gameport = {
+  port = 0xf0
+  delay_x = 0
+  delay_y = 0
+  timer_x = false
+  timer_y = false
+  write_usec = 0
+}

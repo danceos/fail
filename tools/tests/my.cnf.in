@@ -1,0 +1,6 @@
+[client]
+user=@TEST_MYSQL_USER@
+password=@TEST_MYSQL_PASSWORD@
+host=@TEST_MYSQL_HOST@
+port=@TEST_MYSQL_PORT@
+database=@TEST_MYSQL_DATABASE@
