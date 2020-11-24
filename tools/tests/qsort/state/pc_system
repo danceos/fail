@@ -1,0 +1,110 @@
+pc_system = {
+  enable_a20 = true
+  a20_mask = 0xffffffffffffffff
+  currCountdown = 42
+  currCountdownPeriod = 500
+  ticksTotal = 80001500
+  lastTimeUsec = 0
+  usecSinceLast = 0
+  HRQ = false
+  timer = {
+    0 = {
+      inUse = true
+      period = 4294967295
+      timeToFire = 4294967295
+      active = true
+      continuous = true
+    }
+    1 = {
+      inUse = true
+      period = 1
+      timeToFire = 1
+      active = false
+      continuous = false
+    }
+    2 = {
+      inUse = true
+      period = 17985
+      timeToFire = 80015867
+      active = true
+      continuous = false
+    }
+    3 = {
+      inUse = true
+      period = 5000000
+      timeToFire = 5000000
+      active = false
+      continuous = true
+    }
+    4 = {
+      inUse = true
+      period = 5000000
+      timeToFire = 85000000
+      active = true
+      continuous = true
+    }
+    5 = {
+      inUse = true
+      period = 1220
+      timeToFire = 80001220
+      active = false
+      continuous = false
+    }
+    6 = {
+      inUse = true
+      period = 1250
+      timeToFire = 1250
+      active = false
+      continuous = false
+    }
+    7 = {
+      inUse = true
+      period = 1500000
+      timeToFire = 81000000
+      active = true
+      continuous = true
+    }
+    8 = {
+      inUse = true
+      period = 500
+      timeToFire = 80002000
+      active = true
+      continuous = true
+    }
+    9 = {
+      inUse = true
+      period = 1250
+      timeToFire = 80002500
+      active = true
+      continuous = true
+    }
+    10 = {
+      inUse = true
+      period = 500000
+      timeToFire = 80177346
+      active = true
+      continuous = false
+    }
+    11 = {
+      inUse = true
+      period = 1
+      timeToFire = 1
+      active = false
+      continuous = false
+    }
+    12 = {
+      inUse = true
+      period = 1
+      timeToFire = 1
+      active = false
+      continuous = false
+    }
+    13 = {
+      inUse = true
+      period = 1
+      timeToFire = 1
+      active = false
+      continuous = false
+    }
+  }
+}

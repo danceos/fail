@@ -13,16 +13,21 @@ option(BUILD_DATA_AGGREGATOR "Build the data aggregation tools?" OFF)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src/core)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src/core)
 
+set(TEST_DRIVER_ARGS )
+
 if(BUILD_IMPORT_TRACE)
 	add_subdirectory(import-trace)
+	set(TEST_DRIVER_ARGS ${TEST_DRIVER_ARGS} --import-trace $<TARGET_FILE:import-trace>)
 endif(BUILD_IMPORT_TRACE)
 
 if(BUILD_PRUNE_TRACE)
 	add_subdirectory(prune-trace)
+	set(TEST_DRIVER_ARGS ${TEST_DRIVER_ARGS} --prune-trace $<TARGET_FILE:prune-trace>)
 endif(BUILD_PRUNE_TRACE)
 
 if(BUILD_DUMP_TRACE)
 	add_subdirectory(dump-trace)
+	set(TEST_DRIVER_ARGS ${TEST_DRIVER_ARGS} --dump-trace $<TARGET_FILE:dump-trace>)
 endif(BUILD_DUMP_TRACE)
 
 if(BUILD_CONVERT_TRACE)
@@ -44,3 +49,5 @@ endif(BUILD_FAULTSPACEPLOT)
 if(BUILD_DATA_AGGREGATOR)
 	add_subdirectory(analysis/data-aggregator)
 endif(BUILD_DATA_AGGREGATOR)
+
+add_subdirectory(tests)

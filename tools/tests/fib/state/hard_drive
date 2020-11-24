@@ -1,0 +1,53 @@
+hard_drive = {
+  0 = {
+    drive0 = {
+      buffer = drive0.buffer
+      status = {
+        busy = false
+        drive_ready = true
+        write_fault = false
+        seek_complete = true
+        drq = false
+        corrected_data = false
+        index_pulse = false
+        index_pulse_count = 1
+        err = false
+      }
+      error_register = 0x00
+      head_no = 0x00
+      sector_count = 0x03
+      sector_no = 0x00
+      cylinder_no = 0x4000
+      buffer_size = 0x00000800
+      buffer_index = 0x00000800
+      drq_index = 0x00000000
+      current_command = 0xa0
+      multiple_sectors = 0x00
+      lba_mode = 0x00
+      packet_dma = 0x00000000
+      control_reset = false
+      control_disable_irq = false
+      reset_in_progress = 0x00
+      features = 0x00
+      mdma_mode = 0x00
+      udma_mode = 0x00
+      hob_feature = 0x00
+      hob_nsector = 0x03
+      hob_sector = 0x00
+      hob_lcyl = 0x00
+      hob_hcyl = 0x40
+      num_sectors = 0x00000000
+      cdrom_locked = false
+    }
+    drive_select = 1
+  }
+  1 = {
+    drive_select = 0
+  }
+  2 = {
+    drive_select = 0
+  }
+  3 = {
+    drive_select = 0
+  }
+}
