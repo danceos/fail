@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include "comm/TracePlugin.pb.h"
 #include "util/ProtoStream.hpp"
 #include "../../src/core/util/Logger.hpp"
@@ -93,6 +94,7 @@ int main(int argc, char *argv[])
 	uint64_t acctime = 0;
 	uint64_t stats_instr = 0, stats_reads = 0, stats_writes = 0;
 	uint64_t stats_read_b = 0, stats_write_b = 0, starttime = 0;
+	std::set<uint64_t> stats_mem_locations;
 
 	while (ps.getNext(&ev)) {
 		if (ev.has_time_delta()) {
@@ -144,6 +146,10 @@ int main(int argc, char *argv[])
 				     << hex << " IP " << ev.ip()
 				     << dec << " t=" << acctime
 				     << ext.str() << "\n";
+			} else {
+				for (uint64_t addr = ev.memaddr(); addr < ev.memaddr() + ev.width(); addr++){
+					stats_mem_locations.insert(addr);
+				}
 			}
 			if (ev.accesstype() == Trace_Event_AccessType_READ) {
 				stats_reads++;
@@ -157,10 +163,11 @@ int main(int argc, char *argv[])
 
 	if (stats_only) {
 		cout << "#instructions: " << stats_instr << "\n"
+			 << "#memLocations: " << stats_mem_locations.size() << "\n"
 			 << "#memR:         " << stats_reads << "\n"
-			 << "#memR_bytes    " << stats_read_b << "\n"
+			 << "#memR_bytes:   " << stats_read_b << "\n"
 			 << "#memW:         " << stats_writes << "\n"
-			 << "#memW_bytes    " << stats_write_b << "\n"
+			 << "#memW_bytes:   " << stats_write_b << "\n"
 			 << "duration:      " << (acctime - starttime + 1) << endl;
 	}
 
