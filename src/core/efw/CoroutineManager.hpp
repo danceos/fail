@@ -61,6 +61,10 @@ public:
 	 */
 	void resume();
 	/**
+	 * Returns the number of added coroutines.
+	 */
+	unsigned size() { return m_Flows.size(); }
+	/**
 	 * Retrieves the current (active) coroutine (= flow).
 	 * @return the current experiment flow.
 	 */

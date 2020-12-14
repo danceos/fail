@@ -38,7 +38,14 @@ BaseListener* SimulatorController::resume(void)
 
 void SimulatorController::startup(int& argc, char **& argv)
 {
-	if (argv) {
+	if (argv && argc > 0) {
+		// Collect invocation name and strip dirname
+		m_argv0 = std::string(argv[0]);
+		auto const pos = m_argv0.find_last_of('/');
+		if (pos != std::string::npos) {
+			m_argv0 = m_argv0.substr(pos+1);
+		}
+
 		CommandLine::Inst().collect_args(argc, argv);
 	}
 	startup();
@@ -47,14 +54,60 @@ void SimulatorController::startup(int& argc, char **& argv)
 void SimulatorController::startup()
 {
 	// Some greetings to the user:
-	std::cout << "[SimulatorController] Initializing..." << std::endl;
-	// TODO: Log-Level?
+	m_log << "Initializing..." << std::endl;
 
 	// Set FAIL* as initialized
 	m_isInitialized = true;
 
 	// Activate previously added experiments to allow initialization:
 	initExperiments();
+
+	if (m_Experiments.size() ==  0) {
+		// Experiment was initialized indirecty, therefore there
+		// should be at least one experiment flow.
+		assert(m_flows.size() > 0 && "No experiment was added (directly or indirectly)");
+	} else {
+		std::string experiment_name;
+
+		if (m_Experiments.size() ==  1) {
+			// exactly one experiment. choose it
+			experiment_name = m_Experiments.begin()->first;
+		} else {
+			m_log << "Multiple experiments are available: " << std::endl;;
+			for (auto experiment : m_Experiments) {
+				m_log << "  - " << experiment.first << std::endl;
+			}
+
+			// Check against environment variable
+			const char *env_name = getenv("FAIL_EXPERIMENT");
+			if (env_name) {
+				for (auto experiment : m_Experiments) {
+					if (experiment.first == env_name) {
+						experiment_name = experiment.first;
+						break;
+					}
+				}
+			}
+
+			// Check against invocation name (higher priority than environment)
+			if (m_argv0 != "") {
+				for (auto experiment : m_Experiments) {
+					if (strstr(m_argv0.c_str(), experiment.first.c_str())) {
+						experiment_name = experiment.first;
+						break;
+					}
+				}
+			}
+		}
+
+		if (experiment_name == "") {
+			m_log << "ERROR, no experiment selected. Use FAIL_EXPERIMENT or change argv[0]" << std::endl;
+			exit(1);
+		}
+
+		m_log << "Starting experiment: " << experiment_name << std::endl;
+		addFlow(m_Experiments[experiment_name]);
+	}
 }
 
 void SimulatorController::initExperiments()
@@ -191,6 +244,11 @@ ConcreteCPU& SimulatorController::getCPU(size_t i) const
 {
 	assert(i < m_CPUs.size() && "FATAL ERROR: Invalid index provided!");
 	return *m_CPUs[i];
+}
+
+void SimulatorController::addExperiment(const std::string &name, ExperimentFlow* flow)
+{
+	m_Experiments[name] = flow;
 }
 
 void SimulatorController::addFlow(ExperimentFlow* flow)

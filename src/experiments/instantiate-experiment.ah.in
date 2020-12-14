@@ -12,7 +12,7 @@
 
 aspect @EXPERIMENT_TYPE@ExperimentHook {
 	advice execution ("void fail::SimulatorController::initExperiments()") : after () {
-		fail::simulator.addFlow(new @EXPERIMENT_TYPE@);
+		fail::simulator.addExperiment("@EXPERIMENT_NAME@", new @EXPERIMENT_TYPE@);
 	}
 };
 

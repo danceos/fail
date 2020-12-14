@@ -10,6 +10,8 @@
 #include "ListenerManager.hpp"
 #include "SALConfig.hpp"
 #include "ConcreteCPU.hpp"
+#include "util/Logger.hpp"
+
 
 
 /// All classes, functions, constants, etc. are encapsulated in the namespace "fail".
@@ -34,15 +36,26 @@ class MemoryManager;
  */
 class SimulatorController {
 protected:
+	fail::Logger m_log;
 	bool m_isInitialized;
 	ListenerManager m_LstList; //!< storage where listeners are being buffered
+	std::map<std::string, ExperimentFlow *> m_Experiments; //!< registered experiments, one is chosen on startup
 	CoroutineManager m_Flows; //!< managed experiment flows
 	MemoryManager *m_Mem; //!< access to memory pool
 	std::vector<ConcreteCPU*> m_CPUs; //!< list of CPUs in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
+	std::string m_argv0; //!< Invocation name of simulator process
 public:
-	SimulatorController() : m_isInitialized(false), m_Mem(NULL) { }
-	SimulatorController(MemoryManager* mem) : m_isInitialized(false), m_Mem(mem) { }
+	SimulatorController()
+		: m_log("SimulatorController", false),
+		  m_isInitialized(false),
+		  m_Mem(nullptr)
+		{ /* blank */ }
+	SimulatorController(MemoryManager* mem)
+		: m_log("SimulatorController", false),
+		  m_isInitialized(false),
+		  m_Mem(mem)
+		{ /* blank */ }
 	virtual ~SimulatorController() { }
 	/**
 	 * @brief Initialization function each implementation needs to call on
@@ -171,6 +184,14 @@ public:
 	/* ********************************************************************
 	 * Experiment-Flow & Listener Management API:
 	 * ********************************************************************/
+	/**
+	 * Register the specified experiment with FAIL* under a given
+	 * name. On startup, FAIL* will select one experiment and
+	 * instantiate a coroutine with addFlow().
+	 * @param name the experiment name
+	 * @param flow the experiment flow object to be added
+	 */
+	void addExperiment(const std::string &name, ExperimentFlow* flow);
 	/**
 	 * Adds the specified experiment or plugin and creates a coroutine to run it in.
 	 * @param flow the experiment flow object to be added
