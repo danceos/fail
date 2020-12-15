@@ -30,12 +30,12 @@ PandaController::PandaController()
 
 PandaController::~PandaController()
 {
-	delete m_Mem;
 	std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
 	while (it != m_CPUs.end()) {
 		delete *it;
 		it = m_CPUs.erase(it);
 	}
+	delete &getMemoryManager();
 }
 
 void PandaController::onTimerTrigger(void* thisPtr)
