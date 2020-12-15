@@ -3,6 +3,7 @@
 #include "Event.hpp"
 #include "Listener.hpp"
 #include "util/CommandLine.hpp"
+#include "Memory.hpp"
 
 namespace fail {
 
@@ -136,15 +137,16 @@ void SimulatorController::onBreakpoint(ConcreteCPU* cpu, address_t instrPtr, add
 	m_LstList.triggerActiveListeners();
 }
 
-void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len,
-	bool is_write, address_t instrPtr)
+void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr,  size_t len,
+	bool is_write, address_t instrPtr, memory_type_t type)
 {
 	MemAccessEvent::access_type_t accesstype =
 		is_write ? MemAccessEvent::MEM_WRITE
 		         : MemAccessEvent::MEM_READ;
 
-	MemAccessEvent tmp(addr, len, instrPtr, accesstype, cpu);
+	MemAccessEvent tmp(addr, len, instrPtr, accesstype, cpu, type);
 	ListenerManager::iterator it = m_LstList.begin();
+
 	while (it != m_LstList.end()) { // check for active listeners
 		BaseListener* pev = *it;
 		MemAccessListener* ev = dynamic_cast<MemAccessListener*>(pev);
@@ -159,6 +161,18 @@ void SimulatorController::onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_
 		ev->setTriggerAccessType(accesstype);
 		ev->setTriggerCPU(cpu);
 		it = m_LstList.makeActive(it);
+
+		// Read Memory with help of Memory Manager
+		ev->setTriggerMemoryType(type);
+		if (type == MEMTYPE_RAM) {
+			uint64_t data = 0;
+			MemoryManager &mm = getMemoryManager(type);
+			char max_len = len > sizeof(data) ? sizeof(data) : len;
+			if (mm.isMapped(addr) && mm.isMapped(addr + len - 1)) {
+				mm.getBytes(addr, max_len, &data);
+				ev->setAccessedData(data);
+			}
+		}
 	}
 	m_LstList.triggerActiveListeners();
 }
@@ -276,7 +290,7 @@ BaseListener* SimulatorController::addListenerAndResume(BaseListener* li)
 void SimulatorController::terminate(int exCode)
 {
 	// Attention: This could cause problems, e.g., because of non-closed sockets
-	std::cout << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
+	m_log << "[FAIL] Exit called by experiment with exit code: " << exCode << std::endl;
 	// TODO: (Non-)Verbose-Mode? Log-Level?
 
 	m_Flows.setTerminated(); // we are about to terminate

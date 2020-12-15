@@ -18,7 +18,7 @@ QEMUController::QEMUController()
 QEMUController::~QEMUController()
 {
 	delete m_Regs;
-	delete m_Mem;
+	delete &getMemoryManager();
 }
 
 // FIXME: copied from BochsController; remove redundancy!
