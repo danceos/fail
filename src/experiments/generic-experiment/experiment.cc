@@ -62,10 +62,15 @@ std::string loadFile(std::string filename)
 void handleEvent(GenericExperimentMessage_Result& result,
 				 GenericExperimentMessage_Result_ResultType restype,
 				 unsigned int details) {
-    cout << "Result details: "
-		<< dec << restype << " " << hex << "0x" << details << endl;
-    result.set_resulttype(restype);
-    result.set_details(details);
+	const google::protobuf::EnumDescriptor *descriptor = \
+		GenericExperimentMessage_Result_ResultType_descriptor();
+	std::string name = descriptor->FindValueByNumber(restype)->name();
+	cout << "Result details: "
+		 << dec << name << "(" <<restype << "), details: "
+		 << hex << "0x" << details << endl;
+
+	result.set_resulttype(restype);
+	result.set_details(details);
 }
 
 void GenericExperiment::parseSymbols(const std::string &args, std::set<fail::BaseListener *> * into) {
@@ -309,14 +314,11 @@ bool GenericExperiment::cb_before_resume() {
 	if (enabled_mem_text)
 		simulator.addListener(&l_mem_text);
 
-	if (enabled_mem_outerspace) {
-		std::cout << "enabled mem outerspace " << endl;
+	if (enabled_mem_outerspace)
 		simulator.addListener(&l_mem_outerspace);
-	}
-	if (enabled_mem_lowerspace) {
-		std::cout << "enabled mem lowerspace "	<< endl;
+
+	if (enabled_mem_lowerspace)
 		simulator.addListener(&l_mem_lowerspace);
-	}
 
 	if (enabled_timeout)
 		simulator.addListener(&l_timeout);
