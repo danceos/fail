@@ -24,7 +24,7 @@ message GenericExperimentMessage {
             TIMEOUT = 8;
             TRAP    = 9;
             WRITE_TEXTSEGMENT = 10;
-            WRITE_OUTERSPACE  = 11;
+			ACCESS_OUTERSPACE  = 11;
 
             SDC = 12;
 
