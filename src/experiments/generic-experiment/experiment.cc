@@ -373,13 +373,13 @@ void GenericExperiment::cb_after_resume(fail::BaseListener *event) {
 		m_log << "memory upper outerspace triggered"
 			  << LOG_MEM_LISTENER(l_mem_outerspace)
 			  << std::endl;
-		handleEvent(*result, result->WRITE_OUTERSPACE,
+		handleEvent(*result, result->ACCESS_OUTERSPACE,
 					l_mem_outerspace.getTriggerAddress());
 	} else if (event == &l_mem_lowerspace) {
 		m_log << "memory lower outerspace triggered"
 			  << LOG_MEM_LISTENER(l_mem_lowerspace)
 			<< std::endl;
-		handleEvent(*result, result->WRITE_LOWERSPACE,
+		handleEvent(*result, result->ACCESS_OUTERSPACE,
 					l_mem_lowerspace.getTriggerAddress());
 	}
 #undef LOG_MEM_LISTENER
