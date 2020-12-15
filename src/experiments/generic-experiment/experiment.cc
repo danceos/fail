@@ -120,13 +120,22 @@ bool GenericExperiment::cb_start_experiment() {
 	CommandLine::option_handle WRITE_MEM_TEXT = cmd.addOption("", "catch-write-textsegment", Arg::None,
 		"--catch-write-textsegment \tCatch writes to the text segment");
 
+	CommandLine::option_handle MEM_OUTERSPACE
+		= cmd.addOption("", "catch-outerspace", Arg::None,
+						"--catch-outerspace \tCatch accesses outside the ELF's memory area");
+
+	CommandLine::option_handle MEM_UPPERSPACE
+		= cmd.addOption("", "catch-upper-outerspace", Arg::None,
+						"--catch-above-outerspace \tCatch accesses above the ELF's memory area");
+
+	CommandLine::option_handle MEM_LOWERSPACE
+		= cmd.addOption("", "catch-lower-outerspace", Arg::None,
+		"--catch-lower-outerspace \tCatch accesses below the ELF's memory area");
+
+	// FIXME: Deprecated Option, Remove after 2021
 	CommandLine::option_handle WRITE_MEM_OUTERSPACE
 		= cmd.addOption("", "catch-write-outerspace", Arg::None,
-		"--catch-write-outerspace \tCatch writes to the outerspace");
-
-    CommandLine::option_handle WRITE_MEM_LOWERSPACE
-		= cmd.addOption("", "catch-write-lowerspace", Arg::None,
-		"--catch-write-lowerspace \tCatch writes to the lowerspace");
+						"--catch-write-outerspace \tLegacy, see --catch-above-outerspace");
 
 	CommandLine::option_handle TIMEOUT = cmd.addOption("", "timeout", Arg::Required,
 		"--timeout TIME \tExperiment timeout in uS");
@@ -228,24 +237,22 @@ bool GenericExperiment::cb_start_experiment() {
 	}
 
 
-	if (cmd[WRITE_MEM_OUTERSPACE]) {
+	if (cmd[MEM_OUTERSPACE] || cmd[MEM_UPPERSPACE] || cmd[WRITE_MEM_OUTERSPACE]) {
 		enabled_mem_outerspace = true;
 
 		auto bounds = m_elf->getValidAddressBounds();
-		m_log << "Catch writes to upper outerspace from " << hex << bounds.second << std::endl;
+		m_log << "Catch accesses to outerspace above of " << hex << bounds.second << std::endl;
 
 		l_mem_outerspace.setWatchAddress(bounds.second);
 		l_mem_outerspace.setWatchWidth(numeric_limits<guest_address_t>::max() - bounds.second);
 	}
 
-	if (cmd[WRITE_MEM_LOWERSPACE]) {
+	if (cmd[MEM_OUTERSPACE] || cmd[MEM_LOWERSPACE]) {
 		enabled_mem_lowerspace = true;
 
 		auto bounds = m_elf->getValidAddressBounds();
-		m_log << "Catch writes to lower outer-space below " << hex << bounds.first << std::endl;
+		m_log << "Catch accesses to outerspace below " << hex << bounds.first << std::endl;
 
-		// FIXME: this might not work if your benchmark uses any devices mapped below the actual ELF
-		// however, this is not the case for RISC-V and consequently, it is ignored here.
 		l_mem_lowerspace.setWatchAddress(numeric_limits<guest_address_t>::min());
 		l_mem_lowerspace.setWatchWidth(bounds.first - numeric_limits<guest_address_t>::min());
 	}
