@@ -132,6 +132,10 @@ int main(int argc, char *argv[]) {
 		cmd.addOption("", "extended-trace", Arg::None,
 			"--extended-trace \tImport extended trace information if available");
 
+    CommandLine::option_handle MEMORY_TYPE =
+        cmd.addOption("", "memory-type", Arg::Required,
+            "--memory-type\t Only import memory access trace events with the specified type. (default: any)");
+
 	// variant 1: care (synthetic Rs)
 	// variant 2: don't care (synthetic Ws)
 	CommandLine::option_handle FAULTSPACE_RIGHTMARGIN =
@@ -237,6 +241,26 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	importer->set_memorymap(memorymap);
+
+	if (cmd[MEMORY_TYPE]) {
+		std::string arg(cmd[MEMORY_TYPE].first()->arg);
+		memory_type_t type;
+		if (arg == "ram")
+			type = MEMTYPE_RAM;
+		else if (arg == "flash")
+			type = MEMTYPE_FLASH;
+		else if (arg == "tags")
+			type = MEMTYPE_TAGS;
+		else if (arg == "eeprom")
+			type = MEMTYPE_EEPROM;
+		else if (arg == "any")
+			type = ANY_MEMORY;
+		else {
+			LOG << "ERROR: unknown memory type: " << arg << std::endl;
+			exit(-1);
+		}
+		importer->set_memory_type(type);
+	}
 
 	if (cmd[FAULTSPACE_RIGHTMARGIN]) {
 		std::string rightmargin(cmd[FAULTSPACE_RIGHTMARGIN].first()->arg);

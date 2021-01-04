@@ -31,6 +31,7 @@ protected:
 	fail::Database *db;
 	fail::Architecture m_arch;
 	fail::UniformRegisterSet *m_extended_trace_regs;
+	fail::memory_type_t m_memtype;
 
 	/* How many rows were inserted into the database */
 	unsigned m_row_count;
@@ -123,8 +124,8 @@ public:
 	Importer() : m_variant_id(0), m_elf(NULL), m_mm(NULL), m_faultspace_rightmargin('W'),
 		m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false),
 		m_cover_memorymap(false), db(NULL),
-		m_extended_trace_regs(NULL), m_row_count(0), m_time_trace_start(0),
-		m_last_ip(0), m_last_instr(0), m_last_time(0) {}
+		m_extended_trace_regs(NULL), m_memtype(fail::ANY_MEMORY),
+		m_row_count(0), m_time_trace_start(0), m_last_ip(0), m_last_instr(0), m_last_time(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
 
 	/**
@@ -145,6 +146,7 @@ public:
 	void set_import_write_ecs(bool enabled) { m_import_write_ecs = enabled; }
 	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
 	void set_cover_memorymap(bool enabled) { m_cover_memorymap = enabled; }
+	void set_memory_type(fail::memory_type_t type) { m_memtype = type; }
 };
 
 #endif
