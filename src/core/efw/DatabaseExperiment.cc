@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <bitset>
 
 #include <stdlib.h>
 
@@ -183,9 +184,13 @@ bool DatabaseExperiment::run()
 		simulator.terminate(1);
 	}
 
+#if defined(BUILD_BOCHS)
+	#define MAX_EXECUTED_JOBS 25
+#else
+    #define MAX_EXECUTED_JOBS UINT_MAX
+#endif
 	unsigned executed_jobs = 0;
-
-	while (executed_jobs < 25 || m_jc->getNumberOfUndoneJobs() > 0) {
+	while (executed_jobs < MAX_EXECUTED_JOBS || m_jc->getNumberOfUndoneJobs() > 0) {
 		m_log << "asking jobserver for parameters" << endl;
 		ExperimentData * param = this->cb_allocate_experiment_data();
 #ifndef LOCAL
@@ -204,17 +209,38 @@ bool DatabaseExperiment::run()
 		fsppilot->set_injection_instr(0);
 		fsppilot->set_injection_instr_absolute(1048677);
 		fsppilot->set_data_address(2101240);
-		fsppilot->set_data_width(1);
+		fsppilot->set_data_mask(0xff);
 		fsppilot->set_inject_bursts(true);
 #endif
 
 		unsigned  injection_instr = fsppilot->injection_instr();
-		address_t data_address = fsppilot->data_address();
-		unsigned width = fsppilot->data_width();
-		unsigned injection_width =
-			(fsppilot->inject_bursts() || fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP) ? 8 : 1;
+        guest_address_t data_address = fsppilot->data_address();
 
-		for (unsigned bit_offset = 0; bit_offset < width * 8; bit_offset += injection_width) {
+        unsigned unchecked_mask = fsppilot->data_mask();
+        assert(unchecked_mask <=255 && "mask covers more than 8 bit, this currently not unsupported!");
+        uint8_t mask = static_cast<uint8_t>(unchecked_mask);
+		unsigned injection_width = 1;
+        // FIXME: Injection for Randomjump
+		if (fsppilot->inject_bursts() || fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP) {
+			injection_width = 8;
+		}
+
+        m_log << std::hex << std::showbase
+            << " fsp: " << data_address
+            << " mask: " << std::bitset<8>(mask)
+            << std::dec
+            << " injection_width: " << injection_width << std::endl;
+
+		for (unsigned bit_offset = 0; bit_offset < 8; bit_offset += injection_width) {
+            // if the mask is zero at this bit offset, this bit shall not be injected.
+            bool allowed_mask = mask & (1 << bit_offset);
+            // additionally, always inject once for bursts.
+            // this first bit might be unset otherwise and thus,
+            // this address will never be injected otherwise.
+            if(!(allowed_mask || fsppilot->inject_bursts())) {
+                continue;
+            }
+
 			// 8 results in one job
 			Message *outer_result = cb_new_result(param);
 			m_current_result = outer_result;
@@ -280,7 +306,7 @@ bool DatabaseExperiment::run()
 
 			// inject fault (single-bit flip or burst)
 			result->set_original_value(
-				injectFault(data_address + bit_offset / 8, bit_offset % 8,
+				injectFault(data_address, bit_offset,
 					fsppilot->inject_bursts(),
 					fsppilot->register_injection_mode() != fsppilot->OFF,
 					fsppilot->register_injection_mode() == fsppilot->FORCE,
