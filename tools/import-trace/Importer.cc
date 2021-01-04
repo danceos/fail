@@ -31,8 +31,8 @@ bool Importer::create_database() {
 		"	instr2_absolute int(10) unsigned DEFAULT NULL,"
 		"	time1 bigint(10) unsigned NOT NULL,"
 		"	time2 bigint(10) unsigned NOT NULL,"
-		"	data_address int(10) unsigned NOT NULL,"
-		"	width tinyint(3) unsigned NOT NULL,"
+		"	data_address bigint(10) unsigned NOT NULL,"
+		"	data_mask tinyint(3) unsigned NOT NULL,"
 		"	accesstype enum('R','W') NOT NULL,";
 	if (m_extended_trace) {
 		create_statement << "   data_value int(10) unsigned NULL,";
@@ -44,7 +44,7 @@ bool Importer::create_database() {
 	}
 	create_statement << database_additional_columns();
 	create_statement <<
-		"	PRIMARY KEY (variant_id,data_address,instr2)"
+		"	PRIMARY KEY (variant_id,data_address,instr2,data_mask)"
 		") engine=MyISAM ";
 	return db->query(create_statement.str().c_str());
 }
@@ -61,14 +61,24 @@ bool Importer::clear_database() {
 
 bool Importer::sanitycheck(std::string check_name, std::string fail_msg, std::string sql)
 {
-	LOG << "Sanity check: " << check_name << " ..." << std::flush;
+	LOG << "Sanity check: " << check_name << " ..." << std::flush << std::endl;
 	MYSQL_RES *res = db->query(sql.c_str(), true);
 
 	if (res && mysql_num_rows(res) == 0) {
-		std::cout << " OK" << std::endl;
+		LOG << " OK" << std::endl;
 		return true;
 	} else {
-		std::cout << " FAILED: " << fail_msg << std::endl;
+		LOG << " FAILED: " <<  std::endl << fail_msg << std::endl;
+		LOG << " ERROR MSG: " << std::endl;
+		MYSQL_ROW row;
+		int num_fields = mysql_num_fields(res);
+		while((row = mysql_fetch_row(res))) {
+			std::stringstream this_row;
+			for(int i = 0; i < num_fields;  ++i) {
+				this_row << " " << row[i];
+			}
+			LOG << this_row.str() << std::endl;
+		}
 		return false;
 	}
 }
@@ -170,12 +180,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 		// non-overlapping (instr1/2)?
 		ss <<
-			"SELECT t1.variant_id\n"
+			"SELECT t1.variant_id,HEX(t1.data_address),t1.instr1,t1.instr2\n"
 			"FROM trace t1\n"
 			"JOIN variant v\n"
 			"  ON v.id = t1.variant_id\n"
 			"JOIN trace t2\n"
-			"  ON t1.variant_id = t2.variant_id AND t1.data_address = t2.data_address\n"
+			"  ON t1.variant_id = t2.variant_id AND t1.data_address = t2.data_address AND t1.data_mask = t2.data_mask\n"
 			" AND (t1.instr1 != t2.instr1 OR t2.instr2 != t2.instr2)\n"
 			" AND ((t1.instr1 >= t2.instr1 AND t1.instr1 <= t2.instr2)\n"
 			"  OR (t1.instr2 >= t2.instr1 AND t1.instr2 <= t2.instr2)\n"
@@ -189,12 +199,12 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 		// non-overlapping (time1/2)?
 		ss <<
-			"SELECT t1.variant_id\n"
+			"SELECT t1.variant_id, HEX(t1.data_address), t1.instr1, t1.instr2\n"
 			"FROM trace t1\n"
 			"JOIN variant v\n"
 			"  ON v.id = t1.variant_id\n"
 			"JOIN trace t2\n"
-			"  ON t1.variant_id = t2.variant_id AND t1.data_address = t2.data_address\n"
+			"  ON t1.variant_id = t2.variant_id AND t1.data_address = t2.data_address AND t1.data_mask = t2.data_mask\n"
 			" AND (t1.time1 != t2.time1 OR t2.time2 != t2.time2)\n"
 			" AND ((t1.time1 >= t2.time1 AND t1.time1 <= t2.time2)\n"
 			"  OR (t1.time2 >= t2.time1 AND t1.time2 <= t2.time2)\n"
@@ -208,18 +218,18 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 
 		// covered (instr1/2)?
 		ss <<
-			"SELECT t.variant_id, t.data_address,\n"
+			"SELECT t.variant_id, HEX(t.data_address),\n"
 			" (SELECT (MAX(t2.instr2) - MIN(t2.instr1) + 1)\n"
 			"  FROM trace t2\n"
 			"  WHERE t2.variant_id = t.variant_id)\n"
 			" -\n"
 			" (SELECT SUM(t3.instr2 - t3.instr1 + 1)\n"
 			"  FROM trace t3\n"
-			"  WHERE t3.variant_id = t.variant_id AND t3.data_address = t.data_address)\n"
+			"  WHERE t3.variant_id = t.variant_id AND t3.data_address = t.data_address AND t3.data_mask = t.data_mask)\n"
 			" AS diff\n"
 			"FROM trace t\n"
 			"WHERE t.variant_id = " << m_variant_id << "\n"
-			"GROUP BY t.variant_id, t.data_address\n"
+			"GROUP BY t.variant_id, t.data_address,t.data_mask\n"
 			"HAVING diff != 0\n"
 			"ORDER BY t.data_address\n";
 		if (!sanitycheck("FS row sum = total width (instr1/2)",
@@ -238,11 +248,11 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			" -\n"
 			" (SELECT SUM(t3.time2 - t3.time1 + 1)\n"
 			"  FROM trace t3\n"
-			"  WHERE t3.variant_id = t.variant_id AND t3.data_address = t.data_address)\n"
+			"  WHERE t3.variant_id = t.variant_id AND t3.data_address = t.data_address AND t3.data_mask = t.data_mask)\n"
 			" AS diff\n"
 			"FROM trace t\n"
 			"WHERE t.variant_id = " << m_variant_id << "\n"
-			"GROUP BY t.variant_id, t.data_address\n"
+			"GROUP BY t.variant_id, t.data_address, t.data_mask\n"
 			"HAVING diff != 0\n"
 			"ORDER BY t.data_address\n";
 		if (!sanitycheck("FS row sum = total width (time1/2)",
@@ -264,7 +274,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			" (SELECT data_address, MIN(instr1) AS min_instr, MAX(instr2) AS max_instr\n"
 			"  FROM trace t3\n"
 			"  WHERE variant_id = " << m_variant_id << "\n"
-			"  GROUP BY t3.variant_id, t3.data_address) AS local\n"
+			"  GROUP BY t3.variant_id, t3.data_address, t3.data_mask) AS local\n"
 			" ON (local.min_instr != global.min_instr\n"
 			"  OR local.max_instr != global.max_instr)";
 		if (!sanitycheck("Global min/max = FS row local min/max (instr1/2)",
@@ -286,7 +296,7 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 			" (SELECT data_address, MIN(time1) AS min_time, MAX(time2) AS max_time\n"
 			"  FROM trace t3\n"
 			"  WHERE variant_id = " << m_variant_id << "\n"
-			"  GROUP BY t3.variant_id, t3.data_address) AS local\n"
+			"  GROUP BY t3.variant_id, t3.data_address,t3.data_mask) AS local\n"
 			" ON (local.min_time != global.min_time\n"
 			"  OR local.max_time != global.max_time)";
 		if (!sanitycheck("Global min/max = FS row local min/max (time1/2)",
@@ -315,7 +325,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 }
 
 bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
-							   Trace_Event &event, bool is_fake) {
+							   Trace_Event &event, bool known_outcome) {
 	if (!m_import_write_ecs && event.accesstype() == event.WRITE) {
 		return true;
 	}
@@ -337,7 +347,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	if (!insert_sql->size()) {
 		std::stringstream sql;
 		sql << "INSERT INTO trace (variant_id, instr1, instr1_absolute, instr2, instr2_absolute, time1, time2, "
-		       "data_address, width, accesstype";
+			   "data_address, data_mask, accesstype";
 		*columns = 10;
 		if (extended) {
 			sql << ", data_value";
@@ -377,18 +387,19 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 
 	unsigned data_address = event.memaddr();
 	char accesstype = event.accesstype() == event.READ ? 'R' : 'W';
+	unsigned data_mask = 255;
 
 	std::stringstream value_sql;
 	value_sql << "("
 		<< m_variant_id << ","
 		<< begin.dyninstr << ",";
-	if (begin.ip == 0 || is_fake) {
+	if (begin.ip == 0 || known_outcome) {
 		value_sql << "NULL,";
 	} else {
 		value_sql << begin.ip << ",";
 	}
 	value_sql << end.dyninstr << ",";
-	if (end.ip == 0 || is_fake) {
+	if (end.ip == 0 || known_outcome) {
 		value_sql << "NULL,";
 	} else {
 		value_sql << end.ip << ",";
@@ -396,7 +407,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	value_sql << begin.time << ","
 		<< end.time << ","
 		<< data_address << ","
-		<< "1," // width
+		<< data_mask << ","
 		<< "'" << accesstype << "',";
 
 	if (extended) {
@@ -425,7 +436,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 
 	// Ask specialized importers what concrete data they want to INSERT.
 	if (num_additional_columns &&
-		!database_insert_data(event, value_sql, num_additional_columns, is_fake)) {
+		!database_insert_data(event, value_sql, num_additional_columns, known_outcome)) {
 		return false;
 	}
 
