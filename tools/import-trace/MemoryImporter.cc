@@ -11,6 +11,11 @@ bool MemoryImporter::handle_ip_event(simtime_t curtime, instruction_count_t inst
 
 bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t instr,
 									  Trace_Event &ev) {
+	// Filter out memory events of wrong memory type
+	memory_type_t mtype = static_cast<memory_type_t>(ev.memtype());
+	if(mtype != m_memtype && m_memtype != ANY_MEMORY)
+		return true;
+
 	address_t from = ev.memaddr(), to = ev.memaddr() + ev.width();
 	// Iterate over all accessed bytes
 	// FIXME Keep complete trace information (access width)?
