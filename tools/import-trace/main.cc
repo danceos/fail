@@ -245,19 +245,21 @@ int main(int argc, char *argv[]) {
 	if (cmd[MEMORY_TYPE]) {
 		std::string arg(cmd[MEMORY_TYPE].first()->arg);
 		memory_type_t type;
-		if (arg == "ram")
-			type = MEMTYPE_RAM;
-		else if (arg == "flash")
-			type = MEMTYPE_FLASH;
-		else if (arg == "tags")
-			type = MEMTYPE_TAGS;
-		else if (arg == "eeprom")
-			type = MEMTYPE_EEPROM;
-		else if (arg == "any")
+		if (arg == "any")
 			type = ANY_MEMORY;
 		else {
-			LOG << "ERROR: unknown memory type: " << arg << std::endl;
-			exit(-1);
+			bool found = false;
+			for (int i = 0; i < MEMTYPE_LAST; i++) {
+				if (arg == memtype_descriptions[i]) {
+					found = true;
+					type = (memory_type_t) i;
+					break;
+				}
+			}
+			if (! found) {
+				LOG << "ERROR: unknown memory type: " << arg << std::endl;
+				exit(-1);
+			}
 		}
 		importer->set_memory_type(type);
 	}

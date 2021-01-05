@@ -49,13 +49,7 @@ bool DatabaseCampaign::run() {
 	CommandLine::option_handle BURST =
 		cmd.addOption("","inject-bursts", Arg::None,
 			"--inject-bursts \tinject burst faults (default: single bitflips)");
-	CommandLine::option_handle REGISTERS =
-		cmd.addOption("","inject-registers", Arg::None,
-			"--inject-registers \tinject into ISA registers (default: memory)");
-	CommandLine::option_handle REGISTERS_FORCE =
-		cmd.addOption("","force-inject-registers", Arg::None,
-			"--force-inject-registers \tinject into ISA registers only, ignore high addresses");
-	CommandLine::option_handle REGISTERS_RANDOMJUMP =
+	CommandLine::option_handle RANDOMJUMP =
 		cmd.addOption("","inject-randomjumps", Arg::None,
 			"--inject-randomjumps \tinject random jumps (interpret data_address as jump target, as prepared by RandomJumpImporter)");
 
@@ -105,25 +99,14 @@ bool DatabaseCampaign::run() {
 	}
 
 	if (cmd[BURST]) {
-		m_inject_bursts = true;
+		m_injection_mode = DatabaseCampaignMessage::BURST;
 		log_send << "fault model: burst" << std::endl;
+	} else if (cmd[RANDOMJUMP]) {
+		m_injection_mode = DatabaseCampaignMessage::RANDOMJUMP;
+		log_send << "fault model: randomjump" << std::endl;
 	} else {
-		m_inject_bursts = false;
+		m_injection_mode = DatabaseCampaignMessage::BITFLIP;
 		log_send << "fault model: single-bit flip" << std::endl;
-	}
-
-	if (cmd[REGISTERS] && !cmd[REGISTERS_FORCE]) {
-		m_register_injection_mode = DatabaseCampaignMessage::AUTO;
-		log_send << "register injection: auto" << std::endl;
-	} else if (cmd[REGISTERS_FORCE]) {
-		m_register_injection_mode = DatabaseCampaignMessage::FORCE;
-		log_send << "register injection: on" << std::endl;
-	} else if (cmd[REGISTERS_RANDOMJUMP]) {
-		m_register_injection_mode = DatabaseCampaignMessage::RANDOMJUMP;
-		log_send << "register injection: randomjump" << std::endl;
-	} else {
-		m_register_injection_mode = DatabaseCampaignMessage::OFF;
-		log_send << "register injection: off" << std::endl;
 	}
 
 	if (cmd[PRUNER]) {
@@ -219,8 +202,6 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	MYSQL_ROW row = mysql_fetch_row(count);
 	experiment_count = strtoul(row[0], NULL, 10);
 
-
-
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
 	if (!pilots) {
 		exit(1);
@@ -237,7 +218,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	ConcreteInjectionPoint ip;
 
 	unsigned sent_pilots = 0, skipped_pilots = 0;
-    unsigned long long expected_injections = 0;
+	unsigned long long expected_injections = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = strtoul(row[0], NULL, 10);
 		unsigned injection_instr = strtoul(row[1], NULL, 10);
@@ -246,13 +227,17 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		unsigned instr1          = strtoul(row[5], NULL, 10);
 		unsigned instr2          = strtoul(row[6], NULL, 10);
 
-        unsigned expected_results = m_inject_bursts ? 1 : __builtin_popcount(data_mask);
+		unsigned expected_results = __builtin_popcount(data_mask);
+		if (m_injection_mode == DatabaseCampaignMessage::BURST
+			|| m_injection_mode == DatabaseCampaignMessage::RANDOMJUMP)
+			expected_results = 1;
+
 		if (existing_results_for_pilot(pilot_id) == expected_results) {
 			skipped_pilots++;
 			campaignmanager.skipJobs(1);
 			continue;
 		}
-        expected_injections += expected_results - existing_results_for_pilot(pilot_id);
+		expected_injections += expected_results - existing_results_for_pilot(pilot_id);
 
 
 		DatabaseCampaignMessage pilot;
@@ -271,8 +256,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 		}
 		pilot.set_data_address(data_address);
 		pilot.set_data_mask(data_mask);
-		pilot.set_inject_bursts(m_inject_bursts);
-		pilot.set_register_injection_mode(m_register_injection_mode);
+		pilot.set_injection_mode(m_injection_mode);
 
 		this->cb_send_pilot(pilot);
 
@@ -280,7 +264,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 		}
 	}
-    log_send << "expecting " << expected_injections << " injections to take place." << std::endl;
+	log_send << "expecting " << expected_injections << " injections to take place." << std::endl;
 
 	if (*mysql_error(db->getHandle())) {
 		log_send << "MYSQL ERROR: " << mysql_error(db->getHandle()) << std::endl;

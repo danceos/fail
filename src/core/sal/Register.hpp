@@ -38,9 +38,11 @@ enum RegisterType {
  * of classes which had been derived from this class.
  */
 class Register {
+public:
+	typedef unsigned int id_t; //!< Every Register has a unique id
 protected:
 	regwidth_t m_Width; //!< the register width
-	unsigned int m_Id; //!< the unique id of this register
+	id_t m_Id; //!< the unique id of this register
 	std::string m_Name; //!< The (optional) name, maybe empty
 	friend class UniformRegisterSet;
 public:
@@ -50,7 +52,7 @@ public:
 	 * @param t the type of the register to be constructed
 	 * @param w the width of the register in bits
 	 */
-	Register(unsigned int id, regwidth_t w)
+	Register(id_t id, regwidth_t w)
 		: m_Width(w), m_Id(id) { }
 	/**
 	 * Returns the (fixed) width of this register.
@@ -71,7 +73,7 @@ public:
 	 * Returns the unique id of this register.
 	 * @return the unique id
 	 */
-	unsigned int getId() const { return m_Id; }
+	id_t getId() const { return m_Id; }
 };
 
 /**
@@ -134,13 +136,29 @@ public:
 	 * @return a pointer to the \a i-th register; if \a i is invalid, an
 	 *         assertion is thrown
 	 */
-	Register* getRegister(size_t i) const;
+	Register* getRegister(Register::id_t i) const;
 	/**
 	 * Retrieves the first register within this set (syntactical sugar).
 	 * @return a pointer to the first register (if existing -- otherwise an
 	 *         assertion is thrown)
 	 */
 	virtual Register* first() const { return getRegister(0); }
+};
+
+/**
+ * \class RegisterView
+ * 
+ * Describes a (partial) view onto a register with the given id. The
+ * view is width bits wide and starts with a bit offset. This class is
+ * used by the dissassemblers.
+ */
+struct RegisterView {
+	Register::id_t id;
+	regwidth_t width;
+	byte_t offset;
+
+	RegisterView(int id=-1, regwidth_t width=-1, byte_t offs = 0)
+		: id(id), width(width),  offset(offs) { }
 };
 
 } // end-of-namespace: fail

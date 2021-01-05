@@ -7,6 +7,8 @@
 #include <limits.h>
 #include <memory> // unique_ptr
 
+#include "util/ElfReader.hpp"
+
 #include "llvm/Object/ObjectFile.h"
 
 #include "llvm/ADT/STLExtras.h"
@@ -29,8 +31,7 @@
 #include "llvm/Support/Casting.h"
 
 #include "LLVMtoFailTranslator.hpp"
-#include "LLVMtoFailBochs.hpp"
-#include "LLVMtoFailGem5.hpp"
+
 
 namespace fail {
 
@@ -51,7 +52,9 @@ public:
 	typedef std::map<address_t, Instr> InstrMap;
 
 private:
-	const llvm::object::ObjectFile *object;
+	llvm::object::OwningBinary<llvm::object::Binary> m_binary;
+	llvm::object::ObjectFile *m_object;
+
 	const llvm::Target *target;
 	std::string triple;
 	std::string MCPU;
@@ -62,7 +65,7 @@ private:
 	std::unique_ptr<const llvm::MCRegisterInfo> register_info;
 	std::unique_ptr<InstrMap> instrs;
 
-	fail::LLVMtoFailTranslator *ltofail;
+	std::unique_ptr<fail::LLVMtoFailTranslator> ltofail;
 
 
 	static std::string GetTriple(const llvm::object::ObjectFile *Obj) {
@@ -92,62 +95,25 @@ private:
 		return true;
 	}
 
+	unsigned m_xlen;
+
 public:
-	LLVMDisassembler(const llvm::object::ObjectFile *object) : ltofail(0)  {
-		this->object = object;
-		this->triple = GetTriple(object);
-		this->target = GetTarget(triple);
+	LLVMDisassembler(fail::ElfReader *elf);
 
-		std::unique_ptr<const llvm::MCRegisterInfo> MRI(target->createMCRegInfo(triple));
-		if (!MRI) {
-			std::cerr << "DIS error: no register info for target " << triple << "\n";
-			return;
-		}                                             
-
-		std::unique_ptr<const llvm::MCAsmInfo> MAI(target->createMCAsmInfo(*MRI, triple));
-		if (!MAI) {
-			std::cerr << "DIS error: no assembly info for target " << triple << "\n";
-			return;
-		}
-
-		std::unique_ptr<const llvm::MCSubtargetInfo> STI(
-				target->createMCSubtargetInfo(triple, MCPU, FeaturesStr));
-		if (!STI) {
-			std::cerr << "DIS error: no subtarget info for target " << triple << "\n";
-			return;
-		}
-		std::unique_ptr<const llvm::MCInstrInfo> MII(target->createMCInstrInfo());
-		if (!MII) {
-			std::cerr << "DIS error: no instruction info for target " << triple << "\n";
-			return;
-		}
-		std::unique_ptr<const llvm::MCObjectFileInfo> MOFI(new llvm::MCObjectFileInfo);
-		// Set up the MCContext for creating symbols and MCExpr's.
-		llvm::MCContext Ctx(MAI.get(), MRI.get(), MOFI.get());
-
-		this->subtargetinfo = std::move(STI);
-		std::unique_ptr<llvm::MCDisassembler> DisAsm(
-				target->createMCDisassembler(*subtargetinfo, Ctx));
-		if (!DisAsm) {
-			std::cerr << "DIS error: no disassembler for target " << triple << "\n";
-			return;
-		}
-		this->disas = std::move(DisAsm);
-		this->instr_info = std::move(MII);
-		this->register_info = std::move(MRI);
-
-		this->instrs.reset(new InstrMap());
-	}
-
-	~LLVMDisassembler() { delete ltofail; };
-
-	InstrMap &getInstrMap() { return *instrs; };
-	const llvm::MCRegisterInfo& getRegisterInfo() { return *register_info; }
+	InstrMap *getInstrMap() { return instrs.get(); };
 	fail::LLVMtoFailTranslator *getTranslator() ;
 
 	const std::string& GetTriple() const { return triple; };
 
+	const llvm::MCRegisterInfo& getRegisterInfo() { return *register_info; }
+
+	std::string getRegisterName(unsigned id) { return getRegisterInfo().getName(id); }
+
+	const std::string GetSubtargetFeatures() const { return m_object->getFeatures().getString(); }
+
 	void disassemble();
+
+	unsigned getWordWidth() { return m_xlen; }
 };
 
 }

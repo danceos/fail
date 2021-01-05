@@ -5,25 +5,15 @@
 #include "util/CommandLine.hpp"
 #include "Importer.hpp"
 
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-#include "util/capstonedisassembler/CapstoneDisassembler.hpp"
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-#include "util/llvmdisassembler/LLVMDisassembler.hpp"
-#endif
 
 class RandomJumpImporter : public Importer {
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-	bool binary = false;
-	std::unique_ptr<fail::CapstoneDisassembler> disas;
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-	llvm::object::Binary *binary = 0;
-	std::unique_ptr<fail::LLVMDisassembler> disas;
-#endif
-
 	fail::CommandLine::option_handle FROM, TO;
 
 	fail::MemoryMap *m_mm_from, *m_mm_to;
 	std::vector<fail::guest_address_t> m_jump_to_addresses;
+
+	std::unique_ptr<Disassembler> m_disassembler;
+
 public:
 	RandomJumpImporter() : m_mm_from(0), m_mm_to(0) {}
 	/**
@@ -31,6 +21,8 @@ public:
 	 * to the campaign
 	 */
 	virtual bool cb_commandline_init();
+
+	virtual bool cb_initialize();
 
 protected:
 	virtual bool handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,

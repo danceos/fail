@@ -16,7 +16,7 @@ struct WeightedPilot {
 	uint32_t id;
 	uint32_t instr2;
 	uint32_t instr2_absolute;
-	uint32_t data_address;
+	uint64_t data_address;
 	uint32_t weight;
 
 	typedef uint64_t size_type;

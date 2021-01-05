@@ -8,18 +8,45 @@
 #include "util/ElfReader.hpp"
 #include "sal/SALConfig.hpp"
 #include "sal/Architecture.hpp"
+#include "sal/faultspace/FaultSpace.hpp"
 #include "util/Database.hpp"
 #include "util/MemoryMap.hpp"
 #include "comm/TracePlugin.pb.h"
 #include "util/AliasedRegisterable.hpp"
 
+#if defined(BUILD_CAPSTONE_DISASSEMBLER)
+#include "util/capstonedisassembler/CapstoneDisassembler.hpp"
+#elif defined(BUILD_LLVM_DISASSEMBLER)
+#include "util/llvmdisassembler/LLVMDisassembler.hpp"
+#endif
+
+
 class Importer : public fail::AliasedRegisterable {
+
 public:
 	typedef unsigned instruction_count_t; //!< not big enough for some benchmarks
-	struct margin_info_t { instruction_count_t dyninstr; fail::guest_address_t ip; fail::simtime_t time; };
-	struct access_info_t { char access_type; fail::guest_address_t data_address; int data_width; };
+	struct margin_info_t {
+		instruction_count_t dyninstr;
+		fail::guest_address_t ip;
+		fail::simtime_t time;
+		uint8_t mask;
+		bool synthetic;
+		margin_info_t(instruction_count_t dyninstr, fail::guest_address_t ip, fail::simtime_t time, uint8_t mask, bool synthetic = false):
+			dyninstr(dyninstr), ip(ip), time(time), mask(mask), synthetic(synthetic) { }
+		margin_info_t(const margin_info_t& other, uint8_t mask, bool synthetic = false):
+			dyninstr(other.dyninstr), ip(other.ip), time(other.time), mask(mask), synthetic(other.synthetic) { }
+	};
 
 protected:
+#if defined(BUILD_LLVM_DISASSEMBLER)
+	typedef fail::LLVMtoFailTranslator RegisterTranslator;
+	typedef fail::LLVMDisassembler Disassembler;
+
+#elif defined(BUILD_CAPSTONE_DISASSEMBLER)
+	typedef fail::CapstoneToFailTranslator RegisterTranslator;
+	typedef fail::CapstoneDisassembler Disassembler;
+#endif
+
 	int m_variant_id;
 	fail::ElfReader *m_elf;
 	fail::MemoryMap *m_mm;
@@ -32,6 +59,7 @@ protected:
 	fail::Architecture m_arch;
 	fail::UniformRegisterSet *m_extended_trace_regs;
 	fail::memory_type_t m_memtype;
+	fail::FaultSpace m_fsp;
 
 	/* How many rows were inserted into the database */
 	unsigned m_row_count;
@@ -43,26 +71,21 @@ protected:
 	   (maps injection data address =>
 	   dyn. instruction count / time information for equivalence class
 	   left margin) */
-	typedef std::map<fail::address_t, margin_info_t> AddrLastaccessMap;
+	typedef std::map<fail::FaultSpaceElement, std::vector<margin_info_t>> AddrLastaccessMap;
 	AddrLastaccessMap m_open_ecs;
 
-	margin_info_t getOpenEC(fail::address_t data_address) {
-		margin_info_t ec = m_open_ecs[data_address];
-		// defaulting to 0 is not such a good idea, memory reads at the
-		// beginning of the trace would get an unnaturally high weight:
-		if (ec.time == 0) {
-			ec.time = m_time_trace_start;
-		}
-		return ec;
-	}
+	std::vector<margin_info_t> getLeftMargins(
+		const fail::FaultSpaceElement& fsp_elem,
+		fail::simtime_t time, instruction_count_t dyninstr,
+		fail::guest_address_t ip, uint8_t mask
+	);
 
-	void newOpenEC(fail::address_t data_address, fail::simtime_t time, instruction_count_t dyninstr,
-				   fail::guest_address_t ip) {
-		m_open_ecs[data_address].dyninstr = dyninstr;
-		m_open_ecs[data_address].time     = time;
-		// FIXME: This should be the next IP, not the current, or?
-		m_open_ecs[data_address].ip       = ip;
-	}
+	void addLeftMargin(
+		const fail::FaultSpaceElement& fsp_elem,
+		fail::simtime_t time, instruction_count_t dyninstr,
+		fail::guest_address_t ip,
+		uint8_t mask
+	);
 
 
 	fail::guest_address_t m_last_ip;
@@ -80,28 +103,36 @@ protected:
 	/**
 	 * Similar to database_additional_columns(), this allows specialized
 	 * importers to define which additional columns it wants to INSERT
-	 * alongside what add_trace_event() adds by itself.  This may be identical
+	 * alongside what add_trace_row() adds by itself.  This may be identical
 	 * to or a subset of what database_additional_columns() specifies.  The SQL
 	 * snippet should *begin* with a comma if non-empty.
 	 */
 	virtual void database_insert_columns(std::string& sql, unsigned& num_columns) { num_columns = 0; }
 	/**
-	 * Will be called back from add_trace_event() to fill in data for the
+	 * Will be called back from add_trace_row() to fill in data for the
 	 * columns specified by database_insert_columns().
 	 */
 	virtual bool database_insert_data(Trace_Event &ev, std::stringstream& value_sql, unsigned num_columns, bool is_fake) { return true; }
 	/**
-	 * Use this variant if passing through the IP/MEM event does not make any
-	 * sense for your Importer implementation.
+	 * To be called from your importer implementation to add fault
+	 * space elements to the database.
 	 */
-	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
-								 access_info_t &event, bool is_fake = false);
+	virtual bool add_faultspace_element(
+		fail::simtime_t curtime, instruction_count_t instr,
+		const fail::FaultSpaceElement &element,
+		uint8_t mask, char access_type, Trace_Event& origin
+		);
 	/**
-	 * Use this variant for passing through the IP/MEM event your Importer
-	 * received.
+	 * Add a single row into the trace database table. This is usually
+	 * called from add_fault_space_elements, but can optionally be
+	 * called directly to bypass the automatic margin generation.
 	 */
-	virtual bool add_trace_event(margin_info_t &begin, margin_info_t &end,
-								 Trace_Event &event, bool is_fake = false);
+	virtual bool add_trace_row(margin_info_t &begin, margin_info_t &end,
+								 const fail::fsp_address_t data_address,
+								 char access_type,
+								 Trace_Event& origin,
+								 bool known_outcome = false
+								 );
 	virtual void open_unused_ec_intervals();
 	virtual bool close_ec_intervals();
 
@@ -133,6 +164,13 @@ public:
 	 * to the cmd interface
 	 */
 	virtual bool cb_commandline_init() { return true; }
+
+	/**
+	 * Callback function that can be used to initialize the importer
+	 * before the trace is consumed.
+	 */
+	virtual bool cb_initialize() { return true; }
+
 
 	virtual bool create_database();
 	virtual bool copy_to_database(fail::ProtoIStream &ps);

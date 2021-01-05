@@ -12,9 +12,7 @@ class LLVMDisassembler;
 class LLVMtoFailBochs : public LLVMtoFailTranslator {
 
 public:
-
 	LLVMtoFailBochs(LLVMDisassembler *disas);
-
 };
 } // end of namespace
 

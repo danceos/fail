@@ -87,6 +87,27 @@ void AdvancedMemoryImporter::insert_delayed_entries(bool finalizing)
 	// memory footprint
 }
 
+bool AdvancedMemoryImporter::cb_initialize() {
+	// Parse command line again, for jump-from and jump-to
+	// operations
+	CommandLine &cmd = CommandLine::Inst();
+	if (!cmd.parse()) {
+		std::cerr << "Error parsing arguments." << std::endl;
+		return false;
+	}
+
+	if (!m_elf) {
+		LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
+		return false;
+	}
+
+	m_disassembler.reset(new Disassembler(m_elf));
+	m_disassembler->disassemble();
+	m_instr_map = m_disassembler->getInstrMap();
+
+	return true;
+}
+
 bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instruction_count_t instr,
 	Trace_Event &ev)
 {
@@ -100,82 +121,14 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 	// (delayed) trace entries
 	insert_delayed_entries(false);
 
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-	if (!isDisassembled) {
-		if (!m_elf) {
-			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
-			return false;
-		}
 
-		disas.reset(new CapstoneDisassembler(m_elf));
-
-		disas->disassemble();
-		CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
-		LOG << "instructions disassembled: " << std::dec << instr_map.size() << std::endl;
-#if 0
-		for (CapstoneDisassembler::InstrMap::const_iterator it = instr_map.begin();
-			it != instr_map.end(); ++it) {
-			LOG << "DIS " << std::hex << it->second.address << " " << (int) it->second.length << std::endl;
-		}
-#endif
-	}
-
-	const CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
-	const CapstoneDisassembler::InstrMap::const_iterator it = instr_map.find(ev.ip());
-	if (it == instr_map.end()) {
-		LOG << "WARNING: CapstoneDisassembler hasn't disassembled instruction at 0x"
-			<< ev.ip() << " -- are you using Capstone < 4.0?" << std::endl;
+	const Disassembler::InstrMap::const_iterator it = m_instr_map->find(ev.ip());
+	if (it == m_instr_map->end()) {
+		LOG << "WARNING: Disassembler hasn't disassembled instruction at 0x"
+			<< ev.ip() << std::endl;
 		return true; // probably weird things will happen now
 	}
-	const CapstoneDisassembler::Instr &opcode = it->second;
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-	if (!binary) {
-		/* Disassemble the binary if necessary */
-		llvm::InitializeAllTargetInfos();
-		llvm::InitializeAllTargetMCs();
-		llvm::InitializeAllDisassemblers();
-
-		if (!m_elf) {
-			LOG << "Please give an ELF binary as parameter (-e/--elf)." << std::endl;
-			return false;
-		}
-
-		Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(m_elf->getFilename());
-		if (!BinaryOrErr) {
-			std::string Buf;
-			raw_string_ostream OS(Buf);
-			logAllUnhandledErrors(std::move(BinaryOrErr.takeError()), OS, "");
-			OS.flush();
-			LOG << m_elf->getFilename() << "': " << Buf << ".\n";
-			return false;
-		}
-		binary = BinaryOrErr.get().getBinary();
-
-// necessary due to an AspectC++ bug triggered by LLVM 3.3's dyn_cast()
-#ifndef __puma
-		ObjectFile *obj = dyn_cast<ObjectFile>(binary);
-		disas.reset(new LLVMDisassembler(obj));
-#endif
-		disas->disassemble();
-		LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
-		LOG << "instructions disassembled: " << std::dec << instr_map.size() << " Triple: " << disas->GetTriple() << std::endl;
-#if 0
-		for (LLVMDisassembler::InstrMap::const_iterator it = instr_map.begin();
-			it != instr_map.end(); ++it) {
-			LOG << "DIS " << std::hex << it->second.address << " " << (int) it->second.length << std::endl;
-		}
-#endif
-	}
-
-	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
-	const LLVMDisassembler::InstrMap::const_iterator it = instr_map.find(ev.ip());
-	if (it == instr_map.end()) {
-		LOG << "WARNING: LLVMDisassembler hasn't disassembled instruction at 0x"
-		    << ev.ip() << " -- are you using LLVM < 3.3?" << std::endl;
-		return true; // probably weird things will happen now
-	}
-	const LLVMDisassembler::Instr &opcode = it->second;
-#endif
+	const Disassembler::Instr &opcode = it->second;
 
 	/* Now we've got the opcode and know whether it's a conditional branch.  If
 	 * it is, the next IP event will tell us whether it was taken or not. */
@@ -193,13 +146,8 @@ bool AdvancedMemoryImporter::handle_ip_event(fail::simtime_t curtime, instructio
 bool AdvancedMemoryImporter::handle_mem_event(fail::simtime_t curtime, instruction_count_t instr,
 	Trace_Event &ev)
 {
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-	const CapstoneDisassembler::InstrMap &instr_map = disas->getInstrMap();
-	const CapstoneDisassembler::Instr &opcode = instr_map.at(ev.ip());
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-	const LLVMDisassembler::InstrMap &instr_map = disas->getInstrMap();
-	const LLVMDisassembler::Instr &opcode = instr_map.at(ev.ip());
-#endif
+	const Disassembler::Instr &opcode = m_instr_map->at(ev.ip());
+
 	DelayedTraceEntry entry = { curtime, instr, ev, opcode.opcode, (unsigned) branches_taken.size() };
 	delayed_entries.push_back(entry);
 

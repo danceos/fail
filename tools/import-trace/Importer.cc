@@ -3,6 +3,7 @@
 #include <utility> // std::pair
 #include "Importer.hpp"
 #include "util/Logger.hpp"
+#include "sal/faultspace/MemoryArea.hpp"
 
 using namespace fail;
 
@@ -18,6 +19,10 @@ bool Importer::init(const std::string &variant, const std::string &benchmark, Da
 		m_arch.getRegisterSetOfType(RT_TRACE);
 	LOG << "Importing to variant " << variant << "/" << benchmark
 		<< " (ID: " << m_variant_id << ")" << std::endl;
+
+	if (!cb_initialize())
+		return false;
+
 	return true;
 }
 
@@ -55,7 +60,7 @@ bool Importer::clear_database() {
 	ss << "DELETE FROM trace WHERE variant_id = " << m_variant_id;
 
 	bool ret = db->query(ss.str().c_str()) == 0 ? false : true;
-	LOG << "deleted " << db->affected_rows() << " rows from trace table" << std::endl;
+	LOG << "deleted " << std::dec << db->affected_rows() << " rows from trace table" << std::endl;
 	return ret;
 }
 
@@ -83,7 +88,7 @@ bool Importer::sanitycheck(std::string check_name, std::string fail_msg, std::st
 	}
 }
 
-bool Importer::copy_to_database(fail::ProtoIStream &ps) {
+bool Importer::copy_to_database(ProtoIStream &ps) {
 	// For now we just use the min/max occuring timestamp; for "sparse" traces
 	// (e.g., only mem accesses, only a subset of the address space) it might
 	// be a good idea to store this explicitly in the trace file, though.
@@ -314,24 +319,117 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	return true;
 }
 
-bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
-							   access_info_t &access, bool is_fake) {
-	Trace_Event e;
-	e.set_ip(end.ip);
-	e.set_memaddr(access.data_address);
-	e.set_width(access.data_width);
-	e.set_accesstype(access.access_type == 'R' ? e.READ : e.WRITE);
-	return add_trace_event(begin, end, e, is_fake);
+using margin_info_t = Importer::margin_info_t;
+std::ostream& operator<<(std::ostream& os, margin_info_t& v) {
+	os << std::hex << std::showbase;
+	os << "{ instr=" << v.dyninstr << ", ip="  << v.ip
+	   << ", mask=" << std::hex << (int)v.mask << ", syn=" << v.synthetic << "}";
+	return os << std::dec << std::noshowbase;
 }
 
-bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
-							   Trace_Event &event, bool known_outcome) {
-	if (!m_import_write_ecs && event.accesstype() == event.WRITE) {
+std::vector<margin_info_t>
+Importer::getLeftMargins(const FaultSpaceElement& fsp_elem,
+						 simtime_t time, instruction_count_t dyninstr,
+						 guest_address_t ip, uint8_t mask) {
+	std::vector<margin_info_t> results;
+
+	if(m_open_ecs.count(fsp_elem) == 0) {
+		/* If this fault space element has never been before we must
+		 * create a synthetic fallback margin, which contains all
+		 * bits and will used, if no event inside the trace has ever touched
+		 * a specific bit.
+		 */
+		m_open_ecs[fsp_elem].emplace_back(0, 0, m_time_trace_start, 0xFF, true);
+	}
+
+	// For a given FSE, we get the stack of all open left margins.
+	auto& left_margins = m_open_ecs[fsp_elem];
+
+	/* Within this stack, we go from the newsest to the oldest left
+	   margin and look for all margins that match our mask.
+
+	   While searching, we :
+	    (1) delete the matching bits from the left margins
+		(2) we delete the left margin, if it matched.
+	 */
+
+	assert(left_margins.size() > 0
+		   && "For a touched FSE, at least one margin must exist");
+
+	uint8_t found_bits = 0;
+	for(auto it = left_margins.rbegin(); it != left_margins.rend(); ++it) {
+		margin_info_t& margin = *it;
+		uint8_t overlap = margin.mask & mask;
+
+		// Sanity Check: There is at most one margin_info_t that matches our mask.
+		assert((overlap & found_bits) == 0
+			   && "Multiple margin_info_t matched our access mask");
+		found_bits |= overlap;
+
+		if (overlap) {
+			// create left margin which contains the bits of margin
+			// that are closed by this interval.
+			results.emplace_back(margin, overlap);
+
+			margin.mask ^= overlap; // delete bits
+
+			if (margin.mask == 0) {
+				left_margins.erase(std::next(it).base());
+			}
+		}
+	}
+
+	// Create a new margin for the current instruction, with the
+	// requested access mask.
+	left_margins.emplace_back(dyninstr+1, ip, time+1, mask);
+
+	return results;
+}
+
+bool Importer::add_faultspace_element(simtime_t curtime, instruction_count_t instr,
+									   const FaultSpaceElement &element,
+									   uint8_t mask, char access_type, Trace_Event& origin) {
+	LOG << std::hex << std::showbase
+		<< "[IP=" << origin.ip() << "] "
+		<< " working on element: " << element
+		<< " with access: " << access_type
+		<< " and mask "     << (int)mask << std::endl;
+
+	auto left_margins = getLeftMargins(element,curtime,instr,origin.ip(),mask);
+
+	for(auto& left_margin : left_margins) {
+		margin_info_t right_margin(instr, origin.ip(), curtime, left_margin.mask);
+
+		// skip zero-sized intervals: these can occur when an
+		// instruction accesses a fault location more than once. This
+		// for example happens, if memory is read and written (e.g.,
+		// INC, CMPXCHG) or if --ip is given and the instruction also reads EIP
+		if(left_margin.time > right_margin.time) {
+			continue;
+		}
+
+		// pass through potentially available extended trace information
+		fsp_address_t data_address = element.get_address();
+		if(!add_trace_row(left_margin, right_margin, data_address, access_type, origin)) {
+			LOG << "add_trace_row failed" << std::endl;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Importer::add_trace_row(margin_info_t& begin, margin_info_t &end,
+							 const fsp_address_t data_address,
+							 char access_type,
+							 Trace_Event& origin,
+							 bool known_outcome) {
+	if (!m_import_write_ecs && access_type == 'W') {
 		return true;
 	}
 
 	// insert extended trace info if configured and available
-	bool extended = m_extended_trace && event.has_trace_ext();
+	bool extended = m_extended_trace && origin.has_trace_ext();
 
 	std::string *insert_sql;
 	unsigned *columns;
@@ -343,6 +441,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	columns = extended ? &columns_extended : &columns_basic;
 
 	static unsigned num_additional_columns = 0;
+	LOG << "add interval:" <<  begin << " -> " << end << std::endl;
 
 	if (!insert_sql->size()) {
 		std::stringstream sql;
@@ -375,7 +474,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	std::map<int, std::pair<bool, uint32_t> > register_values;
 	std::map<int, std::pair<bool, uint32_t> > register_values_deref;
 	unsigned data_value = 0;
-	const Trace_Event_Extended& ev_ext = event.trace_ext();
+	const Trace_Event_Extended& ev_ext = origin.trace_ext();
 	if (extended) {
 		data_value = ev_ext.data();
 		for (int i = 0; i < ev_ext.registers_size(); i++) {
@@ -385,9 +484,8 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 		}
 	}
 
-	unsigned data_address = event.memaddr();
-	char accesstype = event.accesstype() == event.READ ? 'R' : 'W';
-	unsigned data_mask = 255;
+	unsigned mask = begin.mask;
+	assert(begin.mask == end.mask);
 
 	std::stringstream value_sql;
 	value_sql << "("
@@ -407,8 +505,8 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 	value_sql << begin.time << ","
 		<< end.time << ","
 		<< data_address << ","
-		<< data_mask << ","
-		<< "'" << accesstype << "',";
+		<< mask << ","
+		<< "'" << access_type << "',";
 
 	if (extended) {
 		value_sql << data_value << ",";
@@ -436,7 +534,7 @@ bool Importer::add_trace_event(margin_info_t &begin, margin_info_t &end,
 
 	// Ask specialized importers what concrete data they want to INSERT.
 	if (num_additional_columns &&
-		!database_insert_data(event, value_sql, num_additional_columns, known_outcome)) {
+		!database_insert_data(origin, value_sql, num_additional_columns, known_outcome)) {
 		return false;
 	}
 
@@ -472,10 +570,15 @@ void Importer::open_unused_ec_intervals() {
 	// we just don't know the extents of our fault space; just guessing by
 	// using the minimum and maximum addresses is not a good idea, we might
 	// have large holes in the fault space.
+
 	if (m_mm) {
+		auto filter = [] (address_t a) -> bool { return true; };
+		auto area = dynamic_cast<MemoryArea*>(&m_fsp.get_area("ram"));
 		for (MemoryMap::iterator it = m_mm->begin(); it != m_mm->end(); ++it) {
-			if (m_open_ecs.count(*it) == 0) {
-				newOpenEC(*it, m_time_trace_start, 0, 0);
+			for (auto &element : area->translate(*it, *it, filter)) { // exactly one element
+				if (m_open_ecs.count(element) == 0) {
+					m_open_ecs[element].emplace_back(0, 0, m_time_trace_start, 0xFF, true);
+				}
 			}
 		}
 	}
@@ -492,34 +595,27 @@ bool Importer::close_ec_intervals() {
 	// (synthetic read), the latter resulting in more experiments to be done.
 	for (AddrLastaccessMap::iterator lastuse_it = m_open_ecs.begin();
 		lastuse_it != m_open_ecs.end(); ++lastuse_it) {
+		// iterate over each left_margin and close with a similarily
+		// masked right margin unless the left margin is synthetic.
+		std::vector<margin_info_t>& margins = lastuse_it->second;
+		for(auto& left_margin: margins) {
+			// don't close synthetic intervals
+			// FIXME: this should probably be a function.
+			if(left_margin.synthetic)
+				continue;
+			margin_info_t right_margin(m_last_instr, m_last_ip, m_last_time, left_margin.mask);
+			// zero-sized?	skip.
+			// FIXME: look at timing instead?
+			if (left_margin.dyninstr > right_margin.dyninstr) {
+				continue;
+			}
 
-		access_info_t access;
-		access.access_type  = m_faultspace_rightmargin;
-		access.data_address = lastuse_it->first;
-		access.data_width   = 1; // One Byte
-
-		margin_info_t left_margin, right_margin;
-		left_margin = lastuse_it->second;
-
-		right_margin.dyninstr = m_last_instr;
-		right_margin.time     = m_last_time; // -1?
-		right_margin.ip       = m_last_ip; // The last event in the log.
-// #else
-//		// EcosKernelTestCampaign only variant: fault space ends with the last FI experiment
-//		FIXME probably implement this with cmdline parameter FAULTSPACE_CUTOFF
-//		right_margin.dyninstr = instr_rightmost;
-// #endif
-
-		// zero-sized?	skip.
-		// FIXME: look at timing instead?
-		if (left_margin.dyninstr > right_margin.dyninstr) {
-			continue;
-		}
-
-
-		if (!add_trace_event(left_margin, right_margin, access, true)) {
-			LOG << "add_trace_event failed" << std::endl;
-			return false;
+			Trace_Event t;
+			fsp_address_t data_address = lastuse_it->first.get_address();
+			if (!add_trace_row(left_margin, right_margin, data_address, m_faultspace_rightmargin, t)) {
+				LOG << "add_trace_row failed" << std::endl;
+				return false;
+			}
 		}
 	}
 

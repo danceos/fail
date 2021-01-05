@@ -39,8 +39,7 @@ class DatabaseCampaign : public Campaign {
 	id_map completed_pilots; // !< map: Pilot IDs -> result count
 #endif
 
-	bool m_inject_bursts; // !< inject burst faults?
-	DatabaseCampaignMessage::RegisterInjectionMode m_register_injection_mode; // !< inject into registers? OFF, ON, AUTO (= use registers if address is small)
+	DatabaseCampaignMessage::InjectionMode m_injection_mode; // !< How should we inject?
 
 public:
 	DatabaseCampaign() {};

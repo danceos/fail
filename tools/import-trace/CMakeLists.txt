@@ -53,16 +53,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MYSQL_CFLAGS}")
 
 add_executable(import-trace main.cc ${SRCS})
 
-target_link_libraries(import-trace 
-  ${PROTOBUF_LIBRARY} 
+target_link_libraries(import-trace
+  ${PROTOBUF_LIBRARY}
   ${MYSQL_LIBRARIES}
-  fail-util 
+  fail-util
   fail-comm
-  fail-sal
+  fail-fsp
 )
 
 if (BUILD_LLVM_DISASSEMBLER)
-  target_link_libraries(import-trace fail-llvmdisassembler fail-sal ${LLVM_LIBS} ${LLVM_LDFLAGS} ${Boost_LIBRARIES})
+  target_link_libraries(import-trace fail-llvmdisassembler fail-fsp ${LLVM_LIBS} ${LLVM_LDFLAGS} ${Boost_LIBRARIES})
 endif (BUILD_LLVM_DISASSEMBLER)
 
 if (BUILD_CAPSTONE_DISASSEMBLER)

@@ -3,6 +3,8 @@
 #include "Event.hpp"
 #include "Listener.hpp"
 #include "util/CommandLine.hpp"
+#include "sal/faultspace/RegisterArea.hpp"
+#include "sal/faultspace/MemoryArea.hpp"
 #include "Memory.hpp"
 
 namespace fail {
@@ -252,6 +254,22 @@ void SimulatorController::addCPU(ConcreteCPU* cpu)
 {
 	assert(cpu != NULL && "FATAL ERROR: Argument (cpu) cannot be NULL!");
 	m_CPUs.push_back(cpu);
+
+	// Connect FaultSpace with simulator via Memory Managers
+	if (m_CPUs.size() == 1) {
+		RegisterArea &reg_area = (RegisterArea&) m_fsp.get_area("register");
+		reg_area.set_state(cpu);
+	}
+}
+
+void SimulatorController::setMemoryManager(MemoryManager* pMem, memory_type_t type) {
+	m_Mems[type] = pMem;
+
+	// Connect FaultSpace with simulator via Memory Managers
+	std::string area_id = memtype_descriptions[type];
+	MemoryArea* area = dynamic_cast<fail::MemoryArea *>(&m_fsp.get_area(area_id));
+	assert(area != nullptr && "Faultspace has no entry for given memory area");
+	area->set_manager(pMem);
 }
 
 ConcreteCPU& SimulatorController::getCPU(size_t i) const
