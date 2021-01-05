@@ -13,10 +13,10 @@ CapstoneToFailTranslator *CapstoneDisassembler::getTranslator() {
 		switch (m_elf->m_machine) {
 		case EM_386:
 		case EM_X86_64:
-			ctofail = new CapstoneToFailBochs();
+			ctofail = new CapstoneToFailBochs(this);
 			break;
 		case EM_ARM:
-			ctofail = new CapstoneToFailGem5();
+			ctofail = new CapstoneToFailGem5(this);
 			break;
 		default:
 			std::cerr << "ArchType "
@@ -88,7 +88,7 @@ int CapstoneDisassembler::disassemble_section(Elf_Data *data, Elf32_Shdr *shdr32
 #if 0
 	std::cout << std::dec << "bit: " << m_elf->m_elfclass << " 32: "<< ELFCLASS32 << " 64: " << ELFCLASS64 << " arch: " << m_elf->m_machine << " arm:" << EM_ARM << " x86: " << EM_386 << " x86_64: "<< EM_X86_64 << std::endl;
 #endif
-	csh handle;
+	csh handle = 0;
 	cs_insn *insn;
 	size_t count, j;
 	cs_regs regs_read, regs_write;
@@ -113,6 +113,8 @@ int CapstoneDisassembler::disassemble_section(Elf_Data *data, Elf32_Shdr *shdr32
 			if (cs_open(CS_ARCH_ARM64, CS_MODE_ARM, &handle) != CS_ERR_OK)
 				return -1;
 		}
+	} else {
+		return -1;
 	}
 
 	cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);

@@ -2,6 +2,8 @@
 #define __SAL_CONFIG_HPP__
 
 #include <stdint.h>
+#include <map>
+#include <string>
 
 #include "config/VariantConfig.hpp"
 
@@ -38,8 +40,12 @@ typedef enum  {
 	MEMTYPE_RAM     = 0x1, //!< Access to volatile memory
 	MEMTYPE_FLASH   = 0x2, //!< Access to flash memory
 	MEMTYPE_TAGS    = 0x3, //!< Access to tag-bits (see SAIL)
-	MEMTYPE_EEPROM  = 0x4  //!< Access to EEPROM (see AVR)
+	MEMTYPE_EEPROM  = 0x4,  //!< Access to EEPROM (see AVR)
+	MEMTYPE_LAST,
 } memory_type_t; //! memory type (RAM, FLASH, etc...)
+
+// Defined in faultspace/FaultSpace.cc
+extern const char* memtype_descriptions[];
 
 // Note: The following flags are defined in SALConfig.cc.
 
@@ -57,6 +63,7 @@ extern const unsigned    ANY_TRAP;
 extern const unsigned    ANY_INTERRUPT;
 //! invalid timer id (e.g. for timer listeners)
 extern const timer_id_t  INVALID_TIMER;
+
 
 } // end-of-namespace: fail
 

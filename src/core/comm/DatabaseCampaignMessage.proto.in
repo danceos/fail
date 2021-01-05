@@ -22,14 +22,12 @@ message DatabaseCampaignMessage {
 
     required InjectionPointMessage injection_point	= 10 [(sql_ignore) = true];
 
-    required bool inject_bursts				= 11 [default = false];
-    enum RegisterInjectionMode {
-        OFF = 0;
-        AUTO = 1;
-        FORCE = 2;
-        RANDOMJUMP = 3;
+    enum InjectionMode {
+        BITFLIP    = 0;
+        BURST      = 1;
+        RANDOMJUMP = 2;
     }
-    optional RegisterInjectionMode register_injection_mode = 12 [default = OFF];
+    optional InjectionMode injection_mode = 11 [default = BITFLIP];
 }
 
 message DatabaseExperimentMessage {

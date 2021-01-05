@@ -174,4 +174,44 @@ ConcreteCPU& BochsController::detectCPU(BX_CPU_C* pCPU) const
 	return getCPU(i);
 }
 
+void BochsController::redecodeCurrentInstruction(ConcreteCPU* cpu) {
+	/* Flush Instruction Caches and Prefetch queue */
+	BX_CPU_C *cpu_context = BX_CPU(cpu->getId());
+	cpu_context->invalidate_prefetch_q();
+	cpu_context->iCache.flushICacheEntries();
+
+	guest_address_t pc = cpu->getInstructionPointer();
+	bxInstruction_c *currInstr = this->getCurrentInstruction();
+
+	m_log << "REDECODE INSTRUCTION @ IP 0x" << std::hex << pc << std::endl;
+
+	guest_address_t eipBiased = pc + cpu_context->eipPageBias;
+	Bit8u instr_plain[15];
+
+	MemoryManager& mm = this->getMemoryManager();
+	for (unsigned i = 0; i < sizeof(instr_plain); ++i) {
+		if (!mm.isMapped(pc + i)) {
+			m_log << "REDECODE: 0x" << std::hex << pc+i << "UNMAPPED" << std::endl;
+			// TODO: error?
+			return;
+		}
+	}
+
+	mm.getBytes(pc, sizeof(instr_plain), instr_plain);
+
+	guest_address_t remainingInPage = cpu_context->eipPageWindowSize - eipBiased;
+	int ret;
+#if BX_SUPPORT_X86_64
+	if (cpu_context->cpu_mode == BX_MODE_LONG_64)
+		ret = cpu_context->fetchDecode64(instr_plain, currInstr, remainingInPage);
+	else
+#endif
+		ret = cpu_context->fetchDecode32(instr_plain, currInstr, remainingInPage);
+	if (ret < 0) {
+		// handle instrumentation callback inside boundaryFetch
+		cpu_context->boundaryFetch(instr_plain, remainingInPage, currInstr);
+	}
+}
+
+
 } // end-of-namespace: fail

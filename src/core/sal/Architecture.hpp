@@ -3,6 +3,8 @@
 #define __ARCHITECTURE_HPP__
 
 #include "config/FailConfig.hpp"
+#include "config/VariantConfig.hpp"
+
 
 #ifdef BUILD_X86
 #include "x86/X86Architecture.hpp"

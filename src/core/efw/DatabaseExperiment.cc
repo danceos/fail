@@ -13,14 +13,13 @@
 #include "sal/SALConfig.hpp"
 #include "sal/Memory.hpp"
 #include "sal/Listener.hpp"
+#include "sal/faultspace/FaultSpace.hpp"
+#include "sal/faultspace/RegisterArea.hpp"
+#include "sal/faultspace/MemoryArea.hpp"
+
 #include "efw/DatabaseExperiment.hpp"
 #include "comm/DatabaseCampaignMessage.pb.h"
 
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-#  include "util/capstonedisassembler/CapstoneToFailTranslator.hpp"
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-#  include "util/llvmdisassembler/LLVMtoFailTranslator.hpp"
-#endif
 
 //#define LOCAL
 
@@ -30,125 +29,66 @@ using namespace google::protobuf;
 
 // Check if configuration dependencies are satisfied:
 #if !defined(CONFIG_EVENT_BREAKPOINTS) || !defined(CONFIG_SR_RESTORE)
-     #error This experiment needs: breakpoints, restore. Enable these in the configuration.
+	#error This experiment needs: breakpoints, restore. Enable these in the configuration.
 #endif
 
 DatabaseExperiment::~DatabaseExperiment()  {
 	delete this->m_jc;
 }
 
-void DatabaseExperiment::redecodeCurrentInstruction() {
-	/* Flush Instruction Caches and Prefetch queue */
-	BX_CPU_C *cpu_context = simulator.getCPUContext();
-	cpu_context->invalidate_prefetch_q();
-	cpu_context->iCache.flushICacheEntries();
+unsigned DatabaseExperiment::injectFault(DatabaseCampaignMessage * fsppilot, unsigned bitpos) {
+	fsp_address_t data_address = fsppilot->data_address();
 
-	guest_address_t pc = simulator.getCPU(0).getInstructionPointer();
-	bxInstruction_c *currInstr = simulator.getCurrentInstruction();
-
-	m_log << "REDECODE INSTRUCTION @ IP 0x" << std::hex << pc << endl;
-
-	guest_address_t eipBiased = pc + cpu_context->eipPageBias;
-	Bit8u instr_plain[15];
-
-	MemoryManager& mm = simulator.getMemoryManager();
-	for (unsigned i = 0; i < sizeof(instr_plain); ++i) {
-		if (!mm.isMapped(pc + i)) {
-			m_log << "REDECODE: 0x" << std::hex << pc+i << "UNMAPPED" << endl;
-			// TODO: error?
-			return;
-		}
-	}
-
-	mm.getBytes(pc, sizeof(instr_plain), instr_plain);
-
-	guest_address_t remainingInPage = cpu_context->eipPageWindowSize - eipBiased;
-	int ret;
-#if BX_SUPPORT_X86_64
-	if (cpu_context->cpu_mode == BX_MODE_LONG_64)
-		ret = cpu_context->fetchDecode64(instr_plain, currInstr, remainingInPage);
-	else
-#endif
-		ret = cpu_context->fetchDecode32(instr_plain, currInstr, remainingInPage);
-	if (ret < 0) {
-		// handle instrumentation callback inside boundaryFetch
-		cpu_context->boundaryFetch(instr_plain, remainingInPage, currInstr);
-	}
-}
-
-unsigned DatabaseExperiment::injectFault(
-	address_t data_address, unsigned bitpos, bool inject_burst,
-	bool inject_registers, bool force_registers, bool randomjump) {
-	unsigned value, injected_value;
-
-	if (randomjump) {
+	// Random Jump Injection
+	if (fsppilot->injection_mode() == fsppilot->RANDOMJUMP) {
 		// interpret data_address as new value for the IP, i.e. jump there
-		address_t current_PC = simulator.getCPU(0).getInstructionPointer();
+		ConcreteCPU &cpu = simulator.getCPU(0);
+		address_t current_PC = cpu.getInstructionPointer();
 		address_t new_PC     = data_address;
-		m_log << "jump from 0x" << hex << current_PC << " to 0x" << new_PC << std::endl;
-		simulator.getCPU(0).setRegisterContent(simulator.getCPU(0).getRegister(RID_PC), new_PC);
-		redecodeCurrentInstruction();
+		m_log << "INJECT: jump from 0x" << hex << current_PC << " to 0x" << new_PC << std::endl;
 
-		// set program counter
-		value = current_PC;
-		injected_value = new_PC;
-
-	/* First 128 registers, TODO use LLVMtoFailTranslator::getMaxDataAddress() */
-	} else if (data_address < (128 << 4) && inject_registers) {
-#if defined(BUILD_LLVM_DISASSEMBLER) || defined(BUILD_CAPSTONE_DISASSEMBLER)
-#if defined(BUILD_LLVM_DISASSEMBLER)
-		typedef LLVMtoFailTranslator XtoFailTranslator;
-#elif defined(BUILD_CAPSTONE_DISASSEMBLER)
-		typedef CapstoneToFailTranslator XtoFailTranslator;
-#endif
-		// register FI
-		XtoFailTranslator::reginfo_t reginfo =
-			XtoFailTranslator::reginfo_t::fromDataAddress(data_address, 1);
-
-		value = XtoFailTranslator::getRegisterContent(simulator.getCPU(0), reginfo);
-		if (inject_burst) {
-			injected_value = value ^ 0xff;
-			m_log << "INJECTING BURST at: REGISTER " << dec << reginfo.id
-				<< " bitpos " << (reginfo.offset + bitpos) << endl;
-		} else {
-			injected_value = value ^ (1 << bitpos);
-			m_log << "INJECTING BIT-FLIP at: REGISTER " << dec << reginfo.id
-				<< " bitpos " << (reginfo.offset + bitpos) << endl;
-		}
-		XtoFailTranslator::setRegisterContent(simulator.getCPU(0), reginfo, injected_value);
-		if (reginfo.id == RID_PC) {
-			// FIXME move this into the Bochs backend
-			m_log << "Redecode current instruction" << endl;
-			redecodeCurrentInstruction();
-		}
-#else
-		m_log << "ERROR: Not compiled with LLVM or Capstone.  Enable BUILD_LLVM_DISASSEMBLER OR BUILD_CAPSTONE_DISASSEMBLER at buildtime." << endl;
-		simulator.terminate(1);
-#endif
-	} else if (!force_registers) {
-		// memory FI
-		value = m_mm.getByte(data_address);
-
-		if (inject_burst) {
-			injected_value = value ^ 0xff;
-			m_log << "INJECTING BURST at: MEM 0x"
-				<< hex << setw(2) << setfill('0') << data_address << endl;
-		} else {
-			injected_value = value ^ (1 << bitpos);
-			m_log << "INJECTING BIT-FLIP (" << dec << bitpos << ") at: MEM 0x"
-				<< hex << setw(2) << setfill('0') << data_address << endl;
-		}
-		m_mm.setByte(data_address, injected_value);
-
-	} else {
-		m_log << "WARNING: Skipping injection, data address 0x"
-			<< hex << data_address << " out of range." << endl;
-		return 0;
+		cpu.setRegisterContent(cpu.getRegister(RID_PC), new_PC);
+		simulator.redecodeCurrentInstruction(&cpu);
+		return current_PC;
 	}
+
+	// Regular Injections
+	std::unique_ptr<FaultSpaceElement> target = m_fsp.decode(data_address);
+	FaultSpaceElement::injector_result result;
+	if(fsppilot->injection_mode() == fsppilot->BURST) {
+		m_log << "INJECTING BURST " << endl;
+		uint8_t mask = static_cast<uint8_t>(fsppilot->data_mask());
+		result = target->inject([&] (unsigned val) -> unsigned {
+			return val ^ (mask & 0xFF);
+		});
+	} else {
+		m_log << "INJECTING BITFLIP (bitpos = " << bitpos << ") " << endl;
+		result = target->inject([&] (unsigned val) -> unsigned {
+			return val ^ (1 << bitpos);
+		});
+	}
+	// Redecode Instruction on RID_PC Change
+	// FIXME: After AspectC++ is removed, we can push a simulator
+	// instance down into the fault-space hierarchy and redecode in
+	// RegisterElement::inject(). At the moment, this is impossible as
+	// AspectC++ introduced linking dependencies on Bochs symbols.
+	if (auto reg = dynamic_cast<RegisterElement*>(target.get())) {
+		ConcreteCPU & cpu = simulator.getCPU(0);
+		if (reg->get_base()->getId() == RID_PC) {
+			simulator.redecodeCurrentInstruction(&cpu);
+		}
+	}
+
+
 	m_log << hex << setw(2) << setfill('0')
-		<< " value: 0x" << value
-		<<     " -> 0x" << injected_value << endl;
-	return value;
+		<< std::showbase
+		<< "\tIP: " << fsppilot->injection_instr_absolute() << endl
+		<< "\tFAULT SITE: FSP " << data_address
+		<< " -> AREA " << target->get_area()->get_name() << " @ " << target->get_offset() << endl
+		<< "\telement: " << *target << endl
+		<< "\tvalue: 0x" << (int)result.original
+		<<     " -> 0x" << (int)result.injected << endl;
+	return result.original;
 }
 
 template<class T>
@@ -177,7 +117,15 @@ T * protobufFindSubmessageByTypename(Message *msg, const std::string &name) {
 
 bool DatabaseExperiment::run()
 {
-    m_log << "STARTING EXPERIMENT" << endl;
+	m_log << "STARTING EXPERIMENT" << endl;
+
+	// Initialize the faultspace abstraction for injection mode
+	RegisterArea &reg_area = (RegisterArea&) m_fsp.get_area("register");
+	reg_area.set_state(&simulator.getCPU(0));
+	MemoryArea   &mem_area = (MemoryArea&) m_fsp.get_area("ram");
+	mem_area.set_manager(&simulator.getMemoryManager());
+
+
 
 	if (!this->cb_start_experiment()) {
 		m_log << "Initialization failed. Exiting." << endl;
@@ -187,7 +135,7 @@ bool DatabaseExperiment::run()
 #if defined(BUILD_BOCHS)
 	#define MAX_EXECUTED_JOBS 25
 #else
-    #define MAX_EXECUTED_JOBS UINT_MAX
+	#define MAX_EXECUTED_JOBS UINT_MAX
 #endif
 	unsigned executed_jobs = 0;
 	while (executed_jobs < MAX_EXECUTED_JOBS || m_jc->getNumberOfUndoneJobs() > 0) {
@@ -214,32 +162,25 @@ bool DatabaseExperiment::run()
 #endif
 
 		unsigned  injection_instr = fsppilot->injection_instr();
-        guest_address_t data_address = fsppilot->data_address();
 
-        unsigned unchecked_mask = fsppilot->data_mask();
-        assert(unchecked_mask <=255 && "mask covers more than 8 bit, this currently not unsupported!");
-        uint8_t mask = static_cast<uint8_t>(unchecked_mask);
-		unsigned injection_width = 1;
-        // FIXME: Injection for Randomjump
-		if (fsppilot->inject_bursts() || fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP) {
-			injection_width = 8;
+		assert(fsppilot->data_mask() <=255 && "mask covers more than 8 bit, this is unsupported!");
+		uint8_t mask = static_cast<uint8_t>(fsppilot->data_mask());
+
+		bool single_injection = false;
+		if (   fsppilot->injection_mode() == fsppilot->BURST
+			|| fsppilot->injection_mode() == fsppilot->RANDOMJUMP) {
+			single_injection = true;
 		}
 
-        m_log << std::hex << std::showbase
-            << " fsp: " << data_address
-            << " mask: " << std::bitset<8>(mask)
-            << std::dec
-            << " injection_width: " << injection_width << std::endl;
-
-		for (unsigned bit_offset = 0; bit_offset < 8; bit_offset += injection_width) {
-            // if the mask is zero at this bit offset, this bit shall not be injected.
-            bool allowed_mask = mask & (1 << bit_offset);
-            // additionally, always inject once for bursts.
-            // this first bit might be unset otherwise and thus,
-            // this address will never be injected otherwise.
-            if(!(allowed_mask || fsppilot->inject_bursts())) {
-                continue;
-            }
+		for (unsigned bit_offset = 0; bit_offset < 8; bit_offset += 1) {
+			// if the mask is zero at this bit offset, this bit shall not be injected.
+			bool allowed_mask = mask & (1 << bit_offset);
+			// additionally, always inject once for bursts.
+			// this first bit might be unset otherwise and thus,
+			// this address will never be injected otherwise.
+			if(!allowed_mask && !single_injection) {
+				continue;
+			}
 
 			// 8 results in one job
 			Message *outer_result = cb_new_result(param);
@@ -261,7 +202,7 @@ bool DatabaseExperiment::run()
 			}
 
 			// Do we need to fast-forward at all?
-			fail::BaseListener *listener = 0;
+			BaseListener *listener = 0;
 			if (injection_instr > 0) {
 				// Create a listener that matches any IP event. It is used to
 				// forward to the injection point.
@@ -305,13 +246,8 @@ bool DatabaseExperiment::run()
 			simulator.clearListeners(this);
 
 			// inject fault (single-bit flip or burst)
-			result->set_original_value(
-				injectFault(data_address, bit_offset,
-					fsppilot->inject_bursts(),
-					fsppilot->register_injection_mode() != fsppilot->OFF,
-					fsppilot->register_injection_mode() == fsppilot->FORCE,
-					fsppilot->register_injection_mode() == fsppilot->RANDOMJUMP));
-			result->set_injection_width(injection_width);
+			result->set_original_value(injectFault(fsppilot, bit_offset));
+			result->set_injection_width(single_injection ? 8 : 1);
 
 			if (!this->cb_before_resume()) {
 				continue; // Continue to next experiment
@@ -329,6 +265,10 @@ bool DatabaseExperiment::run()
 			this->cb_after_resume(listener);
 
 			simulator.clearListeners(this);
+
+			// Break bit_offset loop, if we only perform a single injection
+			if (single_injection)
+				break;
 		}
 #ifndef LOCAL
 		m_jc->sendResult(*param);

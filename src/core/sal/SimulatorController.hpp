@@ -11,6 +11,7 @@
 #include "SALConfig.hpp"
 #include "ConcreteCPU.hpp"
 #include "util/Logger.hpp"
+#include "sal/faultspace/FaultSpace.hpp"
 
 
 
@@ -45,6 +46,7 @@ protected:
 	std::vector<ConcreteCPU*> m_CPUs; //!< list of CPUs in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
 	std::string m_argv0; //!< Invocation name of simulator process
+	FaultSpace m_fsp;
 public:
 	SimulatorController()
 		: m_log("SimulatorController", false),
@@ -53,8 +55,8 @@ public:
 	SimulatorController(MemoryManager* mem)
 		: m_log("SimulatorController", false),
 		  m_isInitialized(false) {
-			m_Mems[MEMTYPE_RAM] = mem; // The RAM memory manager is the default
-		}
+		setMemoryManager(mem);
+	}
 	virtual ~SimulatorController() { }
 	/**
 	 * @brief Initialization function each implementation needs to call on
@@ -173,6 +175,11 @@ public:
 	 */
 	size_t getCPUCount() const { return m_CPUs.size(); }
 	/**
+	 * Redecode instruction after we have changed RID_PC. Has to be
+	 * called after setRegisterContent(RID_PC).
+	 */
+	virtual void redecodeCurrentInstruction(ConcreteCPU* cpu) { /* empty */}
+	/**
 	 * Returns the (constant) initialized memory manager.
 	 * @return a reference to the memory manager
 	 */
@@ -186,9 +193,11 @@ public:
 	 * Sets the memory manager.
 	 * @param pMem a new concrete memory manager
 	 */
-	void setMemoryManager(MemoryManager* pMem, memory_type_t type=MEMTYPE_RAM) {
-		m_Mems[type] = pMem;
-	}
+	void setMemoryManager(MemoryManager* pMem, memory_type_t type=MEMTYPE_RAM);
+	/**
+	 * Get the connected fault space abstraction
+	 */
+	FaultSpace &getFaultSpace() { return m_fsp; }
 	/* ********************************************************************
 	 * Experiment-Flow & Listener Management API:
 	 * ********************************************************************/

@@ -7,7 +7,7 @@ namespace fail {
 
 class CapstoneToFailBochs : public CapstoneToFailTranslator {
 public:
-	CapstoneToFailBochs();
+	CapstoneToFailBochs(CapstoneDisassembler *disas);
 };
 } // end of namespace
 
