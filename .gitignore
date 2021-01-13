@@ -54,5 +54,7 @@ debuggers/openocd/src/startup.tcl
 debuggers/openocd/src/startup_tcl.c
 debuggers/openocd/src/target/xscale_debug.h
 debuggers/openocd/stamp-h1
-
 .idea
+
+simulators/sail/riscv
+simulators/sail/cheri-riscv

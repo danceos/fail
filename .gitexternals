@@ -1,0 +1,13 @@
+[external "sail-riscv"]
+	path = simulators/sail/riscv
+	url = git@github.com:danceos/sail-riscv.git
+	branch = master
+        only = update
+	vcs = git
+
+[external "sail-cheri-riscv"]
+	path = simulators/sail/cheri-riscv
+	url = git@github.com:danceos/sail-cheri-riscv.git
+	branch = master
+        only = update
+	vcs = git
