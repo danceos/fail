@@ -16,6 +16,7 @@ join fspgroup g
     on  t.variant_id = g.variant_id
     and t.instr2 = g.instr2
     and t.data_address = g.data_address
+    and (t.data_mask & g.data_mask)
 join fsppilot p
     on  t.variant_id = p.variant_id
     and g.fspmethod_id = p.fspmethod_id

@@ -155,7 +155,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 	if (!m_use_known_results) {
 		// FIXME: change strategy when trace entries have IDs, insert into fspgroup first
 		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, "
-			<< "injection_instr_absolute, data_address, data_width, fspmethod_id) VALUES ";
+			<< "injection_instr_absolute, data_address, data_mask, fspmethod_id) VALUES ";
 		std::string insert_sql(ss.str());
 		ss.str("");
 
@@ -164,7 +164,7 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 			Pilot p = pop.remove(pos);
 			ss << "(0," << variant.id << "," << p.instr2 << "," << p.instr2
 				<< "," << p.instr2_absolute << "," << p.data_address
-				<< ",1," << m_method_id << ")";
+				<< ",255," << m_method_id << ")";
 			db->insert_multiple(insert_sql.c_str(), ss.str().c_str());
 			ss.str("");
 		}
@@ -173,9 +173,9 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		uint64_t num_fsppilot_entries = samplerows;
 
 		// single entry for known outcome (write access)
-		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, data_width, fspmethod_id) "
+		ss << "INSERT INTO fsppilot (known_outcome, variant_id, instr2, injection_instr, injection_instr_absolute, data_address, data_mask, fspmethod_id) "
 			  "SELECT 1, variant_id, instr2, instr2, instr2_absolute, "
-			  "  data_address, width, " << m_method_id << " "
+			  "  data_address, data_mask, " << m_method_id << " "
 			  "FROM trace "
 			  "WHERE variant_id = " << variant.id << " AND accesstype = 'W' "
 			  "ORDER BY instr2 ASC "

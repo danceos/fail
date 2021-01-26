@@ -1,3 +1,4 @@
+
 if(BUILD_BOCHS)
 	set(SRCS
 		CPU.cc
@@ -119,9 +120,11 @@ if(CONFIG_FAST_BREAKPOINTS)
 	)
 endif(CONFIG_FAST_BREAKPOINTS)
 
+add_subdirectory(faultspace)
+
 
 add_library(fail-sal ${SRCS})
-target_link_libraries(fail-sal fail-efw fail-util)
+target_link_libraries(fail-sal fail-efw fail-fsp fail-util)
 
 foreach(exp ${EXPERIMENTS_ACTIVATED})
 	target_link_libraries(fail-sal fail-${exp})

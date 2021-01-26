@@ -2,6 +2,14 @@
 
 namespace fail {
 
+const char* memtype_descriptions[MEMTYPE_LAST] = {
+	"unknown",
+	"ram",
+	"flash",
+	"tags",
+	"eeprom",
+};
+
 // Flag initialization depends on the current selected simulator
 // (For now, the initialization values are all the same):
 #if defined BUILD_BOCHS || defined BUILD_GEM5 || \

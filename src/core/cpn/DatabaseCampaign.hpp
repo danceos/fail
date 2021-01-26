@@ -39,8 +39,7 @@ class DatabaseCampaign : public Campaign {
 	id_map completed_pilots; // !< map: Pilot IDs -> result count
 #endif
 
-	bool m_inject_bursts; // !< inject burst faults?
-	DatabaseCampaignMessage::RegisterInjectionMode m_register_injection_mode; // !< inject into registers? OFF, ON, AUTO (= use registers if address is small)
+	DatabaseCampaignMessage::InjectionMode m_injection_mode; // !< How should we inject?
 
 public:
 	DatabaseCampaign() {};
@@ -58,15 +57,6 @@ public:
 	 * @return \c true if the campaign was successful, \c false otherwise
 	 */
 	virtual bool run_variant(fail::Database::Variant);
-
-	/**
-	 * How many results have to are expected from each fsppilot. If
-	 * there are less result rows, the pilot will be again sent to the clients
-	 * @return \c exptected number of results
-	 */
-	virtual int expected_number_of_results(std::string variant, std::string benchmark) {
-		return (m_inject_bursts ? 1 : 8);
-	}
 
 	/**
 	 * Callback function that can be used to add command line options

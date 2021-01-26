@@ -49,13 +49,7 @@ bool DatabaseCampaign::run() {
 	CommandLine::option_handle BURST =
 		cmd.addOption("","inject-bursts", Arg::None,
 			"--inject-bursts \tinject burst faults (default: single bitflips)");
-	CommandLine::option_handle REGISTERS =
-		cmd.addOption("","inject-registers", Arg::None,
-			"--inject-registers \tinject into ISA registers (default: memory)");
-	CommandLine::option_handle REGISTERS_FORCE =
-		cmd.addOption("","force-inject-registers", Arg::None,
-			"--force-inject-registers \tinject into ISA registers only, ignore high addresses");
-	CommandLine::option_handle REGISTERS_RANDOMJUMP =
+	CommandLine::option_handle RANDOMJUMP =
 		cmd.addOption("","inject-randomjumps", Arg::None,
 			"--inject-randomjumps \tinject random jumps (interpret data_address as jump target, as prepared by RandomJumpImporter)");
 
@@ -105,25 +99,14 @@ bool DatabaseCampaign::run() {
 	}
 
 	if (cmd[BURST]) {
-		m_inject_bursts = true;
+		m_injection_mode = DatabaseCampaignMessage::BURST;
 		log_send << "fault model: burst" << std::endl;
+	} else if (cmd[RANDOMJUMP]) {
+		m_injection_mode = DatabaseCampaignMessage::RANDOMJUMP;
+		log_send << "fault model: randomjump" << std::endl;
 	} else {
-		m_inject_bursts = false;
+		m_injection_mode = DatabaseCampaignMessage::BITFLIP;
 		log_send << "fault model: single-bit flip" << std::endl;
-	}
-
-	if (cmd[REGISTERS] && !cmd[REGISTERS_FORCE]) {
-		m_register_injection_mode = DatabaseCampaignMessage::AUTO;
-		log_send << "register injection: auto" << std::endl;
-	} else if (cmd[REGISTERS_FORCE]) {
-		m_register_injection_mode = DatabaseCampaignMessage::FORCE;
-		log_send << "register injection: on" << std::endl;
-	} else if (cmd[REGISTERS_RANDOMJUMP]) {
-		m_register_injection_mode = DatabaseCampaignMessage::RANDOMJUMP;
-		log_send << "register injection: randomjump" << std::endl;
-	} else {
-		m_register_injection_mode = DatabaseCampaignMessage::OFF;
-		log_send << "register injection: off" << std::endl;
 	}
 
 	if (cmd[PRUNER]) {
@@ -202,23 +185,22 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	/* Gather jobs */
 	unsigned long experiment_count;
 	std::stringstream ss;
-	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, p.data_width, t.instr1, t.instr2 ";
+	std::string sql_select = "SELECT p.id, p.injection_instr, p.injection_instr_absolute, p.data_address, (t.data_mask & p.data_mask), t.instr1, t.instr2 ";
 	ss << " FROM fsppilot p "
 	   << " JOIN trace t"
-	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2"
+	   << " ON t.variant_id = p.variant_id AND t.data_address = p.data_address AND t.instr2 = p.instr2 AND (t.data_mask & p.data_mask)"
 	   << " WHERE p.fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
 	   << "	  AND p.variant_id = " << variant.id
 	   << " ORDER BY t.instr1"; // Smart-Hopping needs this ordering
 	std::string sql_body = ss.str();
 
 	/* Get the number of unfinished experiments */
-	MYSQL_RES *count = db->query(("SELECT COUNT(*) " + sql_body).c_str(), true);
+	MYSQL_RES *count = db->query(("SELECT COUNT(*) as injections " + sql_body).c_str(), true);
 	if (!count) {
 		exit(1);
 	}
 	MYSQL_ROW row = mysql_fetch_row(count);
 	experiment_count = strtoul(row[0], NULL, 10);
-
 
 	MYSQL_RES *pilots = db->query_stream ((sql_select + sql_body).c_str());
 	if (!pilots) {
@@ -235,22 +217,28 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 	// calculating at trace instruction zero
 	ConcreteInjectionPoint ip;
 
-	unsigned expected_results = expected_number_of_results(variant.variant, variant.benchmark);
-
 	unsigned sent_pilots = 0, skipped_pilots = 0;
+	unsigned long long expected_injections = 0;
 	while ((row = mysql_fetch_row(pilots)) != 0) {
 		unsigned pilot_id        = strtoul(row[0], NULL, 10);
+		unsigned injection_instr = strtoul(row[1], NULL, 10);
+		uint64_t data_address    = strtoul(row[3], NULL, 10);
+		unsigned data_mask       = strtoul(row[4], NULL, 10);
+		unsigned instr1          = strtoul(row[5], NULL, 10);
+		unsigned instr2          = strtoul(row[6], NULL, 10);
+
+		unsigned expected_results = __builtin_popcount(data_mask);
+		if (m_injection_mode == DatabaseCampaignMessage::BURST
+			|| m_injection_mode == DatabaseCampaignMessage::RANDOMJUMP)
+			expected_results = 1;
+
 		if (existing_results_for_pilot(pilot_id) == expected_results) {
 			skipped_pilots++;
 			campaignmanager.skipJobs(1);
 			continue;
 		}
+		expected_injections += expected_results - existing_results_for_pilot(pilot_id);
 
-		unsigned injection_instr = strtoul(row[1], NULL, 10);
-		unsigned data_address    = strtoul(row[3], NULL, 10);
-		unsigned data_width      = strtoul(row[4], NULL, 10);
-		unsigned instr1          = strtoul(row[5], NULL, 10);
-		unsigned instr2          = strtoul(row[6], NULL, 10);
 
 		DatabaseCampaignMessage pilot;
 		pilot.set_pilot_id(pilot_id);
@@ -267,9 +255,8 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			pilot.set_injection_instr_absolute(injection_instr_absolute);
 		}
 		pilot.set_data_address(data_address);
-		pilot.set_data_width(data_width);
-		pilot.set_inject_bursts(m_inject_bursts);
-		pilot.set_register_injection_mode(m_register_injection_mode);
+		pilot.set_data_mask(data_mask);
+		pilot.set_injection_mode(m_injection_mode);
 
 		this->cb_send_pilot(pilot);
 
@@ -277,6 +264,7 @@ bool DatabaseCampaign::run_variant(Database::Variant variant) {
 			log_send << "pushed " << sent_pilots << " pilots into the queue" << std::endl;
 		}
 	}
+	log_send << "expecting " << expected_injections << " injections to take place." << std::endl;
 
 	if (*mysql_error(db->getHandle())) {
 		log_send << "MYSQL ERROR: " << mysql_error(db->getHandle()) << std::endl;
@@ -312,7 +300,7 @@ void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &var
 	log_send << "loading completed pilot IDs ..." << std::endl;
 
 	std::stringstream sql;
-	sql << "SELECT pilot_id, COUNT(*) FROM fsppilot p"
+	sql << "SELECT pilot_id, COUNT(*), bit_count(data_mask) FROM fsppilot p"
 	    << " JOIN " << db_connect.result_table() << " r ON r.pilot_id = p.id"
 	    << " WHERE variant_id in (" << variant_str.str() << ")"
 	    << "   AND fspmethod_id IN (SELECT id FROM fspmethod WHERE method LIKE '" << m_fspmethod << "')"
@@ -326,6 +314,7 @@ void DatabaseCampaign::load_completed_pilots(std::vector<Database::Variant> &var
 	while ((row = mysql_fetch_row(ids)) != 0) {
 		unsigned pilot_id     = strtoul(row[0], NULL, 10);
 		unsigned result_count = strtoul(row[1], NULL, 10);
+		unsigned inj_count    = strtoul(row[2], NULL, 10);
 #ifndef __puma
 		completed_pilots.add(
 			make_pair(

@@ -328,12 +328,12 @@ protected:
 WP_CTOR_SCOPE:
 	MemAccessListener(MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
-		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchMemType(ANY_MEMORY), m_WatchWidth(1), m_WatchType(type), m_Data() { }
-	MemAccessListener(address_t addr, memory_type_t memtype = ANY_MEMORY,
+		: BaseListener(cpu), m_WatchAddr(ANY_ADDR), m_WatchMemType(MEMTYPE_RAM), m_WatchWidth(1), m_WatchType(type), m_Data() { }
+	MemAccessListener(address_t addr, memory_type_t memtype = MEMTYPE_RAM,
 					  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_WatchAddr(addr), m_WatchMemType(memtype), m_WatchWidth(1), m_WatchType(type), m_Data() { }
-	MemAccessListener(const ElfSymbol &symbol, memory_type_t memtype = ANY_MEMORY,
+	MemAccessListener(const ElfSymbol &symbol, memory_type_t memtype = MEMTYPE_RAM,
 					  MemAccessEvent::access_type_t type = MemAccessEvent::MEM_READWRITE,
 					  ConcreteCPU* cpu = NULL)
 		: BaseListener(cpu), m_WatchAddr(symbol.getAddress()), m_WatchMemType(memtype), m_WatchWidth(symbol.getSize()), m_WatchType(type) , m_Data() { }
@@ -462,7 +462,7 @@ class MemReadListener : public MemAccessListener {
 WPREAD_CTOR_SCOPE:
 	MemReadListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_READ, cpu) { }
-	MemReadListener(address_t addr, memory_type_t type = ANY_MEMORY, ConcreteCPU* cpu = NULL)
+	MemReadListener(address_t addr, memory_type_t type = MEMTYPE_RAM, ConcreteCPU* cpu = NULL)
 		: MemAccessListener(addr, type, MemAccessEvent::MEM_READ, cpu) { }
 };
 
@@ -479,7 +479,7 @@ class MemWriteListener : public MemAccessListener {
 WPWRITE_CTOR_SCOPE:
 	MemWriteListener(ConcreteCPU* cpu = NULL)
 		: MemAccessListener(MemAccessEvent::MEM_WRITE, cpu) { }
-	MemWriteListener(address_t addr, memory_type_t type = ANY_MEMORY, ConcreteCPU* cpu = NULL)
+	MemWriteListener(address_t addr, memory_type_t type = MEMTYPE_RAM, ConcreteCPU* cpu = NULL)
 		: MemAccessListener(addr, type, MemAccessEvent::MEM_WRITE, cpu) { }
 };
 

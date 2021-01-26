@@ -7,6 +7,10 @@
 #include "util/Logger.hpp"
 #include <string>
 #include <stdlib.h>
+#include <stdint.h>
+#include "sal/faultspace/FaultSpace.hpp"
+#include "comm/DatabaseCampaignMessage.pb.h"
+
 
 namespace fail {
 class ExperimentData;
@@ -14,9 +18,7 @@ class ExperimentData;
 class DatabaseExperiment : public fail::ExperimentFlow {
 	fail::JobClient *m_jc;
 
-	unsigned injectFault(address_t data_address, unsigned bitpos, bool inject_burst,
-		bool inject_registers, bool force_registers, bool randomjump);
-
+	unsigned injectFault(DatabaseCampaignMessage * fsppilot, unsigned bitpos);
 	/**
 	   The current experiment data as returned by the job client. This
 	   allocated by cb_allocate_experiment_data()
@@ -26,7 +28,7 @@ class DatabaseExperiment : public fail::ExperimentFlow {
 
 public:
 	DatabaseExperiment(const std::string &name)
-		: m_log(name, false), m_mm(fail::simulator.getMemoryManager()) {
+		: m_log(name, false), m_mm(fail::simulator.getMemoryManager()), m_fsp(fail::simulator.getFaultSpace()) {
 
 		/* The fail server can be set with an environent variable,
 		   otherwise the JOBSERVER configured by cmake ist used */
@@ -46,6 +48,7 @@ public:
 protected:
 	fail::Logger m_log;
 	fail::MemoryManager& m_mm;
+	fail::FaultSpace& m_fsp;
 
 	/** Returns the currently running experiment message as returned
 	 * by the job client
@@ -144,9 +147,6 @@ protected:
 	 *
 	 */
 	virtual void cb_after_resume(fail::BaseListener *) = 0;
-
-private:
-	void redecodeCurrentInstruction();
 };
 
 }

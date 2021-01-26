@@ -7,7 +7,7 @@ using namespace fail;
 
 bool show_mapping(fail::LLVMtoFailTranslator *ltof, const MCRegisterInfo &reg_info, unsigned llvmid)
 {
-	const LLVMtoFailTranslator::reginfo_t& failreg = ltof->getFailRegisterInfo(llvmid);
+	const RegisterView failreg = ltof->getFailRegisterInfo(llvmid);
 	std::cout << reg_info.getName(llvmid) << "(" << std::dec << llvmid << "->";
 	if (&failreg != &ltof->notfound) {
 		std::cout << failreg.id;
@@ -26,31 +26,19 @@ int main(int argc, char* argv[]) {
 	//	  llvm::InitializeAllAsmParsers();
 	llvm::InitializeAllDisassemblers();
 
-	std::string file;
-
+	
 	if(argc > 1){
 		std::cout << "Trying to disassemble: " << argv[1] << std::endl;
-		file = argv[1];
-	} else {
+		} else {
 		std::cerr << "No file to disassemble :(" << std::endl;
 		return -1;
 	}
 
-	Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(file);
-	if (!BinaryOrErr) {
-		std::cerr << "Dis: '" << file << "': ";
-		raw_os_ostream OS(std::cerr);
-		logAllUnhandledErrors(BinaryOrErr.takeError(), OS, "");
-		return -1;
-	}
-	Binary *binary = BinaryOrErr.get().getBinary();
-
-	ObjectFile *obj = dyn_cast<ObjectFile>(binary);
-
-	LLVMDisassembler disas(obj);
+	ElfReader elf(argv[1]);
+	LLVMDisassembler disas(&elf);
 	disas.disassemble();
 
-	LLVMDisassembler::InstrMap &instr_map = disas.getInstrMap();
+	LLVMDisassembler::InstrMap &instr_map = *disas.getInstrMap();
 	std::cout << "Map Size: " << instr_map.size() << "\nTriple: " << disas.GetTriple() <<  std::endl;
 
 	LLVMDisassembler::InstrMap::const_iterator itr;

@@ -121,6 +121,11 @@ public:
 	 * calling simulator.restore().
 	 */
 	virtual simtime_t getTimerTicksPerSecond() { return bx_pc_system.time_ticks() / bx_pc_system.time_usec() * 1000000; /* imprecise hack */ }
+	/**
+	 * Redecode instruction after we have changed RID_PC. Has to be
+	 * called after setRegisterContent(RID_PC).
+	 */
+	virtual void redecodeCurrentInstruction(ConcreteCPU* cpu);
 	/* ********************************************************************
 	 * BochsController-specific (not implemented in SimulatorController!):
 	 * ********************************************************************/

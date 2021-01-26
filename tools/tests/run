@@ -118,16 +118,21 @@ def import_trace():
 
 
       # Infer the number of fault locations
-      result = mysql(f"""SELECT DISTINCT data_address, width
+      result = mysql(f"""SELECT DISTINCT data_address, data_mask
                         FROM trace t
                         JOIN variant v ON v.id = t.variant_id 
                         WHERE v.variant = "{args.benchmark}" and v.benchmark = "{location}" 
                       """)
       bits = set()
       for r in result:
-         for offset in range(0, int(r['width'])):
-            for bit in range(0, 8):
-               bits.add((int(r['data_address']) + offset, bit))
+         mask = int(r['data_mask'])
+         i = 0
+         while (1 << i) <= mask:
+            if not ((1 << i) & mask): continue
+            offset = i // 8
+            bit    = i % 8
+            bits.add((int(r['data_address']) + offset, bit))
+            i += 1
 
       logging.info(f"{len(bits)} fault locations ({location})")
 
@@ -136,7 +141,7 @@ def import_trace():
          assert len(bits) == int(trace_pb_stats["#memLocations"]) * 8,\
             "Number of fault locations (memory) is not equal to dump-trace"
 
-      result = mysql(f"""SELECT sum((t.time2 - t.time1 + 1) * width * 8) as fault_space_size
+      result = mysql(f"""SELECT sum((t.time2 - t.time1 + 1) * bit_count(data_mask)) as fault_space_size
                         FROM trace t
                         JOIN variant v ON v.id = t.variant_id 
                         WHERE v.variant = "{args.benchmark}" and v.benchmark = "{location}" 
@@ -163,7 +168,7 @@ def basic_pruner():
       check_output(cmd)
 
       # Is every trace event covered by a fsppilot?
-      sql = f"""SELECT p.id is null as no_pilot, count(*) as intervals, sum((t.time2 - t.time1 + 1) * t.width * 8) as area,
+      sql = f"""SELECT p.id is null as no_pilot, count(*) as intervals, sum((t.time2 - t.time1 + 1) * bit_count(t.data_mask)) as area,
                        count(distinct p.id) as pilots
          FROM trace t
          LEFT OUTER JOIN fspgroup g
@@ -192,6 +197,7 @@ def basic_pruner():
               on  t.variant_id = g.variant_id
               and t.instr2 = g.instr2
               and t.data_address = g.data_address
+              and (t.data_address & g.data_address)
           JOIN fsppilot p
               on  t.variant_id = p.variant_id
               and g.fspmethod_id = p.fspmethod_id
