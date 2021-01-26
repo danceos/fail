@@ -18,6 +18,8 @@
 	#include "t32/T32Config.hpp"
 #elif defined BUILD_PANDA
 	#include "panda/PandaConfig.hpp"
+#elif defined BUILD_SAIL
+	#include "SailArchConfig.hpp"
 #else
 	#error SAL Config Target not defined
 #endif
@@ -35,7 +37,17 @@ typedef uint64_t         simtime_t;
 //! backend-specific notion of time difference
 typedef int64_t          simtime_diff_t;
 
+// define additional ostream operators for 128 bit integers
+#if defined(BUILD_RISCV_CHERI) && defined(BUILD_64BIT)
+std::ostream& operator<<(std::ostream& os, unsigned __int128 v);
+std::istream& operator>>(std::istream& is, unsigned __int128& v);
+#endif
+
+
 typedef enum  {
+	// Only append values at this point. These are MAGIC constants,
+	// that are encoded in different emulators. Do not change their
+	// value.
 	MEMTYPE_UNKNOWN = 0x0, //!< Somehow, we do not know
 	MEMTYPE_RAM     = 0x1, //!< Access to volatile memory
 	MEMTYPE_FLASH   = 0x2, //!< Access to flash memory

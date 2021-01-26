@@ -27,8 +27,8 @@ enum RegisterType {
 	RT_ST,   //!< status register
 	RT_CONTROL, //!< control registers
 	RT_SEGMENT, //!< segmentation registers
-
-	RT_TRACE //!< registers to be recorded in an extended trace
+	RT_TRACE, //!< registers to be recorded in an extended trace
+	RT_IMPL_SPECIFIC //!< simulator specific registers.
 };
 
 /**
@@ -54,6 +54,7 @@ public:
 	 */
 	Register(id_t id, regwidth_t w)
 		: m_Width(w), m_Id(id) { }
+	virtual ~Register() {}
 	/**
 	 * Returns the (fixed) width of this register.
 	 * @return the width in bits

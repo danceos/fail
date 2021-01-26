@@ -14,4 +14,8 @@
 #include "arm/ArmArchitecture.hpp"
 #endif
 
+#ifdef BUILD_SAIL
+#include "sail/SailArchitecture.hpp"
+#endif
+
 #endif

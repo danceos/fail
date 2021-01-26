@@ -1,5 +1,7 @@
 #include "llvm/Support/raw_os_ostream.h"
 #include "../LLVMDisassembler.hpp"
+#include "util/ElfReader.hpp"
+
 
 using namespace llvm;
 using namespace llvm::object;
