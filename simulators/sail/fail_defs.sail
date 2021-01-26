@@ -1,0 +1,12 @@
+val fail_executeRequests = {c: "fail_executeRequests"} : unit -> unit
+val fail_onTrap = {c: "fail_onTrap"} : bits(8) -> unit
+val fail_onInterrupt = {c: "fail_onInterrupt"} : (bits(8), bool) -> unit
+val fail_isSuppressedInterrupt = {c: "fail_isSuppressedInterrupt"} : bits(8) -> bool
+val fail_willExecuteInstruction = {c: "fail_willExecuteInstruction" } : (xlenbits) -> unit
+val fail_didExecuteInstruction = {c: "fail_didExecuteInstruction"} : (xlenbits, xlenbits) -> unit
+val fail_setInstructionFetch = {c: "fail_setInstructionFetch"} : bool -> unit
+
+let fail_memtype_ram : bits(8) = 0b00000001
+let fail_memtype_tags : bits(8) = 0b00000011
+val fail_onMemoryRead  = {c: "fail_onMemoryRead"} : (xlenbits, int, int, bits(8), xlenbits) -> unit
+val fail_onMemoryWrite = {c: "fail_onMemoryWrite"} : (xlenbits, int, int, bits(8), xlenbits) -> unit

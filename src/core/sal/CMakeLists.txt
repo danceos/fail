@@ -1,26 +1,24 @@
+add_subdirectory(faultspace)
+
+# Some files are common over all architectures
+set(SRCS
+	CPU.cc
+	CPUState.cc
+	Listener.cc
+	ListenerManager.cc
+	SALConfig.cc
+	Register.cc
+	SimulatorController.cc
+	)
 
 if(BUILD_BOCHS)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
+	set(SRCS ${SRCS}
 		bochs/BochsController.cc
 		bochs/BochsListener.cc
 		bochs/BochsCPU.cc
 	)
 elseif(BUILD_GEM5)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
+	set(SRCS ${SRCS}
 		gem5/Gem5Controller.cc
 	)
 	if(BUILD_ARM)
@@ -29,26 +27,12 @@ elseif(BUILD_GEM5)
 		)
 	endif(BUILD_ARM)
 elseif(BUILD_QEMU)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
+	set(SRCS ${SRCS}
 		qemu/QEMUController.cc
 		qemu/wrappers.cc
 	)
 elseif(BUILD_T32)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
+	set(SRCS ${SRCS}
 		t32/T32Controller.cc
 	)
 	if(BUILD_ARM)
@@ -60,14 +44,7 @@ elseif(BUILD_T32)
 	endif(BUILD_ARM)
 elseif(BUILD_PANDA)
 	include_directories(${PROJECT_SOURCE_DIR}/debuggers/openocd)
-	set(SRCS
-		CPU.cc
-		CPUState.cc
-		Listener.cc
-		ListenerManager.cc
-		SALConfig.cc
-		Register.cc
-		SimulatorController.cc
+	set(SRCS ${SRCS}
 		panda/PandaController.cc
 		panda/PandaArmCPU.cc
 		panda/PandaListener.cc
@@ -77,6 +54,23 @@ elseif(BUILD_PANDA)
 			panda/PandaArmCPU.cc
 		)
 	endif(BUILD_ARM)
+elseif(BUILD_SAIL)
+	add_subdirectory(sail)
+	#set(SRCS ${SRCS}
+	#	sail/memory.cc
+	#	sail/tag_memory.cc
+	#	sail/wrapper.cc
+	#   sail/simulator.cc
+	#)
+	#if(BUILD_RISCV)
+ 	#set(SRCS ${SRCS}
+	#		sail/riscv/arch.cpp)
+	#elseif(BUILD_RISCV_CHERI)
+#		set(SRCS ${SRCS}
+#			sail/cheri-riscv/arch.cpp)
+#	else()
+#		message(ERROR " No SAIL_ARCH set. Aborting!")
+#	endif(BUILD_RISCV)
 endif(BUILD_BOCHS)
 
 if(BUILD_X86)
@@ -120,11 +114,20 @@ if(CONFIG_FAST_BREAKPOINTS)
 	)
 endif(CONFIG_FAST_BREAKPOINTS)
 
-add_subdirectory(faultspace)
-
 
 add_library(fail-sal ${SRCS})
+
+# FIXME: Find dynamic
+if(BUILD_SAIL)
+	target_link_libraries(fail-sal fail-sail)
+	if (BUILD_64BIT)
+		target_link_libraries(fail-sal -lgmpxx -lgmp)
+	endif()
+endif()
+
 target_link_libraries(fail-sal fail-efw fail-fsp fail-util)
+
+
 
 foreach(exp ${EXPERIMENTS_ACTIVATED})
 	target_link_libraries(fail-sal fail-${exp})

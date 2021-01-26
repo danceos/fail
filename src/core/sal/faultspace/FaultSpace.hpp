@@ -14,6 +14,11 @@ typedef X86FaultSpace FaultSpace;
 namespace fail {
 typedef ArmFaultSpace FaultSpace;
 }
+#elif defined(BUILD_SAIL)
+#include "SailArchFaultSpace.hpp"
+namespace fail {
+typedef SailFaultSpace FaultSpace;
+}
 #else
 #error Architecture does not yet support the Virtual Fault Space abstraction
 #endif

@@ -1,0 +1,7 @@
+# steps to take to implement a new architecture
+
+
+- include fail_defs.sail into sail spec
+- define xlenbits to architecture instruction length
+- call functions defined in fail_defs.sail from model sail code
+
