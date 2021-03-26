@@ -37,7 +37,7 @@ public:
 	bool run();
 
 	GenericTracing() : restore(false),
-		full_trace(false), m_log("GenericTracing", false) {}
+		full_trace(false), check_bounds(false), m_log("GenericTracing", false) {}
 };
 
 #endif // __TRACING_TEST_HPP__
