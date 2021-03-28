@@ -27,6 +27,7 @@ protected:
 	bool m_sanitychecks;
 	bool m_import_write_ecs;
 	bool m_extended_trace;
+	bool m_cover_memorymap;
 	fail::Database *db;
 	fail::Architecture m_arch;
 	fail::UniformRegisterSet *m_extended_trace_regs;
@@ -120,7 +121,8 @@ protected:
 	bool sanitycheck(std::string check_name, std::string fail_msg, std::string sql);
 public:
 	Importer() : m_variant_id(0), m_elf(NULL), m_mm(NULL), m_faultspace_rightmargin('W'),
-		m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false), db(NULL),
+		m_sanitychecks(false), m_import_write_ecs(true), m_extended_trace(false),
+		m_cover_memorymap(false), db(NULL),
 		m_extended_trace_regs(NULL), m_row_count(0), m_time_trace_start(0),
 		m_last_ip(0), m_last_instr(0), m_last_time(0) {}
 	bool init(const std::string &variant, const std::string &benchmark, fail::Database *db);
@@ -142,6 +144,7 @@ public:
 	void set_sanitychecks(bool enabled) { m_sanitychecks = enabled; }
 	void set_import_write_ecs(bool enabled) { m_import_write_ecs = enabled; }
 	void set_extended_trace(bool enabled) { m_extended_trace = enabled; }
+	void set_cover_memorymap(bool enabled) { m_cover_memorymap = enabled; }
 };
 
 #endif

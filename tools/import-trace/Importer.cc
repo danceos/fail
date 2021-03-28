@@ -146,10 +146,11 @@ bool Importer::copy_to_database(fail::ProtoIStream &ps) {
 	LOG << "trace duration: " << std::dec << (curtime - m_time_trace_start) << " ticks" << std::endl;
 	LOG << "Inserted " << m_row_count << " real trace events into the database" << std::endl;
 
-
-	/* All addresses that were specified in the memory map get an open
-	   EC */
-	open_unused_ec_intervals();
+	if (m_cover_memorymap) {
+		/* All addresses that were specified in the memory map get an open
+		   EC */
+		open_unused_ec_intervals();
+	}
 
 	/* Close all open EC intervals */
 	if (!close_ec_intervals()) {
