@@ -33,12 +33,22 @@ typedef uint64_t         simtime_t;
 //! backend-specific notion of time difference
 typedef int64_t          simtime_diff_t;
 
+typedef enum  {
+	MEMTYPE_UNKNOWN = 0x0, //!< Somehow, we do not know
+	MEMTYPE_RAM     = 0x1, //!< Access to volatile memory
+	MEMTYPE_FLASH   = 0x2, //!< Access to flash memory
+	MEMTYPE_TAGS    = 0x3, //!< Access to tag-bits (see SAIL)
+	MEMTYPE_EEPROM  = 0x4  //!< Access to EEPROM (see AVR)
+} memory_type_t; //! memory type (RAM, FLASH, etc...)
+
 // Note: The following flags are defined in SALConfig.cc.
 
 //! invalid address flag (e.g. for memory address ptrs)
 extern const address_t   ADDR_INV;
 //! address wildcard (e.g. for breakpoint listeners)
 extern const address_t   ANY_ADDR;
+//! memory type wildcard (e.g. for memory access listener)
+extern const memory_type_t ANY_MEMORY;
 //! instruction wildcard (e.g. for jump listeners)
 extern const unsigned    ANY_INSTR;
 //! trap wildcard

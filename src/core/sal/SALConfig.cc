@@ -9,6 +9,7 @@ namespace fail {
     defined BUILD_PANDA
 const address_t       ADDR_INV = static_cast<address_t>  (0);
 const address_t       ANY_ADDR = static_cast<address_t> (-1);
+const memory_type_t   ANY_MEMORY = static_cast<memory_type_t> (-1);
 const unsigned       ANY_INSTR = static_cast<unsigned>  (-1);
 const unsigned        ANY_TRAP = static_cast<unsigned>  (-1);
 const unsigned   ANY_INTERRUPT = static_cast<unsigned>  (-1);

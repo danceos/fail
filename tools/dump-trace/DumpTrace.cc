@@ -7,6 +7,7 @@
 #include "../../src/core/util/Logger.hpp"
 #include "../../src/core/util/gzstream/gzstream.h"
 #include "util/CommandLine.hpp"
+#include "sal/SALConfig.hpp"
 
 using namespace fail;
 using std::stringstream;
@@ -139,13 +140,21 @@ int main(int argc, char *argv[])
 				}
 			}
 			if (!stats_only) {
-				cout << "MEM "
-				     << (ev.accesstype() == Trace_Event_AccessType_READ ? "R" : "W") << " "
-				     << hex << ev.memaddr()
-				     << dec << " width " << ev.width()
-				     << hex << " IP " << ev.ip()
-				     << dec << " t=" << acctime
-				     << ext.str() << "\n";
+				std::string memtype = "";
+				if      (ev.memtype() == fail::MEMTYPE_RAM) memtype = "";
+				else if (ev.memtype() == fail::MEMTYPE_FLASH) memtype = "/flash";
+				else if (ev.memtype() == fail::MEMTYPE_TAGS) memtype = "/tags";
+				else if (ev.memtype() == fail::MEMTYPE_EEPROM) memtype = "/eeprom";
+				else memtype = "/unknown";
+
+
+				cout << "MEM" << memtype << " "
+					 << (ev.accesstype() == Trace_Event_AccessType_READ ? "R" : "W") << " "
+					 << hex << ev.memaddr()
+					 << dec << " width " << ev.width()
+					 << hex << " IP " << ev.ip()
+					 << dec << " t=" << acctime
+					 << ext.str() << "\n";
 			} else {
 				for (uint64_t addr = ev.memaddr(); addr < ev.memaddr() + ev.width(); addr++){
 					stats_mem_locations.insert(addr);

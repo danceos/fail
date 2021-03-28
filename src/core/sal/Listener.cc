@@ -52,8 +52,10 @@ bool MemAccessListener::isMatching(const MemAccessEvent* pEv) const
 	if (!(m_WatchType & pEv->getTriggerAccessType())) {
 		return false;
 	} else if (m_WatchAddr != ANY_ADDR
-	           && (m_WatchAddr >= pEv->getTriggerAddress() + pEv->getTriggerWidth()
-	           || m_WatchAddr + m_WatchWidth <= pEv->getTriggerAddress())) {
+			   && (m_WatchAddr >= pEv->getTriggerAddress() + pEv->getTriggerWidth()
+			   || m_WatchAddr + m_WatchWidth <= pEv->getTriggerAddress())) {
+		return false;
+	} else if (m_WatchMemType != ANY_MEMORY && m_WatchMemType != pEv->getMemoryType()) {
 		return false;
 	} else if (m_CPU != NULL && m_CPU != pEv->getTriggerCPU()) {
 		return false;

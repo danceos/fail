@@ -10,6 +10,8 @@
 #include "../ListenerManager.hpp"
 #include "WatchpointBuffer.hpp"
 #include "../SALInst.hpp"
+#include "../Memory.hpp"
+
 
 // Warning: Do not import namespace using "using namespace"!
 // (It may yields collisions due to woven aspect code.)
@@ -52,11 +54,30 @@ aspect FastWatchpoints {
 		fail::ListenerManager& ref = tjp->target()->m_LstList;
 
 		#define ARG(i) *(tjp->arg<i>())
-		fail::MemAccessEvent tmp(ARG(1), ARG(2), ARG(4),
-			ARG(3) ? fail::MemAccessEvent::MEM_WRITE : fail::MemAccessEvent::MEM_READ,
-			ARG(0));
+		auto cpu = ARG(0);
+		auto addr = ARG(1);
+		auto len = ARG(2);
+		auto is_write = ARG(3);
+		auto instrPtr = ARG(4);
+		auto memtype = ARG(5);
 		#undef ARG
-		
+
+		fail::MemAccessEvent tmp(addr, len, instrPtr,
+			is_write ? fail::MemAccessEvent::MEM_WRITE : fail::MemAccessEvent::MEM_READ,
+			cpu, memtype);
+ 		// Read Memory with help of Memory Manager
+		if (memtype == fail::MEMTYPE_RAM) {
+			uint64_t data = 0;
+			fail::MemoryManager &mm = tjp->that()->getMemoryManager(memtype);
+			char max_len = len > sizeof(data) ? sizeof(data) : len;
+			if (mm.isMapped(addr) && mm.isMapped(addr + len - 1)) {
+				mm.getBytes(addr, max_len, &data);
+				tmp.setAccessedData(data);
+			}
+		}
+ 		#undef ARG
+
+
 		// Check for matching MemAccessListener:
 		fail::ResultSet& res = ref.getMemoryListeners().gather(&tmp);
 		while (res.hasMore())
