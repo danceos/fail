@@ -146,6 +146,11 @@ bool FESamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		samplerows = std::min(pilotcount, m_samplesize);
 	}
 
+	if (pilotcount == 0) {
+		LOG << "no entries found, nothing to sample from!" << endl;
+		return true;
+	}
+
 	LOG << "loaded " << pilotcount << " entries, sampling "
 		<< samplerows << " entries with fault expansion ..." << endl;
 

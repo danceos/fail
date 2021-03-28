@@ -173,6 +173,11 @@ bool SamplingPruner::sampling_prune(const fail::Database::Variant& variant)
 		mysql_free_result(res);
 	}
 
+	if (pilotcount == 0) {
+		LOG << "no entries found, nothing to sample from!" << endl;
+		return true;
+	}
+
 	LOG << "loaded " << pilotcount << " entries, sampling "
 		<< m_samplesize << " fault-space coordinates ..." << endl;
 
