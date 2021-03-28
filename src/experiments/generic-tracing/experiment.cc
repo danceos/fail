@@ -73,6 +73,8 @@ void  GenericTracing::parseOptions() {
 		"--e9-file FILE \tShorthand for --serial-file FILE --serial-port 0xe9");
 	CommandLine::option_handle CHECK_BOUNDS = cmd.addOption("", "check-bounds", Arg::None,
 		"--check-bounds \tWhether or not to enable outerspace and text segment checkers which are used in the experiment stage during tracing. If these trip, something is wrong with your architecture implementation.");
+	CommandLine::option_handle CATCH_TRAP = cmd.addOption("", "catch-trap", Arg::None,
+		"--catch-trap \tCatch traps");
 
 	if (!cmd.parse()) {
 		cerr << "Error parsing arguments." << endl;
@@ -252,6 +254,11 @@ void  GenericTracing::parseOptions() {
 		serial_port = 0xe9;
 		m_log << "port E9 output is written to: " << serial_file << std::endl;
 	}
+	
+	if (cmd[CATCH_TRAP]) {
+		m_log << "Catch all traps" << endl;
+		enabled_trap = true;
+	}
 
 	if(cmd[CHECK_BOUNDS]) {
 		this->check_bounds = true;
@@ -305,6 +312,7 @@ bool GenericTracing::run()
 
 	BPSingleListener l_start_symbol(start_address);
 	BPSingleListener l_stop_symbol(stop_address);
+	TrapListener l_trap;
 
 	////////////////////////////////////////////////////////////////
 	// STEP 1: run until interesting function starts, save, and start tracing
@@ -313,6 +321,9 @@ bool GenericTracing::run()
 	m_log << start_symbol << " reached, save ..." << std::endl;
 	simulator.save(state_file);
 
+	if (enabled_trap)
+		simulator.addListener(&l_trap);
+	
 	if (restore) {
 		m_log << "restoring clean state ..." << std::endl;
 		simulator.restore(state_file);
@@ -355,6 +366,12 @@ bool GenericTracing::run()
 
 	simulator.addListener(&l_stop_symbol);
 	fail::BaseListener* listener = simulator.resume();
+	int exitcode = 0;
+	if (listener == &l_trap)
+	{
+		m_log << "Trace encountered trap 0x" << hex << l_trap.getTriggerNumber()  << "! Exiting tracing." << std::endl;
+		exitcode = 100;
+	}
 
 	if (check_bounds) {
 		if(listener == &l_mem_text) {
@@ -406,7 +423,7 @@ bool GenericTracing::run()
 	}
 
 	simulator.clearListeners();
-	simulator.terminate();
+	simulator.terminate(exitcode);
 
 	return true;
 }

@@ -31,13 +31,17 @@ class GenericTracing : public fail::ExperimentFlow {
 
 	fail::Logger m_log;
 	fail::ElfReader *m_elf;
+	
+	bool enabled_trap;
 
 public:
 	void parseOptions();
 	bool run();
 
 	GenericTracing() : restore(false),
-		full_trace(false), check_bounds(false), m_log("GenericTracing", false) {}
+		full_trace(false), check_bounds(false), m_log("GenericTracing", false),
+		enabled_trap(false)
+		{}
 };
 
 #endif // __TRACING_TEST_HPP__
