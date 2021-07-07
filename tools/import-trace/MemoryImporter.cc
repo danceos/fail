@@ -24,14 +24,26 @@ bool MemoryImporter::handle_mem_event(simtime_t curtime, instruction_count_t ins
 
 		char access_type = ev.accesstype() == ev.READ ? 'R' : 'W';
 
-		guest_address_t from = ev.memaddr(), to = ev.memaddr() + ev.width();
-		LOG << std::hex << std::showbase << ev.width() << " bytes -> from=" << from << " to=" << to << std::endl;
+#ifdef BUILD_SAIL
+		// SAIL Produces bit width reads
+		unsigned byte_count = std::ceil(ev.width() / 8.0);
+		unsigned bit_count = ev.width();
+#else
+		unsigned byte_count = ev.width();
+		unsigned bit_count = ev.width() * 8;
+#endif
+
+		guest_address_t from = ev.memaddr(), to = ev.memaddr() + byte_count;
+		LOG << std::hex << std::showbase << bit_count << " bits -> from=" << from << " to=" << to << std::endl;
 
 		auto filter = [this] (address_t a) -> bool { return !(this->m_mm && !this->m_mm->isMatching(a)); };
 		for (auto &element : area->translate(from, to, filter)) {
-			if(!add_faultspace_element(curtime, instr, element, 0xFF,
+			unsigned mask = (1u << std::min(8u, bit_count)) - 1;
+			if(!add_faultspace_element(curtime, instr, element, mask,
 									   access_type, ev))
 				return false;
+
+			bit_count -= 8;
 		}
 	}
 	return true;
