@@ -65,7 +65,7 @@ void SimulatorController::startup()
 	if (m_Experiments.size() ==  0) {
 		// Experiment was initialized indirecty, therefore there
 		// should be at least one experiment flow.
-		assert(m_flows.size() > 0 && "No experiment was added (directly or indirectly)");
+		assert(m_Flows.size() > 0 && "No experiment was added (directly or indirectly)");
 	} else {
 		std::string experiment_name;
 
