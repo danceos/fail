@@ -129,11 +129,12 @@ Please cite the EDCC paper if you want to refer to FAIL*:
    assessment of software-implemented hardware fault tolerance. In Proceedings
    of the 11th European Dependable Computing Conference (EDCC '15), pages
    245–255.  IEEE Computer Society Press, Sept. 2015.
-   [PDF](http://www.danceos.org/publications/EDCC-2015-Schirmeier.pdf)
+   [PDF](https://ess.cs.uos.de/danceos/publications/EDCC-2015-Schirmeier.pdf)
 
  - H. Schirmeier. Efficient Fault-Injection-based Assessment of
    Software-Implemented Hardware Fault Tolerance. Dissertation, Technische
    Universität Dortmund, July 2016.
+   [PDF](https://eldorado.tu-dortmund.de/bitstream/2003/35175/1/Dissertation.pdf)
 
  - H. Schirmeier, M. Hoffmann, R. Kapitza, D. Lohmann, and
    O. Spinczyk. FAIL*: Towards a versatile fault-injection experiment
@@ -142,7 +143,7 @@ Please cite the EDCC paper if you want to refer to FAIL*:
    (ARCS '12), Workshop Proceedings, volume 200 of Lecture Notes in
    Informatics, pages 201–210. German Society of Informatics,
    Mar. 2012.
-   [PDF](http://danceos.org/publications/VERFE-2012-Schirmeier.pdf)
+   [PDF](https://ess.cs.uos.de/danceos/publications/VERFE-2012-Schirmeier.pdf)
 
 Selected publications using FAIL*
 ---------------------------------
