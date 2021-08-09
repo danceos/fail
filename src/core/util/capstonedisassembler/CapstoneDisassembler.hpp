@@ -61,18 +61,29 @@ private:
 		return true;
 	}
 
+	unsigned m_xlen;
+
 public:
 	CapstoneDisassembler(fail::ElfReader *elf) : ctofail(0)  {
 		this->m_elf = elf;
 		this->instrs.reset(new InstrMap());
+		m_xlen = elf->m_elfclass == ELFCLASS64 ? 64 : 32;
 	}
 
 	~CapstoneDisassembler() { delete ctofail; };
 
-	InstrMap &getInstrMap() { return *instrs; };
+	std::string getRegisterName(unsigned id) {
+		std::stringstream ss;
+		ss << id;
+		return ss.str();
+	}
+
+	InstrMap *getInstrMap() { return instrs.get(); };
 	fail::CapstoneToFailTranslator *getTranslator();
 
 	void disassemble();
+
+	unsigned getWordWidth() { return m_xlen; }
 
 private:
 	int disassemble_section(Elf_Data *data, Elf32_Shdr *shdr, Elf64_Shdr *shdr64, std::map<uint64_t, uint64_t> symtab_map);

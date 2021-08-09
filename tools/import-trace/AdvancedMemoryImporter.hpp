@@ -28,13 +28,8 @@
  * operations with a set of new virtual functions that are called downwards.
  */
 class AdvancedMemoryImporter : public MemoryImporter {
-#if defined(BUILD_CAPSTONE_DISASSEMBLER)
-	bool isDisassembled = false;
-	std::unique_ptr<fail::CapstoneDisassembler> disas;
-#elif defined(BUILD_LLVM_DISASSEMBLER)
-	llvm::object::Binary *binary = 0;
-	std::unique_ptr<fail::LLVMDisassembler> disas;
-#endif
+
+
 	bool m_last_was_conditional_branch;
 	fail::guest_address_t m_ip_jump_not_taken;
 	std::vector<bool> branches_taken;
@@ -50,11 +45,16 @@ class AdvancedMemoryImporter : public MemoryImporter {
 
 	unsigned m_cur_branchmask;
 
+	std::unique_ptr<Disassembler> m_disassembler;
+	Disassembler::InstrMap* m_instr_map;
+
 	void insert_delayed_entries(bool finalizing);
 
 public:
 	AdvancedMemoryImporter() : m_last_was_conditional_branch(false),
 		m_ip_jump_not_taken(0), m_cur_branchmask(0) {}
+
+	virtual bool cb_initialize();
 
 protected:
 	virtual std::string database_additional_columns();

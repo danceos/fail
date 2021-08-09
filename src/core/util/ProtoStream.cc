@@ -11,7 +11,7 @@ ProtoOStream::ProtoOStream(std::ostream *outfile) : m_outfile(outfile)
 
 bool ProtoOStream::writeMessage(google::protobuf::Message *m)
 {
-	uint32_t m_size = htonl(m->ByteSize());
+	uint32_t m_size = htonl((uint32_t)m->ByteSizeLong());
 	m_outfile->write(reinterpret_cast<char*>(&m_size), sizeof(m_size));
 
 	if (m_outfile->bad()) {

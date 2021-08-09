@@ -7,6 +7,8 @@ void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 {
 	// We may be called multiple times with the same register, if it needs to
 	// reside in multiple subsets.
+	// std::cout << "adding " << reg->getName() << " (id=" << reg->getId() << ") to subset: " << type << std::endl;
+
 	if ((m_Registers.size()) < reg->getId()+1) {
 		m_Registers.resize(reg->getId()+1);
 	}
@@ -18,6 +20,12 @@ void CPUArchitecture::m_addRegister(Register* reg, RegisterType type)
 		m_RegisterSubsets.push_back(urs);
 	}
 	urs->m_add(reg);
+}
+
+void CPUArchitecture::m_addRegister(Register* reg, std::vector<RegisterType> types) {
+	for(RegisterType t: types) {
+		this->m_addRegister(reg, t);
+	}
 }
 
 Register* CPUArchitecture::getRegister(size_t i) const

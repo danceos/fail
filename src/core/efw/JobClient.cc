@@ -124,8 +124,8 @@ bool JobClient::getParam(ExperimentData& exp)
 template <typename Socket>
 bool sendMsg(Socket &s, google::protobuf::Message &msg)
 {
-	int size = htonl(msg.ByteSize());
-	const auto msg_size = msg.ByteSize() + sizeof(size);
+	int size = htonl((uint32_t)msg.ByteSizeLong());
+	const auto msg_size = (uint32_t)msg.ByteSizeLong() + sizeof(size);
 	std::string buf;
 
 	if (!msg.SerializeToString(&buf))

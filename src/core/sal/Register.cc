@@ -3,10 +3,10 @@
 
 namespace fail {
 
-Register* UniformRegisterSet::getRegister(size_t i) const
+Register* UniformRegisterSet::getRegister(Register::id_t id) const
 {
-	assert(i < m_Regs.size() && "FATAL ERROR: Invalid index provided!");
-	return m_Regs[i];
+	assert(id < m_Regs.size() && "FATAL ERROR: Invalid index provided!");
+	return m_Regs[id];
 }
 
 void UniformRegisterSet::m_add(Register* preg)

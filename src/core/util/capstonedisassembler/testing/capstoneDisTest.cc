@@ -6,7 +6,7 @@ using namespace fail;
 
 bool show_mapping(fail::CapstoneToFailTranslator *ctof, unsigned llvmid)
 {
-	const CapstoneToFailTranslator::reginfo_t& failreg = ctof->getFailRegisterInfo(llvmid);
+	const RegisterView& failreg = ctof->getFailRegisterInfo(llvmid);
 	std::cout /*<< reg_info.getName(llvmid)*/ << "(" << std::dec << llvmid << "->";
 	if (&failreg != &ctof->notfound) {
 		std::cout << failreg.id;
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 	CapstoneDisassembler disas(m_elf);
 	disas.disassemble();
 
-	CapstoneDisassembler::InstrMap &instr_map = disas.getInstrMap();
+	CapstoneDisassembler::InstrMap &instr_map = *disas.getInstrMap();
 	std::cout << "Map Size: " << instr_map.size() <<  std::endl;
 
 	CapstoneDisassembler::InstrMap::const_iterator itr;

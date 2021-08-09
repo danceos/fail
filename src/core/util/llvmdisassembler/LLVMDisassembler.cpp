@@ -1,43 +1,104 @@
 #include "LLVMDisassembler.hpp"
+#include "util/Logger.hpp"
 
 using namespace fail;
 using namespace llvm;
 using namespace llvm::object;
 
-// In LLVM 3.9, llvm::Triple::getArchTypeName() returns const char*, since LLVM
-// 4.0 it returns StringRef.  This overload catches the latter case.
-__attribute__((unused))
-static std::ostream& operator<<(std::ostream& stream, const llvm::StringRef& s)
-{
-	stream << s.str();
-	return stream;
-}
+static Logger LOG("LLVMDisassembler");
 
 LLVMtoFailTranslator *LLVMDisassembler::getTranslator() {
-	if (ltofail == 0) {
-		switch ( llvm::Triple::ArchType(object->getArch()) ) {
+	if (!ltofail) {
+		switch ( llvm::Triple::ArchType(m_object->getArch()) ) {
 		case llvm::Triple::x86:
 		case llvm::Triple::x86_64:
-			ltofail = new LLVMtoFailBochs(this);
+			ltofail.reset(new LLVMtoFailBochs(this));
 			break;
 		case llvm::Triple::arm:
-			ltofail = new LLVMtoFailGem5(this);
+			ltofail.reset(new LLVMtoFailGem5(this));
 			break;
 		default:
-			std::cerr << "ArchType "
-				<< llvm::Triple::getArchTypeName(llvm::Triple::ArchType(object->getArch()))
+			LOG << "ArchType "
+				<< llvm::Triple::getArchTypeName(llvm::Triple::ArchType(m_object->getArch())).str()
 				<< " not supported\n";
 			exit(1);
 		}
 	}
-	return ltofail;
+	return ltofail.get();
 }
+
+LLVMDisassembler::LLVMDisassembler(ElfReader *elf) {
+	/* Disassemble the binary if necessary */
+	llvm::InitializeAllTargetInfos();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllDisassemblers();
+
+	std::string filename = elf->getFilename();
+
+	Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(filename);
+	if (!BinaryOrErr) {
+		std::string Buf;
+		raw_string_ostream OS(Buf);
+		logAllUnhandledErrors(std::move(BinaryOrErr.takeError()), OS, "");
+		OS.flush();
+		LOG << "Could not read ELF file:" << filename << "': " << Buf << ".\n";
+		exit(1);
+	}
+
+	m_binary = std::move(BinaryOrErr.get());
+	m_object = llvm::dyn_cast<ObjectFile>(m_binary.getBinary());
+
+
+	this->triple = GetTriple(m_object);
+	this->target = GetTarget(triple);
+
+	std::unique_ptr<const llvm::MCRegisterInfo> MRI(target->createMCRegInfo(triple));
+	if (!MRI) {
+		std::cerr << "DIS error: no register info for target " << triple << "\n";
+		return;
+	}
+
+	std::unique_ptr<const llvm::MCAsmInfo> MAI(target->createMCAsmInfo(*MRI, triple));
+	if (!MAI) {
+		std::cerr << "DIS error: no assembly info for target " << triple << "\n";
+		return;
+	}
+
+	std::unique_ptr<const llvm::MCSubtargetInfo> STI(
+		target->createMCSubtargetInfo(triple, MCPU, FeaturesStr));
+	if (!STI) {
+		std::cerr << "DIS error: no subtarget info for target " << triple << "\n";
+		return;
+	}
+	std::unique_ptr<const llvm::MCInstrInfo> MII(target->createMCInstrInfo());
+	if (!MII) {
+		std::cerr << "DIS error: no instruction info for target " << triple << "\n";
+		return;
+	}
+	std::unique_ptr<const llvm::MCObjectFileInfo> MOFI(new llvm::MCObjectFileInfo);
+	// Set up the MCContext for creating symbols and MCExpr's.
+	llvm::MCContext Ctx(MAI.get(), MRI.get(), MOFI.get());
+
+	this->subtargetinfo = std::move(STI);
+	std::unique_ptr<llvm::MCDisassembler> DisAsm(
+		target->createMCDisassembler(*subtargetinfo, Ctx));
+	if (!DisAsm) {
+		std::cerr << "DIS error: no disassembler for target " << triple << "\n";
+		return;
+	}
+	this->disas = std::move(DisAsm);
+	this->instr_info = std::move(MII);
+	this->register_info = std::move(MRI);
+
+	this->instrs.reset(new InstrMap());
+}
+
 
 void LLVMDisassembler::disassemble()
 {
 	std::error_code ec;
-	for (section_iterator i = object->section_begin(),
-			 e = object->section_end(); i != e; ++i) {
+	for (section_iterator i = m_object->section_begin(),
+			 e = m_object->section_end(); i != e; ++i) {
 		bool text = i->isText();
 		if (!text) continue;
 
@@ -46,9 +107,7 @@ void LLVMDisassembler::disassemble()
 
 		// Make a list of all the symbols in this section.
 		std::vector<std::pair<uint64_t, StringRef> > Symbols;
-		for (const SymbolRef &symbol : object->symbols()) {
-			StringRef Name;
-
+		for (const SymbolRef &symbol : m_object->symbols()) {
 			if (!i->containsSymbol(symbol)) {
 				continue;
 			}
@@ -159,4 +218,6 @@ void LLVMDisassembler::disassemble()
 			}
 		}
 	}
+
+	LOG << "instructions disassembled: " << std::dec << instrs->size() << std::endl;
 }

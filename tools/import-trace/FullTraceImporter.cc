@@ -12,19 +12,17 @@ Database *db;
 
 bool FullTraceImporter::handle_ip_event(simtime_t curtime, instruction_count_t instr,
 					Trace_Event &ev) {
+	std::stringstream sql;
+	sql << "(" << m_variant_id << "," << instr << "," << ev.ip() << ")";
 
-	margin_info_t right_margin;
-	right_margin.time = curtime;
-	right_margin.dyninstr = instr; // !< The current instruction
-	right_margin.ip = ev.ip();
-
-	// pass through potentially available extended trace information
-	if (!add_trace_event(right_margin, right_margin, ev)) {
-		LOG << "add_trace_event failed" << std::endl;
-		return false;
+	bool ret =
+		db->insert_multiple("INSERT INTO fulltrace (variant_id, instr, instr_absolute) VALUES ", sql.str().c_str());
+	m_row_count++;
+	if (m_row_count % 10000 == 0 && ret) {
+		LOG << "Inserted " << std::dec << m_row_count << " trace events into the database" << std::endl;
 	}
 
-	return true;
+	return ret;
 }
 
 bool FullTraceImporter::handle_mem_event(simtime_t curtime, instruction_count_t instr,
@@ -50,27 +48,6 @@ bool FullTraceImporter::clear_database() {
 
 	bool ret = db->query(ss.str().c_str()) == 0 ? false : true;
 	LOG << "deleted " << db->affected_rows() << " rows from fulltrace table" << std::endl;
-	return ret;
-}
-
-bool FullTraceImporter::add_trace_event(margin_info_t &begin, margin_info_t &end,
-					Trace_Event &event, bool is_fake) {
-	// Is event a fake mem-event?
-	if (is_fake) {
-		return true;
-	}
-
-	// INSERT group entry
-	std::stringstream sql;
-	sql << "(" << m_variant_id << "," << end.dyninstr << "," << end.ip << ")";
-
-	bool ret =
-		db->insert_multiple("INSERT INTO fulltrace (variant_id, instr, instr_absolute) VALUES ", sql.str().c_str());
-	m_row_count++;
-	if (m_row_count % 10000 == 0 && ret) {
-		LOG << "Inserted " << std::dec << m_row_count << " trace events into the database" << std::endl;
-	}
-
 	return ret;
 }
 
