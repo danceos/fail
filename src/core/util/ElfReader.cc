@@ -5,7 +5,7 @@
 #include <cstring> // memcpy, cstring
 #include <algorithm>
 #include "Demangler.hpp"
-#include <limits.h>
+#include <limits>
 
 namespace fail {
 
