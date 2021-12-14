@@ -22,7 +22,7 @@ class GenericExperiment : public fail::DatabaseExperiment {
 
 	fail::guest_address_t serial_port;
 	SerialOutputLogger sol;
-	bool serial_enabled;
+	bool serial_enabled = false;
 	std::string serial_goldenrun;
 
 	bool enabled_mem_text;
