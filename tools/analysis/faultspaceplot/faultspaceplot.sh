@@ -100,9 +100,9 @@ if [ ! -z "$SYMBOLCSV" -a $(wc -l < $SYMBOLCSV) -gt 1 ]; then
 		mv "$SYMBOLCSV" "$KEPT"
 		SYMBOLCSV=$KEPT
 	fi
-	"$MYDIR"/fsp.plot.py "$COMPACTCSV" "$SYMBOLCSV"
+	python3 "$MYDIR"/fsp.plot.py "$COMPACTCSV" "$SYMBOLCSV"
 	[ $KEEPCSV = no ] && rm "$SYMBOLCSV"
 else
-	"$MYDIR"/fsp.plot.py "$COMPACTCSV"
+	python3 "$MYDIR"/fsp.plot.py "$COMPACTCSV"
 fi
 [ $KEEPCSV = no ] && rm "$COMPACTCSV"

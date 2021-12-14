@@ -34,31 +34,31 @@ class Rectangle:
 # -------------------------------------------------------------------------
 # Check provided arguments:
 if len(sys.argv) <= 1:
-    print "ERROR: Not enough arguments provided! See -h for more infos."
+    print ("ERROR: Not enough arguments provided! See -h for more infos.")
     exit(1)
 if sys.argv[1] == '-h':
-    print "Displays experiment results for the weather-monitor-experiment."
-    print "    CALL-SYNTAX: fsp.plot.py DATA_FILE [USER_TAG_FILE]"
-    print "DATA_FILE is a CSV-file, storing the tab-separated values"
-    print "retrieved by the experiment run. USER_TAG_FILE is an optional"
-    print "CSV-file which can be used to add user-specific marks to the"
-    print "plot." # TODO: be more precise here
+    print ("Displays experiment results for the weather-monitor-experiment.")
+    print ("    CALL-SYNTAX: fsp.plot.py DATA_FILE [USER_TAG_FILE]")
+    print ("DATA_FILE is a CSV-file, storing the tab-separated values")
+    print ("retrieved by the experiment run. USER_TAG_FILE is an optional")
+    print ("CSV-file which can be used to add user-specific marks to the")
+    print ("plot.") # TODO: be more precise here
     exit(0)
 
-print "Opening and processing \"" + sys.argv[1] + "\"..."
+print ("Opening and processing \"" + sys.argv[1] + "\"...")
 file = open(sys.argv[1], "r")
 dialect = csv.Sniffer().sniff(file.read(1024))
 file.seek(0)
 reader = csv.reader(file, dialect)
-reader.next() # Move down a line to skip the header
+next(reader) # Move down a line to skip the header
 
 if len(sys.argv) >= 3:
-    print "Opening and processing \"" + sys.argv[2] + "\"..."
+    print ("Opening and processing \"" + sys.argv[2] + "\"...")
     symbolfile = open(sys.argv[2], "r")
     dialect = csv.Sniffer().sniff(symbolfile.read(1024))
     symbolfile.seek(0)
     symbolreader = csv.reader(symbolfile, dialect)
-    symbolreader.next() # Move down a line to skip the header
+    next(symbolreader) # Move down a line to skip the header
     have_symbols = True
 else:
     have_symbols = False
@@ -75,8 +75,8 @@ for row in reader:
     line_counter += 1
     # Check if there are at least ENTRY_COUNT_PER_LINE entries per line:
     if len(row) != ENTRY_COUNT_PER_LINE:
-        print "ERROR: Line " + str(line_counter) + " is invalid (" +\
-              str(ENTRY_COUNT_PER_LINE) + " entries expected)"
+        print ("ERROR: Line " + str(line_counter) + " is invalid (" +\
+              str(ENTRY_COUNT_PER_LINE) + " entries expected)")
         sys.exit(1)
 
     # Some constants to access the row-entries much easier:
@@ -138,13 +138,13 @@ if have_symbols:
         if (address >= ymin) and (address <= ymax):
             ticks.append(address)
             symbols.append(row[IDX_SYMBOL_NAME])
-            #print "symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+            #print ("symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME])
         elif (address < ymin) and (address + size >= ymin):
             ticks.append(ymin)
             symbols.append("(" + row[IDX_SYMBOL_NAME] + ")")
-            #print "partial symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+            #print ("partial symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME])
         else:
-            #print "skipped symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME]
+            #print ("skipped symbol: " + str(address) + " " + str(size) + " " + row[IDX_SYMBOL_NAME])
             pass
 
     # list of interesting addresses
