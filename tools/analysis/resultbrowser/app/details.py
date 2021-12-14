@@ -143,7 +143,7 @@ class DetailDealer:
         self.reload(configfile)
 
         if not self.tables:
-            print "DetailDealer: no details found for " + configfile
+            print("DetailDealer: no details found for " + configfile)
 
     def reload(self, configfile):
         self.tables = {}

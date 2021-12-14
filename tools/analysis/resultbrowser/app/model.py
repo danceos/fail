@@ -7,8 +7,8 @@ import sys
 import os.path
 
 from pprint import pprint
-import data
-import details
+from . import data
+from . import details
 
 """Get command line options"""
 from optparse import OptionParser
@@ -24,7 +24,7 @@ def checkConfigFile(msg, fname):
     if not os.path.isfile(fname):
         sys.exit("Error: '" + fname + "' not found")
     else:
-        print msg, "->", fname
+        print(msg, "->", fname)
 
 # Check sql config
 sqlconfig = opts.config
@@ -99,9 +99,9 @@ def reloadOverview():
     return overview, objdump_exists
 
 """Load overview data at server startup"""
-print "Loading overview data from database. This may take a while ..."
+print("Loading overview data from database. This may take a while ...")
 overview_data, objdump_exists = reloadOverview()
-print "done."
+print("done.")
 ## Get overview data for views.index()
 def getOverview():
     return overview_data

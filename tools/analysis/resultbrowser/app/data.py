@@ -1,6 +1,6 @@
 from pprint import pprint
-import details
-import model
+from . import details
+from . import model
 
 def scrub(table_name):
     return ''.join( chr for chr in table_name if chr.isalnum() or chr == '_' )
@@ -134,7 +134,7 @@ class Overview:
             variant = table.getVariantById(variant_id)
             if variant:
                 return variant
-        print "Variant not found."
+        print("Variant not found.")
         return None
 
     def length(self):

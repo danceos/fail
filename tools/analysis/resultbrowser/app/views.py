@@ -1,15 +1,18 @@
 from flask import render_template,request
 from app import app
 
-import model
-import data
+# import model
+# import data
+
+from . import model
+from . import data
 
 @app.route('/')
 @app.route('/index')
 def index():
     reload_overview = request.args.get('reload', False)
     if reload_overview:
-        print "Reloading overview..."
+        print("Reloading overview...")
         model.reloadOverview()
     return render_template("index.html", overview=model.getOverview(), objdump_there = model.objdumpExists())
 
