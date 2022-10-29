@@ -27,7 +27,7 @@ BochsController::BochsController()
 
 BochsController::~BochsController()
 {
-	delete m_Mem;
+	delete &getMemoryManager();
 	std::vector<ConcreteCPU*>::iterator it = m_CPUs.begin();
 	while (it != m_CPUs.end()) {
 		delete *it;

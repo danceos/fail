@@ -41,21 +41,20 @@ protected:
 	ListenerManager m_LstList; //!< storage where listeners are being buffered
 	std::map<std::string, ExperimentFlow *> m_Experiments; //!< registered experiments, one is chosen on startup
 	CoroutineManager m_Flows; //!< managed experiment flows
-	MemoryManager *m_Mem; //!< access to memory pool
+	std::map<memory_type_t, MemoryManager *> m_Mems; //!< access to memory pool(s)
 	std::vector<ConcreteCPU*> m_CPUs; //!< list of CPUs in the target system
 	friend class ListenerManager; //!< "outsources" the listener management
 	std::string m_argv0; //!< Invocation name of simulator process
 public:
 	SimulatorController()
 		: m_log("SimulatorController", false),
-		  m_isInitialized(false),
-		  m_Mem(nullptr)
+		  m_isInitialized(false)
 		{ /* blank */ }
 	SimulatorController(MemoryManager* mem)
 		: m_log("SimulatorController", false),
-		  m_isInitialized(false),
-		  m_Mem(mem)
-		{ /* blank */ }
+		  m_isInitialized(false) {
+			m_Mems[MEMTYPE_RAM] = mem; // The RAM memory manager is the default
+		}
 	virtual ~SimulatorController() { }
 	/**
 	 * @brief Initialization function each implementation needs to call on
@@ -95,11 +94,14 @@ public:
 	 * @param len the length of the accessed memory
 	 * @param is_write \c true if memory is written, \c false if read
 	 * @param instrPtr the address of the instruction causing the memory
+	 * @param type The type of memory that was accessed.
+	 * @param data The data which is stored at the memory location which was accessed. At most 8 bytes are supported, passed in the form of a concatenated 64 bit integer.
 	 *        access
 	 *
 	 * FIXME: should instrPtr be part of this interface?
 	 */
-	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len, bool is_write, address_t instrPtr);
+	void onMemoryAccess(ConcreteCPU* cpu, address_t addr, size_t len, bool is_write, address_t instrPtr,
+						memory_type_t type=MEMTYPE_RAM);
 	/**
 	 * Interrupt handler.
 	 * @param cpu the CPU that caused the interrupt
@@ -174,13 +176,19 @@ public:
 	 * Returns the (constant) initialized memory manager.
 	 * @return a reference to the memory manager
 	 */
-	MemoryManager& getMemoryManager() { return *m_Mem; }
-	const MemoryManager& getMemoryManager() const { return *m_Mem; }
+	MemoryManager& getMemoryManager(memory_type_t type=MEMTYPE_RAM) {
+		return *m_Mems.at(type);
+	}
+	const MemoryManager& getMemoryManager(memory_type_t type=MEMTYPE_RAM) const {
+		return *m_Mems.at(type);
+	}
 	/**
 	 * Sets the memory manager.
 	 * @param pMem a new concrete memory manager
 	 */
-	void setMemoryManager(MemoryManager* pMem) { m_Mem = pMem; }
+	void setMemoryManager(MemoryManager* pMem, memory_type_t type=MEMTYPE_RAM) {
+		m_Mems[type] = pMem;
+	}
 	/* ********************************************************************
 	 * Experiment-Flow & Listener Management API:
 	 * ********************************************************************/
