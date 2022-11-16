@@ -7,33 +7,23 @@
 #include <limits.h>
 #include <memory> // unique_ptr
 
-#include "util/ElfReader.hpp"
-
 #include "llvm/Object/ObjectFile.h"
-
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/MC/MCAsmInfo.h"
-#include "llvm/MC/MCContext.h"
-#include "llvm/MC/MCDisassembler/MCDisassembler.h"
-#include "llvm/MC/MCInst.h"
-#include "llvm/MC/MCInstrInfo.h"
-#include "llvm/MC/MCObjectFileInfo.h"
-#include "llvm/MC/MCRegisterInfo.h"
-#include "llvm/MC/MCStreamer.h"
-#include "llvm/MC/MCSubtargetInfo.h"
-#include "llvm/Support/ManagedStatic.h"
-#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/MemoryBuffer.h"
-#include "llvm/ADT/StringExtras.h"
+#include "llvm/Support/ManagedStatic.h"
+#include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCObjectFileInfo.h"
+#include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCDisassembler/MCDisassembler.h"
 
-#include "llvm/Support/Casting.h"
 
 #include "LLVMtoFailTranslator.hpp"
 
-
 namespace fail {
+
+class ElfReader;
 
 class LLVMDisassembler {
 
@@ -107,9 +97,9 @@ public:
 
 	const llvm::MCRegisterInfo& getRegisterInfo() { return *register_info; }
 
-	std::string getRegisterName(unsigned id) { return getRegisterInfo().getName(id); }
+	std::string getRegisterName(unsigned id);
 
-	const std::string GetSubtargetFeatures() const { return m_object->getFeatures().getString(); }
+	const std::string GetSubtargetFeatures() const;
 
 	void disassemble();
 
